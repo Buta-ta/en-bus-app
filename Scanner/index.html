@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>En-Bus Scanner - Contrôle Embarquement</title>
+    <link rel="stylesheet" href="scanner.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- ✅ AJOUTER DANS <head> -->
+<meta name="theme-color" content="#73d700">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/scanner/manifest-scanner.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+    <div class="scanner-app">
+        
+        <!-- Header -->
+        <header class="scanner-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="60" cy="60" r="54" fill="#73d700"/>
+                    <rect x="0" y="80" width="120" height="10" fill="#0B0F17" opacity="0.9"/>
+                    <g transform="translate(20,52)">
+                        <rect x="0" y="6" width="80" height="26" rx="5" fill="#F0F5F9" stroke="#0A0F15" stroke-width="2"/>
+                        <circle cx="18" cy="36" r="6.8" fill="#0A0F15"/>
+                        <circle cx="62" cy="36" r="6.8" fill="#0A0F15"/>
+                    </g>
+                </svg>
+                <span>En-Bus Scanner</span>
+            </div>
+            <div class="scanner-stats">
+                <div class="stat">
+                    <span class="stat-label">Scannés</span>
+                    <span class="stat-value" id="scanned-count">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Embarqués</span>
+                    <span class="stat-value" id="boarded-count">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Scanner Section -->
+        <div class="scanner-container">
+            <div class="scanner-status" id="scanner-status">
+                <div class="status-icon">📷</div>
+                <p class="status-text">Initialisation de la caméra...</p>
+            </div>
+            
+            <!-- Zone de scan -->
+            <div id="qr-reader" class="qr-reader"></div>
+            
+            <!-- Boutons de contrôle -->
+            <div class="scanner-controls">
+                <button id="start-scan-btn" class="btn btn-primary" disabled>
+                    <span class="btn-icon">📷</span>
+                    <span>Démarrer le scan</span>
+                </button>
+                <button id="stop-scan-btn" class="btn btn-secondary" style="display: none;">
+                    <span class="btn-icon">⏸️</span>
+                    <span>Arrêter le scan</span>
+                </button>
+                <button id="switch-camera-btn" class="btn btn-secondary" disabled>
+                    <span class="btn-icon">🔄</span>
+                    <span>Changer de caméra</span>
+                </button>
+                <button id="manual-entry-btn" class="btn btn-secondary">
+                    <span class="btn-icon">⌨️</span>
+                    <span>Saisie manuelle</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Résultat du scan -->
+        <div id="scan-result" class="scan-result"></div>
+
+        <!-- Modal de saisie manuelle -->
+        <div id="manual-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Saisie manuelle</h2>
+                    <button class="modal-close" id="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="manual-booking-number">Numéro de réservation</label>
+                        <input 
+                            type="text" 
+                            id="manual-booking-number" 
+                            class="form-control" 
+                            placeholder="EB-123456"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label>OU coller les données QR (JSON)</label>
+                        <textarea 
+                            id="manual-qr-data" 
+                            class="form-control" 
+                            rows="8"
+                            placeholder='{"v":"1.0","booking":"EB-123456",...}'
+                        ></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="validate-manual" class="btn btn-primary">Valider</button>
+                    <button id="cancel-manual" class="btn btn-secondary">Annuler</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des scans -->
+        <div class="scan-history">
+            <div class="history-header">
+                <h3>📋 Historique des scans</h3>
+                <button id="clear-history-btn" class="btn btn-small btn-secondary">Effacer</button>
+            </div>
+            <div id="history-list" class="history-list">
+                <p class="no-history">Aucun scan effectué</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="scanner.js"></script>
+
+    <!-- ✅ AJOUTER AVANT </body> -->
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ SW Scanner enregistré'))
+            .catch(err => console.error('❌ Erreur SW:', err));
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi en Temps Réel - En-Bus</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+
+    <!-- ✅ AJOUTER APRÈS <title> -->
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#73d700">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Suivez votre bus En-Bus en temps réel sur une carte interactive">
+
+<!-- Manifest -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="/icons/icon-72.png">
+
+
+
+    <style>
+        body, html { height: 100%; margin: 0; overflow: hidden; background-color: #10101A; }
+        #map-container { width: 100%; height: 100vh; position: relative; z-index: 1; }
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .info-panel { position: absolute; top: 20px; left: 20px; z-index: 1000; background-color: rgba(28, 28, 39, 0.85); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; border: 1px solid rgba(115, 215, 0, 0.2); color: #F0F5F9; font-family: 'Exo 2', sans-serif; max-width: 350px; box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+        .info-panel h1 { font-family: 'Audiowide', cursive; font-size: 24px; margin-top: 0; margin-bottom: 15px; color: var(--color-accent-glow, #73d700); }
+        .info-panel p { margin: 8px 0; font-size: 14px; }
+        #status-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ff4136; margin-right: 8px; transition: background-color 0.5s; vertical-align: middle; }
+        #status-dot.connected { background-color: #2ecc40; box-shadow: 0 0 10px #2ecc40; }
+        .info-panel a { color: var(--color-accent-glow, #73d700); text-decoration: none; font-weight: 600; }
+
+        /* ✅ AJOUTER À LA FIN DU <style> EXISTANT */
+
+/* Indicateur hors-ligne */
+.offline-indicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    background: #ff4136;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: none;
+    animation: pulse 2s infinite;
+}
+
+.offline-indicator.show {
+    display: block;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Bouton rafraîchir */
+.refresh-btn {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #73d700, #5fb800);
+    color: #000;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(115, 215, 0, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refresh-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(115, 215, 0, 0.6);
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+/* Responsive mobile */
+@media (max-width: 768px) {
+    .info-panel {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        padding: 15px;
+    }
+    
+    .refresh-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+}
+
+/* Support notch iPhone */
+@supports (padding: env(safe-area-inset-top)) {
+    .info-panel {
+        top: calc(env(safe-area-inset-top) + 20px);
+    }
+}
+
+/* Mode PWA installé */
+body.pwa-installed .info-panel {
+    top: 20px;
+}
+    </style>
+</head>
+<body>
+    <div id="map-container"></div>
+    <div class="info-panel">
+        <h1>Suivi du Bus</h1>
+        <p><strong>Status:</strong> <span id="status-dot"></span><span id="status-text">Connexion...</span></p>
+        <p><strong>Bus ID:</strong> <span id="bus-id-display">Chargement...</span></p>
+        <p><strong>Dernière mise à jour:</strong> <span id="last-update">Jamais</span></p>
+        <hr style="border-color: rgba(115, 215, 0, 0.2); margin: 15px 0;">
+        <p><a href="index.html">&larr; Retour au site principal</a></p>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // --- 1. CONFIGURATION ---
+        // L'URL de votre tunnel a été mise à jour ici
+        const backendUrl = window.location.hostname === 'localhost'
+    ? "http://localhost:3000"
+    : "https://2b9167c25f28.ngrok-free.app";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const busIdToTrack = urlParams.get('bus');
+
+        // --- 2. INITIALISATION DE LA CARTE ---
+        const map = L.map('map-container').setView([2, 15], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        const busIcon = L.icon({ iconUrl: 'https://img.icons8.com/plasticine/100/bus.png', iconSize: [50, 50], iconAnchor: [25, 25] });
+        let busMarker = L.marker([0, 0], { icon: busIcon, opacity: 0 }).addTo(map);
+        let isFirstPosition = true;
+
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const lastUpdateText = document.getElementById('last-update');
+        const busIdDisplay = document.getElementById('bus-id-display');
+        busIdDisplay.textContent = busIdToTrack || "Non spécifié";
+
+      
+        // --- 3. CONNEXION WEBSOCKET ---
+        if (!busIdToTrack) {
+            statusText.textContent = "Erreur: Aucun bus spécifié dans l'URL.";
+        } else {
+            // On revient à la configuration standard de socket.io, qui est souvent suffisante pour localtunnel
+            const socket = io(backendUrl);
+
+            socket.on('connect', () => {
+                console.log("✅ Connecté au serveur backend !");
+                statusDot.classList.add('connected');
+                statusText.textContent = "Connecté";
+                
+                console.log(`📡 Envoi de la demande d'abonnement pour le bus ${busIdToTrack}...`);
+                socket.emit('subscribeToBus', busIdToTrack, (response) => {
+                    console.log("=> Réponse du serveur à l'abonnement :", response.message);
+                });
+            });
+
+            socket.on('disconnect', () => {
+                console.log("❌ Déconnecté du serveur backend.");
+                statusDot.classList.remove('connected');
+                statusText.textContent = "Déconnecté";
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error("Erreur de connexion Socket.IO:", err.message);
+                statusText.textContent = "Erreur de connexion";
+            });
+
+            socket.on('updatePosition', (position) => {
+                if (position.busId !== busIdToTrack) return;
+                
+                console.log("🛰️ Nouvelle position reçue par le client:", position);
+                const newLatLng = [position.lat, position.lon];
+
+                if (isFirstPosition) {
+                    if (busMarker.options.opacity === 0) { 
+                        busMarker.setLatLng(newLatLng).setOpacity(1);
+                        map.setView(newLatLng, 15);
+                        isFirstPosition = false;
+                    }
+                } else {
+                    busMarker.setLatLng(newLatLng);
+                    map.panTo(newLatLng);
+                }
+                
+                lastUpdateText.textContent = new Date().toLocaleTimeString('fr-FR');
+            });
+        }
+    </script>
+
+
+
+
+<!-- ✅ AJOUTER AVANT </body> -->
+
+<!-- Indicateur hors-ligne -->
+<div class="offline-indicator" id="offline-indicator">
+    ⚠️ Mode hors-ligne
+</div>
+
+<!-- Bouton rafraîchir -->
+<button class="refresh-btn" id="refresh-btn" title="Rafraîchir la position">
+    🔄
+</button>
+
+<script>
+    // ============================================
+    // ENREGISTREMENT SERVICE WORKER
+    // ============================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log('✅ Service Worker enregistré (suivi.html):', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('❌ Erreur Service Worker:', error);
+                });
+        });
+    }
+
+    // ============================================
+    // DÉTECTION MODE STANDALONE
+    // ============================================
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        document.body.classList.add('pwa-installed');
+        console.log('✅ Mode PWA standalone activé (suivi)');
+    }
+
+    // ============================================
+    // GESTION RÉSEAU OFFLINE/ONLINE
+    // ============================================
+    const offlineIndicator = document.getElementById('offline-indicator');
+
+    function updateOnlineStatus() {
+        if (navigator.onLine) {
+            offlineIndicator.classList.remove('show');
+            console.log('✅ Connexion rétablie');
+        } else {
+            offlineIndicator.classList.add('show');
+            console.log('⚠️ Mode hors-ligne');
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    // Vérifier au chargement
+    updateOnlineStatus();
+
+    // ============================================
+    // BOUTON RAFRAÎCHIR
+    // ============================================
+    const refreshBtn = document.getElementById('refresh-btn');
+    let isRefreshing = false;
+
+    refreshBtn.addEventListener('click', () => {
+        if (isRefreshing) return;
+        
+        isRefreshing = true;
+        refreshBtn.style.animation = 'spin 1s linear';
+        
+        // Demander une nouvelle position au serveur
+        if (socket && socket.connected) {
+            socket.emit('subscribeToBus', busIdToTrack, (response) => {
+                console.log('🔄 Rafraîchissement demandé:', response);
+            });
+        }
+        
+        setTimeout(() => {
+            refreshBtn.style.animation = '';
+            isRefreshing = false;
+        }, 1000);
+    });
+
+    // Animation rotation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // ============================================
+    // CACHE DE LA DERNIÈRE POSITION (localStorage)
+    // ============================================
+    const CACHE_KEY = `bus_position_${busIdToTrack}`;
+
+    // Sauvegarder la position en cache
+    socket.on('updatePosition', (position) => {
+        // ... (code existant pour updatePosition) ...
+        
+        // Ajouter après la mise à jour du marqueur :
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            lat: position.lat,
+            lon: position.lon,
+            timestamp: Date.now()
+        }));
+    });
+
+    // Charger la dernière position depuis le cache au chargement
+    window.addEventListener('load', () => {
+        const cachedPosition = localStorage.getItem(CACHE_KEY);
+        
+        if (cachedPosition) {
+            try {
+                const { lat, lon, timestamp } = JSON.parse(cachedPosition);
+                const age = Date.now() - timestamp;
+                
+                // Si la position a moins de 1h, l'utiliser
+                if (age < 3600000) {
+                    console.log('📦 Position chargée depuis le cache');
+                    busMarker.setLatLng([lat, lon]).setOpacity(0.7);
+                    map.setView([lat, lon], 15);
+                    
+                    const ageMinutes = Math.floor(age / 60000);
+                    lastUpdateText.textContent = `Il y a ${ageMinutes} min (cache)`;
+                }
+            } catch (error) {
+                console.error('Erreur lecture cache:', error);
+            }
+        }
+    });
+
+    // ============================================
+    // NOTIFICATIONS PUSH (optionnel)
+    // ============================================
+    async function requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            console.log('Permission notifications:', permission);
+        }
+    }
+
+    // Demander la permission au premier clic
+    document.addEventListener('click', () => {
+        requestNotificationPermission();
+    }, { once: true });
+
+    // Envoyer une notification quand le bus arrive
+    function notifyBusArrival() {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('🚌 En-Bus', {
+                body: `Le bus ${busIdToTrack} approche de sa destination`,
+                icon: '/icons/icon-192.png',
+                badge: '/icons/icon-72.png',
+                vibrate: [200, 100, 200]
+            });
+        }
+    }
+
+    // ============================================
+    // PARTAGE DE LA POSITION
+    // ============================================
+    async function shareLocation() {
+        if (!navigator.share) {
+            console.log('Partage non supporté');
+            return;
+        }
+
+        const currentUrl = window.location.href;
+        
+        try {
+            await navigator.share({
+                title: `Suivi du bus ${busIdToTrack} - En-Bus`,
+                text: `Suivez mon bus en temps réel !`,
+                url: currentUrl
+            });
+            console.log('✅ Partagé avec succès');
+        } catch (error) {
+            console.log('Partage annulé');
+        }
+    }
+
+    // Ajouter un bouton de partage (optionnel)
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'refresh-btn';
+    shareBtn.style.bottom = '100px';
+    shareBtn.innerHTML = '📤';
+    shareBtn.title = 'Partager le suivi';
+    shareBtn.addEventListener('click', shareLocation);
+    
+    if (navigator.share) {
+        document.body.appendChild(shareBtn);
+    }
+</script>
+</body>
+</html>

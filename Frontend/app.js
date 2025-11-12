@@ -1,0 +1,2627 @@
+// ============================================
+// CONFIGURATION ET CONSTANTES
+// ============================================
+
+// ✅ Configuration API Backend
+// ============================================
+// CONFIGURATION ET CONSTANTES
+// ============================================
+
+const API_CONFIG = {
+    baseUrl: window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000'
+        : ' https://05ba9ba0396c.ngrok-free.app'
+};
+
+const CONFIG = {
+    CHILD_TICKET_PRICE: 5000,
+    EXTRA_BAGGAGE_PRICE: 7500,
+    MAX_BAGGAGE_PER_PERSON: 5,
+    SEAT_TOTAL: 61, // ✅ 14 rangées × 4 + 5 arrière
+    OCCUPANCY_RATE: { min: 0.3, max: 0.5 },
+    STORAGE_KEY: 'enbus_reservations',
+    AGENCY_PAYMENT_MIN_HOURS: 1,
+    AGENCY_PAYMENT_DEADLINE_HOURS: 10,
+    
+    // ✅ Configuration API
+    API_URL: window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000/api'
+        : 'https://2b9167c25f28.ngrok-free.app/api',
+    
+    // ✅ Configuration Scanner
+    SCANNER_FPS: 10,
+    SCANNER_QRBOX: 250
+};
+
+// ============================================
+// DONNÉES DE L'APPLICATION
+// ============================================
+
+
+// ============================================
+// DONNÉES DE L'APPLICATION
+// ============================================
+const companies = [
+    { id: 1, name: "Océan du Nord", rating: 4.2, country: "Congo" },
+    { id: 2, name: "Trans Bony", rating: 4.0, country: "Congo" },
+    { id: 3, name: "Stellimac", rating: 4.1, country: "Congo" },
+    { id: 4, name: "United Express", rating: 4.0, country: "Multi" },
+    { id: 5, name: "Buca Voyages", rating: 3.9, country: "Multi" },
+    { id: 6, name: "Saint Denis Voyage", rating: 4.1, country: "Multi" },
+    { id: 7, name: "Touristique Express", rating: 4.3, country: "Cameroun" },
+    { id: 8, name: "Garantie Express", rating: 4.4, country: "Cameroun" },
+    { id: 9, name: "Finexs Voyage", rating: 4.2, country: "Cameroun" },
+    { id: 10, name: "Vatican Express", rating: 4.0, country: "Cameroun" },
+    { id: 11, name: "OT-CI", rating: 4.3, country: "Côte d'Ivoire" },
+    { id: 12, name: "STM Voyageurs", rating: 4.1, country: "Multi" },
+    { id: 13, name: "STC", rating: 4.4, country: "Ghana" },
+    { id: 14, name: "ABC Transport", rating: 4.2, country: "Nigeria" },
+    { id: 15, name: "God is Good Motors", rating: 4.0, country: "Nigeria" }
+];
+
+const cities = [
+    { name: "Brazzaville", country: "Congo" },
+    { name: "Pointe-Noire", country: "Congo" },
+    { name: "Dolisie", country: "Congo" },
+    { name: "Nkayi", country: "Congo" },
+    { name: "Ouesso", country: "Congo" },
+    { name: "Owando", country: "Congo" },
+    { name: "Impfondo", country: "Congo" },
+    { name: "Madingou", country: "Congo" },
+    { name: "Loudima", country: "Congo" },
+    { name: "Mindouli", country: "Congo" },
+    { name: "Djambala", country: "Congo" },
+    { name: "Gamboma", country: "Congo" },
+    { name: "Makoua", country: "Congo" },
+    { name: "Oyo", country: "Congo" },
+    { name: "Pokola", country: "Congo" },
+    { name: "Bétou", country: "Congo" },
+    { name: "Yaoundé", country: "Cameroun" },
+    { name: "Douala", country: "Cameroun" },
+    { name: "Bafoussam", country: "Cameroun" },
+    { name: "Bamenda", country: "Cameroun" },
+    { name: "Garoua", country: "Cameroun" },
+    { name: "Libreville", country: "Gabon" },
+    { name: "Port-Gentil", country: "Gabon" },
+    { name: "Franceville", country: "Gabon" },
+    { name: "Lagos", country: "Nigeria" },
+    { name: "Abuja", country: "Nigeria" },
+    { name: "Port Harcourt", country: "Nigeria" },
+    { name: "Cotonou", country: "Bénin" },
+    { name: "Porto-Novo", country: "Bénin" },
+    { name: "Parakou", country: "Bénin" },
+    { name: "Lomé", country: "Togo" },
+    { name: "Accra", country: "Ghana" },
+    { name: "Kumasi", country: "Ghana" },
+    { name: "Abidjan", country: "Côte d'Ivoire" },
+    { name: "Yamoussoukro", country: "Côte d'Ivoire" },
+    { name: "Ouagadougou", country: "Burkina Faso" },
+    { name: "Bobo-Dioulasso", country: "Burkina Faso" },
+    { name: "Kinshasa", country: "RDC" }
+];
+
+const agencies = [
+    { 
+        city: 'Brazzaville', 
+        name: 'Agence En-Bus Brazzaville Centre',
+        address: 'Avenue de l\'Indépendance, en face du marché Total',
+        phone: '+242 06 123 4567',
+        hours: 'Lun-Sam : 7h - 19h / Dim : 8h - 14h',
+        coords: [-4.2634, 15.2429]
+    },
+    { 
+        city: 'Pointe-Noire', 
+        name: 'Agence En-Bus Pointe-Noire',
+        address: 'Rue Loango, près de la Poste Centrale',
+        phone: '+242 06 765 4321',
+        hours: 'Lun-Sam : 7h - 18h',
+        coords: [-4.7947, 11.8634]
+    },
+    { 
+        city: 'Dolisie', 
+        name: 'Agence En-Bus Dolisie',
+        address: 'Avenue Patrice Lumumba, gare routière',
+        phone: '+242 06 555 1234',
+        hours: 'Lun-Sam : 7h - 17h',
+        coords: [-4.2064, 12.6686]
+    },
+    { 
+        city: 'Yaoundé', 
+        name: 'Agence En-Bus Yaoundé',
+        address: 'Boulevard du 20 Mai, quartier du Lac',
+        phone: '+237 6 77 88 99 00',
+        hours: 'Lun-Sam : 7h - 18h',
+        coords: [3.8480, 11.5021]
+    },
+    { 
+        city: 'Douala', 
+        name: 'Agence En-Bus Douala',
+        address: 'Avenue de la Liberté, Akwa',
+        phone: '+237 6 99 88 77 66',
+        hours: 'Lun-Sam : 7h - 19h',
+        coords: [4.0511, 9.7679]
+    }
+];
+
+const routes = [
+    { 
+        id: 1, 
+        from: "Brazzaville", 
+        to: "Pointe-Noire", 
+        company: "Océan du Nord", 
+        price: 15000, 
+        duration: "8h 30m", 
+        departure: "06:00", 
+        arrival: "14:30", 
+        amenities: ["clim", "prise"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "B1" 
+    },
+    { 
+        id: 2, 
+        from: "Brazzaville", 
+        to: "Pointe-Noire", 
+        company: "Trans Bony", 
+        price: 13500, 
+        duration: "9h 00m", 
+        departure: "07:00", 
+        arrival: "16:00", 
+        amenities: ["clim"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "B2" 
+    },
+    { 
+        id: 3, 
+        from: "Brazzaville", 
+        to: "Pointe-Noire", 
+        company: "Stellimac", 
+        price: 14000, 
+        duration: "8h 45m", 
+        departure: "05:30", 
+        arrival: "14:15", 
+        amenities: ["clim", "prise"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "B3" 
+    },
+    { 
+        id: 4, 
+        from: "Pointe-Noire", 
+        to: "Brazzaville", 
+        company: "Océan du Nord", 
+        price: 15000, 
+        duration: "8h 30m", 
+        departure: "06:30", 
+        arrival: "15:00", 
+        amenities: ["clim", "prise"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "P1" 
+    },
+    { 
+        id: 5, 
+        from: "Pointe-Noire", 
+        to: "Brazzaville", 
+        company: "Trans Bony", 
+        price: 13500, 
+        duration: "9h 00m", 
+        departure: "07:30", 
+        arrival: "16:30", 
+        amenities: ["clim"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "P2" 
+    },
+    { 
+        id: 6, 
+        from: "Brazzaville", 
+        to: "Dolisie", 
+        company: "Stellimac", 
+        price: 10000, 
+        duration: "6h 00m", 
+        departure: "08:00", 
+        arrival: "14:00", 
+        amenities: ["clim"], 
+        tripType: "stops", 
+        stops: [
+            { city: "Mindouli", arrivalTime: "09:30", departureTime: "09:45", duration: "15min" },
+            { city: "Nkayi", arrivalTime: "11:30", departureTime: "11:50", duration: "20min" }
+        ], 
+        connections: [],
+        breaks: 2, 
+        trackerId: "D1" 
+    },
+    { 
+        id: 7, 
+        from: "Brazzaville", 
+        to: "Nkayi", 
+        company: "Océan du Nord", 
+        price: 7000, 
+        duration: "4h 00m", 
+        departure: "09:00", 
+        arrival: "13:00", 
+        amenities: ["clim"], 
+        tripType: "stops", 
+        stops: [
+            { city: "Mindouli", arrivalTime: "10:15", departureTime: "10:30", duration: "15min" }
+        ], 
+        connections: [],
+        breaks: 1, 
+        trackerId: "N1" 
+    },
+    { 
+        id: 8, 
+        from: "Brazzaville", 
+        to: "Ouesso", 
+        company: "Océan du Nord", 
+        price: 25000, 
+        duration: "16h 00m", 
+        departure: "05:00", 
+        arrival: "21:00", 
+        amenities: ["clim", "wc"], 
+        tripType: "stops", 
+        stops: [
+            { city: "Owando", arrivalTime: "11:00", departureTime: "12:00", duration: "1h" },
+            { city: "Makoua", arrivalTime: "16:30", departureTime: "17:00", duration: "30min" }
+        ], 
+        connections: [],
+        breaks: 3, 
+        trackerId: "O1" 
+    },
+    { 
+        id: 27, 
+        from: "Douala", 
+        to: "Yaoundé", 
+        company: "Touristique Express", 
+        price: 3500, 
+        duration: "3h 00m", 
+        departure: "06:00", 
+        arrival: "09:00", 
+        amenities: ["clim", "wifi"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "Y1" 
+    },
+    { 
+        id: 28, 
+        from: "Yaoundé", 
+        to: "Douala", 
+        company: "Garantie Express", 
+        price: 3500, 
+        duration: "3h 00m", 
+        departure: "14:00", 
+        arrival: "17:00", 
+        amenities: ["clim", "prise"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "Y2" 
+    },
+    { 
+        id: 31, 
+        from: "Lagos", 
+        to: "Abuja", 
+        company: "ABC Transport", 
+        price: 8000, 
+        duration: "8h 00m", 
+        departure: "06:00", 
+        arrival: "14:00", 
+        amenities: ["clim", "wifi", "wc"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "L1" 
+    },
+    {
+        id: 32,
+        from: "Brazzaville",
+        to: "Libreville",
+        company: "United Express",
+        price: 35000,
+        duration: "18h 30m",
+        departure: "06:00",
+        arrival: "00:30",
+        amenities: ["clim", "wc", "wifi"],
+        tripType: "connections",
+        stops: [
+            { city: "Dolisie", arrivalTime: "12:00", departureTime: "12:30", duration: "30min" }
+        ],
+        connections: [
+            { 
+                at: "Pointe-Noire", 
+                arrivalTime: "14:30", 
+                waitTime: "2h 30min",
+                nextDeparture: "17:00",
+                nextCompany: "Océan du Nord",
+                reason: "Correspondance maritime + route"
+            }
+        ],
+        breaks: 2,
+        trackerId: "BL1"
+    },
+    { 
+        id: 35, 
+        from: "Accra", 
+        to: "Kumasi", 
+        company: "STC", 
+        price: 4500, 
+        duration: "4h 30m", 
+        departure: "06:00", 
+        arrival: "10:30", 
+        amenities: ["clim", "wifi", "wc"], 
+        tripType: "direct", 
+        stops: [], 
+        connections: [],
+        trackerId: "A1" 
+    },
+];
+
+let appState = {
+    currentSearch: {},
+    selectedBus: null,
+    selectedReturnBus: null,
+    isSelectingReturn: false,
+    selectedSeats: [],
+    selectedReturnSeats: [],
+    occupiedSeats: [],
+    occupiedReturnSeats: [],
+    passengerInfo: [],
+    allReservations: [],
+    departurePicker: null,
+    passengerCounts: { adults: 1, children: 0 },
+    baggageCounts: {},
+    currentResults: [],
+    filters: {
+        company: 'all',
+        amenities: [],
+        tripType: 'all',
+        priceRange: { min: 0, max: 100000 },
+        departureTime: 'all'
+    },
+    sortBy: 'departure',
+    currentReservation: null
+};
+
+// ============================================
+// ÉTAT DES FILTRES
+// ============================================
+let activeFilters = {
+    company: 'all',
+    tripType: 'all',
+    priceRange: { min: 0, max: 100000 },
+    departureTime: 'all',
+    amenities: [],
+    sortBy: 'departure'
+};
+
+// ============================================
+// UTILITAIRES
+// ============================================
+const Utils = {
+    formatPrice(price) {
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    },
+
+    formatDate(date) {
+        return new Date(date).toLocaleDateString("fr-FR", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+        });
+    },
+
+    formatDateTime(date) {
+        return new Date(date).toLocaleString("fr-FR", {
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    },
+
+    generateBookingNumber() {
+        return `EB-${Date.now().toString().slice(-6)}`;
+    },
+
+    validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    },
+
+    validatePhone(phone) {
+        const patterns = [
+            /^\+\d{1,3}\s?\d{1,4}\s?\d{3,4}\s?\d{3,4}$/,
+            /^00\d{1,3}\s?\d{1,4}\s?\d{3,4}\s?\d{3,4}$/,
+            /^\d{2,4}\s?\d{3,4}\s?\d{3,4}$/,
+            /^\d{10,15}$/
+        ];
+        
+        return patterns.some(pattern => pattern.test(phone.trim()));
+    },
+
+    showToast(message, type = 'info') {
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span class="toast-message">${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    },
+
+    getAmenityIcon(type) {
+        const icons = {
+            wifi: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1,9l2,2c4.97-4.97,13.03-4.97,18,0l2-2C18.9,4.93,7.1,4.93,1,9z M5,13l2,2c2.76-2.76,7.24-2.76,10,0l2-2 C16.93,10.93,9.07,10.93,5,13z M9,17l3,3l3-3C13.93,15.93,11.07,15.93,9,17z"></path></svg>',
+            wc: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.99 8.89C21.99 7.8 21.1 7 20 7H4c-1.1 0-2 .8-2 1.89l-1.89 11.22C-.11 21.65.15 22 1.21 22h21.57c1.06 0 1.32-.35 1.11-1.89L21.99 8.89zM9 18H7v-6h2v6zm5 0h-2v-6h2v6zm5 0h-2v-6h2v6zm-1-9.56c0-1.35-1.15-2.44-2.5-2.44s-2.5 1.09-2.5 2.44V11h5V8.44z"></path></svg>',
+            prise: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg>',
+            clim: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,8c-2.21,0-4,1.79-4,4s1.79,4,4,4s4-1.79,4-4S14.21,8,12,8z M12,14c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2 S13.1,14,12,14z M19.78,10.66L17.3,8.18l1.41-1.41l2.47,2.47L19.78,10.66z M4.72,10.66l-2.47-2.47l1.41-1.41l2.47,2.47 L4.72,10.66z M10,3h4v3h-4V3z M10.66,19.78l-2.47,2.47l1.41,1.41l2.47-2.47L10.66,19.78z M17.3,15.82l-1.41,1.41l2.47,2.47 l1.41-1.41L17.3,15.82z M3,14H0v-4h3V14z M21,14h3v-4h-3V14z M14,21h-4v3h4V21z"></path></svg>',
+            pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8 s8,3.59,8,8S16.41,20,12,20z M12.5,7H11v6l5.25,3.15l0.75-1.23l-4.5-2.67V7z"></path></svg>',
+            direct: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"></path></svg>'
+        };
+        return icons[type] || '';
+    },
+
+    getDurationInMinutes(duration) {
+        const parts = duration.match(/(\d+)h?\s*(\d+)?m?/);
+        if (!parts) return 0;
+        const hours = parseInt(parts[1]) || 0;
+        const minutes = parseInt(parts[2]) || 0;
+        if (duration.includes('h')) {
+            return hours * 60 + minutes;
+        }
+        return hours;
+    },
+
+    getTimeCategory(time) {
+        const hour = parseInt(time.split(':')[0]);
+        if (hour >= 5 && hour < 12) return 'morning';
+        if (hour >= 12 && hour < 17) return 'afternoon';
+        if (hour >= 17 && hour < 21) return 'evening';
+        return 'night';
+    },
+
+    // ✅ QR Code simplifié : BOOKING_NUMBER|PASSENGER_NAME
+     generateQRCodeData(reservation) {
+        // Format ultra-compact
+        const qrData = {
+            v: "2.0",                           // Version
+            b: reservation.bookingNumber,        // Booking number
+            p: reservation.passengers.length,    // Nombre de passagers
+            d: reservation.date,                 // Date du voyage
+            s: reservation.status === 'Confirmé' ? 'C' : 'P', // C = Confirmé, P = Pending
+            c: reservation.createdAt            // Date de création
+        };
+
+        return JSON.stringify(qrData);
+    },
+
+        // ✅ DECODER le QR Code (pour tests et vérification)
+    // ============================================
+// ✅ DÉCODAGE QR CODE SIMPLIFIÉ
+// ============================================
+// ✅ DÉCODAGE QR CODE (pour tests)
+    decodeQRCodeData(qrString) {
+        try {
+            const data = JSON.parse(qrString);
+            
+            if (data.v === "2.0") {
+                // Format simplifié
+                return {
+                    valid: true,
+                    version: "2.0",
+                    bookingNumber: data.b,
+                    passengersCount: data.p,
+                    date: data.d,
+                    status: data.s === 'C' ? 'Confirmé' : 'En attente de paiement',
+                    createdAt: data.c
+                };
+            } else if (data.v === "1.0") {
+                // Format complet (rétrocompatibilité)
+                return {
+                    valid: true,
+                    version: "1.0",
+                    data: data
+                };
+            } else {
+                throw new Error('Version QR Code non supportée');
+            }
+            
+        } catch (error) {
+            return {
+                valid: false,
+                error: error.message
+            };
+        }
+    },
+
+  
+
+    async generateQRCodeBase64(text, size = 200) {
+        return new Promise((resolve, reject) => {
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                document.body.appendChild(tempDiv);
+                
+                const qrcode = new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                
+                setTimeout(() => {
+                    const canvas = tempDiv.querySelector('canvas');
+                    if (canvas) {
+                        const base64 = canvas.toDataURL('image/png');
+                        document.body.removeChild(tempDiv);
+                        resolve(base64);
+                    } else {
+                        document.body.removeChild(tempDiv);
+                        reject(new Error('Canvas not found'));
+                    }
+                }, 100);
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+};
+
+// ============================================
+// FONCTIONS PAIEMENT AGENCE
+// ============================================
+
+function canPayAtAgency() {
+    if (!appState.currentSearch.date || !appState.selectedBus) {
+        return false;
+    }
+    
+    const departureDateTime = new Date(
+        `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`
+    );
+    
+    const now = new Date();
+    const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
+    
+    console.log(`⏰ Heures avant départ: ${hoursUntilDeparture.toFixed(1)}h (minimum requis: ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h)`);
+    
+    return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
+}
+
+function getNearestAgency(cityName) {
+    let agency = agencies.find(a => a.city === cityName);
+    
+    if (!agency) {
+        agency = agencies[0];
+        console.log(`⚠️ Pas d'agence à ${cityName}, utilisation de ${agency.city}`);
+    }
+    
+    return agency;
+}
+
+function calculatePaymentDeadline() {
+    const now = new Date();
+    const deadline = new Date(now.getTime() + (CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000));
+    return deadline;
+}
+
+// ============================================
+// GESTION DES RÉSERVATIONS AVEC BACKEND
+// ============================================
+
+async function saveReservationToBackend(reservation) {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(reservation)
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Erreur lors de la sauvegarde');
+        }
+        
+        console.log('✅ Réservation sauvegardée sur le serveur');
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde backend:', error);
+        throw error;
+    }
+}
+
+async function loadReservationsFromBackend(userPhone) {
+    try {
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/user/${encodeURIComponent(userPhone)}`
+        );
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Erreur lors du chargement');
+        }
+        
+        console.log(`✅ ${result.reservations.length} réservations chargées`);
+        return result.reservations;
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement backend:', error);
+        return [];
+    }
+}
+
+window.cancelReservation = async function(bookingNumber) {
+    const confirm = window.confirm(
+        `Voulez-vous vraiment annuler la réservation ${bookingNumber} ?`
+    );
+    
+    if (!confirm) return;
+    
+    try {
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/cancel`,
+            { 
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Erreur lors de l\'annulation');
+        }
+        
+        Utils.showToast('Réservation annulée avec succès', 'success');
+        displayReservations();
+        
+    } catch (error) {
+        console.error('Erreur annulation:', error);
+        Utils.showToast('Erreur lors de l\'annulation', 'error');
+    }
+}
+
+// ============================================
+// TÉLÉCHARGEMENT DE BILLET PDF
+// ============================================
+window.downloadTicket = async function(reservation) {
+    if (!reservation && appState.currentReservation) {
+        reservation = appState.currentReservation;
+    }
+    
+    if (!reservation) {
+        Utils.showToast('Réservation introuvable', 'error');
+        return;
+    }
+    
+    Utils.showToast('Génération du billet en cours...', 'info');
+    
+    try {
+        await generateTicketPDF(reservation);
+    } catch (error) {
+        console.error('Erreur génération billet:', error);
+        Utils.showToast('Erreur lors de la génération du billet', 'error');
+    }
+}
+
+async function generateTicketPDF(reservation) {
+    try {
+        // ✅ QR Code simplifié
+        const qrData = Utils.generateQRCodeData(reservation);
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 200);
+        
+        let stopsHTML = '';
+        if (reservation.route.stops && reservation.route.stops.length > 0) {
+            stopsHTML = `
+                <div class="stops-section" style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+                    <strong style="display: block; margin-bottom: 10px; color: #333;">🛑 Arrêts prévus :</strong>
+                    ${reservation.route.stops.map(stop => `
+                        <div style="padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                            <strong>${stop.city}</strong><br>
+                            <span style="font-size: 13px; color: #666;">
+                                Arrivée : ${stop.arrivalTime} | Départ : ${stop.departureTime} 
+                                (Arrêt : ${stop.duration})
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        let connectionsHTML = '';
+        if (reservation.route.connections && reservation.route.connections.length > 0) {
+            connectionsHTML = `
+                <div class="connections-section" style="margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
+                    <strong style="display: block; margin-bottom: 10px; color: #856404;">⚠️ Correspondances :</strong>
+                    ${reservation.route.connections.map(conn => `
+                        <div style="padding: 8px 0; border-bottom: 1px solid rgba(133, 100, 4, 0.2);">
+                            <strong style="color: #856404;">À ${conn.at}</strong><br>
+                            <span style="font-size: 13px; color: #856404;">
+                                Arrivée : ${conn.arrivalTime} | Attente : ${conn.waitTime}<br>
+                                Prochain départ : ${conn.nextDeparture} (${conn.nextCompany})<br>
+                                Raison : ${conn.reason}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        let agencyInfoHTML = '';
+        if (reservation.paymentMethod === 'agency' && reservation.agency) {
+            agencyInfoHTML = `
+                <div class="agency-payment-notice" style="
+                    background: #fff3cd; 
+                    border: 2px solid #ffc107; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    margin-bottom: 20px;
+                ">
+                    <h3 style="color: #856404; margin-top: 0;">⚠️ PAIEMENT REQUIS À L'AGENCE</h3>
+                    <p style="color: #856404; margin-bottom: 10px;">
+                        <strong>Vous devez payer avant le ${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong>
+                    </p>
+                    <div style="background: white; padding: 15px; border-radius: 4px; margin-top: 15px;">
+                        <strong style="color: #333;">📍 ${reservation.agency.name}</strong><br>
+                        <span style="color: #666;">${reservation.agency.address}</span><br>
+                        <span style="color: #666;">📞 ${reservation.agency.phone}</span><br>
+                        <span style="color: #666;">🕐 ${reservation.agency.hours}</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        const ticketHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .ticket {
+            width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .ticket-header {
+            background: linear-gradient(135deg, #73d700 0%, #5fb800 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+        .bus-logo {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .ticket-header h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .ticket-header .tagline {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        .ticket-header .booking-number {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .ticket-body {
+            padding: 40px;
+        }
+        .route-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px dashed #e0e0e0;
+        }
+        .city {
+            text-align: center;
+            flex: 1;
+        }
+        .city-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        .city-time {
+            font-size: 20px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .arrow {
+            font-size: 40px;
+            color: #73d700;
+            margin: 0 30px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .detail-item {
+            border-left: 4px solid #73d700;
+            padding-left: 15px;
+        }
+        .detail-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .passengers-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .passengers-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .passenger-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .passenger-item:last-child {
+            border-bottom: none;
+        }
+        .qr-section {
+            text-align: center;
+            padding: 30px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .qr-code {
+            background: white;
+            padding: 20px;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .qr-code img {
+            display: block;
+            width: 200px;
+            height: 200px;
+        }
+        .qr-label {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        .qr-info {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #333;
+            font-family: monospace;
+            background: #e8f5e9;
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .ticket-footer {
+            background: #f5f5f5;
+            padding: 20px 40px;
+            border-top: 2px solid #e0e0e0;
+        }
+        .footer-note {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .important {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+        .important strong {
+            color: #856404;
+        }
+        .price-box {
+            background: #73d700;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .price-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .price-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .ticket { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        <div class="ticket-header">
+            <div class="bus-logo">
+                <svg width="80" height="80" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="40" y="60" width="120" height="90" rx="12" fill="white" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+                    <path d="M 145 60 L 160 60 L 160 100 L 145 100 Z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <rect x="50" y="70" width="20" height="18" rx="3" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    <rect x="75" y="70" width="20" height="18" rx="3" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    <rect x="100" y="70" width="20" height="18" rx="3" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    <rect x="125" y="70" width="20" height="18" rx="3" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    <rect x="50" y="95" width="18" height="50" rx="2" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <line x1="59" y1="95" x2="59" y2="145" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+                    <circle cx="155" cy="140" r="5" fill="#FFF59D" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <rect x="40" y="145" width="120" height="5" fill="rgba(255,255,255,0.2)"/>
+                    <g>
+                        <circle cx="130" cy="155" r="12" fill="#2C3E50" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                        <circle cx="130" cy="155" r="6" fill="#95A5A6"/>
+                        <circle cx="70" cy="155" r="12" fill="#2C3E50" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                        <circle cx="70" cy="155" r="6" fill="#95A5A6"/>
+                    </g>
+                    <line x1="40" y1="90" x2="145" y2="90" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                </svg>
+            </div>
+            
+            <h1>EN-BUS</h1>
+            <p class="tagline">${reservation.status === 'En attente de paiement' ? 'Reçu de Réservation' : 'Billet de Transport'}</p>
+            <div class="booking-number">${reservation.bookingNumber}</div>
+        </div>
+
+        <div class="ticket-body">
+            ${agencyInfoHTML}
+
+            <div class="route-info">
+                <div class="city">
+                    <div class="city-name">${reservation.route.from}</div>
+                    <div class="city-time">${reservation.route.departure}</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="city">
+                    <div class="city-name">${reservation.route.to}</div>
+                    <div class="city-time">${reservation.route.arrival}</div>
+                </div>
+            </div>
+
+            ${stopsHTML}
+            ${connectionsHTML}
+
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Date du voyage</div>
+                    <div class="detail-value">${Utils.formatDate(reservation.date)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Compagnie</div>
+                    <div class="detail-value">${reservation.route.company}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Durée estimée</div>
+                    <div class="detail-value">${reservation.route.duration || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Numéros de siège</div>
+                    <div class="detail-value">${reservation.seats.join(', ')}</div>
+                </div>
+            </div>
+
+            <div class="passengers-section">
+                <div class="passengers-title">Passagers</div>
+                ${reservation.passengers.map((p, i) => `
+                    <div class="passenger-item">
+                        <span><strong>Siège ${p.seat}</strong> - ${p.name}</span>
+                        <span>${p.phone}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            
+            
+            
+            <div class="qr-section">
+    <div class="qr-code">
+        <img src="${qrCodeBase64}" alt="QR Code">
+    </div>
+    <div class="qr-label">✅ Scannez ce code à l'embarquement</div>
+    <!-- ✅ Plus d'affichage JSON ici -->
+</div>
+
+            <div class="price-box">
+                <div class="price-label">PRIX TOTAL</div>
+                <div class="price-value">${reservation.totalPrice}</div>
+            </div>
+        </div>
+
+        <div class="ticket-footer">
+            <div class="footer-note">
+                <strong>Informations importantes :</strong><br>
+                • Présentez-vous 30 minutes avant le départ<br>
+                • Ce billet est nominatif et non remboursable<br>
+                • Bagages : 1 bagage en soute (20kg) et 1 bagage à main inclus<br>
+                • Contact : +242 06 123 4567 | contact@en-bus.com
+            </div>
+            <div class="important">
+                <strong>⚠️ Important :</strong> Veuillez présenter ce ${reservation.status === 'En attente de paiement' ? 'reçu' : 'billet'} (imprimé ou sur mobile) et une pièce d'identité valide lors de l'embarquement.
+                ${reservation.status === 'En attente de paiement' ? '<br><br><strong style="color: #d32f2f;">⚠️ CE REÇU NE SERA VALIDE QU\'APRÈS PAIEMENT À L\'AGENCE</strong>' : ''}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    </script>
+</body>
+</html>
+        `;
+
+        // ✅ NOUVEAU CODE (compatible mobile)
+try {
+    // Créer un blob pour le téléchargement
+    const blob = new Blob([ticketHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Créer un lien de téléchargement
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = `Billet_EnBus_${reservation.bookingNumber}.html`;
+    downloadLink.style.display = 'none';
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    
+    // Nettoyer l'URL
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    
+    Utils.showToast('Billet téléchargé ! Ouvrez-le pour imprimer.', 'success');
+    
+    // Sur desktop, ouvrir aussi dans un nouvel onglet
+    if (window.innerWidth > 768) {
+        setTimeout(() => {
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(ticketHTML);
+                printWindow.document.close();
+            }
+        }, 500);
+    }
+    
+} catch (error) {
+    console.error('Erreur génération billet:', error);
+    
+    // Fallback : ouvrir dans un nouvel onglet
+    try {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(ticketHTML);
+            printWindow.document.close();
+            Utils.showToast('Billet ouvert dans un nouvel onglet', 'success');
+        } else {
+            throw new Error('Popup bloquée');
+        }
+    } catch (fallbackError) {
+        Utils.showToast('Veuillez autoriser les popups pour télécharger le billet', 'error');
+    }
+}
+        
+    } catch (error) {
+        console.error('Erreur génération PDF:', error);
+        throw error;
+    }
+}
+
+// ============================================
+// INITIALISATION DE L'APPLICATION
+// ============================================
+ function initApp() {
+    try {
+        setupMobileMenu();
+        populateCitySelects();
+        setupDatePickers();
+        setupTripTypeToggle();
+        setupPassengerSelector();
+        populatePopularDestinations();
+        setupPaymentMethodToggle();
+        addToastStyles();
+        setupAmenitiesFilters(); // ✅ AJOUTER CETTE LIGNE
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+    }
+}
+
+function addToastStyles() {
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            .toast {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--color-surface);
+                border: 1px solid var(--color-accent-glow);
+                border-radius: var(--radius-lg);
+                padding: var(--space-16);
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+                z-index: 10000;
+                max-width: 350px;
+            }
+            .toast.show {
+                transform: translateX(0);
+            }
+            .toast-content {
+                display: flex;
+                align-items: center;
+                gap: var(--space-12);
+            }
+            .toast-icon {
+                font-size: 20px;
+            }
+            .toast-success {
+                border-color: #4caf50;
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+            }
+            .toast-error {
+                border-color: #f44336;
+                box-shadow: 0 0 20px rgba(244, 67, 54, 0.3);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+function setupMobileMenu() {
+    const hamburgerBtn = document.getElementById("hamburger-btn");
+    const mobileNavMenu = document.getElementById("mobile-nav-menu");
+    
+    if (hamburgerBtn && mobileNavMenu) {
+        hamburgerBtn.addEventListener("click", () => {
+            const isExpanded = hamburgerBtn.getAttribute("aria-expanded") === "true";
+            hamburgerBtn.setAttribute("aria-expanded", !isExpanded);
+            hamburgerBtn.classList.toggle("active");
+            mobileNavMenu.classList.toggle("open");
+        });
+    }
+}
+
+function closeMenuAndShowPage(pageName) {
+    showPage(pageName);
+    const hamburgerBtn = document.getElementById("hamburger-btn");
+    const mobileNavMenu = document.getElementById("mobile-nav-menu");
+    if (hamburgerBtn && mobileNavMenu) {
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+        hamburgerBtn.classList.remove("active");
+        mobileNavMenu.classList.remove("open");
+    }
+}
+
+function showPage(pageName) {
+    document.querySelectorAll(".page").forEach(page => {
+        page.classList.remove("active");
+    });
+    
+    const targetPage = document.getElementById(`${pageName}-page`);
+    if (targetPage) {
+        targetPage.classList.add("active");
+        window.scrollTo(0, 0);
+    }
+    
+    if (pageName === "reservations") {
+        displayReservations();
+    }
+}
+
+function populateCitySelects() {
+    const originSelect = document.getElementById("origin");
+    const destinationSelect = document.getElementById("destination");
+    
+    if (!originSelect || !destinationSelect) return;
+    
+    cities.sort((a, b) => a.name.localeCompare(b.name));
+    
+    cities.forEach(city => {
+        const originOption = document.createElement("option");
+        originOption.value = city.name;
+        originOption.textContent = `${city.name}, ${city.country}`;
+        originSelect.appendChild(originOption);
+        
+        const destOption = document.createElement("option");
+        destOption.value = city.name;
+        destOption.textContent = `${city.name}, ${city.country}`;
+        destinationSelect.appendChild(destOption);
+    });
+}
+
+function populatePopularDestinations() {
+    const grid = document.getElementById("popular-destinations-grid");
+    if (!grid) return;
+    
+    const shuffled = [...routes].sort(() => 0.5 - Math.random());
+    let destinations = [];
+    let seen = new Set();
+    
+    for (const route of shuffled) {
+        const key = `${route.from}-${route.to}`;
+        if (!seen.has(key)) {
+            destinations.push(route);
+            seen.add(key);
+            if (destinations.length === 3) break;
+        }
+    }
+    
+    grid.innerHTML = destinations.map(route => `
+        <div class="destination-card" onclick="searchFromPopular('${route.from}', '${route.to}')">
+            <div class="destination-name">${route.from} → ${route.to}</div>
+            <div class="destination-price">À partir de ${Utils.formatPrice(route.price)} FCFA</div>
+        </div>
+    `).join("");
+}
+
+window.searchFromPopular = function(from, to) {
+    document.getElementById("origin").value = from;
+    document.getElementById("destination").value = to;
+    const oneWayOption = document.querySelector('.trip-type-toggle [data-value="one-way"]');
+    if (oneWayOption) oneWayOption.click();
+    searchBuses();
+}
+
+function setupTripTypeToggle() {
+    const toggle = document.querySelector(".trip-type-toggle");
+    if (!toggle) return;
+    
+    const options = toggle.querySelectorAll(".toggle-option");
+    
+    options.forEach(option => {
+        option.addEventListener("click", () => {
+            toggle.setAttribute("data-mode", option.dataset.value);
+            options.forEach(opt => opt.classList.remove("active"));
+            option.classList.add("active");
+            setupDatePickers();
+        });
+    });
+}
+
+function setupDatePickers() {
+    const tripMode = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") || "one-way";
+    
+    if (appState.departurePicker) {
+        appState.departurePicker.destroy();
+    }
+    
+    const config = {
+        altInput: true,
+        altFormat: "d F Y",
+        dateFormat: "Y-m-d",
+        minDate: "today",
+        locale: "fr",
+        mode: tripMode === "round-trip" ? "range" : "single"
+    };
+    
+    appState.departurePicker = flatpickr("#travel-date", config);
+}
+
+function setupPassengerSelector() {
+    const input = document.getElementById("passenger-input");
+    const dropdown = document.getElementById("passenger-dropdown");
+    const adultsCount = document.getElementById("adults-count");
+    const childrenCount = document.getElementById("children-count");
+    const summary = document.getElementById("passenger-summary");
+    
+    if (!input || !dropdown) return;
+    
+    function updateDisplay() {
+        appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
+        appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
+        
+        adultsCount.textContent = appState.passengerCounts.adults;
+        childrenCount.textContent = appState.passengerCounts.children;
+        
+        dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = 
+            appState.passengerCounts.adults <= 1;
+        dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = 
+            appState.passengerCounts.children <= 0;
+        
+        let summaryText = `${appState.passengerCounts.adults} Adulte(s)`;
+        if (appState.passengerCounts.children > 0) {
+            summaryText += `, ${appState.passengerCounts.children} Enfant(s)`;
+        }
+        summary.textContent = summaryText;
+    }
+    
+    input.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("open");
+    });
+    
+    dropdown.addEventListener("click", (e) => {
+        if (e.target.classList.contains("counter-btn")) {
+            const type = e.target.dataset.type;
+            const action = e.target.dataset.action;
+            
+            if (action === "increment") {
+                appState.passengerCounts[type]++;
+            } else if (action === "decrement") {
+                appState.passengerCounts[type]--;
+            }
+            
+            updateDisplay();
+        }
+    });
+    
+    document.addEventListener("click", () => {
+        if (dropdown.classList.contains("open")) {
+            dropdown.classList.remove("open");
+        }
+    });
+    
+    updateDisplay();
+}
+
+function setupPaymentMethodToggle() {
+    const radios = document.querySelectorAll('input[name="payment"]');
+    const mtnDetails = document.getElementById("mtn-details");
+    const airtelDetails = document.getElementById("airtel-details");
+    const agencyDetails = document.getElementById("agency-details");
+    
+    if (!radios.length) return;
+    
+    radios.forEach(radio => {
+        radio.addEventListener("change", () => {
+            if (mtnDetails) mtnDetails.style.display = "none";
+            if (airtelDetails) airtelDetails.style.display = "none";
+            if (agencyDetails) agencyDetails.style.display = "none";
+            
+            if (radio.value === "mtn" && radio.checked && mtnDetails) {
+                mtnDetails.style.display = "flex";
+            } else if (radio.value === "airtel" && radio.checked && airtelDetails) {
+                airtelDetails.style.display = "flex";
+            } else if (radio.value === "agency" && radio.checked && agencyDetails) {
+                agencyDetails.style.display = "flex";
+            }
+        });
+    });
+}
+
+// ============================================
+// ✅ INITIALISATION DES FILTRES ÉQUIPEMENTS
+// ============================================
+function setupAmenitiesFilters() {
+    const container = document.getElementById('amenities-filter-container');
+    if (!container) return;
+    
+    const amenities = [
+        { value: 'wifi', label: 'Wi-Fi' },
+        { value: 'wc', label: 'WC' },
+        { value: 'prise', label: 'Prises' },
+        { value: 'clim', label: 'Clim' }
+    ];
+    
+    container.innerHTML = amenities.map(amenity => `
+        <label class="amenity-checkbox-label">
+            <input 
+                type="checkbox" 
+                class="amenity-checkbox" 
+                value="${amenity.value}" 
+                onchange="updateFilter('amenity', '${amenity.value}')"
+            >
+            <span>
+                ${Utils.getAmenityIcon(amenity.value)}
+                ${amenity.label}
+            </span>
+        </label>
+    `).join('');
+}
+
+window.searchBuses = function() {
+    appState.isSelectingReturn = false;
+    const origin = document.getElementById("origin").value;
+    const destination = document.getElementById("destination").value;
+    const travelDates = document.getElementById("travel-date").value;
+    let departureDate, returnDate;
+    if (travelDates.includes(" au ")) {
+        [departureDate, returnDate] = travelDates.split(" au ");
+    } else {
+        departureDate = travelDates;
+        returnDate = null;
+    }
+    const totalPassengers = appState.passengerCounts.adults + appState.passengerCounts.children;
+    const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode") || "one-way";
+    if (!origin || !destination) {
+        Utils.showToast("Veuillez sélectionner la ville de départ et d'arrivée", 'error');
+        return;
+    }
+    if (origin === destination) {
+        Utils.showToast("La ville de départ et d'arrivée doivent être différentes", 'error');
+        return;
+    }
+    if (!departureDate) {
+        Utils.showToast("Veuillez sélectionner une date de départ", 'error');
+        return;
+    }
+    if (tripType === "round-trip" && !returnDate) {
+        Utils.showToast("Veuillez sélectionner une date de départ ET de retour", 'error');
+        return;
+    }
+    appState.currentSearch = {
+        origin,
+        destination,
+        date: departureDate,
+        returnDate,
+        passengers: totalPassengers,
+        tripType
+    };
+    const availableRoutes = routes.filter(route => 
+        route.from === origin && route.to === destination
+    );
+    appState.currentResults = availableRoutes;
+    if (availableRoutes.length === 0) {
+        Utils.showToast("Aucun trajet disponible pour cet itinéraire", 'info');
+    } else {
+        displayResults(availableRoutes);
+        showPage("results");
+        Utils.showToast(`${availableRoutes.length} trajet(s) trouvé(s)`, 'success');
+    }
+}
+
+
+// ============================================
+// 🔍 FILTRAGE ET TRI DES RÉSULTATS
+// ============================================
+
+function applyFiltersAndSort() {
+    let filteredResults = [...appState.currentResults];
+    
+    // ✅ Filtre par compagnie
+    if (activeFilters.company !== 'all') {
+        filteredResults = filteredResults.filter(route => 
+            route.company === activeFilters.company
+        );
+    }
+    
+    // ✅ Filtre par type de trajet
+    if (activeFilters.tripType !== 'all') {
+        filteredResults = filteredResults.filter(route => 
+            route.tripType === activeFilters.tripType
+        );
+    }
+    
+    // ✅ Filtre par plage de prix
+    filteredResults = filteredResults.filter(route => 
+        route.price >= activeFilters.priceRange.min && 
+        route.price <= activeFilters.priceRange.max
+    );
+    
+    // ✅ Filtre par heure de départ
+    if (activeFilters.departureTime !== 'all') {
+        filteredResults = filteredResults.filter(route => {
+            const hour = parseInt(route.departure.split(':')[0]);
+            switch (activeFilters.departureTime) {
+                case 'morning': return hour >= 5 && hour < 12;
+                case 'afternoon': return hour >= 12 && hour < 17;
+                case 'evening': return hour >= 17 && hour < 21;
+                case 'night': return hour >= 21 || hour < 5;
+                default: return true;
+            }
+        });
+    }
+    
+    // ✅ Filtre par équipements
+    if (activeFilters.amenities.length > 0) {
+        filteredResults = filteredResults.filter(route =>
+            activeFilters.amenities.every(amenity => 
+                route.amenities.includes(amenity)
+            )
+        );
+    }
+    
+    // ✅ Tri
+    filteredResults.sort((a, b) => {
+        switch (activeFilters.sortBy) {
+            case 'price':
+                return a.price - b.price;
+            case 'duration':
+                return Utils.getDurationInMinutes(a.duration) - Utils.getDurationInMinutes(b.duration);
+            case 'company':
+                return a.company.localeCompare(b.company);
+            case 'departure':
+            default:
+                return a.departure.localeCompare(b.departure);
+        }
+    });
+    
+    return filteredResults;
+}
+
+// ============================================
+// 🎛️ GESTION DES FILTRES UI
+// ============================================
+
+window.updateFilter = function(filterType, value) {
+    switch (filterType) {
+        case 'company':
+        case 'tripType':
+        case 'departureTime':
+        case 'sortBy':
+            activeFilters[filterType] = value;
+            break;
+        
+        case 'priceMin':
+            activeFilters.priceRange.min = parseInt(value) || 0;
+            document.getElementById('price-min-display').textContent = 
+                Utils.formatPrice(activeFilters.priceRange.min);
+            break;
+        
+        case 'priceMax':
+            activeFilters.priceRange.max = parseInt(value) || 100000;
+            document.getElementById('price-max-display').textContent = 
+                Utils.formatPrice(activeFilters.priceRange.max);
+            break;
+        
+        case 'amenity':
+            const index = activeFilters.amenities.indexOf(value);
+            if (index > -1) {
+                activeFilters.amenities.splice(index, 1);
+            } else {
+                activeFilters.amenities.push(value);
+            }
+            break;
+    }
+    
+    // Réappliquer les filtres
+    const filtered = applyFiltersAndSort();
+    displayResults(filtered, appState.isSelectingReturn);
+    
+    // Message si aucun résultat
+    if (filtered.length === 0) {
+        Utils.showToast('Aucun trajet ne correspond à vos critères', 'info');
+    }
+};
+
+window.resetFilters = function() {
+    activeFilters = {
+        company: 'all',
+        tripType: 'all',
+        priceRange: { min: 0, max: 100000 },
+        departureTime: 'all',
+        amenities: [],
+        sortBy: 'departure'
+    };
+    
+    // Réinitialiser l'UI
+    document.getElementById('filter-company').value = 'all';
+    document.getElementById('filter-trip-type').value = 'all';
+    document.getElementById('filter-time').value = 'all';
+    document.getElementById('sort-by').value = 'departure';
+    document.getElementById('price-min').value = 0;
+    document.getElementById('price-max').value = 100000;
+    document.getElementById('price-min-display').textContent = '0';
+    document.getElementById('price-max-display').textContent = '100 000';
+    
+    // Décocher toutes les cases équipements
+    document.querySelectorAll('.amenity-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    displayResults(appState.currentResults, appState.isSelectingReturn);
+    Utils.showToast('Filtres réinitialisés', 'success');
+};
+
+function displayResults(results, isReturn = false) {
+    const summary = document.getElementById("search-summary");
+    const resultsList = document.getElementById("results-list");
+    const legendContainer = document.getElementById("amenities-legend");
+    
+    // ✅ Appliquer les filtres si ce n'est pas un retour de filtre
+    const displayedResults = results === appState.currentResults ? applyFiltersAndSort() : results;
+    
+    const summaryHTML = isReturn
+        ? `Sélectionnez votre <strong>RETOUR</strong> : <strong>${appState.currentSearch.destination}</strong> → <strong>${appState.currentSearch.origin}</strong> (${displayedResults.length} résultat(s))`
+        : `Sélectionnez votre <strong>ALLER</strong> : <strong>${appState.currentSearch.origin}</strong> → <strong>${appState.currentSearch.destination}</strong> (${displayedResults.length} résultat(s))`;
+    
+    summary.innerHTML = summaryHTML;
+    
+    // ✅ Légende avec icônes normales
+    const amenityLabels = {
+        wifi: "Wi-Fi",
+        wc: "Toilettes",
+        prise: "Prises",
+        clim: "Climatisation",
+        pause: "Pause",
+        direct: "Direct"
+    };
+    
+    let legendHTML = "";
+    for (const [key, label] of Object.entries(amenityLabels)) {
+        legendHTML += `
+            <div class="legend-amenity">
+                ${Utils.getAmenityIcon(key)}
+                <span>${label}</span>
+            </div>
+        `;
+    }
+    legendContainer.innerHTML = legendHTML;
+    
+    // ✅ Affichage des résultats
+    if (displayedResults.length === 0) {
+        resultsList.innerHTML = `
+            <div class="no-results" style="text-align: center; padding: 48px; color: var(--color-text-secondary);">
+                <h3>Aucun trajet disponible</h3>
+                <p>Essayez de modifier vos critères de recherche ou vos filtres.</p>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
+                    Réinitialiser les filtres
+                </button>
+                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">
+                    Nouvelle recherche
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    resultsList.innerHTML = displayedResults.map(route => {
+        const availableSeats = Math.floor(Math.random() * 35) + 5;
+        const amenitiesHTML = route.amenities.map(amenity => 
+            `<div class="amenity-item" title="${amenityLabels[amenity]}">${Utils.getAmenityIcon(amenity)}</div>`
+        ).join("");
+        
+        let tripDetailsHTML = "";
+        if (route.tripType === "direct") {
+            tripDetailsHTML = `<div class="bus-card-trip-details">${Utils.getAmenityIcon("direct")}<span>Trajet direct</span></div>`;
+        } else if (route.stops && route.stops.length > 0) {
+            const stopsPreview = route.stops.map(s => s.city).join(', ');
+            tripDetailsHTML = `
+                <div class="bus-card-trip-details">
+                    <span class="bus-card-stops" title="Arrêts : ${stopsPreview}">
+                        🛑 ${route.stops.length} arrêt(s)
+                    </span>
+                </div>
+                <details style="font-size: 13px; color: var(--color-text-secondary); margin-top: 8px;">
+                    <summary style="cursor: pointer; font-weight: 600;">Voir détails arrêts</summary>
+                    <div style="margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--color-border);">
+                        ${route.stops.map(stop => `
+                            <div style="padding: 6px 0;">
+                                <strong>${stop.city}</strong><br>
+                                <span style="font-size: 12px;">
+                                    Arrivée: ${stop.arrivalTime} | Départ: ${stop.departureTime} 
+                                    (${stop.duration})
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            `;
+        }
+        
+        if (route.connections && route.connections.length > 0) {
+            tripDetailsHTML += `
+                <details style="font-size: 13px; color: #ffc107; margin-top: 8px;">
+                    <summary style="cursor: pointer; font-weight: 600;">⚠️ Correspondances requises</summary>
+                    <div style="margin-top: 8px; padding-left: 12px; border-left: 2px solid #ffc107;">
+                        ${route.connections.map(conn => `
+                            <div style="padding: 6px 0; background: rgba(255, 193, 7, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
+                                <strong>À ${conn.at}</strong><br>
+                                <span style="font-size: 12px;">
+                                    Attente: ${conn.waitTime}<br>
+                                    Prochain départ: ${conn.nextDeparture} (${conn.nextCompany})
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            `;
+        }
+        
+        if (!route.amenities.includes("wc") && route.breaks > 0) {
+            tripDetailsHTML += `<div class="bus-card-trip-details">${Utils.getAmenityIcon("pause")}<span>${route.breaks} pause(s) prévue(s)</span></div>`;
+        }
+        
+        return `
+            <div class="bus-card">
+                <div class="bus-card-main">
+                    <div class="bus-card-time">
+                        <span>${route.departure}</span>
+                        <div class="bus-card-duration">
+                            <span>→</span><br>${route.duration}
+                        </div>
+                        <span>${route.arrival}</span>
+                    </div>
+                    <div class="bus-card-company">${route.company}</div>
+                    ${tripDetailsHTML}
+                    <div class="bus-card-details">
+                        <div class="bus-amenities">${amenitiesHTML}</div>
+                        <div class="bus-seats"><strong>${availableSeats}</strong> sièges dispo.</div>
+                    </div>
+                </div>
+                <div class="bus-card-pricing">
+                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                    <button class="btn btn-primary" onclick="selectBus(${route.id})">Sélectionner</button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+window.selectBus = function(busId) {
+    if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
+        appState.selectedBus = routes.find(r => r.id === busId);
+        appState.isSelectingReturn = true;
+        const returnRoutes = routes.filter(r => r.from === appState.currentSearch.destination && r.to === appState.currentSearch.origin);
+        appState.currentResults = returnRoutes;
+        displayResults(returnRoutes, true);
+        showPage("results");
+    } else {
+        if (appState.isSelectingReturn) {
+            appState.selectedReturnBus = routes.find(r => r.id === busId);
+        } else {
+            appState.selectedBus = routes.find(r => r.id === busId);
+        }
+        appState.selectedSeats = [];
+        generateOccupiedSeats();
+        displaySeats();
+        showPage("seats");
+    }
+}
+
+function generateOccupiedSeats() {
+    if (appState.isSelectingReturn) {
+        appState.occupiedReturnSeats = [];
+        const totalSeats = CONFIG.SEAT_TOTAL;
+        const occupancyRate = CONFIG.OCCUPANCY_RATE.min + Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min);
+        const numOccupied = Math.floor(totalSeats * occupancyRate);
+        while (appState.occupiedReturnSeats.length < numOccupied) {
+            const seatNum = Math.floor(Math.random() * totalSeats) + 1;
+            if (!appState.occupiedReturnSeats.includes(seatNum)) {
+                appState.occupiedReturnSeats.push(seatNum);
+            }
+        }
+    } else {
+        appState.occupiedSeats = [];
+        const totalSeats = CONFIG.SEAT_TOTAL;
+        const occupancyRate = CONFIG.OCCUPANCY_RATE.min + Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min);
+        const numOccupied = Math.floor(totalSeats * occupancyRate);
+        while (appState.occupiedSeats.length < numOccupied) {
+            const seatNum = Math.floor(Math.random() * totalSeats) + 1;
+            if (!appState.occupiedSeats.includes(seatNum)) {
+                appState.occupiedSeats.push(seatNum);
+            }
+        }
+    }
+}
+
+window.toggleSeat = function(seatNumber) {
+    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+    const index = currentSeats.indexOf(seatNumber);
+    const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
+    
+    if (index > -1) {
+        currentSeats.splice(index, 1);
+    } else {
+        if (currentSeats.length >= maxSeats) {
+            Utils.showToast(`Vous pouvez sélectionner au maximum ${maxSeats} siège(s)`, 'error');
+            return;
+        }
+        currentSeats.push(seatNumber);
+    }
+    
+    currentSeats.sort((a, b) => a - b);
+    
+    if (appState.isSelectingReturn) {
+        appState.selectedReturnSeats = currentSeats;
+    } else {
+        appState.selectedSeats = currentSeats;
+    }
+    
+    displaySeats();
+}
+
+// ============================================
+// ✅ AFFICHAGE DES SIÈGES - DESIGN IMMERSIF FLIXBUS
+// ============================================
+
+function displaySeats() {
+    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
+    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+    const currentOccupied = appState.isSelectingReturn ? appState.occupiedReturnSeats : appState.occupiedSeats;
+    
+    const busInfo = document.getElementById("bus-info");
+    const seatGrid = document.getElementById("pro-seat-grid");
+    
+    const tripLabel = appState.isSelectingReturn ? "🔙 RETOUR" : "🚌 ALLER";
+    
+    busInfo.innerHTML = `
+        <div class="bus-info-header">
+            <div class="trip-badge ${appState.isSelectingReturn ? 'return' : 'outbound'}">${tripLabel}</div>
+            <h3>${currentBus.company} - ${currentBus.from} → ${currentBus.to}</h3>
+            <div class="price-info">
+                <span class="price-item"><strong>Adulte:</strong> ${Utils.formatPrice(currentBus.price)} FCFA</span>
+                <span class="price-divider">|</span>
+                <span class="price-item"><strong>Enfant:</strong> ${Utils.formatPrice(CONFIG.CHILD_TICKET_PRICE)} FCFA</span>
+            </div>
+        </div>
+    `;
+    
+    const hasWC = currentBus.amenities.includes("wc");
+    
+    let seatHTML = `
+        <div class="modern-bus-container">
+            
+            <!-- 🚪 ENTRÉE AVANT AVEC MARCHES -->
+            <div class="bus-front-zone">
+                <div class="driver-section">
+                    <div class="driver-icon">🧑‍✈️</div>
+                    <span class="driver-label">Chauffeur</span>
+                </div>
+                <div class="front-door-section">
+                    <div class="bus-steps">
+                        <div class="step"></div>
+                        <div class="step"></div>
+                        <div class="step"></div>
+                    </div>
+                    <div class="door-icon">🚪</div>
+                    <span class="door-label">Entrée</span>
+                </div>
+            </div>
+            
+            <!-- 🪑 GRILLE DES SIÈGES -->
+            <div class="modern-seat-grid">
+    `;
+    
+    let seatNumber = 1;
+    const totalRows = 14;
+    
+    for (let row = 1; row <= totalRows; row++) {
+        seatHTML += `<div class="seat-row" data-row="${row}">`;
+        
+        // Colonne A (gauche-fenêtre)
+        seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied);
+        
+        // Colonne B (gauche-allée)
+        seatHTML += generateModernSeat(seatNumber++, `B${row}`, currentSeats, currentOccupied);
+        
+        // ✅ ALLÉE SIMPLE (pas de porte centrale)
+        seatHTML += `<div class="aisle-space"><div class="aisle-line"></div></div>`;
+        
+        // Colonne C (droite-allée)
+        seatHTML += generateModernSeat(seatNumber++, `C${row}`, currentSeats, currentOccupied);
+        
+        // Colonne D (droite-fenêtre)
+        seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied);
+        
+        // Numéro de rangée
+        seatHTML += `<div class="row-indicator">${row}</div>`;
+        
+        seatHTML += `</div>`; // Fin seat-row
+    }
+    
+    seatHTML += `</div>`; // Fin modern-seat-grid
+    
+    // 🚻 TOILETTES (si disponibles)
+    if (hasWC) {
+        seatHTML += `
+            <div class="toilet-section">
+                <div class="toilet-icon">🚻</div>
+                <span class="toilet-label">Toilettes</span>
+            </div>
+        `;
+    }
+    
+    // 🪑 RANGÉE ARRIÈRE (5 sièges)
+    seatHTML += `
+        <div class="back-row-container">
+            <div class="back-row-label">Rangée arrière</div>
+            <div class="back-row-seats">
+    `;
+    
+    for (let i = 0; i < 5; i++) {
+        seatHTML += generateModernSeat(seatNumber++, `R${i + 1}`, currentSeats, currentOccupied);
+    }
+    
+    seatHTML += `
+            </div>
+        </div>
+        </div>
+    `;
+    
+    seatGrid.innerHTML = seatHTML;
+    updateSeatSummary();
+}
+
+
+// ✅ Fonction auxiliaire pour générer un siège moderne
+function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
+    const isOccupied = occupiedSeats.includes(seatNumber);
+    const isSelected = selectedSeats.includes(seatNumber);
+    
+    let seatClass = 'modern-seat ';
+    if (isOccupied) {
+        seatClass += 'occupied';
+    } else if (isSelected) {
+        seatClass += 'selected seat-pulse';
+    } else {
+        seatClass += 'available';
+    }
+    
+    const clickHandler = isOccupied ? '' : `onclick="toggleSeat(${seatNumber})"`;
+    const ariaLabel = `Siège ${seatLabel}, ${isOccupied ? 'occupé' : isSelected ? 'sélectionné' : 'disponible'}`;
+    
+    return `
+        <div class="${seatClass}" 
+             ${clickHandler}
+             data-seat="${seatNumber}"
+             aria-label="${ariaLabel}"
+             role="checkbox"
+             aria-checked="${isSelected}"
+             tabindex="${isOccupied ? '-1' : '0'}">
+            <div class="seat-content">
+                ${isOccupied ? '<span class="seat-cross">✕</span>' : `<span class="seat-label">${seatLabel}</span>`}
+            </div>
+        </div>
+    `;
+}
+// ✅ Fonction auxiliaire pour générer un siège
+function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
+    const isOccupied = occupiedSeats.includes(seatNumber);
+    const isSelected = selectedSeats.includes(seatNumber);
+    
+    let seatClass = 'bus-seat ';
+    if (isOccupied) {
+        seatClass += 'occupied';
+    } else if (isSelected) {
+        seatClass += 'selected';
+    } else {
+        seatClass += 'available';
+    }
+    
+    const clickHandler = isOccupied ? '' : `onclick="toggleSeat(${seatNumber})"`;
+    const ariaLabel = `Siège ${seatLabel}, ${isOccupied ? 'occupé' : isSelected ? 'sélectionné' : 'disponible'}`;
+    
+    return `
+        <div class="${seatClass}" 
+             ${clickHandler}
+             data-seat="${seatNumber}"
+             aria-label="${ariaLabel}"
+             role="checkbox"
+             aria-checked="${isSelected}"
+             tabindex="${isOccupied ? '-1' : '0'}">
+            ${isOccupied ? '' : seatLabel}
+        </div>
+    `;
+}
+
+function updateSeatSummary() {
+    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
+    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+    
+    const seatsDisplay = document.getElementById("selected-seats-display");
+    const priceDisplay = document.getElementById("total-price-display");
+    if (currentSeats.length === 0) {
+        seatsDisplay.textContent = "Aucun";
+        priceDisplay.textContent = "0 FCFA";
+    } else {
+        seatsDisplay.textContent = currentSeats.join(", ");
+        const numSeats = currentSeats.length;
+        const numAdults = appState.passengerCounts.adults;
+        let adultsSelected = 0;
+        let childrenSelected = 0;
+        if (numSeats <= numAdults) {
+            adultsSelected = numSeats;
+            childrenSelected = 0;
+        } else {
+            adultsSelected = numAdults;
+            childrenSelected = numSeats - numAdults;
+        }
+        const adultPrice = adultsSelected * currentBus.price;
+        const childPrice = childrenSelected * CONFIG.CHILD_TICKET_PRICE;
+        const totalPrice = adultPrice + childPrice;
+        priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
+    }
+}
+
+window.proceedToPassengerInfo = function() {
+    const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
+    
+    if (appState.currentSearch.tripType === "round-trip") {
+        if (!appState.isSelectingReturn) {
+            if (appState.selectedSeats.length !== expectedSeats) {
+                Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour l'ALLER`, 'error');
+                return;
+            }
+            
+            appState.isSelectingReturn = true;
+            const returnRoutes = routes.filter(r => 
+                r.from === appState.currentSearch.destination && 
+                r.to === appState.currentSearch.origin
+            );
+            
+            displayResults(returnRoutes, true);
+            showPage("results");
+            Utils.showToast('Sélectionnez maintenant votre bus de RETOUR', 'info');
+            return;
+        } else {
+            if (appState.selectedReturnSeats.length !== expectedSeats) {
+                Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour le RETOUR`, 'error');
+                return;
+            }
+        }
+    } else {
+        if (appState.selectedSeats.length !== expectedSeats) {
+            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s)`, 'error');
+            return;
+        }
+    }
+    
+    displayPassengerForms();
+    showPage("passengers");
+}
+
+function displayPassengerForms() {
+    const formsContainer = document.getElementById("passengers-forms");
+    const baggageContainer = document.getElementById("baggage-options");
+    let formsHTML = "";
+    let baggageHTML = "";
+    appState.baggageCounts = {};
+    
+    for (let i = 0; i < appState.currentSearch.passengers; i++) {
+        const passengerType = i < appState.passengerCounts.adults ? "Adulte" : "Enfant";
+        const seatNumber = appState.selectedSeats[i];
+        
+        formsHTML += `
+        <div class="passenger-form">
+            <h3>Passager ${i + 1} (${passengerType}) - Siège ${seatNumber}</h3>
+            <div class="form-group">
+                <label for="name-${i}">Nom complet *</label>
+                <input type="text" id="name-${i}" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="phone-${i}">Numéro de téléphone (international accepté) *</label>
+                <input type="tel" id="phone-${i}" class="form-control" placeholder="Ex: +242 06 123 4567 ou 06 123 4567" required>
+                <small style="color: var(--color-text-secondary); font-size: 13px; margin-top: 4px; display: block;">
+                    Formats acceptés : +XXX XXXXXXXXX, 00XXX XXXXXXXXX, ou national
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="email-${i}">Email (optionnel)</label>
+                <input type="email" id="email-${i}" class="form-control" placeholder="exemple@email.com">
+            </div>
+        </div>`;
+        
+        appState.baggageCounts[i] = 0;
+        baggageHTML += `<div class="baggage-row"><span class="baggage-label">Bagage(s) supp. pour Passager ${i + 1} (+${Utils.formatPrice(CONFIG.EXTRA_BAGGAGE_PRICE)} FCFA/pce)</span><div class="passenger-counter"><button type="button" class="counter-btn" data-passenger-index="${i}" data-action="decrement">-</button><span id="baggage-count-${i}">0</span><button type="button" class="counter-btn" data-passenger-index="${i}" data-action="increment">+</button></div></div>`;
+    }
+    formsContainer.innerHTML = formsHTML;
+    baggageContainer.innerHTML = baggageHTML;
+    document.querySelectorAll("#baggage-options .counter-btn").forEach(btn => {
+        btn.addEventListener("click", handleBaggageChange);
+    });
+}
+
+function handleBaggageChange(event) {
+    const passengerIndex = parseInt(event.target.dataset.passengerIndex);
+    const action = event.target.dataset.action;
+    if (action === "increment" && appState.baggageCounts[passengerIndex] < CONFIG.MAX_BAGGAGE_PER_PERSON) {
+        appState.baggageCounts[passengerIndex]++;
+    } else if (action === "decrement" && appState.baggageCounts[passengerIndex] > 0) {
+        appState.baggageCounts[passengerIndex]--;
+    }
+    document.getElementById(`baggage-count-${passengerIndex}`).textContent = appState.baggageCounts[passengerIndex];
+    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-action="decrement"]`).disabled = appState.baggageCounts[passengerIndex] <= 0;
+    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-action="increment"]`).disabled = appState.baggageCounts[passengerIndex] >= CONFIG.MAX_BAGGAGE_PER_PERSON;
+}
+
+window.proceedToPayment = function() {
+    appState.passengerInfo = [];
+    for (let i = 0; i < appState.currentSearch.passengers; i++) {
+        const name = document.getElementById(`name-${i}`).value.trim();
+        const phone = document.getElementById(`phone-${i}`).value.trim();
+        const email = document.getElementById(`email-${i}`).value.trim();
+        if (!name || !phone) {
+            Utils.showToast(`Veuillez remplir tous les champs obligatoires pour le passager ${i + 1}`, 'error');
+            return;
+        }
+        if (!Utils.validatePhone(phone)) {
+            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}. Formats acceptés : +XXX..., 00XXX..., ou national`, 'error');
+            return;
+        }
+        if (email && !Utils.validateEmail(email)) {
+            Utils.showToast(`Email invalide pour le passager ${i + 1}`, 'error');
+            return;
+        }
+        appState.passengerInfo.push({seat: appState.selectedSeats[i],name: name,phone: phone,email: email,baggage: appState.baggageCounts[i] || 0});
+    }
+    displayBookingSummary();
+    showPage("payment");
+}
+
+function displayBookingSummary() {
+    const summaryContainer = document.getElementById("booking-summary");
+    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
+    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
+    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
+    const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
+    const totalPrice = ticketsPrice + baggagePrice;
+    summaryContainer.innerHTML = `<div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div><div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div><div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div><div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div><div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div><div class="detail-row"><span>Bagages supp. (${totalBaggage}):</span><strong>${Utils.formatPrice(baggagePrice)} FCFA</strong></div><div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>`;
+    
+    const bookingRef = Utils.generateBookingNumber();
+    const mtnAmount = document.getElementById("mtn-amount");
+    const mtnRef = document.getElementById("mtn-booking-ref");
+    const airtelAmount = document.getElementById("airtel-amount");
+    const airtelRef = document.getElementById("airtel-booking-ref");
+    if (mtnAmount) mtnAmount.value = `${Utils.formatPrice(totalPrice)} FCFA`;
+    if (mtnRef) mtnRef.value = bookingRef;
+    if (airtelAmount) airtelAmount.value = `${Utils.formatPrice(totalPrice)} FCFA`;
+    if (airtelRef) airtelRef.value = bookingRef;
+    
+    const agencyOption = document.getElementById('agency-payment-option');
+    const agencySubtitle = document.getElementById('agency-payment-subtitle');
+    
+    if (canPayAtAgency()) {
+        agencyOption.style.display = 'block';
+        agencyOption.style.opacity = '1';
+        agencyOption.querySelector('input').disabled = false;
+        
+        const deadline = calculatePaymentDeadline();
+        agencySubtitle.textContent = `Payez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        
+    } else {
+        agencyOption.style.display = 'block';
+        agencyOption.style.opacity = '0.5';
+        agencyOption.querySelector('input').disabled = true;
+        agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Disponible uniquement 1h avant le départ</span>`;
+    }
+    
+    const agency = getNearestAgency(appState.selectedBus.from);
+    const agencyInfoDiv = document.getElementById('selected-agency-info');
+    
+    if (agencyInfoDiv) {
+        agencyInfoDiv.innerHTML = `
+            <div style="margin-bottom: 10px;">
+                <strong>${agency.name}</strong><br>
+                📍 ${agency.address}<br>
+                📞 ${agency.phone}<br>
+                🕐 ${agency.hours}
+            </div>
+        `;
+    }
+    
+    const deadlineInput = document.getElementById('agency-deadline');
+    if (deadlineInput) {
+        const deadline = calculatePaymentDeadline();
+        deadlineInput.value = deadline.toLocaleString('fr-FR');
+    }
+    
+    const agencyRefInput = document.getElementById('agency-booking-ref');
+    if (agencyRefInput) {
+        agencyRefInput.value = bookingRef;
+    }
+}
+
+window.confirmBooking = async function() {
+    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+    
+    if (paymentMethod === "mtn" || paymentMethod === "airtel") {
+        const phoneInput = document.getElementById(`${paymentMethod}-phone`);
+        if (!phoneInput.value.trim()) {
+            Utils.showToast(`Veuillez renseigner votre numéro ${paymentMethod.toUpperCase()}`, 'error');
+            return;
+        }
+        if (!Utils.validatePhone(phoneInput.value)) {
+            Utils.showToast(`Numéro ${paymentMethod.toUpperCase()} invalide`, 'error');
+            return;
+        }
+    }
+    
+    if (paymentMethod === "agency") {
+        if (!canPayAtAgency()) {
+            Utils.showToast("Le paiement en agence n'est plus disponible (moins de 1h avant le départ)", 'error');
+            return;
+        }
+    }
+    
+    const bookingNumber = document.getElementById("mtn-booking-ref").value || Utils.generateBookingNumber();
+    const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
+    const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
+    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
+    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
+    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    const totalPrice = ticketsPrice + baggagePrice;
+    
+    let reservationStatus = "Confirmé";
+    let paymentDeadline = null;
+    let agencyInfo = null;
+    
+    if (paymentMethod === "agency") {
+        reservationStatus = "En attente de paiement";
+        paymentDeadline = calculatePaymentDeadline().toISOString();
+        agencyInfo = getNearestAgency(appState.selectedBus.from);
+    }
+    
+    const reservation = {
+        bookingNumber: bookingNumber,
+        route: appState.selectedBus,
+        returnRoute: appState.selectedReturnBus || null,
+        date: appState.currentSearch.date,
+        returnDate: appState.currentSearch.returnDate || null,
+        passengers: appState.passengerInfo,
+        seats: appState.selectedSeats,
+        returnSeats: appState.selectedReturnSeats || [],
+        totalPrice: Utils.formatPrice(totalPrice) + " FCFA",
+        totalPriceNumeric: totalPrice,
+        paymentMethod: paymentMethod,
+        status: reservationStatus,
+        paymentDeadline: paymentDeadline,
+        agency: agencyInfo,
+        createdAt: new Date().toISOString()
+    };
+    
+    try {
+        await saveReservationToBackend(reservation);
+        appState.currentReservation = reservation;
+        displayConfirmation(reservation);
+        showPage("confirmation");
+        
+        if (paymentMethod === "agency") {
+            Utils.showToast(`Réservation créée ! Payez avant le ${new Date(paymentDeadline).toLocaleString('fr-FR')}`, 'success');
+        } else {
+            Utils.showToast("Réservation confirmée avec succès!", 'success');
+        }
+        
+    } catch (error) {
+        console.error('Erreur lors de la réservation:', error);
+        Utils.showToast("Erreur lors de la sauvegarde. Veuillez réessayer.", 'error');
+    }
+}
+
+function displayConfirmation(reservation) {
+    // Lien de suivi GPS
+    // ✅ NOUVEAU CODE (compatible PWA mobile)
+const trackLink = document.getElementById("track-bus-link");
+if (trackLink) {
+    if (reservation.route && reservation.route.trackerId) {
+        const trackerId = reservation.route.trackerId;
+        
+        // Construire l'URL complète
+        const currentOrigin = window.location.origin;
+        const trackingUrl = `${currentOrigin}/suivi.html?bus=${trackerId}`;
+        
+        trackLink.href = trackingUrl;
+        
+        // Sur PWA/mobile, ouvrir dans la même fenêtre
+        if (window.matchMedia('(display-mode: standalone)').matches || window.innerWidth <= 768) {
+            trackLink.target = "_self";
+        } else {
+            trackLink.target = "_blank";
+        }
+        
+        trackLink.style.display = "inline-flex";
+        
+        // Ajouter un event listener pour le suivi
+        trackLink.onclick = (e) => {
+            console.log('🛰️ Ouverture du suivi pour le bus:', trackerId);
+            // Laisser le comportement par défaut du lien
+        };
+        
+        console.log('✅ Lien de suivi configuré:', trackingUrl);
+    } else {
+        trackLink.style.display = "none";
+        console.log('⚠️ Pas de trackerId pour cette réservation');
+    }
+}
+
+    // Numéro de réservation
+    const bookingDisplay = document.getElementById("booking-number-display");
+    if (bookingDisplay) {
+        bookingDisplay.textContent = reservation.bookingNumber;
+    }
+
+    // Informations de trajet
+    const confOrigin = document.getElementById("conf-origin");
+    const confDestination = document.getElementById("conf-destination");
+    const confDate = document.getElementById("conf-date");
+    const confTime = document.getElementById("conf-time");
+    const confArrivalTime = document.getElementById("conf-arrival-time");
+    const confDuration = document.getElementById("conf-duration");
+
+    if (confOrigin) confOrigin.textContent = reservation.route.from;
+    if (confDestination) confDestination.textContent = reservation.route.to;
+    if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
+    if (confTime) confTime.textContent = reservation.route.departure;
+    if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
+    if (confDuration) confDuration.textContent = reservation.route.duration;
+
+    // ✅ NOUVELLE - Grille de détails avec types de passagers
+    const detailsContainer = document.getElementById("confirmation-details");
+    if (detailsContainer) {
+        // Compter adultes et enfants
+        const adultsCount = reservation.passengers.filter((p, index) => 
+            index < appState.passengerCounts.adults
+        ).length;
+        const childrenCount = reservation.passengers.length - adultsCount;
+
+        let passengersText = `${adultsCount} Adulte(s)`;
+        if (childrenCount > 0) {
+            passengersText += `, ${childrenCount} Enfant(s)`;
+        }
+
+        detailsContainer.innerHTML = `
+            <div class="detail-item-modern">
+                <span class="detail-label">🚌 Compagnie</span>
+                <span class="detail-value">${reservation.route.company}</span>
+            </div>
+            <div class="detail-item-modern">
+                <span class="detail-label">👥 Passagers</span>
+                <span class="detail-value">${passengersText}</span>
+            </div>
+            <div class="detail-item-modern">
+                <span class="detail-label">💺 Sièges</span>
+                <span class="detail-value">${reservation.seats.join(', ')}</span>
+            </div>
+            <div class="detail-item-modern">
+                <span class="detail-label">💰 Prix total</span>
+                <span class="detail-value">${reservation.totalPrice}</span>
+            </div>
+        `;
+    }
+
+    // ✅ QR Code simplifié v2.0
+    const qrContainer = document.getElementById("qr-placeholder");
+    if (qrContainer) {
+        qrContainer.innerHTML = '';
+        
+        // ✅ GÉNÉRER DONNÉES SIMPLIFIÉES
+        const qrData = Utils.generateQRCodeData(reservation);
+        
+        console.log("📱 Génération QR Code simplifié v2.0");
+        console.log("Raw JSON:", qrData);
+        
+        try {
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            
+            console.log("✅ QR Code généré avec succès !");
+            
+            // ✅ AFFICHER APERÇU SIMPLIFIÉ
+            const qrInfo = document.querySelector('.qr-info');
+            if (qrInfo) {
+                const parsedData = JSON.parse(qrData);
+                
+                qrInfo.innerHTML = `
+                    <p class="qr-title">🎫 Votre billet électronique</p>
+                    <p class="qr-instruction">Présentez ce QR code à l'embarquement</p>
+                    <details style="margin-top: 16px; text-align: left; font-size: 12px; color: var(--color-text-secondary);">
+                        <summary style="cursor: pointer; font-weight: 600; text-align: center;">📋 Contenu du QR Code</summary>
+                        <div style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; font-family: monospace;">
+                            <div><strong>Version:</strong> ${parsedData.v}</div>
+                            <div><strong>Réservation:</strong> ${parsedData.b}</div>
+                            <div><strong>Passagers:</strong> ${parsedData.p}</div>
+                            <div><strong>Date:</strong> ${parsedData.d}</div>
+                            <div><strong>Statut:</strong> ${parsedData.s === 'C' ? 'Confirmé ✅' : 'En attente ⏳'}</div>
+                        </div>
+                    </details>
+                `;
+            }
+            
+        } catch (error) {
+            console.error("❌ Erreur génération QR Code:", error);
+            qrContainer.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #f44336;">
+                    ❌ Erreur génération QR Code<br>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        }
+    }
+
+}
+
+
+async function displayReservations() {
+    const reservationsList = document.getElementById("reservations-list");
+    if (!reservationsList) return;
+    const userPhone = prompt("Entrez votre numéro de téléphone pour voir vos réservations:");
+    if (!userPhone) {
+        reservationsList.innerHTML = `<div class="no-reservations"><p>Numéro de téléphone requis pour afficher vos réservations.</p></div>`;
+        return;
+    }
+    reservationsList.innerHTML = `<div style="text-align: center; padding: 48px;"><p>Chargement de vos réservations...</p></div>`;
+    try {
+        const reservations = await loadReservationsFromBackend(userPhone);
+        if (reservations.length === 0) {
+            reservationsList.innerHTML = `<div class="no-reservations"><p>Vous n'avez pas encore de réservations.</p><button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">Réserver un billet</button></div>`;
+        } else {
+            reservationsList.innerHTML = reservations.map(reservation => {
+                
+                let alertHTML = '';
+                let actionButtons = '';
+                
+                if (reservation.status === 'En attente de paiement') {
+                    const deadline = new Date(reservation.paymentDeadline);
+                    const now = new Date();
+                    const timeLeft = deadline - now;
+                    
+                    if (timeLeft > 0) {
+                        const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                        const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        alertHTML = `
+                            <div class="payment-alert" style="
+                                background: linear-gradient(135deg, #fff3cd, #ffe7a1); 
+                                border-left: 4px solid #ffc107; 
+                                padding: 15px; 
+                                margin-bottom: 15px;
+                                border-radius: 8px;
+                            ">
+                                <strong style="color: #856404;">⏰ Paiement requis à l'agence !</strong><br>
+                                <span style="color: #856404;">
+                                    Vous devez payer avant le <strong>${deadline.toLocaleString('fr-FR')}</strong><br>
+                                    ⏱️ Temps restant : <strong style="font-size: 18px;">${hoursLeft}h ${minutesLeft}min</strong>
+                                </span>
+                                ${reservation.agency ? `
+                                    <hr style="border-color: rgba(133, 100, 4, 0.2); margin: 10px 0;">
+                                    <div style="color: #856404; font-size: 14px;">
+                                        <strong>📍 ${reservation.agency.name}</strong><br>
+                                        ${reservation.agency.address}<br>
+                                        📞 ${reservation.agency.phone}<br>
+                                        🕐 ${reservation.agency.hours}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        
+                        actionButtons = `
+                            <button class="btn btn-primary" onclick='downloadTicket(${JSON.stringify(reservation).replace(/'/g, "&apos;")})'>
+                                📥 Télécharger le reçu
+                            </button>
+                            <button class="btn btn-secondary" onclick="cancelReservation('${reservation.bookingNumber}')">
+                                Annuler
+                            </button>
+                        `;
+                    } else {
+                        alertHTML = `
+                            <div class="payment-alert" style="background: #f44336; color: white; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                                <strong>❌ Paiement expiré</strong><br>
+                                Cette réservation sera automatiquement annulée.
+                            </div>
+                        `;
+                        actionButtons = `<button class="btn btn-primary" disabled>Expiré</button>`;
+                    }
+                    
+                } else if (reservation.status === 'Confirmé') {
+                    actionButtons = `
+                        <button class="btn btn-primary" onclick='downloadTicket(${JSON.stringify(reservation).replace(/'/g, "&apos;")})'>
+                            📥 Télécharger le billet
+                        </button>
+                        ${reservation.route.trackerId ? `
+                            <a href="suivi.html?bus=${reservation.route.trackerId}" target="_blank" class="btn btn-secondary">
+                                🛰️ Suivre le bus
+                            </a>
+                        ` : ''}
+                    `;
+                    
+                } else if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
+                    actionButtons = `
+                        <button class="btn btn-primary" disabled style="opacity: 0.5;">
+                            ${reservation.status}
+                        </button>
+                    `;
+                }
+                
+                return `
+                    <div class="reservation-card">
+                        ${alertHTML}
+                        
+                        <div class="reservation-header" style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                            <div class="reservation-number">${reservation.bookingNumber}</div>
+                            <div class="reservation-status status-${reservation.status.toLowerCase().replace(/ /g, '-')}">${reservation.status}</div>
+                        </div>
+                        
+                        <div class="reservation-details">
+                            <div><strong>Itinéraire:</strong> ${reservation.route.from} → ${reservation.route.to}</div>
+                            <div><strong>Date:</strong> ${Utils.formatDate(reservation.date)}</div>
+                            <div><strong>Heure:</strong> ${reservation.route.departure}</div>
+                            <div><strong>Compagnie:</strong> ${reservation.route.company}</div>
+                            <div><strong>Sièges:</strong> ${reservation.seats.join(", ")}</div>
+                            <div><strong>Prix total:</strong> ${reservation.totalPrice}</div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+    } catch (error) {
+        console.error('Erreur chargement réservations:', error);
+        reservationsList.innerHTML = `<div class="no-reservations"><p>❌ Erreur lors du chargement de vos réservations.</p><button class="btn btn-secondary" onclick="displayReservations()" style="margin-top: 16px;">Réessayer</button></div>`;
+    }
+}
+
+window.addEventListener("DOMContentLoaded", initApp);
