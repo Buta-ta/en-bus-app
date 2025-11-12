@@ -8,12 +8,15 @@ const emailConfig = {
     pass: process.env.EMAIL_PASS,
 };
 
-// Vérification au chargement pour s'assurer que les variables sont bien là
-if (!emailConfig.host || !emailConfig.port || !email.Config.user || !emailConfig.pass) {
-    console.error('❌ ERREUR: Variables d\'environnement pour l\'email manquantes !');
+// ✅ CORRECTION : Vérification correcte des variables
+if (!emailConfig.host || !emailConfig.port || !emailConfig.user || !emailConfig.pass) {
+    console.error('❌ ERREUR CRITIQUE: Variables d\'environnement pour l\'email manquantes !');
     console.error('Vérifiez EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS dans votre .env ou sur Render.');
+    
+    // Fait planter le serveur exprès pour signaler le problème
+    process.exit(1); 
 } else {
-    console.log('📧 Configuration email chargée.');
+    console.log('📧 Configuration email chargée avec succès.');
 }
 
 module.exports = emailConfig;
