@@ -17,6 +17,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { body, param, validationResult } = require('express-validator');
 
+// ✅ Importer la configuration email
+const emailConfig = require('./config/email');
+
 // ============================================
 // ✅ VALIDATION DES VARIABLES D'ENVIRONNEMENT
 // ============================================
@@ -152,20 +155,29 @@ function authenticateToken(req, res, next) {
 // ============================================
 
 // ✅ NOUVEAU CODE POUR BREVO (ou SendGrid, etc.)
+// ============================================
+// 📧 CONFIGURATION NODEMAILER
+// ============================================
+
 const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
+    host: emailConfig.host,
+    port: emailConfig.port,
     secure: false, // false pour le port 587
     auth: {
-        user: process.env.EMAIL_USER, // Votre login (email Brevo ou "apikey" pour SendGrid)
-        pass: process.env.EMAIL_PASS  // Votre clé SMTP (Brevo) ou clé API (SendGrid)
+        user: emailConfig.user,
+        pass: emailConfig.pass
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
+
+// Vérification au démarrage
 transporter.verify((error, success) => {
     if (error) {
-        console.error('❌ Erreur configuration email:', error.message);
+        console.error('❌ Erreur vérification Nodemailer:', error);
     } else {
-        console.log('✅ Service email prêt (Nodemailer)');
+        console.log('✅ Service email prêt (Nodemailer via Brevo).');
     }
 });
 
