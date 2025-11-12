@@ -147,14 +147,20 @@ function authenticateToken(req, res, next) {
 // ============================================
 // 📧 CONFIGURATION NODEMAILER
 // ============================================
+// ============================================
+// 📧 CONFIGURATION NODEMAILER
+// ============================================
+
+// ✅ NOUVEAU CODE POUR BREVO (ou SendGrid, etc.)
 const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: false, // false pour le port 587
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.EMAIL_USER, // Votre login (email Brevo ou "apikey" pour SendGrid)
+        pass: process.env.EMAIL_PASS  // Votre clé SMTP (Brevo) ou clé API (SendGrid)
     }
 });
-
 transporter.verify((error, success) => {
     if (error) {
         console.error('❌ Erreur configuration email:', error.message);
