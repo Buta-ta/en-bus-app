@@ -7,11 +7,22 @@
 // CONFIGURATION ET CONSTANTES
 // ============================================
 
+// app.js
+
+// Fichier : Frontend/app.js
+
+// Détecte si on est en local (sur votre PC) ou en production (sur Vercel)
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 const API_CONFIG = {
-    baseUrl: window.location.hostname === 'localhost' 
+    baseUrl: isLocal
         ? 'http://localhost:3000'
-        : ' https://05ba9ba0396c.ngrok-free.app'
+        : 'https://en-bus-app.onrender.com' // ✅ METTEZ L'URL DE VOTRE BACKEND RENDER
 };
+
+console.log('API URL configurée :', API_CONFIG.baseUrl);
+
+console.log('API URL:', API_CONFIG.baseUrl);
 
 const CONFIG = {
     CHILD_TICKET_PRICE: 5000,
