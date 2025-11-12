@@ -2374,7 +2374,7 @@ if (trackLink) {
         
         // Construire l'URL complète
         const currentOrigin = window.location.origin;
-        const trackingUrl = `${currentOrigin}/suivi.html?bus=${trackerId}`;
+        const trackingUrl = `${currentOrigin}/suivi/suivi.html?bus=${trackerId}`; 
         
         trackLink.href = trackingUrl;
         
