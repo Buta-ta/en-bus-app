@@ -189,14 +189,102 @@ async function sendEmailWithResend(mailOptions) {
     } catch (error) { console.error(`❌ Erreur envoi email (Resend) à ${mailOptions.to}:`, error.message); }
 }
 
+// Dans Backend/server.js
+
 function sendConfirmationEmail(reservation) {
     const passenger = reservation.passengers[0];
     if (!passenger || !passenger.email) return;
-    const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><style>/* Vos styles d'email complets ici */ body {font-family: sans-serif;}</style></head><body><h1>Bonjour ${passenger.name},</h1><p>Votre réservation <strong>${reservation.bookingNumber}</strong> est confirmée.</p></body></html>`;
+
+    // ✅ TEMPLATE HTML PROFESSIONNEL
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f7; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background-color: #10101A; color: #73d700; padding: 40px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; margin-bottom: 25px; line-height: 1.6; }
+        .booking-number { background-color: #f0f0f0; padding: 25px; border-radius: 8px; text-align: center; margin: 30px 0; border: 1px dashed #ccc; }
+        .booking-label { font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+        .booking-value { font-size: 32px; font-weight: bold; color: #73d700; font-family: 'Courier New', Courier, monospace; }
+        .details-table { width: 100%; margin: 30px 0; border-collapse: collapse; }
+        .details-table td { padding: 15px 0; border-bottom: 1px solid #eeeeee; font-size: 15px; }
+        .details-table tr:last-child td { border-bottom: none; }
+        .details-table td:first-child { color: #555; }
+        .details-table td:last-child { font-weight: 700; text-align: right; }
+        .info-box { background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 5px; }
+        .info-box strong { color: #2e7d32; display: block; margin-bottom: 10px; }
+        .info-box ul { margin: 0; padding-left: 20px; color: #388e3c; }
+        .info-box li { margin-bottom: 8px; }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button { display: inline-block; background-color: #73d700; color: #ffffff; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.2s; }
+        .footer { background-color: #f4f4f7; padding: 25px; text-align: center; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>En-Bus</h1>
+        </div>
+        <div class="content">
+            <p class="greeting">Bonjour <strong>${passenger.name}</strong>,</p>
+            <p style="line-height: 1.6;">Votre réservation a été enregistrée avec succès ! Voici un récapitulatif complet de votre prochain voyage :</p>
+            
+            <div class="booking-number">
+                <div class="booking-label">Numéro de Réservation</div>
+                <div class="booking-value">${reservation.bookingNumber}</div>
+            </div>
+            
+            <h3 style="font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #73d700; padding-bottom: 5px;">Détails du Voyage</h3>
+            <table class="details-table">
+                <tr><td>Statut</td><td><strong>${reservation.status}</strong></td></tr>
+                <tr><td>Trajet</td><td>${reservation.route.from} → ${reservation.route.to}</td></tr>
+                <tr><td>Date</td><td>${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+                <tr><td>Heure de Départ</td><td>${reservation.route.departure}</td></tr>
+                <tr><td>Compagnie</td><td>${reservation.route.company}</td></tr>
+                <tr><td>Siège(s)</td><td>${reservation.seats.join(', ')}</td></tr>
+                <tr><td>Passagers</td><td>${reservation.passengers.length}</td></tr>
+                <tr><td>Prix Total</td><td>${reservation.totalPrice}</td></tr>
+            </table>
+            
+            ${reservation.status === 'En attente de paiement' ? `
+                <div style="background-color: #fff8e1; border-left: 5px solid #ffab00; padding: 20px; margin: 30px 0; border-radius: 5px;">
+                    <strong style="color: #e65100; display: block; margin-bottom: 10px;">⚠️ PAIEMENT REQUIS À L'AGENCE</strong>
+                    <p style="color: #e65100;">Vous devez effectuer le paiement avant le <strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong> pour valider ce billet.</p>
+                </div>
+            ` : ''}
+            
+            <div class="info-box">
+                <strong>Informations importantes pour l'embarquement :</strong>
+                <ul>
+                    <li>Présentez-vous <strong>30 minutes avant l'heure de départ</strong>.</li>
+                    <li>Une <strong>pièce d'identité valide</strong> est obligatoire.</li>
+                    <li>Bagages inclus : 1 bagage en soute (20kg) et 1 bagage à main.</li>
+                </ul>
+            </div>
+            
+            <div class="button-container">
+                <a href="${process.env.PRODUCTION_URL || process.env.FRONTEND_URL}" class="button">Voir ma réservation en ligne</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cet email est envoyé automatiquement. Pour toute question, contactez notre service client.</p>
+            <p>&copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+
     sendEmailWithResend({
-        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: passenger.email,
-        subject: `✅ Réservation confirmée : ${reservation.bookingNumber}`,
+        subject: `✅ Réservation ${reservation.status === 'En attente de paiement' ? 'enregistrée' : 'confirmée'} : ${reservation.bookingNumber}`,
         html: htmlContent
     });
 }
