@@ -1354,6 +1354,9 @@ h3 {
    ============================================ */
 
 /* Animation du soleil pulsant */
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
 @keyframes sunPulse {
     0%, 100% {
         transform: scale(1);

@@ -652,27 +652,52 @@ function calculatePaymentDeadline() {
 // GESTION DES RÉSERVATIONS AVEC BACKEND
 // ============================================
 
+    // Dans Frontend/app.js
+
 async function saveReservationToBackend(reservation) {
+    const API_URL = API_CONFIG.baseUrl; // Utilise la config centrale
+    
+    console.log(`📤 Tentative d'envoi vers : ${API_URL}/api/reservations`);
+    
     try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
+        const response = await fetch(`${API_URL}/api/reservations`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(reservation)
         });
-        
-        const result = await response.json();
-        
+
+        const responseBody = await response.text(); // Lire la réponse comme texte d'abord
+
         if (!response.ok) {
-            throw new Error(result.error || 'Erreur lors de la sauvegarde');
+            console.error(`❌ Réponse non-OK reçue. Status: ${response.status}`);
+            console.error('Corps de la réponse :', responseBody);
+            
+            // Essayer de parser le JSON, mais se préparer à un échec
+            let errorData;
+            try {
+                errorData = JSON.parse(responseBody);
+            } catch (e) {
+                // Si la réponse n'est pas du JSON (ex: une page d'erreur HTML de Render)
+                throw new Error(`Erreur ${response.status}: Le serveur a répondu de manière inattendue.`);
+            }
+            
+            // Construire un message d'erreur clair
+            const errorMessage = errorData.error || (errorData.errors ? errorData.errors[0].msg : 'Erreur inconnue du serveur.');
+            throw new Error(errorMessage);
         }
         
-        console.log('✅ Réservation sauvegardée sur le serveur');
-        return result;
-        
+        // Si la réponse est OK, parser le JSON
+        console.log('✅ Réponse OK du serveur.');
+        return JSON.parse(responseBody);
+
     } catch (error) {
-        console.error('❌ Erreur sauvegarde backend:', error);
+        console.error('❌ Erreur FONDAMENTALE dans la requête fetch :', error);
+        
+        if (error.name === 'TypeError') { // 'Failed to fetch' est un TypeError
+            throw new Error('Impossible de joindre le serveur. Vérifiez votre connexion et l\'état du backend.');
+        }
+        
+        // Propage l'erreur avec un message plus clair
         throw error;
     }
 }
@@ -2288,9 +2313,16 @@ function displayBookingSummary() {
     }
 }
 
-window.confirmBooking = async function() {
-    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-    
+// Dans Frontend/app.js
+
+window.confirmBooking = async function(buttonElement) { // ✅ 'buttonElement' est le nouveau paramètre
+    // --- Validation des champs ---
+    const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+    if (!paymentMethod) {
+        Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
+        return;
+    }
+
     if (paymentMethod === "mtn" || paymentMethod === "airtel") {
         const phoneInput = document.getElementById(`${paymentMethod}-phone`);
         if (!phoneInput.value.trim()) {
@@ -2303,51 +2335,61 @@ window.confirmBooking = async function() {
         }
     }
     
-    if (paymentMethod === "agency") {
-        if (!canPayAtAgency()) {
-            Utils.showToast("Le paiement en agence n'est plus disponible (moins de 1h avant le départ)", 'error');
-            return;
-        }
+    if (paymentMethod === "agency" && !canPayAtAgency()) {
+        Utils.showToast("Le paiement en agence n'est plus disponible (moins de 1h avant le départ).", 'error');
+        return;
     }
-    
-    const bookingNumber = document.getElementById("mtn-booking-ref").value || Utils.generateBookingNumber();
-    const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
-    const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
-    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
-    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
-    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
-    const totalPrice = ticketsPrice + baggagePrice;
-    
-    let reservationStatus = "Confirmé";
-    let paymentDeadline = null;
-    let agencyInfo = null;
-    
-    if (paymentMethod === "agency") {
-        reservationStatus = "En attente de paiement";
-        paymentDeadline = calculatePaymentDeadline().toISOString();
-        agencyInfo = getNearestAgency(appState.selectedBus.from);
-    }
-    
-    const reservation = {
-        bookingNumber: bookingNumber,
-        route: appState.selectedBus,
-        returnRoute: appState.selectedReturnBus || null,
-        date: appState.currentSearch.date,
-        returnDate: appState.currentSearch.returnDate || null,
-        passengers: appState.passengerInfo,
-        seats: appState.selectedSeats,
-        returnSeats: appState.selectedReturnSeats || [],
-        totalPrice: Utils.formatPrice(totalPrice) + " FCFA",
-        totalPriceNumeric: totalPrice,
-        paymentMethod: paymentMethod,
-        status: reservationStatus,
-        paymentDeadline: paymentDeadline,
-        agency: agencyInfo,
-        createdAt: new Date().toISOString()
-    };
+
+    // --- Ajout de l'état de chargement sur le bouton ---
+    const originalButtonText = buttonElement.innerHTML;
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `
+        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
+        <span>Enregistrement...</span>
+    `;
     
     try {
+        // --- Préparation de l'objet reservation ---
+        const bookingNumber = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
+        const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
+        const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
+        const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
+        const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
+        const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+        const totalPrice = ticketsPrice + baggagePrice;
+        
+        let reservationStatus = "Confirmé";
+        let paymentDeadline = null;
+        let agencyInfo = null;
+        
+        if (paymentMethod === "agency") {
+            reservationStatus = "En attente de paiement";
+            paymentDeadline = calculatePaymentDeadline().toISOString();
+            agencyInfo = getNearestAgency(appState.selectedBus.from);
+        }
+        
+        const reservation = {
+            bookingNumber,
+            route: appState.selectedBus,
+            returnRoute: appState.selectedReturnBus || null,
+            date: appState.currentSearch.date,
+            returnDate: appState.currentSearch.returnDate || null,
+            passengers: appState.passengerInfo,
+            seats: appState.selectedSeats,
+            returnSeats: appState.selectedReturnSeats || [],
+            totalPrice: Utils.formatPrice(totalPrice) + " FCFA",
+            totalPriceNumeric: totalPrice,
+            paymentMethod: paymentMethod,
+            status: reservationStatus,
+            paymentDeadline: paymentDeadline,
+            agency: agencyInfo,
+            createdAt: new Date().toISOString()
+        };
+        
+        // --- Appel au backend ---
         await saveReservationToBackend(reservation);
+        
+        // --- Si succès ---
         appState.currentReservation = reservation;
         displayConfirmation(reservation);
         showPage("confirmation");
@@ -2359,8 +2401,15 @@ window.confirmBooking = async function() {
         }
         
     } catch (error) {
-        console.error('Erreur lors de la réservation:', error);
-        Utils.showToast("Erreur lors de la sauvegarde. Veuillez réessayer.", 'error');
+        // --- Si erreur ---
+        console.error('❌ Erreur lors de la confirmation:', error);
+        // Affiche le message d'erreur précis à l'utilisateur
+        Utils.showToast(error.message, 'error');
+        
+    } finally {
+        // --- Dans tous les cas (succès ou erreur), réactiver le bouton ---
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalButtonText;
     }
 }
 
