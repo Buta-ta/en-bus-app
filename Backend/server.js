@@ -159,16 +159,14 @@ function authenticateToken(req, res, next) {
 // 📧 CONFIGURATION NODEMAILER
 // ============================================
 
+// Dans server.js
 const transporter = nodemailer.createTransport({
-    host: emailConfig.host,
-    port: emailConfig.port,
-    secure: false, // false pour le port 587
+    host: 'smtp.resend.com',
+    secure: true,
+    port: 465,
     auth: {
-        user: emailConfig.user,
-        pass: emailConfig.pass
-    },
-    tls: {
-        rejectUnauthorized: false
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY
     }
 });
 
@@ -885,8 +883,8 @@ En-Bus - Voyagez à travers l'Afrique
     `;
     
     const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_USER}>`,
-        to: passenger.email,
+    from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: passenger.email,
         subject: `✅ Réservation ${reservation.status === 'En attente de paiement' ? 'enregistrée' : 'confirmée'} - ${reservation.bookingNumber} - En-Bus`,
         html: htmlContent,
         text: textContent
@@ -921,8 +919,8 @@ async function sendReminderEmail(reservation) {
     }
     
     const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_USER}>`,
-        to: passenger.email,
+    from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: passenger.email,
         subject: `🔔 Rappel : Votre voyage demain - ${reservation.route.from} → ${reservation.route.to}`,
         html: `
 <!DOCTYPE html>
@@ -1018,8 +1016,8 @@ async function sendExpirationEmail(reservation) {
     }
     
     const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_USER}>`,
-        to: passenger.email,
+    from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: passenger.email,
         subject: `❌ Réservation expirée - ${reservation.bookingNumber} - En-Bus`,
         html: `
 <!DOCTYPE html>
@@ -1088,8 +1086,9 @@ async function sendPaymentConfirmedEmail(reservation) {
     }
     
     const mailOptions = {
-        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_USER}>`,
-        to: passenger.email,
+    from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+    to: passenger.email,
+
         subject: `✅ Paiement confirmé - ${reservation.bookingNumber} - En-Bus`,
         html: `
 <!DOCTYPE html>
