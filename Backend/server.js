@@ -568,6 +568,32 @@ app.get('/api/search', [
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
+// ============================================
+// 🐛 ROUTE DE DEBUG (À SUPPRIMER APRÈS TEST)
+// ============================================
+app.get('/api/debug/trips', authenticateToken, async (req, res) => {
+    try {
+        const allTrips = await tripsCollection.find({}).limit(10).toArray();
+        
+        res.json({
+            count: allTrips.length,
+            trips: allTrips.map(t => ({
+                id: t._id,
+                date: t.date,
+                from: t.route?.from,
+                to: t.route?.to,
+                company: t.route?.company,
+                seatsTotal: t.seats?.length
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
 // ============================================
 // 📧 FONCTIONS D'ENVOI D'EMAIL (complètes)
 // ============================================
