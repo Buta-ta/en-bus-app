@@ -34,11 +34,6 @@ const CONFIG = {
     AGENCY_PAYMENT_MIN_HOURS: 1,
     AGENCY_PAYMENT_DEADLINE_HOURS: 10,
     
-    // ✅ Configuration API
-    API_URL: window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000/api'
-        : 'https://2b9167c25f28.ngrok-free.app/api',
-    
     // ✅ Configuration Scanner
     SCANNER_FPS: 10,
     SCANNER_QRBOX: 250
@@ -1529,11 +1524,13 @@ function setupAmenitiesFilters() {
     `).join('');
 }
 
-window.searchBuses = function() {
+window.searchBuses = async function() {
     appState.isSelectingReturn = false;
+    
     const origin = document.getElementById("origin").value;
     const destination = document.getElementById("destination").value;
     const travelDates = document.getElementById("travel-date").value;
+    
     let departureDate, returnDate;
     if (travelDates.includes(" au ")) {
         [departureDate, returnDate] = travelDates.split(" au ");
@@ -1541,24 +1538,32 @@ window.searchBuses = function() {
         departureDate = travelDates;
         returnDate = null;
     }
+    
     const totalPassengers = appState.passengerCounts.adults + appState.passengerCounts.children;
     const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode") || "one-way";
+    
+    // ✅ Validation
     if (!origin || !destination) {
         Utils.showToast("Veuillez sélectionner la ville de départ et d'arrivée", 'error');
         return;
     }
+    
     if (origin === destination) {
         Utils.showToast("La ville de départ et d'arrivée doivent être différentes", 'error');
         return;
     }
+    
     if (!departureDate) {
         Utils.showToast("Veuillez sélectionner une date de départ", 'error');
         return;
     }
+    
     if (tripType === "round-trip" && !returnDate) {
         Utils.showToast("Veuillez sélectionner une date de départ ET de retour", 'error');
         return;
     }
+    
+    // ✅ Sauvegarder la recherche
     appState.currentSearch = {
         origin,
         destination,
@@ -1567,16 +1572,39 @@ window.searchBuses = function() {
         passengers: totalPassengers,
         tripType
     };
-    const availableRoutes = routes.filter(route => 
-        route.from === origin && route.to === destination
-    );
-    appState.currentResults = availableRoutes;
-    if (availableRoutes.length === 0) {
-        Utils.showToast("Aucun trajet disponible pour cet itinéraire", 'info');
-    } else {
-        displayResults(availableRoutes);
-        showPage("results");
-        Utils.showToast(`${availableRoutes.length} trajet(s) trouvé(s)`, 'success');
+    
+    try {
+        // ✅ APPEL API BACKEND
+        Utils.showToast('Recherche en cours...', 'info');
+        
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`
+        );
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors de la recherche');
+        }
+        
+        const data = await response.json();
+        
+        console.log(`✅ ${data.count} voyage(s) trouvé(s)`);
+        
+        if (data.count === 0) {
+            Utils.showToast("Aucun trajet disponible pour cet itinéraire à cette date", 'info');
+            appState.currentResults = [];
+            displayResults([]);
+            showPage("results");
+        } else {
+            appState.currentResults = data.results;
+            displayResults(data.results);
+            showPage("results");
+            Utils.showToast(`${data.count} trajet(s) trouvé(s)`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur recherche:', error);
+        Utils.showToast(error.message || 'Erreur lors de la recherche', 'error');
     }
 }
 
@@ -1859,32 +1887,94 @@ function displayResults(results, isReturn = false) {
 }
 
 window.selectBus = function(busId) {
+    console.log('🚌 Sélection du bus:', busId);
+    
+    // ✅ Recherche par ID (string MongoDB)
+    const selectedRoute = appState.currentResults.find(r => r.id === busId.toString());
+    
+    if (!selectedRoute) {
+        Utils.showToast('Erreur : voyage introuvable', 'error');
+        console.error('Bus non trouvé dans les résultats:', busId);
+        return;
+    }
+    
     if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
-        appState.selectedBus = routes.find(r => r.id === busId);
+        // Aller simple d'un aller-retour
+        appState.selectedBus = selectedRoute;
         appState.isSelectingReturn = true;
-        const returnRoutes = routes.filter(r => r.from === appState.currentSearch.destination && r.to === appState.currentSearch.origin);
-        appState.currentResults = returnRoutes;
-        displayResults(returnRoutes, true);
-        showPage("results");
+        
+        // Chercher les trajets retour
+        searchReturnTrips();
     } else {
+        // Enregistrer le bus sélectionné
         if (appState.isSelectingReturn) {
-            appState.selectedReturnBus = routes.find(r => r.id === busId);
+            appState.selectedReturnBus = selectedRoute;
         } else {
-            appState.selectedBus = routes.find(r => r.id === busId);
+            appState.selectedBus = selectedRoute;
         }
+        
+        // Générer les sièges occupés (simulation)
         appState.selectedSeats = [];
         generateOccupiedSeats();
+        
+        // Afficher la page de sélection des sièges
         displaySeats();
         showPage("seats");
     }
 }
 
+// ✅ NOUVELLE FONCTION : Recherche des trajets retour
+async function searchReturnTrips() {
+    try {
+        Utils.showToast('Recherche des trajets retour...', 'info');
+        
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(appState.currentSearch.destination)}&to=${encodeURIComponent(appState.currentSearch.origin)}&date=${appState.currentSearch.returnDate}`
+        );
+        
+        if (!response.ok) {
+            throw new Error('Erreur lors de la recherche des trajets retour');
+        }
+        
+        const data = await response.json();
+        
+        if (data.count === 0) {
+            Utils.showToast("Aucun trajet retour disponible pour cette date", 'warning');
+            // Proposer de revenir à la recherche
+            if (confirm("Aucun trajet retour trouvé. Voulez-vous modifier votre recherche ?")) {
+                showPage("home");
+            }
+        } else {
+            appState.currentResults = data.results;
+            displayResults(data.results, true); // true = mode retour
+            showPage("results");
+            Utils.showToast(`${data.count} trajet(s) retour trouvé(s)`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur recherche retour:', error);
+        Utils.showToast(error.message, 'error');
+    }
+}
+
 function generateOccupiedSeats() {
+    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
+    
+    if (!currentBus) {
+        console.error('❌ Aucun bus sélectionné');
+        return;
+    }
+    
+    // ✅ UTILISER LES VRAIES DONNÉES DU BACKEND
+    // On va chercher les sièges occupés depuis le backend en temps réel
+    
     if (appState.isSelectingReturn) {
         appState.occupiedReturnSeats = [];
-        const totalSeats = CONFIG.SEAT_TOTAL;
-        const occupancyRate = CONFIG.OCCUPANCY_RATE.min + Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min);
+        // Pour l'instant, simulation (sera remplacé par un appel API plus tard)
+        const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
+        const occupancyRate = Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min) + CONFIG.OCCUPANCY_RATE.min;
         const numOccupied = Math.floor(totalSeats * occupancyRate);
+        
         while (appState.occupiedReturnSeats.length < numOccupied) {
             const seatNum = Math.floor(Math.random() * totalSeats) + 1;
             if (!appState.occupiedReturnSeats.includes(seatNum)) {
@@ -1893,9 +1983,10 @@ function generateOccupiedSeats() {
         }
     } else {
         appState.occupiedSeats = [];
-        const totalSeats = CONFIG.SEAT_TOTAL;
-        const occupancyRate = CONFIG.OCCUPANCY_RATE.min + Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min);
+        const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
+        const occupancyRate = Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min) + CONFIG.OCCUPANCY_RATE.min;
         const numOccupied = Math.floor(totalSeats * occupancyRate);
+        
         while (appState.occupiedSeats.length < numOccupied) {
             const seatNum = Math.floor(Math.random() * totalSeats) + 1;
             if (!appState.occupiedSeats.includes(seatNum)) {
@@ -1903,6 +1994,8 @@ function generateOccupiedSeats() {
             }
         }
     }
+    
+    console.log(`💺 Sièges occupés générés : ${appState.isSelectingReturn ? appState.occupiedReturnSeats.length : appState.occupiedSeats.length}`);
 }
 
 window.toggleSeat = function(seatNumber) {
