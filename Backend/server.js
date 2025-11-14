@@ -213,7 +213,63 @@ app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res)
     }
 });
 
+// ✅ NOUVELLES ROUTES AJOUTÉES
+app.get('/api/admin/trips', authenticateToken, async (req, res) => {
+    try {
+        const trips = await tripsCollection.find({}).sort({ date: -1 }).toArray();
+        res.json({ success: true, trips });
+    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
 
+app.post('/api/admin/trips', authenticateToken, [ /* ... validations ... */ ], async (req, res) => {
+    try {
+        const { routeId, startDate, endDate, daysOfWeek } = req.body;
+        const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
+        if (!routeTemplate) return res.status(404).json({ error: 'Modèle non trouvé' });
+
+        let newTrips = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+        while (currentDate <= lastDate) {
+            const dayName = dayMap[currentDate.getUTCDay()];
+            if (daysOfWeek.includes(dayName)) {
+                const seats = Array.from({ length: 61 }, (_, i) => ({ number: i + 1, status: 'available' }));
+                newTrips.push({ date: currentDate.toISOString().split('T')[0], route: routeTemplate, seats, createdAt: new Date() });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (newTrips.length > 0) await tripsCollection.insertMany(newTrips);
+        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s).` });
+    } catch (error) { console.error("Erreur création voyages:", error); res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
+    try {
+        const templates = await routeTemplatesCollection.find({}).toArray();
+        res.json({ success: true, templates });
+    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
+    try {
+        const template = req.body;
+        await routeTemplatesCollection.insertOne(template);
+        res.status(201).json({ success: true, message: 'Modèle créé.' });
+    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'ID invalide' });
+    try {
+        const result = await routeTemplatesCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) return res.status(404).json({ error: 'Modèle non trouvé' });
+        res.json({ success: true, message: 'Modèle supprimé.' });
+    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
 
 // ============================================
 // 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
