@@ -301,6 +301,107 @@ app.get('/api/admin/trips', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+
+// ============================================
+// 🚌 MODIFICATION ET SUPPRESSION DE VOYAGES
+// ============================================
+
+// Modifier un voyage (date, heure, prix, etc.)
+app.patch('/api/admin/trips/:id', authenticateToken, [
+    body('date').optional().isISO8601(),
+    body('seatCount').optional().isInt({ min: 10, max: 100 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        // Si modification du nombre de sièges
+        if (updates.seatCount && updates.seatCount !== trip.seats.length) {
+            const currentOccupied = trip.seats.filter(s => s.status === 'occupied');
+            
+            if (updates.seatCount < currentOccupied.length) {
+                return res.status(400).json({ 
+                    error: `Impossible : ${currentOccupied.length} sièges déjà occupés` 
+                });
+            }
+
+            // Recréer le tableau de sièges
+            const newSeats = [];
+            for (let i = 0; i < updates.seatCount; i++) {
+                const existingSeat = trip.seats[i];
+                newSeats.push(existingSeat || { number: i + 1, status: 'available' });
+            }
+            updates.seats = newSeats;
+        }
+
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { ...updates, updatedAt: new Date() } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(400).json({ error: 'Aucune modification effectuée' });
+        }
+
+        res.json({ success: true, message: 'Voyage modifié avec succès' });
+
+    } catch (error) {
+        console.error("Erreur modification voyage:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Supprimer un voyage
+app.delete('/api/admin/trips/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        // Vérifier s'il y a des réservations
+        const occupiedSeats = trip.seats.filter(s => s.status === 'occupied').length;
+        if (occupiedSeats > 0) {
+            return res.status(400).json({ 
+                error: `Impossible de supprimer : ${occupiedSeats} siège(s) réservé(s)` 
+            });
+        }
+
+        const result = await tripsCollection.deleteOne({ _id: new ObjectId(id) });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        res.json({ success: true, message: 'Voyage supprimé avec succès' });
+
+    } catch (error) {
+        console.error("Erreur suppression voyage:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
 app.post('/api/admin/trips', authenticateToken, [ /* ... validations ... */ ], async (req, res) => {
     try {
         const { routeId, startDate, endDate, daysOfWeek } = req.body;
