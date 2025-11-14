@@ -117,6 +117,18 @@ app.get('/api/admin/reservations', authenticateToken, async (req, res) => {
 
 // Dans server.js, dans la section des routes admin
 
+
+// ============================================
+// 🔐 ROUTE DE VÉRIFICATION DU TOKEN
+// ============================================
+app.get('/api/admin/verify', authenticateToken, (req, res) => {
+    res.json({ 
+        valid: true, 
+        user: req.user,
+        expiresIn: process.env.JWT_EXPIRES_IN 
+    });
+});
+
 // ============================================
 // 🚌 NOUVELLES ROUTES ADMIN - GESTION DES MODÈLES DE TRAJETS
 // ============================================
