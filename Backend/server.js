@@ -62,7 +62,7 @@ console.log('✅ Service email prêt (via Resend API).');
 // 🗄️ CONNEXION MONGODB
 // ============================================
 const dbClient = new MongoClient(process.env.MONGODB_URI);
-let reservationsCollection, positionsCollection;
+let reservationsCollection, positionsCollection, tripsCollection, routeTemplatesCollection;;
 async function connectToDb() {
     try {
         await dbClient.connect();
@@ -71,6 +71,8 @@ async function connectToDb() {
         positionsCollection = database.collection('positions');
 
         tripsCollection = database.collection('trips'); // ✅ AJOUTER CETTE LIGNE
+        routeTemplatesCollection = database.collection('route_templates'); // ✅ AJOUTER CETTE LIGNE
+        console.log("✅ Connecté à MongoDB et index créés.");
         await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 }); 
         console.log("✅ Connecté à MongoDB et index créés.");
     } catch (error) { 
@@ -113,6 +115,33 @@ app.get('/api/admin/reservations', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+// Dans server.js, dans la section des routes admin
+
+// ============================================
+// 🚌 NOUVELLES ROUTES ADMIN - GESTION DES MODÈLES DE TRAJETS
+// ============================================
+
+// Lister tous les modèles de trajets
+app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
+    try {
+        const templates = await routeTemplatesCollection.find({}).toArray();
+        res.json({ success: true, templates });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Créer un nouveau modèle de trajet
+app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
+    try {
+        const template = req.body;
+        // Valider les données ici plus tard
+        await routeTemplatesCollection.insertOne(template);
+        res.status(201).json({ success: true, message: 'Modèle de trajet créé.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 // ============================================
 // 👑 NOUVELLES ROUTES ADMIN - GESTION DES VOYAGES
 // ============================================
@@ -145,11 +174,10 @@ app.post('/api/admin/trips', authenticateToken, [
         const { routeId, startDate, endDate, daysOfWeek } = req.body; 
         
         // Simule la recherche d'un modèle de trajet (à remplacer par une vraie recherche DB plus tard)
-        const routeTemplates = [
-            { id: 1, from: "Brazzaville", to: "Pointe-Noire", company: "Océan du Nord", price: 15000, departure: "06:00", arrival: "14:30" },
-            { id: 2, from: "Pointe-Noire", to: "Brazzaville", company: "Océan du Nord", price: 15000, departure: "06:30", arrival: "15:00" },
-        ];
-        const routeTemplate = routeTemplates.find(r => r.id === parseInt(routeId));
+        // ✅ Cherche le modèle dans la base de données
+const routeTemplate = await routeTemplatesCollection.findOne({ 
+    _id: new MongoClient.ObjectId(routeId) 
+});
         if (!routeTemplate) return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
 
         let newTrips = [];
