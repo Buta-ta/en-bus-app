@@ -134,11 +134,79 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
 // Dans Backend/server.js
 
 app.post('/api/admin/trips', authenticateToken, [
-    body('routeId').notEmpty(),
-    body('startDate').isISO8601(),
-    body('endDate').isISO8601(),
-    body('daysOfWeek').isArray({ min: 1 })
-], async (req, res) => {
+    body('routeId').notEmpty().withMessage('Un modèle de trajet est requis.'),
+    body('startDate').isISO8601().withMessage('Date de début invalide.'),
+    body('endDate').isISO8601().withMessage('Date de fin invalide.'),
+    body('daysOfWeek').isArray({ min: 1 }).withMessage('Veuillez sélectionner au moins un jour.'),
+    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.') // ✅ NOUVELLE VALIDATION
+],
+
+async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { routeId, startDate, endDate, daysOfWeek, seatCount } = req.body; // ✅ RÉCUPÉRER seatCount
+        
+        const routeTemplate = await routeTemplatesCollection.findOne({ 
+            _id: new ObjectId(routeId) 
+        });
+        if (!routeTemplate) {
+            return res.status(404).json({ error: 'Modèle de trajet non trouvé.' });
+        }
+
+        let newTrips = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+        while (currentDate <= lastDate) {
+            const dayName = dayMap[currentDate.getUTCDay()];
+
+            if (daysOfWeek.includes(dayName)) {
+                
+                // ✅ UTILISER LE NOMBRE DE SIÈGES FOURNI PAR L'ADMIN
+                const seats = Array.from({ length: seatCount }, (_, i) => ({ 
+                    number: i + 1, 
+                    status: 'available' 
+                }));
+
+                newTrips.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    route: routeTemplate,
+                    seats: seats, // Le tableau de sièges a maintenant la bonne taille
+                    createdAt: new Date()
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (newTrips.length > 0) {
+            await tripsCollection.insertMany(newTrips);
+        }
+        
+        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s) avec ${seatCount} sièges chacun.` });
+
+    } catch (error) {
+        console.error("Erreur création voyages:", error);
+        res.status(500).json({ error: 'Erreur serveur lors de la création des voyages.' });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
@@ -183,7 +251,7 @@ app.post('/api/admin/trips', authenticateToken, [
         console.error("Erreur création voyages:", error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
-});
+}
 
 
 // Supprimer un modèle de trajet
