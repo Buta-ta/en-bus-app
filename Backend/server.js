@@ -452,6 +452,85 @@ app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res)
     } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+
+// ============================================
+// 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
+// ============================================
+
+app.get('/api/search', async (req, res) => {
+    const { from, to, date } = req.query;
+    
+    // Validation
+    if (!from || !to || !date) {
+        return res.status(400).json({ 
+            error: 'Paramètres manquants. Requis : from, to, date' 
+        });
+    }
+    
+    try {
+        console.log(`🔍 Recherche : ${from} → ${to} le ${date}`);
+        
+        // Rechercher dans MongoDB les voyages correspondants
+        const trips = await tripsCollection.find({
+            "route.from": from,
+            "route.to": to,
+            "date": date
+        }).toArray();
+        
+        console.log(`✅ ${trips.length} voyage(s) trouvé(s)`);
+        
+        // Transformer les données pour correspondre au format attendu par le frontend
+        const results = trips.map(trip => {
+            const availableSeats = trip.seats.filter(s => s.status === 'available').length;
+            
+            return {
+                // ✅ ID MongoDB converti en string
+                id: trip._id.toString(),
+                
+                // ✅ Informations du trajet (depuis le modèle utilisé lors de la création)
+                from: trip.route.from,
+                to: trip.route.to,
+                company: trip.route.company,
+                price: trip.route.price,
+                duration: trip.route.duration || "N/A",
+                departure: trip.route.departure,
+                arrival: trip.route.arrival,
+                
+                // ✅ Équipements et type de trajet
+                amenities: trip.route.amenities || [],
+                tripType: trip.route.tripType || "direct",
+                stops: trip.route.stops || [],
+                connections: trip.route.connections || [],
+                breaks: trip.route.breaks || 0,
+                
+                // ✅ Suivi GPS (si disponible)
+                trackerId: trip.route.trackerId || null,
+                
+                // ✅ Disponibilité en temps réel
+                availableSeats: availableSeats,
+                totalSeats: trip.seats.length,
+                
+                // ✅ Métadonnées utiles
+                date: trip.date,
+                createdAt: trip.createdAt
+            };
+        });
+        
+        res.json({ 
+            success: true, 
+            count: results.length,
+            results: results 
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur recherche:', error);
+        res.status(500).json({ 
+            error: 'Erreur serveur lors de la recherche' 
+        });
+    }
+});
+
+
 // ============================================
 // 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
 // ============================================
