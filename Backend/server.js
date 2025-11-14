@@ -142,6 +142,30 @@ app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
+
+app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!MongoClient.ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de modèle invalide' });
+        }
+
+        const result = await routeTemplatesCollection.deleteOne({ 
+            _id: new MongoClient.ObjectId(id) 
+        });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
+        }
+
+        res.json({ success: true, message: 'Modèle de trajet supprimé avec succès.' });
+
+    } catch (error) {
+        console.error("Erreur suppression modèle:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 // ============================================
 // 👑 NOUVELLES ROUTES ADMIN - GESTION DES VOYAGES
 // ============================================
