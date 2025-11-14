@@ -69,7 +69,9 @@ async function connectToDb() {
         const database = dbClient.db('en-bus-db');
         reservationsCollection = database.collection('reservations');
         positionsCollection = database.collection('positions');
-        await reservationsCollection.createIndex({ bookingNumber: 1 }, { unique: true });
+
+        tripsCollection = database.collection('trips'); // ✅ AJOUTER CETTE LIGNE
+        await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 }); 
         console.log("✅ Connecté à MongoDB et index créés.");
     } catch (error) { 
         console.error("❌ Erreur connexion DB:", error.message);
@@ -109,6 +111,95 @@ app.get('/api/admin/reservations', authenticateToken, async (req, res) => {
         const stats = { total: reservations.length, confirmed: reservations.filter(r => r.status === 'Confirmé').length, pending: reservations.filter(r => r.status === 'En attente de paiement').length, cancelled: reservations.filter(r => r.status === 'Annulé').length, expired: reservations.filter(r => r.status === 'Expiré').length };
         res.json({ success: true, count: reservations.length, stats, reservations });
     } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// ============================================
+// 👑 NOUVELLES ROUTES ADMIN - GESTION DES VOYAGES
+// ============================================
+
+// Lister tous les voyages programmés
+app.get('/api/admin/trips', authenticateToken, async (req, res) => {
+    try {
+        const trips = await tripsCollection.find({}).sort({ date: 1 }).toArray();
+        res.json({ success: true, trips });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Créer un nouveau voyage (ou plusieurs sur une plage de dates)
+app.post('/api/admin/trips', authenticateToken, [
+    body('routeId').notEmpty(),
+    body('startDate').isISO8601(),
+    body('endDate').isISO8601()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+        const { routeId, startDate, endDate } = req.body;
+        
+        // Simule la recherche d'un modèle de trajet (on le codera en dur pour l'instant)
+        const routeTemplates = [
+            { id: 1, from: "Brazzaville", to: "Pointe-Noire", company: "Océan du Nord", price: 15000, departure: "06:00", arrival: "14:30" },
+            { id: 2, from: "Pointe-Noire", to: "Brazzaville", company: "Océan du Nord", price: 15000, departure: "06:30", arrival: "15:00" },
+        ];
+        const routeTemplate = routeTemplates.find(r => r.id === parseInt(routeId));
+        if (!routeTemplate) return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
+
+        let newTrips = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+
+        while (currentDate <= lastDate) {
+            const seats = Array.from({ length: 61 }, (_, i) => ({
+                number: i + 1,
+                status: 'available' // 'available', 'occupied', 'blocked'
+            }));
+
+            newTrips.push({
+                date: currentDate.toISOString().split('T')[0],
+                route: routeTemplate,
+                seats,
+                createdAt: new Date()
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (newTrips.length > 0) {
+            await tripsCollection.insertMany(newTrips);
+        }
+        
+        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s) avec succès.` });
+
+    } catch (error) {
+        console.error("Erreur création voyages:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Modifier un siège d'un voyage (bloquer/débloquer)
+app.patch('/api/admin/trips/:id/seats/:seatNumber', authenticateToken, async (req, res) => {
+    try {
+        const { id, seatNumber } = req.params;
+        const { status } = req.body; // 'available' ou 'blocked'
+        
+        if (!['available', 'blocked'].includes(status)) {
+            return res.status(400).json({ error: 'Statut de siège invalide' });
+        }
+
+        const result = await tripsCollection.updateOne(
+            { _id: new MongoClient.ObjectId(id), "seats.number": parseInt(seatNumber) },
+            { $set: { "seats.$.status": status } }
+        );
+
+        if (result.matchedCount === 0) return res.status(404).json({ error: 'Voyage ou siège non trouvé' });
+        
+        res.json({ success: true, message: `Siège ${seatNumber} mis à jour.` });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
 });
 
 app.patch('/api/reservations/:bookingNumber/confirm-payment', authenticateToken, [param('bookingNumber').matches(/^EB-\d{6}$/)], async (req, res) => {
@@ -178,6 +269,44 @@ app.patch('/api/reservations/:bookingNumber/cancel', [param('bookingNumber').mat
     } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
+
+// ============================================
+// 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
+// ============================================
+
+app.get('/api/search', [
+    body('from').notEmpty(),
+    body('to').notEmpty(),
+    body('date').isISO8601(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+        const { from, to, date } = req.query;
+
+        const availableTrips = await tripsCollection.find({
+            "route.from": from,
+            "route.to": to,
+            "date": date
+        }).toArray();
+        
+        // Pour chaque voyage, on calcule le nombre de sièges disponibles
+        const results = availableTrips.map(trip => {
+            const availableSeatsCount = trip.seats.filter(s => s.status === 'available').length;
+            return {
+                tripId: trip._id,
+                route: trip.route,
+                availableSeats: availableSeatsCount
+            };
+        });
+
+        res.json({ success: true, results });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 // ============================================
 // 📧 FONCTIONS D'ENVOI D'EMAIL (complètes)
 // ============================================
