@@ -471,11 +471,32 @@ app.get('/api/search', async (req, res) => {
         console.log(`🔍 Recherche : ${from} → ${to} le ${date}`);
         
         // Rechercher dans MongoDB les voyages correspondants
-        const trips = await tripsCollection.find({
-            "route.from": from,
-            "route.to": to,
-            "date": date
-        }).toArray();
+        // ✅ DEBUG : Afficher toutes les requêtes
+console.log('📋 Critères de recherche:', {
+    from: from,
+    to: to,
+    date: date
+});
+
+// Chercher TOUS les voyages pour cette route (sans filtre de date)
+const allTripsForRoute = await tripsCollection.find({
+    "route.from": from,
+    "route.to": to
+}).toArray();
+
+console.log(`📊 Voyages trouvés pour ${from} → ${to} (toutes dates) : ${allTripsForRoute.length}`);
+if (allTripsForRoute.length > 0) {
+    console.log('Dates disponibles:', allTripsForRoute.map(t => t.date));
+}
+
+// Maintenant chercher avec la date exacte
+const trips = await tripsCollection.find({
+    "route.from": from,
+    "route.to": to,
+    "date": date
+}).toArray();
+
+console.log(`✅ ${trips.length} voyage(s) trouvé(s) pour la date ${date}`);
         
         console.log(`✅ ${trips.length} voyage(s) trouvé(s)`);
         
