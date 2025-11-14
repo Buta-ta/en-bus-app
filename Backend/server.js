@@ -144,41 +144,27 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
 });
 
 // Dans Backend/server.js
-
 app.post('/api/admin/trips', authenticateToken, [
     body('routeId').notEmpty().withMessage('Un modèle de trajet est requis.'),
     body('startDate').isISO8601().withMessage('Date de début invalide.'),
     body('endDate').isISO8601().withMessage('Date de fin invalide.'),
     body('daysOfWeek').isArray({ min: 1 }).withMessage('Veuillez sélectionner au moins un jour.'),
-    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.') // ✅ NOUVELLE VALIDATION
-],
-
-
-
-
-
-
-
-
-
-
-
-
-
-async (req, res) => {
+    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.')
+], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
     try {
-        const { routeId, startDate, endDate, daysOfWeek } = req.body;
+        const { routeId, startDate, endDate, daysOfWeek, seatCount } = req.body; // ✅ Ajout de seatCount
         
-        // ✅ C'EST ICI LA CORRECTION
         const routeTemplate = await routeTemplatesCollection.findOne({ 
             _id: new ObjectId(routeId) 
         });
 
         if (!routeTemplate) {
-            return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
+            return res.status(404).json({ error: 'Modèle de trajet non trouvé.' });
         }
 
         let newTrips = [];
@@ -188,12 +174,18 @@ async (req, res) => {
 
         while (currentDate <= lastDate) {
             const dayName = dayMap[currentDate.getUTCDay()];
+            
             if (daysOfWeek.includes(dayName)) {
-                const seats = Array.from({ length: 61 }, (_, i) => ({ number: i + 1, status: 'available' }));
+                // ✅ Utiliser seatCount au lieu de 61 en dur
+                const seats = Array.from({ length: seatCount }, (_, i) => ({ 
+                    number: i + 1, 
+                    status: 'available' 
+                }));
+                
                 newTrips.push({
                     date: currentDate.toISOString().split('T')[0],
                     route: routeTemplate,
-                    seats,
+                    seats: seats,
                     createdAt: new Date()
                 });
             }
@@ -202,16 +194,19 @@ async (req, res) => {
 
         if (newTrips.length > 0) {
             await tripsCollection.insertMany(newTrips);
+            console.log(`✅ ${newTrips.length} voyage(s) inséré(s) en base de données`);
         }
         
-        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s) avec succès.` });
+        res.status(201).json({ 
+            success: true, 
+            message: `${newTrips.length} voyage(s) créé(s) avec ${seatCount} sièges chacun.` 
+        });
 
     } catch (error) {
-        console.error("Erreur création voyages:", error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        console.error("❌ Erreur création voyages:", error);
+        res.status(500).json({ error: 'Erreur serveur lors de la création des voyages.' });
     }
-}
-
+}); // ✅ CORRECTION : Ajout de "); " pour fermer app.post()
 
 // Supprimer un modèle de trajet
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
