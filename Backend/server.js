@@ -8,7 +8,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb'); // ✅ On importe aussi ObjectId
 const cron = require('node-cron');
 const { Resend } = require('resend');
 const rateLimit = require('express-rate-limit');
@@ -144,15 +144,19 @@ app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
 });
 
 
+// Supprimer un modèle de trajet
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        if (!MongoClient.ObjectId.isValid(id)) {
+
+        // ✅ Utilisation corrigée de ObjectId.isValid()
+        if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: 'ID de modèle invalide' });
         }
 
         const result = await routeTemplatesCollection.deleteOne({ 
-            _id: new MongoClient.ObjectId(id) 
+            // ✅ Utilisation corrigée de new ObjectId()
+            _id: new ObjectId(id) 
         });
 
         if (result.deletedCount === 0) {
