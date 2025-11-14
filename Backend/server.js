@@ -379,9 +379,17 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
 app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
     try {
         const template = req.body;
+        
+        // ✅ NETTOYAGE AUTOMATIQUE DES ESPACES
+        if (template.from) template.from = template.from.trim();
+        if (template.to) template.to = template.to.trim();
+        if (template.company) template.company = template.company.trim();
+        
         await routeTemplatesCollection.insertOne(template);
         res.status(201).json({ success: true, message: 'Modèle créé.' });
-    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+    } catch (error) { 
+        res.status(500).json({ error: 'Erreur serveur' }); 
+    }
 });
 
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
@@ -399,8 +407,12 @@ app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res)
 // 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
 // ============================================
 
+// ============================================
+// 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
+// ============================================
+
 app.get('/api/search', async (req, res) => {
-    const { from, to, date } = req.query;
+    let { from, to, date } = req.query;
     
     // Validation
     if (!from || !to || !date) {
@@ -409,48 +421,28 @@ app.get('/api/search', async (req, res) => {
         });
     }
     
+    // ✅ NETTOYAGE DES PARAMÈTRES
+    from = from.trim();
+    to = to.trim();
+    
     try {
         console.log(`🔍 Recherche : ${from} → ${to} le ${date}`);
         
-        // Rechercher dans MongoDB les voyages correspondants
-        // ✅ DEBUG : Afficher toutes les requêtes
-console.log('📋 Critères de recherche:', {
-    from: from,
-    to: to,
-    date: date
-});
-
-// Chercher TOUS les voyages pour cette route (sans filtre de date)
-const allTripsForRoute = await tripsCollection.find({
-    "route.from": from,
-    "route.to": to
-}).toArray();
-
-console.log(`📊 Voyages trouvés pour ${from} → ${to} (toutes dates) : ${allTripsForRoute.length}`);
-if (allTripsForRoute.length > 0) {
-    console.log('Dates disponibles:', allTripsForRoute.map(t => t.date));
-}
-
-// Maintenant chercher avec la date exacte
-const trips = await tripsCollection.find({
-    "route.from": from,
-    "route.to": to,
-    "date": date
-}).toArray();
-
-console.log(`✅ ${trips.length} voyage(s) trouvé(s) pour la date ${date}`);
+        // ✅ RECHERCHE AVEC REGEX POUR IGNORER LES ESPACES/VIRGULES
+        const trips = await tripsCollection.find({
+            "route.from": { $regex: `^${from}`, $options: 'i' },
+            "route.to": { $regex: `^${to}`, $options: 'i' },
+            "date": date
+        }).toArray();
         
         console.log(`✅ ${trips.length} voyage(s) trouvé(s)`);
         
-        // Transformer les données pour correspondre au format attendu par le frontend
+        // Transformer les données pour le frontend
         const results = trips.map(trip => {
             const availableSeats = trip.seats.filter(s => s.status === 'available').length;
             
             return {
-                // ✅ ID MongoDB converti en string
                 id: trip._id.toString(),
-                
-                // ✅ Informations du trajet (depuis le modèle utilisé lors de la création)
                 from: trip.route.from,
                 to: trip.route.to,
                 company: trip.route.company,
@@ -458,22 +450,14 @@ console.log(`✅ ${trips.length} voyage(s) trouvé(s) pour la date ${date}`);
                 duration: trip.route.duration || "N/A",
                 departure: trip.route.departure,
                 arrival: trip.route.arrival,
-                
-                // ✅ Équipements et type de trajet
                 amenities: trip.route.amenities || [],
                 tripType: trip.route.tripType || "direct",
                 stops: trip.route.stops || [],
                 connections: trip.route.connections || [],
                 breaks: trip.route.breaks || 0,
-                
-                // ✅ Suivi GPS (si disponible)
                 trackerId: trip.route.trackerId || null,
-                
-                // ✅ Disponibilité en temps réel
                 availableSeats: availableSeats,
                 totalSeats: trip.seats.length,
-                
-                // ✅ Métadonnées utiles
                 date: trip.date,
                 createdAt: trip.createdAt
             };
@@ -492,7 +476,6 @@ console.log(`✅ ${trips.length} voyage(s) trouvé(s) pour la date ${date}`);
         });
     }
 });
-
 
 // ============================================
 // 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
