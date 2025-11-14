@@ -143,10 +143,48 @@
             flatpickr("#trip-dates", { mode: "range", dateFormat: "Y-m-d", locale: { firstDayOfWeek: 1 } });
         });
 
-        async function handleLogin(e) { /* ... (inchangé) ... */ }
-        function handleLogout() { /* ... (inchangé) ... */ }
-        const showLogin = () => { /* ... (inchangé) ... */ };
-        const showDashboard = () => { /* ... (inchangé) ... */ };
+        async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const res = await fetch(API_URL + '/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success && data.token) {
+            localStorage.setItem('admin_token', data.token);
+            showDashboard();
+            loadAdminData();
+        } else {
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.textContent = data.error || 'Erreur de connexion';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        alert('Erreur réseau : ' + error.message);
+    }
+}
+
+function handleLogout() {
+    localStorage.removeItem('admin_token');
+    showLogin();
+}
+
+const showLogin = () => {
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
+};
+
+const showDashboard = () => {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+};
 
         function showTab(event, tabName) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
