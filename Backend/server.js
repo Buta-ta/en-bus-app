@@ -131,14 +131,56 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
     }
 });
 
-// Créer un nouveau modèle de trajet
-app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
+// Dans Backend/server.js
+
+app.post('/api/admin/trips', authenticateToken, [
+    body('routeId').notEmpty(),
+    body('startDate').isISO8601(),
+    body('endDate').isISO8601(),
+    body('daysOfWeek').isArray({ min: 1 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     try {
-        const template = req.body;
-        // Valider les données ici plus tard
-        await routeTemplatesCollection.insertOne(template);
-        res.status(201).json({ success: true, message: 'Modèle de trajet créé.' });
+        const { routeId, startDate, endDate, daysOfWeek } = req.body;
+        
+        // ✅ C'EST ICI LA CORRECTION
+        const routeTemplate = await routeTemplatesCollection.findOne({ 
+            _id: new ObjectId(routeId) 
+        });
+
+        if (!routeTemplate) {
+            return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
+        }
+
+        let newTrips = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+        while (currentDate <= lastDate) {
+            const dayName = dayMap[currentDate.getUTCDay()];
+            if (daysOfWeek.includes(dayName)) {
+                const seats = Array.from({ length: 61 }, (_, i) => ({ number: i + 1, status: 'available' }));
+                newTrips.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    route: routeTemplate,
+                    seats,
+                    createdAt: new Date()
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (newTrips.length > 0) {
+            await tripsCollection.insertMany(newTrips);
+        }
+        
+        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s) avec succès.` });
+
     } catch (error) {
+        console.error("Erreur création voyages:", error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
