@@ -128,18 +128,23 @@ app.get('/api/admin/trips', authenticateToken, async (req, res) => {
 });
 
 // Créer un nouveau voyage (ou plusieurs sur une plage de dates)
+// Dans Backend/server.js
+
+// Créer un nouveau voyage (ou plusieurs sur une plage de dates)
 app.post('/api/admin/trips', authenticateToken, [
     body('routeId').notEmpty(),
     body('startDate').isISO8601(),
-    body('endDate').isISO8601()
+    body('endDate').isISO8601(),
+    body('daysOfWeek').isArray({ min: 1 }) // ✅ On attend un tableau de jours
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-        const { routeId, startDate, endDate } = req.body;
+        // ✅ On récupère les jours sélectionnés
+        const { routeId, startDate, endDate, daysOfWeek } = req.body; 
         
-        // Simule la recherche d'un modèle de trajet (on le codera en dur pour l'instant)
+        // Simule la recherche d'un modèle de trajet (à remplacer par une vraie recherche DB plus tard)
         const routeTemplates = [
             { id: 1, from: "Brazzaville", to: "Pointe-Noire", company: "Océan du Nord", price: 15000, departure: "06:00", arrival: "14:30" },
             { id: 2, from: "Pointe-Noire", to: "Brazzaville", company: "Océan du Nord", price: 15000, departure: "06:30", arrival: "15:00" },
@@ -150,19 +155,24 @@ app.post('/api/admin/trips', authenticateToken, [
         let newTrips = [];
         let currentDate = new Date(startDate);
         const lastDate = new Date(endDate);
+        
+        // ✅ Map des jours : 0=Dimanche, 1=Lundi, ..., 6=Samedi
+        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
         while (currentDate <= lastDate) {
-            const seats = Array.from({ length: 61 }, (_, i) => ({
-                number: i + 1,
-                status: 'available' // 'available', 'occupied', 'blocked'
-            }));
+            const dayName = dayMap[currentDate.getUTCDay()];
 
-            newTrips.push({
-                date: currentDate.toISOString().split('T')[0],
-                route: routeTemplate,
-                seats,
-                createdAt: new Date()
-            });
+            // ✅ On ne crée le voyage que si le jour est dans la liste sélectionnée
+            if (daysOfWeek.includes(dayName)) {
+                const seats = Array.from({ length: 61 }, (_, i) => ({ number: i + 1, status: 'available' }));
+
+                newTrips.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    route: routeTemplate,
+                    seats,
+                    createdAt: new Date()
+                });
+            }
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
