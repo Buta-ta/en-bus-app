@@ -1206,28 +1206,27 @@
             </div>
             
             <nav>
-                <ul class="sidebar-nav">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link active" data-tab="reservations">
-                            <span class="nav-icon">📋</span>
-                            <span>Réservations</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" data-tab="trips">
-                            <span class="nav-icon">🗓️</span>
-                            <span>Programmation</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" data-tab="templates">
-                            <span class="nav-icon">🛣️</span>
-                            <span>Modèles de trajets</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            
+    <ul class="sidebar-nav">
+        <li class="nav-item">
+            <a href="#" class="nav-link active" data-tab="reservations">
+                <span class="nav-icon">📋</span>
+                <span>Réservations</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link" data-tab="trips">
+                <span class="nav-icon">🗓️</span>
+                <span>Programmation</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link" data-tab="templates">
+                <span class="nav-icon">🛣️</span>
+                <span>Modèles de trajets</span>
+            </a>
+        </li>
+    </ul>
+</nav>
             <div class="sidebar-footer">
                 <button id="logout-btn" class="btn btn-logout">
                     <span>🚪</span>
@@ -2258,23 +2257,25 @@ async function deleteTrip(tripId) {
         }
 
         
-        function setupEventListeners() {
-    // Login
+    // ============================================
+// 🎯 INITIALISATION & ÉVÉNEMENTS
+// ============================================
+
+function setupEventListeners() {
+    // Login & Logout
     document.getElementById('login-form').addEventListener('submit', handleLogin);
-    
-    // Logout
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     
-    // ✅ CORRECTION : Navigation (événements attachés APRÈS le DOM)
+    // ✅ CORRECTION : GESTION DE LA NAVIGATION
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Empêche le lien de remonter en haut de page
             const tabName = link.getAttribute('data-tab');
             switchTab(tabName);
         });
     });
     
-    // Filters
+    // Filtres
     document.getElementById('search-input').addEventListener('input', applyFilters);
     document.querySelectorAll('.filter-pill').forEach(pill => {
         pill.addEventListener('click', () => {
@@ -2295,6 +2296,7 @@ async function deleteTrip(tripId) {
         }
     });
 }
+
 
         // ============================================
         // 🚀 DÉMARRAGE
