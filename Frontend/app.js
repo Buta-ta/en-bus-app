@@ -810,24 +810,16 @@ window.downloadTicket = async function(reservation) {
 
 // Dans app.js
 // Dans app.js
+// Dans app.js
 async function generateTicketPDF(reservation) {
     try {
         const qrData = Utils.generateQRCodeData(reservation);
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 150);
+        // On augmente la taille pour une meilleure qualité
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 200);
 
-        let agencyInfoHTML = '';
-        if (reservation.status === 'En attente de paiement') {
-            agencyInfoHTML = `
-                <div class="payment-warning">
-                    <div class="warning-icon">⚠️</div>
-                    <div class="warning-text">
-                        <strong>PAIEMENT REQUIS À L'AGENCE</strong>
-                        <span>Ce billet ne sera valide qu'après paiement avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
-                    </div>
-                </div>
-            `;
-        }
+        // ... (toute la logique pour agencyInfoHTML est bonne) ...
 
+        // Le template HTML complet du billet
         const ticketHTML = `
             <!DOCTYPE html>
             <html lang="fr">
@@ -837,7 +829,45 @@ async function generateTicketPDF(reservation) {
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
                 <style>
-                    /* ... (le CSS reste le même, il est déjà parfait) ... */
+                    :root { --primary-color: #73d700; --dark-color: #10101A; --text-color: #1a1a1a; --text-light: #555; --bg-light: #f4f7f9; }
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-color); display: flex; justify-content: center; padding: 20px; }
+                    .ticket-container { width: 850px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; }
+                    .ticket-main { flex: 3; padding: 30px; }
+                    .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
+                    .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
+                    .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
+                    .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+                    .status-confirmed { color: #2e7d32; }
+                    .status-pending { color: #f57c00; }
+                    .payment-warning { display: flex; gap: 15px; background-color: #fff3e0; border: 1px solid #ffe0b2; padding: 15px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
+                    .warning-icon { font-size: 24px; }
+                    .warning-text strong { display: block; font-size: 14px; color: #e65100; margin-bottom: 4px; }
+                    .warning-text span { font-size: 12px; color: #ef6c00; }
+                    .route-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+                    .route-point { flex: 1; }
+                    .route-point .city { font-size: 24px; font-weight: 700; }
+                    .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); }
+                    .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; }
+                    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
+                    .detail-item { }
+                    .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+                    .detail-value { font-size: 15px; font-weight: 600; }
+                    .passengers-section { margin-bottom: 25px; }
+                    .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
+                    .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
+                    .passenger-list .item:last-child { border-bottom: none; }
+                    .passenger-name { font-weight: 600; }
+                    .seat-number { background-color: var(--bg-light); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+                    .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+                    .stub-header { margin-bottom: 20px; }
+                    .stub-logo { font-family: 'Audiowide', sans-serif; font-size: 20px; font-weight: 900; }
+                    .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+                    .stub-qr-code img { display: block; }
+                    .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
+                    .stub-value { font-size: 14px; font-weight: 700; margin-bottom: 15px; word-break: break-all; }
+                    .stub-value.booking-no { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary-color); }
+                    @media print { body { padding: 0; background: white; } .ticket-container { width: 100%; box-shadow: none; border-radius: 0; } }
                 </style>
             </head>
             <body>
@@ -872,7 +902,6 @@ async function generateTicketPDF(reservation) {
                                 <div class="detail-label">Compagnie</div>
                                 <div class="detail-value">${reservation.route.company}</div>
                             </div>
-                            <!-- ✅ LIGNE CORRIGÉE / AJOUTÉE -->
                             <div class="detail-item">
                                 <div class="detail-label">Bus N°</div>
                                 <div class="detail-value">${reservation.busIdentifier || 'N/A'}</div>
@@ -912,11 +941,37 @@ async function generateTicketPDF(reservation) {
             </html>
         `;
 
-        // ... (votre code existant pour télécharger/imprimer le ticket)
+        // ✅ LOGIQUE DE TÉLÉCHARGEMENT/IMPRESSION RÉINTÉGRÉE
+        try {
+            const blob = new Blob([ticketHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = `Billet_EnBus_${reservation.bookingNumber}.html`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+            Utils.showToast('Billet téléchargé !', 'success');
+
+            // Optionnel : ouvrir dans un nouvel onglet pour l'impression sur desktop
+            if (window.innerWidth > 768) {
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                    printWindow.document.write(ticketHTML);
+                    printWindow.document.close();
+                    // L'impression se lancera automatiquement grâce au script dans le HTML du billet
+                }
+            }
+        } catch (downloadError) {
+            console.error('Erreur de téléchargement du billet:', downloadError);
+            Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
+        }
 
     } catch (error) {
-        console.error('Erreur génération PDF:', error);
-        throw error;
+        console.error('Erreur lors de la génération du billet:', error);
+        Utils.showToast('Erreur critique lors de la génération du billet.', 'error');
+        // On ne propage pas l'erreur pour ne pas bloquer l'interface
     }
 }
 // ============================================
