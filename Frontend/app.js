@@ -1864,17 +1864,21 @@ function displayResults(results, isReturn = false) {
             <div class="bus-card">
                 <div class="bus-card-main">
                     <div class="bus-card-time">
-                        <span>${route.departure}</span>
-                        <div class="bus-card-duration">
-                            <span>→</span><br>${route.duration}
-                        </div>
-                        <span>${route.arrival}</span>
-                    </div>
+    <span>${route.departure}</span>
+    <div class="bus-card-duration">
+        <span>→</span><br>
+        ${route.duration && route.duration !== "N/A" ? route.duration : 'durée du trajet'}
+    </div>
+    <span>${route.arrival}</span>
+</div>
                     <div class="bus-card-company">${route.company}</div>
                     ${tripDetailsHTML}
                     <div class="bus-card-details">
                         <div class="bus-amenities">${amenitiesHTML}</div>
-                        <div class="bus-seats"><strong>${availableSeats}</strong> sièges dispo.</div>
+                        // ✅ NOUVELLE LIGNE
+<div class="bus-seats">
+    <strong>${route.availableSeats}</strong> / ${route.totalSeats} sièges dispo.
+</div>
                     </div>
                 </div>
                 <div class="bus-card-pricing">

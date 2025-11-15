@@ -248,10 +248,11 @@ app.get('/api/admin/trips', authenticateToken, async (req, res) => {
 // 🚌 MODIFICATION ET SUPPRESSION DE VOYAGES
 // ============================================
 
-// Modifier un voyage (date, heure, prix, etc.)
+// Modifier un voyage (date, sièges, équipements)
 app.patch('/api/admin/trips/:id', authenticateToken, [
     body('date').optional().isISO8601(),
-    body('seatCount').optional().isInt({ min: 10, max: 100 })
+    body('seatCount').optional().isInt({ min: 10, max: 100 }),
+    body('route.amenities').optional().isArray() // ✅ On ajoute la validation pour les équipements
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -281,22 +282,30 @@ app.patch('/api/admin/trips/:id', authenticateToken, [
                 });
             }
 
-            // Recréer le tableau de sièges
             const newSeats = [];
             for (let i = 0; i < updates.seatCount; i++) {
                 const existingSeat = trip.seats[i];
                 newSeats.push(existingSeat || { number: i + 1, status: 'available' });
             }
-            updates.seats = newSeats;
+            updates.seats = newSeats; // On va mettre à jour tout le tableau 'seats'
+            delete updates.seatCount; // On retire 'seatCount' car on met à jour 'seats' directement
         }
+
+        // ✅ La logique pour les équipements est déjà gérée car `updates`
+        // contiendra déjà `route.amenities` envoyé par le frontend.
+        // On n'a pas besoin de code spécial ici.
 
         const result = await tripsCollection.updateOne(
             { _id: new ObjectId(id) },
             { $set: { ...updates, updatedAt: new Date() } }
         );
 
-        if (result.modifiedCount === 0) {
-            return res.status(400).json({ error: 'Aucune modification effectuée' });
+        if (result.modifiedCount === 0 && result.matchedCount > 0) {
+            return res.status(200).json({ success: true, message: 'Aucune modification nécessaire.' });
+        }
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Voyage non trouvé pour la mise à jour.' });
         }
 
         res.json({ success: true, message: 'Voyage modifié avec succès' });
@@ -306,7 +315,6 @@ app.patch('/api/admin/trips/:id', authenticateToken, [
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
-
 // Supprimer un voyage
 app.delete('/api/admin/trips/:id', authenticateToken, async (req, res) => {
     try {
@@ -403,6 +411,49 @@ app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res)
 });
 
 
+
+// ============================================
+// 💺 GESTION INDIVIDUELLE DES SIÈGES
+// ============================================
+app.patch('/api/admin/trips/:tripId/seats/:seatNumber', authenticateToken, [
+    body('status').isIn(['available', 'blocked']).withMessage('Statut de siège invalide.')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { tripId, seatNumber } = req.params;
+        const { status } = req.body;
+
+        if (!ObjectId.isValid(tripId)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        const seatNum = parseInt(seatNumber);
+        
+        // Mettre à jour le statut du siège dans le tableau 'seats'
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(tripId), "seats.number": seatNum },
+            { $set: { "seats.$.status": status } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Voyage ou siège non trouvé.' });
+        }
+        
+        if (result.modifiedCount === 0) {
+            return res.status(200).json({ success: true, message: 'Statut du siège déjà à jour.' });
+        }
+
+        res.json({ success: true, message: `Siège ${seatNum} mis à jour avec le statut ${status}` });
+
+    } catch (error) {
+        console.error('❌ Erreur mise à jour siège:', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
 // ============================================
 // 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
 // ============================================
