@@ -436,8 +436,11 @@ const Utils = {
     },
 
     generateBookingNumber() {
-        return `EB-${Date.now().toString().slice(-6)}`;
-    },
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `EB-${timestamp.slice(-6)}${random}`;
+},
+    
 
     validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -2294,18 +2297,18 @@ function displayBookingSummary() {
     const agencyOption = document.getElementById('agency-payment-option');
     const agencySubtitle = document.getElementById('agency-payment-subtitle');
     
-    if (canPayAtAgency()) {
-        agencyOption.style.opacity = '1';
-        agencyOption.querySelector('input').disabled = false;
-        
-        const deadline = calculatePaymentDeadline();
-        agencySubtitle.textContent = `Payez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-        agencyOption.style.opacity = '0.5';
-        agencyOption.querySelector('input').disabled = true;
-        agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
-    }
+    // Dans displayBookingSummary(), ligne 2401
+if (canPayAtAgency()) {
+    agencyOption.style.opacity = '1';
+    agencyOption.querySelector('input').disabled = false;
     
+    const deadline = calculatePaymentDeadline();
+    agencySubtitle.textContent = `Payez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+} else {
+    agencyOption.style.opacity = '0.5';
+    agencyOption.querySelector('input').disabled = true;
+    agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
+}
     const agency = getNearestAgency(appState.selectedBus.from);
     const agencyInfoDiv = document.getElementById('selected-agency-info');
     
