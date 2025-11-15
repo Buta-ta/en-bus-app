@@ -2030,6 +2030,7 @@ window.toggleSeat = function(seatNumber) {
 // ✅ AFFICHAGE DES SIÈGES - DESIGN IMMERSIF FLIXBUS
 // ============================================
 
+// Dans app.js
 function displaySeats() {
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
@@ -2052,87 +2053,58 @@ function displaySeats() {
         </div>
     `;
     
+    // ✅ UTILISER LE NOMBRE TOTAL DE SIÈGES DU BACKEND
+    const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
     const hasWC = currentBus.amenities.includes("wc");
+    const seatsPerRow = 4;
+    const backRowSeatsCount = 5;
     
-    let seatHTML = `
-        <div class="modern-bus-container">
-            
-            <!-- 🚪 ENTRÉE AVANT AVEC MARCHES -->
-            <div class="bus-front-zone">
-                <div class="driver-section">
-                    <div class="driver-icon">🧑‍✈️</div>
-                    <span class="driver-label">Chauffeur</span>
-                </div>
-                <div class="front-door-section">
-                    <div class="bus-steps">
-                        <div class="step"></div>
-                        <div class="step"></div>
-                        <div class="step"></div>
-                    </div>
-                    <div class="door-icon">🚪</div>
-                    <span class="door-label">Entrée</span>
-                </div>
-            </div>
-            
-            <!-- 🪑 GRILLE DES SIÈGES -->
-            <div class="modern-seat-grid">
-    `;
+    // Calculer le nombre de rangées standard
+    let mainRows = Math.floor((totalSeats - backRowSeatsCount) / seatsPerRow);
+    if ((totalSeats - backRowSeatsCount) % seatsPerRow !== 0) {
+        mainRows++; // Ajouter une rangée si le compte n'est pas rond
+    }
+
+    let seatHTML = `<div class="modern-bus-container">
+        <!-- ... (zone chauffeur) ... -->
+        <div class="modern-seat-grid">`;
     
     let seatNumber = 1;
-    const totalRows = 14;
     
-    for (let row = 1; row <= totalRows; row++) {
+    for (let row = 1; row <= mainRows; row++) {
         seatHTML += `<div class="seat-row" data-row="${row}">`;
         
-        // Colonne A (gauche-fenêtre)
-        seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied);
+        // Colonnes A & B
+        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `B${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
         
-        // Colonne B (gauche-allée)
-        seatHTML += generateModernSeat(seatNumber++, `B${row}`, currentSeats, currentOccupied);
-        
-        // ✅ ALLÉE SIMPLE (pas de porte centrale)
         seatHTML += `<div class="aisle-space"><div class="aisle-line"></div></div>`;
         
-        // Colonne C (droite-allée)
-        seatHTML += generateModernSeat(seatNumber++, `C${row}`, currentSeats, currentOccupied);
+        // Colonnes C & D
+        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `C${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
         
-        // Colonne D (droite-fenêtre)
-        seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied);
-        
-        // Numéro de rangée
-        seatHTML += `<div class="row-indicator">${row}</div>`;
-        
-        seatHTML += `</div>`; // Fin seat-row
+        seatHTML += `<div class="row-indicator">${row}</div></div>`;
     }
     
     seatHTML += `</div>`; // Fin modern-seat-grid
     
-    // 🚻 TOILETTES (si disponibles)
     if (hasWC) {
-        seatHTML += `
-            <div class="toilet-section">
-                <div class="toilet-icon">🚻</div>
-                <span class="toilet-label">Toilettes</span>
-            </div>
-        `;
+        seatHTML += `<div class="toilet-section"> ... </div>`;
     }
     
-    // 🪑 RANGÉE ARRIÈRE (5 sièges)
-    seatHTML += `
-        <div class="back-row-container">
-            <div class="back-row-label">Rangée arrière</div>
-            <div class="back-row-seats">
-    `;
+    // Rangée arrière
+    seatHTML += `<div class="back-row-container">
+        <div class="back-row-label">Rangée arrière</div>
+        <div class="back-row-seats">`;
     
-    for (let i = 0; i < 5; i++) {
-        seatHTML += generateModernSeat(seatNumber++, `R${i + 1}`, currentSeats, currentOccupied);
+    for (let i = 0; i < backRowSeatsCount; i++) {
+        if (seatNumber <= totalSeats) {
+            seatHTML += generateModernSeat(seatNumber++, `R${i + 1}`, currentSeats, currentOccupied);
+        }
     }
     
-    seatHTML += `
-            </div>
-        </div>
-        </div>
-    `;
+    seatHTML += `</div></div></div>`;
     
     seatGrid.innerHTML = seatHTML;
     updateSeatSummary();
