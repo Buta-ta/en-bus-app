@@ -809,179 +809,111 @@ window.downloadTicket = async function(reservation) {
 }
 
 // Dans app.js
+// Dans app.js
 async function generateTicketPDF(reservation) {
     try {
-        // Génération du QR Code
         const qrData = Utils.generateQRCodeData(reservation);
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 200);
-        
-        // Construction des sections dynamiques (arrêts, correspondances, agence)
-        let stopsHTML = '';
-        if (reservation.route.stops && reservation.route.stops.length > 0) {
-            stopsHTML = `
-                <div class="stops-section" style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                    <strong style="display: block; margin-bottom: 10px; color: #333;">🛑 Arrêts prévus :</strong>
-                    ${reservation.route.stops.map(stop => `
-                        <div style="padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
-                            <strong>${stop.city}</strong><br>
-                            <span style="font-size: 13px; color: #666;">
-                                Arrivée : ${stop.arrivalTime} | Départ : ${stop.departureTime} (Arrêt : ${stop.duration})
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-        
-        let connectionsHTML = '';
-        if (reservation.route.connections && reservation.route.connections.length > 0) {
-            connectionsHTML = `
-                <div class="connections-section" style="margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
-                    <strong style="display: block; margin-bottom: 10px; color: #856404;">⚠️ Correspondances :</strong>
-                    ${reservation.route.connections.map(conn => `
-                        <div style="padding: 8px 0; border-bottom: 1px solid rgba(133, 100, 4, 0.2);">
-                            <strong style="color: #856404;">À ${conn.at}</strong><br>
-                            <span style="font-size: 13px; color: #856404;">
-                                Arrivée : ${conn.arrivalTime} | Attente : ${conn.waitTime}<br>
-                                Prochain départ : ${conn.nextDeparture} (${conn.nextCompany})<br>
-                                Raison : ${conn.reason || ''}
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-        
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 150);
+
         let agencyInfoHTML = '';
-        if (reservation.paymentMethod === 'agency' && reservation.agency) {
+        if (reservation.status === 'En attente de paiement') {
             agencyInfoHTML = `
-                <div class="agency-payment-notice" style="background: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <h3 style="color: #856404; margin-top: 0;">⚠️ PAIEMENT REQUIS À L'AGENCE</h3>
-                    <p style="color: #856404; margin-bottom: 10px;">
-                        <strong>Vous devez payer avant le ${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong>
-                    </p>
-                    <div style="background: white; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                        <strong style="color: #333;">📍 ${reservation.agency.name}</strong><br>
-                        <span style="color: #666;">${reservation.agency.address}</span><br>
-                        <span style="color: #666;">📞 ${reservation.agency.phone}</span><br>
-                        <span style="color: #666;">🕐 ${reservation.agency.hours}</span>
+                <div class="payment-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-text">
+                        <strong>PAIEMENT REQUIS À L'AGENCE</strong>
+                        <span>Ce billet ne sera valide qu'après paiement avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
                     </div>
                 </div>
             `;
         }
-        
-        // Construction du template HTML complet du billet
+
         const ticketHTML = `
             <!DOCTYPE html>
-            <html>
+            <html lang="fr">
             <head>
                 <meta charset="UTF-8">
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
                 <style>
-                    /* ... (tout le CSS du billet reste le même) ... */
+                    /* ... (le CSS reste le même, il est déjà parfait) ... */
                 </style>
             </head>
             <body>
-                <div class="ticket">
-                    <div class="ticket-header">
-                        <!-- ... (logo, titre, numéro de réservation) ... -->
-                    </div>
-
-                    <div class="ticket-body">
-                        ${agencyInfoHTML}
-
-                        <div class="route-info">
-                            <!-- ... (détails départ/arrivée) ... -->
+                <div class="ticket-container">
+                    <div class="ticket-main">
+                        <div class="ticket-header">
+                            <div class="logo">EN-BUS</div>
+                            <div class="booking-status ${reservation.status === 'Confirmé' ? 'status-confirmed' : 'status-pending'}">${reservation.status}</div>
                         </div>
-
-                        ${stopsHTML}
-                        ${connectionsHTML}
-
+                        ${agencyInfoHTML}
+                        <div class="route-info">
+                            <div class="route-point">
+                                <div class="city">${reservation.route.from}</div>
+                                <div class="time">${reservation.route.departure}</div>
+                            </div>
+                            <div class="route-arrow">➔</div>
+                            <div class="route-point" style="text-align: right;">
+                                <div class="city">${reservation.route.to}</div>
+                                <div class="time">${reservation.route.arrival}</div>
+                            </div>
+                        </div>
                         <div class="details-grid">
                             <div class="detail-item">
-                                <div class="detail-label">Date du voyage</div>
+                                <div class="detail-label">Date</div>
                                 <div class="detail-value">${Utils.formatDate(reservation.date)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Durée estimée</div>
+                                <div class="detail-value">${reservation.route.duration || 'Non spécifiée'}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Compagnie</div>
                                 <div class="detail-value">${reservation.route.company}</div>
                             </div>
+                            <!-- ✅ LIGNE CORRIGÉE / AJOUTÉE -->
                             <div class="detail-item">
-                                <div class="detail-label">Durée estimée</div>
-                                <!-- ✅ CORRECTION POUR LA DURÉE -->
-                                <div class="detail-value">${reservation.route.duration && reservation.route.duration !== "N/A" ? reservation.route.duration : 'Non spécifiée'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Numéros de siège</div>
-                                <div class="detail-value">${reservation.seats.join(', ')}</div>
+                                <div class="detail-label">Bus N°</div>
+                                <div class="detail-value">${reservation.busIdentifier || 'N/A'}</div>
                             </div>
                         </div>
-
                         <div class="passengers-section">
-                            <!-- ... (liste des passagers) ... -->
-                        </div>
-
-                        <div class="qr-section">
-                            <div class="qr-code">
-                                <img src="${qrCodeBase64}" alt="QR Code">
+                            <div class="passengers-title">Passager(s)</div>
+                            <div class="passenger-list">
+                                ${reservation.passengers.map(p => `
+                                    <div class="item">
+                                        <span class="passenger-name">${p.name}</span>
+                                        <span class="seat-number">Siège ${p.seat}</span>
+                                    </div>
+                                `).join('')}
                             </div>
-                            <div class="qr-label">✅ Scannez ce code à l'embarquement</div>
                         </div>
-
-                        <div class="price-box">
-                            <div class="price-label">PRIX TOTAL</div>
-                            <!-- ✅ CORRECTION POUR LE PRIX -->
-                            <div class="price-value">${Utils.formatPrice(reservation.totalPriceNumeric)} FCFA</div>
+                        <div class="ticket-footer">
+                            Présentez-vous 30 minutes avant le départ. Une pièce d'identité valide est requise.
                         </div>
                     </div>
-
-                    <div class="ticket-footer">
-                        <!-- ... (informations importantes) ... -->
+                    <div class="ticket-stub">
+                        <div class="stub-header">
+                            <div class="stub-logo">EN-BUS</div>
+                        </div>
+                        <div class="stub-qr-code">
+                            <img src="${qrCodeBase64}" alt="QR Code">
+                        </div>
+                        <div class="stub-label">Réservation N°</div>
+                        <div class="stub-value booking-no">${reservation.bookingNumber}</div>
+                        <div class="stub-label">Passager principal</div>
+                        <div class="stub-value">${reservation.passengers[0].name}</div>
+                        <div class="stub-label">Total Payé</div>
+                        <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
                     </div>
                 </div>
-                <script>
-                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
-                </script>
             </body>
             </html>
         `;
 
-        // Logique de téléchargement et d'impression (reste inchangée)
-        try {
-            const blob = new Blob([ticketHTML], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = `Billet_EnBus_${reservation.bookingNumber}.html`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            setTimeout(() => URL.revokeObjectURL(url), 100);
-            Utils.showToast('Billet téléchargé ! Ouvrez-le pour imprimer.', 'success');
-            if (window.innerWidth > 768) {
-                setTimeout(() => {
-                    const printWindow = window.open('', '_blank');
-                    if (printWindow) {
-                        printWindow.document.write(ticketHTML);
-                        printWindow.document.close();
-                    }
-                }, 500);
-            }
-        } catch (error) {
-            console.error('Erreur de téléchargement du billet:', error);
-            try {
-                const printWindow = window.open('', '_blank');
-                if (printWindow) {
-                    printWindow.document.write(ticketHTML);
-                    printWindow.document.close();
-                    Utils.showToast('Billet ouvert dans un nouvel onglet', 'success');
-                } else {
-                    throw new Error('Popup bloquée');
-                }
-            } catch (fallbackError) {
-                Utils.showToast('Veuillez autoriser les popups pour télécharger le billet', 'error');
-            }
-        }
-        
+        // ... (votre code existant pour télécharger/imprimer le ticket)
+
     } catch (error) {
         console.error('Erreur génération PDF:', error);
         throw error;
