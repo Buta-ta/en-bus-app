@@ -1886,7 +1886,7 @@ function displayResults(results, isReturn = false) {
     }).join("");
 }
 
-window.selectBus = function(busId) {
+window.selectBus = async function(busId) {  // ✅ Ajout de "async"
     console.log('🚌 Sélection du bus:', busId);
     
     // ✅ Recherche par ID (string MongoDB)
@@ -1904,7 +1904,7 @@ window.selectBus = function(busId) {
         appState.isSelectingReturn = true;
         
         // Chercher les trajets retour
-        searchReturnTrips();
+        await searchReturnTrips();  // ✅ Ajout de "await"
     } else {
         // Enregistrer le bus sélectionné
         if (appState.isSelectingReturn) {
@@ -1913,16 +1913,17 @@ window.selectBus = function(busId) {
             appState.selectedBus = selectedRoute;
         }
         
-        // Générer les sièges occupés (simulation)
+        // Réinitialiser les sièges sélectionnés
         appState.selectedSeats = [];
-        generateOccupiedSeats();
+        
+        // ✅ CHARGER LES VRAIS SIÈGES DEPUIS LE BACKEND
+        await loadRealSeats();
         
         // Afficher la page de sélection des sièges
         displaySeats();
         showPage("seats");
     }
 }
-
 // ✅ NOUVELLE FONCTION : Recherche des trajets retour
 async function searchReturnTrips() {
     try {
@@ -1957,45 +1958,40 @@ async function searchReturnTrips() {
     }
 }
 
-function generateOccupiedSeats() {
+async function loadRealSeats() {
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     
-    if (!currentBus) {
+    if (!currentBus || !currentBus.id) {
         console.error('❌ Aucun bus sélectionné');
         return;
     }
     
-    // ✅ UTILISER LES VRAIES DONNÉES DU BACKEND
-    // On va chercher les sièges occupés depuis le backend en temps réel
-    
-    if (appState.isSelectingReturn) {
-        appState.occupiedReturnSeats = [];
-        // Pour l'instant, simulation (sera remplacé par un appel API plus tard)
-        const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
-        const occupancyRate = Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min) + CONFIG.OCCUPANCY_RATE.min;
-        const numOccupied = Math.floor(totalSeats * occupancyRate);
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${currentBus.id}/seats`);
         
-        while (appState.occupiedReturnSeats.length < numOccupied) {
-            const seatNum = Math.floor(Math.random() * totalSeats) + 1;
-            if (!appState.occupiedReturnSeats.includes(seatNum)) {
-                appState.occupiedReturnSeats.push(seatNum);
-            }
+        if (!response.ok) {
+            throw new Error('Erreur récupération des sièges');
         }
-    } else {
-        appState.occupiedSeats = [];
-        const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
-        const occupancyRate = Math.random() * (CONFIG.OCCUPANCY_RATE.max - CONFIG.OCCUPANCY_RATE.min) + CONFIG.OCCUPANCY_RATE.min;
-        const numOccupied = Math.floor(totalSeats * occupancyRate);
         
-        while (appState.occupiedSeats.length < numOccupied) {
-            const seatNum = Math.floor(Math.random() * totalSeats) + 1;
-            if (!appState.occupiedSeats.includes(seatNum)) {
-                appState.occupiedSeats.push(seatNum);
-            }
+        const data = await response.json();
+        
+        // ✅ RÉCUPÉRER LES VRAIS SIÈGES OCCUPÉS
+        const occupiedSeatNumbers = data.seats
+            .filter(s => s.status === 'occupied' || s.status === 'blocked')
+            .map(s => s.number);
+        
+        if (appState.isSelectingReturn) {
+            appState.occupiedReturnSeats = occupiedSeatNumbers;
+        } else {
+            appState.occupiedSeats = occupiedSeatNumbers;
         }
+        
+        console.log(`💺 ${occupiedSeatNumbers.length} sièges occupés chargés depuis le serveur`);
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement sièges:', error);
+        Utils.showToast('Erreur de chargement des sièges', 'error');
     }
-    
-    console.log(`💺 Sièges occupés générés : ${appState.isSelectingReturn ? appState.occupiedReturnSeats.length : appState.occupiedSeats.length}`);
 }
 
 window.toggleSeat = function(seatNumber) {

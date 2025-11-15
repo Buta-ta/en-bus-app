@@ -477,6 +477,8 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+
+
 // ============================================
 // 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
 // ============================================
@@ -511,6 +513,42 @@ app.get('/api/search', [
         res.json({ success: true, results });
 
     } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
+
+// ============================================
+// 💺 RÉCUPÉRER LES SIÈGES D'UN VOYAGE SPÉCIFIQUE
+// ============================================
+app.get('/api/trips/:id/seats', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+        
+        const trip = await tripsCollection.findOne({ 
+            _id: new ObjectId(id) 
+        });
+        
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+        
+        res.json({ 
+            success: true, 
+            seats: trip.seats,
+            totalSeats: trip.seats.length,
+            availableSeats: trip.seats.filter(s => s.status === 'available').length,
+            occupiedSeats: trip.seats.filter(s => s.status === 'occupied').length,
+            blockedSeats: trip.seats.filter(s => s.status === 'blocked').length
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur récupération sièges:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
