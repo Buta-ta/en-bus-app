@@ -1440,6 +1440,53 @@
                                 <input type="text" id="template-arrival" class="form-control" placeholder="12:00" required>
                             </div>
                         </div>
+
+                        <!-- Type de trajet -->
+<div class="form-group form-group-full">
+    <label class="form-label">Type de trajet</label>
+    <select id="template-trip-type" class="form-control" onchange="toggleTripOptions()">
+        <option value="direct">Direct (sans arrêt)</option>
+        <option value="stops">Avec arrêts</option>
+        <option value="connections">Avec correspondances</option>
+    </select>
+</div>
+
+<!-- Section arrêts (cachée par défaut) -->
+<div id="stops-section" class="form-group form-group-full" style="display: none;">
+    <label class="form-label">Arrêts intermédiaires</label>
+    <div id="stops-container"></div>
+    <button type="button" class="btn btn-secondary" onclick="addStop()">+ Ajouter un arrêt</button>
+</div>
+
+<!-- Section correspondances (cachée par défaut) -->
+<div id="connections-section" class="form-group form-group-full" style="display: none;">
+    <label class="form-label">Correspondances</label>
+    <div id="connections-container"></div>
+    <button type="button" class="btn btn-secondary" onclick="addConnection()">+ Ajouter une correspondance</button>
+</div>
+
+<div class="form-group form-group-full">
+    <label class="form-label">Équipements disponibles</label>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+        <label class="amenity-checkbox-label">
+            <input type="checkbox" name="amenity" value="wifi">
+            <span>📶 Wi-Fi</span>
+        </label>
+        <label class="amenity-checkbox-label">
+            <input type="checkbox" name="amenity" value="wc">
+            <span>🚻 Toilettes</span>
+        </label>
+        <label class="amenity-checkbox-label">
+            <input type="checkbox" name="amenity" value="clim">
+            <span>❄️ Climatisation</span>
+        </label>
+        <label class="amenity-checkbox-label">
+            <input type="checkbox" name="amenity" value="prise">
+            <span>🔌 Prises électriques</span>
+        </label>
+    </div>
+</div>
+
                         
                         <button type="submit" class="btn btn-primary mt-4">
                             <span>💾</span>
@@ -1914,25 +1961,52 @@
         }
 
         async function handleCreateTemplate(e) {
-            e.preventDefault();
-            
-            const newTemplate = {
-                from: document.getElementById('template-from').value,
-                to: document.getElementById('template-to').value,
-                company: document.getElementById('template-company').value,
-                price: parseInt(document.getElementById('template-price').value),
-                departure: document.getElementById('template-departure').value,
-                arrival: document.getElementById('template-arrival').value
-            };
-            
-            const data = await apiCall('/admin/route-templates', 'POST', newTemplate);
-            
-            if (data) {
-                showNotification('Modèle créé avec succès', 'success');
-                e.target.reset();
-                loadAllTemplates();
-            }
-        }
+    e.preventDefault();
+    
+    const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(cb => cb.value);
+    const tripType = document.getElementById('template-trip-type').value;
+    
+    // ✅ RÉCUPÉRER LES ARRÊTS
+    const stops = Array.from(document.querySelectorAll('.stop-item')).map(stopDiv => ({
+        city: stopDiv.querySelector('.stop-city').value,
+        arrivalTime: stopDiv.querySelector('.stop-arrival').value,
+        departureTime: stopDiv.querySelector('.stop-departure').value,
+        duration: stopDiv.querySelector('.stop-duration').value
+    }));
+    
+    // ✅ RÉCUPÉRER LES CORRESPONDANCES
+    const connections = Array.from(document.querySelectorAll('.connection-item')).map(connDiv => ({
+        at: connDiv.querySelector('.conn-city').value,
+        arrivalTime: connDiv.querySelector('.conn-arrival').value,
+        waitTime: connDiv.querySelector('.conn-wait').value,
+        reason: connDiv.querySelector('.conn-reason').value
+    }));
+    
+    const newTemplate = {
+        from: document.getElementById('template-from').value.trim(),
+        to: document.getElementById('template-to').value.trim(),
+        company: document.getElementById('template-company').value.trim(),
+        price: parseInt(document.getElementById('template-price').value),
+        departure: document.getElementById('template-departure').value,
+        arrival: document.getElementById('template-arrival').value,
+        amenities: amenities,
+        tripType: tripType,
+        stops: stops,
+        connections: connections,
+        breaks: stops.length // Nombre de pauses = nombre d'arrêts
+    };
+    
+    const data = await apiCall('/admin/route-templates', 'POST', newTemplate);
+    
+    if (data) {
+        showNotification('Modèle créé avec équipements, arrêts et correspondances', 'success');
+        e.target.reset();
+        document.getElementById('stops-container').innerHTML = '';
+        document.getElementById('connections-container').innerHTML = '';
+        toggleTripOptions();
+        loadAllTemplates();
+    }
+}
 
         async function handleDeleteTemplate(templateId, templateName) {
             if (!confirm(`Supprimer le modèle "${templateName}" ?`)) return;
@@ -2346,6 +2420,69 @@ function setupEventListeners() {
                 minDate: "today"
             });
         });
+
+        // ============================================
+// 🛑 GESTION DYNAMIQUE DES ARRÊTS
+// ============================================
+
+function toggleTripOptions() {
+    const tripType = document.getElementById('template-trip-type').value;
+    const stopsSection = document.getElementById('stops-section');
+    const connectionsSection = document.getElementById('connections-section');
+    
+    stopsSection.style.display = tripType === 'stops' ? 'block' : 'none';
+    connectionsSection.style.display = tripType === 'connections' ? 'block' : 'none';
+}
+
+let stopCounter = 0;
+function addStop() {
+    const container = document.getElementById('stops-container');
+    const stopId = `stop-${stopCounter++}`;
+    
+    const stopDiv = document.createElement('div');
+    stopDiv.className = 'stop-item';
+    stopDiv.id = stopId;
+    stopDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; padding: 12px; background: var(--dark-elevated); border-radius: 8px; margin-bottom: 12px;">
+            <input type="text" placeholder="Ville de l'arrêt" class="form-control stop-city" required>
+            <input type="time" placeholder="Arrivée" class="form-control stop-arrival" required>
+            <input type="time" placeholder="Départ" class="form-control stop-departure" required>
+            <input type="text" placeholder="Durée (ex: 15min)" class="form-control stop-duration" required>
+            <button type="button" class="btn btn-danger btn-icon" onclick="removeStop('${stopId}')">🗑️</button>
+        </div>
+    `;
+    container.appendChild(stopDiv);
+}
+
+function removeStop(stopId) {
+    document.getElementById(stopId).remove();
+}
+
+let connectionCounter = 0;
+function addConnection() {
+    const container = document.getElementById('connections-container');
+    const connId = `connection-${connectionCounter++}`;
+    
+    const connDiv = document.createElement('div');
+    connDiv.className = 'connection-item';
+    connDiv.id = connId;
+    connDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 2fr auto; gap: 12px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; margin-bottom: 12px; border: 1px solid #ffc107;">
+            <input type="text" placeholder="Ville de correspondance" class="form-control conn-city" required>
+            <input type="time" placeholder="Arrivée" class="form-control conn-arrival" required>
+            <input type="text" placeholder="Attente (ex: 2h)" class="form-control conn-wait" required>
+            <input type="text" placeholder="Raison (ex: Changement de bus)" class="form-control conn-reason" required>
+            <button type="button" class="btn btn-danger btn-icon" onclick="removeConnection('${connId}')">🗑️</button>
+        </div>
+    `;
+    container.appendChild(connDiv);
+}
+
+function removeConnection(connId) {
+    document.getElementById(connId).remove();
+}
+
+
     </script>
 </body>
 </html>
