@@ -2276,22 +2276,65 @@ window.proceedToPayment = function() {
 }
 // Dans app.js
 // Dans app.js
-function displayBookingSummary() {
 
+// Dans Frontend/app.js
+
+// Dans app.js
+function displayBookingSummary() {
+    // ✅ SÉCURITÉ
     if (!appState.selectedBus) {
-        console.error("❌ Impossible d'afficher le récapitulatif : appState.selectedBus est manquant.");
-        return; // Arrêter l'exécution pour éviter de planter
+        console.error("❌ ERREUR dans displayBookingSummary : 'appState.selectedBus' est manquant !");
+        Utils.showToast("Une erreur critique est survenue. Veuillez recommencer.", "error");
+        showPage('home');
+        return; 
     }
 
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) return;
 
-    // ... (tout le calcul des prix reste le même) ...
+    // --- CALCUL DES PRIX ---
+    
+    // Récupérer les options de bagages dynamiques
+    const baggageOptions = appState.selectedBus.baggageOptions || {
+        standard: { price: 2000 },
+        oversized: { price: 5000 }
+    };
+    
+    // Calcul du prix des billets
+    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
+    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
+    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    
+    // Calcul du prix des bagages
+    let totalStandardBaggage = 0;
+    let totalOversizedBaggage = 0;
+    if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
+        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+            totalStandardBaggage += paxBaggage.standard || 0;
+            totalOversizedBaggage += paxBaggage.oversized || 0;
+        });
+    }
 
+    const standardBaggagePrice = totalStandardBaggage * baggageOptions.standard.price;
+    const oversizedBaggagePrice = totalOversizedBaggage * baggageOptions.oversized.price;
+    const totalBaggagePrice = standardBaggagePrice + oversizedBaggagePrice;
+
+    // Calcul du prix total
     const totalPrice = ticketsPrice + totalBaggagePrice;
     
-    // Mise à jour du récapitulatif
-    summaryContainer.innerHTML = `...`; // Cette partie est bonne
+    // Mise à jour de l'affichage du récapitulatif
+    summaryContainer.innerHTML = `
+        <div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
+        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div>
+        <div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(standardBaggagePrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(oversizedBaggagePrice)} FCFA</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>
+    `;
 
     // --- MISE À JOUR DES CHAMPS DE PAIEMENT ---
     
@@ -2305,23 +2348,20 @@ function displayBookingSummary() {
         if (refInput) refInput.value = bookingRef;
     });
 
-    // --- CORRECTIONS POUR LE PAIEMENT À L'AGENCE ---
+    // --- GESTION DU PAIEMENT À L'AGENCE ---
 
     const agencyOption = document.getElementById('agency-payment-option');
     const agencySubtitle = document.getElementById('agency-payment-subtitle');
     const agencyInfoDiv = document.getElementById('selected-agency-info');
     const deadlineInput = document.getElementById('agency-deadline');
     
-    // ✅ ÉTAPE 1 : VÉRIFIER SI LE PAIEMENT EN AGENCE EST POSSIBLE
     if (canPayAtAgency()) {
         agencyOption.style.opacity = '1';
         agencyOption.querySelector('input').disabled = false;
         
-        // ✅ ÉTAPE 2 : CALCULER LA DEADLINE ET L'AGENCE
         const deadline = calculatePaymentDeadline();
         const agency = getNearestAgency(appState.selectedBus.from);
         
-        // ✅ ÉTAPE 3 : METTRE À JOUR TOUS LES ÉLÉMENTS HTML
         agencySubtitle.textContent = `Payez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
         
         if (agencyInfoDiv) {
@@ -2340,7 +2380,6 @@ function displayBookingSummary() {
         }
 
     } else {
-        // Logique pour désactiver l'option
         agencyOption.style.opacity = '0.5';
         agencyOption.querySelector('input').disabled = true;
         agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
@@ -2348,8 +2387,6 @@ function displayBookingSummary() {
         if (deadlineInput) deadlineInput.value = 'Non applicable';
     }
 }
-// Dans Frontend/app.js
-
 // Dans app.js
 window.confirmBooking = async function(buttonElement) {
     // --- Validation ---
