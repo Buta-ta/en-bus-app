@@ -788,45 +788,54 @@ window.cancelReservation = async function(bookingNumber) {
 // ============================================
 // TÉLÉCHARGEMENT DE BILLET PDF
 // ============================================
-window.downloadTicket = async function(reservation) {
-    if (!reservation && appState.currentReservation) {
-        reservation = appState.currentReservation;
-    }
+// Dans app.js
+window.downloadTicket = async function(isReturn = false) {
+    // Récupère la réservation actuelle stockée dans l'état de l'application
+    const reservation = appState.currentReservation;
     
     if (!reservation) {
-        Utils.showToast('Réservation introuvable', 'error');
+        Utils.showToast("Aucune réservation à télécharger.", "error");
+        console.error("❌ Tentative de téléchargement sans réservation stockée dans appState.");
+        return;
+    }
+
+    // Si on demande un billet retour pour un aller simple, afficher une erreur.
+    if (isReturn && !reservation.returnRoute) {
+        Utils.showToast("Il n'y a pas de billet retour pour cette réservation.", "warning");
+        console.warn("⚠️ Tentative de télécharger un billet retour pour un aller simple.");
         return;
     }
     
     Utils.showToast('Génération du billet en cours...', 'info');
     
-    try {
-        await generateTicketPDF(reservation);
-    } catch (error) {
-        console.error('Erreur génération billet:', error);
-        Utils.showToast('Erreur lors de la génération du billet', 'error');
-    }
-}
-
+    // Appelle la fonction qui génère le HTML et lance le téléchargement
+    await generateTicketPDF(reservation, isReturn);
+};
 // Dans app.js
 // Dans app.js
 // Dans app.js
 // Dans app.js
-async function generateTicketPDF(reservation) {
+// Dans app.js
+async function generateTicketPDF(reservation, isReturn = false) {
     try {
         const qrData = Utils.generateQRCodeData(reservation);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 150);
 
-        // ✅ CORRECTION : La variable est déclarée ici pour être toujours accessible
+        // ✅ SÉLECTION DES BONNES DONNÉES (ALLER OU RETOUR)
+        const route = isReturn ? reservation.returnRoute : reservation.route;
+        const date = isReturn ? reservation.returnDate : reservation.date;
+        const seats = isReturn ? reservation.returnSeats : reservation.seats;
+        const busIdentifier = isReturn ? (reservation.returnRoute.busIdentifier || 'N/A') : (reservation.busIdentifier || 'N/A');
+        const ticketType = isReturn ? 'BILLET RETOUR' : 'BILLET ALLER';
+
         let agencyInfoHTML = '';
-        
-        if (reservation.status === 'En attente de paiement' && reservation.agency) {
+        if (reservation.status === 'En attente de paiement') {
             agencyInfoHTML = `
                 <div class="payment-warning">
                     <div class="warning-icon">⚠️</div>
                     <div class="warning-text">
                         <strong>PAIEMENT REQUIS À L'AGENCE</strong>
-                        <span>Ce billet ne sera valide qu'après paiement avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
+                        <span>Ce billet sera valide avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
                     </div>
                 </div>
             `;
@@ -837,49 +846,9 @@ async function generateTicketPDF(reservation) {
             <html lang="fr">
             <head>
                 <meta charset="UTF-8">
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
                 <style>
-                    :root { --primary-color: #73d700; --dark-color: #10101A; --text-color: #1a1a1a; --text-light: #555; --bg-light: #f4f7f9; }
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-color); display: flex; justify-content: center; padding: 20px; }
-                    .ticket-container { width: 850px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; }
-                    .ticket-main { flex: 3; padding: 30px; }
-                    .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
-                    .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
-                    .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
-                    .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-                    .status-confirmed { color: #2e7d32; }
-                    .status-pending { color: #f57c00; }
-                    .payment-warning { display: flex; gap: 15px; background-color: #fff3e0; border: 1px solid #ffe0b2; padding: 15px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
-                    .warning-icon { font-size: 24px; }
-                    .warning-text strong { display: block; font-size: 14px; color: #e65100; margin-bottom: 4px; }
-                    .warning-text span { font-size: 12px; color: #ef6c00; }
-                    .route-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
-                    .route-point { flex: 1; }
-                    .route-point .city { font-size: 24px; font-weight: 700; }
-                    .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); }
-                    .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; }
-                    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
-                    .detail-item { }
-                    .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
-                    .detail-value { font-size: 15px; font-weight: 600; }
-                    .passengers-section { margin-bottom: 25px; }
-                    .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
-                    .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
-                    .passenger-list .item:last-child { border-bottom: none; }
-                    .passenger-name { font-weight: 600; }
-                    .seat-number { background-color: var(--bg-light); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
-                    .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
-                    .stub-header { margin-bottom: 20px; }
-                    .stub-logo { font-family: 'Audiowide', sans-serif; font-size: 20px; font-weight: 900; }
-                    .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-                    .stub-qr-code img { display: block; }
-                    .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
-                    .stub-value { font-size: 14px; font-weight: 700; margin-bottom: 15px; word-break: break-all; }
-                    .stub-value.booking-no { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary-color); }
-                    @media print { body { padding: 0; background: white; } .ticket-container { width: 100%; box-shadow: none; border-radius: 0; } }
+                    /* ... (votre CSS de billet est bon) ... */
                 </style>
             </head>
             <body>
@@ -887,36 +856,36 @@ async function generateTicketPDF(reservation) {
                     <div class="ticket-main">
                         <div class="ticket-header">
                             <div class="logo">EN-BUS</div>
-                            <div class="booking-status ${reservation.status === 'Confirmé' ? 'status-confirmed' : 'status-pending'}">${reservation.status}</div>
+                            <div class="booking-status status-confirmed">${ticketType}</div>
                         </div>
                         ${agencyInfoHTML}
                         <div class="route-info">
                             <div class="route-point">
-                                <div class="city">${reservation.route.from}</div>
-                                <div class="time">${reservation.route.departure}</div>
+                                <div class="city">${route.from}</div>
+                                <div class="time">${route.departure}</div>
                             </div>
                             <div class="route-arrow">➔</div>
                             <div class="route-point" style="text-align: right;">
-                                <div class="city">${reservation.route.to}</div>
-                                <div class="time">${reservation.route.arrival}</div>
+                                <div class="city">${route.to}</div>
+                                <div class="time">${route.arrival}</div>
                             </div>
                         </div>
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Date</div>
-                                <div class="detail-value">${Utils.formatDate(reservation.date)}</div>
+                                <div class="detail-value">${Utils.formatDate(date)}</div>
                             </div>
                             <div class="detail-item">
-                                <div class="detail-label">Durée estimée</div>
-                                <div class="detail-value">${reservation.route.duration || 'Non spécifiée'}</div>
+                                <div class="detail-label">Durée</div>
+                                <div class="detail-value">${route.duration || 'Non spécifiée'}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Compagnie</div>
-                                <div class="detail-value">${reservation.route.company}</div>
+                                <div class="detail-value">${route.company}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Bus N°</div>
-                                <div class="detail-value">${reservation.busIdentifier || 'N/A'}</div>
+                                <div class="detail-value">${busIdentifier}</div>
                             </div>
                         </div>
                         <div class="passengers-section">
@@ -925,33 +894,25 @@ async function generateTicketPDF(reservation) {
                                 ${reservation.passengers.map(p => `
                                     <div class="item">
                                         <span class="passenger-name">${p.name}</span>
-                                        <span class="seat-number">Siège ${p.seat}</span>
+                                        <span class="seat-number">Siège ${seats[reservation.passengers.indexOf(p)]}</span>
                                     </div>
                                 `).join('')}
                             </div>
                         </div>
                         <div class="ticket-footer">
-                            Présentez-vous 30 minutes avant le départ. Une pièce d'identité valide est requise.
+                            Présentez-vous 30 minutes avant le départ.
                         </div>
                     </div>
                     <div class="ticket-stub">
-                        <div class="stub-header">
-                            <div class="stub-logo">EN-BUS</div>
-                        </div>
-                        <div class="stub-qr-code">
-                            <img src="${qrCodeBase64}" alt="QR Code">
-                        </div>
+                        <div class="stub-qr-code"><img src="${qrCodeBase64}"></div>
                         <div class="stub-label">Réservation N°</div>
                         <div class="stub-value booking-no">${reservation.bookingNumber}</div>
-                        <div class="stub-label">Passager principal</div>
+                        <div class="stub-label">Passager</div>
                         <div class="stub-value">${reservation.passengers[0].name}</div>
                         <div class="stub-label">Total Payé</div>
                         <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
                     </div>
                 </div>
-                <script>
-                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
-                </script>
             </body>
             </html>
         `;
@@ -961,8 +922,9 @@ async function generateTicketPDF(reservation) {
             const blob = new Blob([ticketHTML], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const downloadLink = document.createElement('a');
+            const fileName = isReturn ? `Billet_Retour_${reservation.bookingNumber}.html` : `Billet_Aller_${reservation.bookingNumber}.html`;
             downloadLink.href = url;
-            downloadLink.download = `Billet_EnBus_${reservation.bookingNumber}.html`;
+            downloadLink.download = fileName;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
@@ -977,7 +939,6 @@ async function generateTicketPDF(reservation) {
                 }
             }
         } catch (downloadError) {
-            console.error('Erreur de téléchargement du billet:', downloadError);
             Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
         }
 
@@ -1657,45 +1618,38 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 }
-
-window.selectBus = async function(busId) {  // ✅ Ajout de "async"
-    console.log('🚌 Sélection du bus:', busId);
+// Dans app.js
+window.selectBus = async function(busId) {
+    console.log('🚌 Sélection du bus ID :', busId);
     
-    // ✅ Recherche par ID (string MongoDB)
     const selectedRoute = appState.currentResults.find(r => r.id === busId.toString());
-    
     if (!selectedRoute) {
-        Utils.showToast('Erreur : voyage introuvable', 'error');
-        console.error('Bus non trouvé dans les résultats:', busId);
+        Utils.showToast('Erreur : voyage introuvable.', 'error');
         return;
     }
-    
-    if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
-        // Aller simple d'un aller-retour
-        appState.selectedBus = selectedRoute;
-        appState.isSelectingReturn = true;
+
+    if (appState.isSelectingReturn) {
+        // --- ÉTAPE 2 : SÉLECTION DU BUS RETOUR ---
+        appState.selectedReturnBus = selectedRoute;
+        appState.selectedReturnSeats = []; // Réinitialiser les sièges retour
         
-        // Chercher les trajets retour
-        await searchReturnTrips();  // ✅ Ajout de "await"
+        Utils.showToast("Sélectionnez vos sièges pour le retour", "info");
+        await loadRealSeats();
+        displaySeats();
+        showPage("seats");
+        
     } else {
-        // Enregistrer le bus sélectionné
-        if (appState.isSelectingReturn) {
-            appState.selectedReturnBus = selectedRoute;
-        } else {
-            appState.selectedBus = selectedRoute;
-        }
-        
-        // Réinitialiser les sièges sélectionnés
+        // --- ÉTAPE 1 : SÉLECTION DU BUS ALLER ---
+        appState.selectedBus = selectedRoute;
         appState.selectedSeats = [];
         
-        // ✅ CHARGER LES VRAIS SIÈGES DEPUIS LE BACKEND
+        Utils.showToast("Sélectionnez vos sièges pour l'aller", "info");
         await loadRealSeats();
-        
-        // Afficher la page de sélection des sièges
         displaySeats();
         showPage("seats");
     }
-}
+};
+
 // ✅ NOUVELLE FONCTION : Recherche des trajets retour
 async function searchReturnTrips() {
     try {
@@ -1992,43 +1946,41 @@ function updateSeatSummary() {
     }
 }
 
-window.proceedToPassengerInfo = function() {
+// Dans app.js
+window.proceedToPassengerInfo = async function() {
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
-    if (appState.currentSearch.tripType === "round-trip") {
-        if (!appState.isSelectingReturn) {
-            if (appState.selectedSeats.length !== expectedSeats) {
-                Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour l'ALLER`, 'error');
-                return;
-            }
-            
-            appState.isSelectingReturn = true;
-            const returnRoutes = routes.filter(r => 
-                r.from === appState.currentSearch.destination && 
-                r.to === appState.currentSearch.origin
-            );
-            
-            displayResults(returnRoutes, true);
-            showPage("results");
-            Utils.showToast('Sélectionnez maintenant votre bus de RETOUR', 'info');
+    // CAS 1 : On vient de finir la sélection des sièges ALLER d'un aller-retour
+    if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
+        if (appState.selectedSeats.length !== expectedSeats) {
+            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour l'ALLER`, 'error');
             return;
-        } else {
-            if (appState.selectedReturnSeats.length !== expectedSeats) {
-                Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour le RETOUR`, 'error');
-                return;
-            }
         }
-    } else {
+        
+        appState.isSelectingReturn = true; // On passe en mode sélection RETOUR
+        
+        Utils.showToast('Sélectionnez maintenant votre bus de RETOUR', 'info');
+        await searchReturnTrips(); // Affiche la liste des bus pour le retour
+        return; // On s'arrête ici, l'utilisateur doit choisir son bus retour
+    }
+    
+    // CAS 2 : On vient de finir la sélection des sièges RETOUR (ou c'est un aller simple)
+    if (appState.isSelectingReturn) { // S'applique au retour d'un A/R
+        if (appState.selectedReturnSeats.length !== expectedSeats) {
+            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour le RETOUR`, 'error');
+            return;
+        }
+    } else { // S'applique à l'aller simple
         if (appState.selectedSeats.length !== expectedSeats) {
             Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s)`, 'error');
             return;
         }
     }
     
+    // Si toutes les sélections sont faites, on passe au formulaire passagers
     displayPassengerForms();
     showPage("passengers");
-}
-
+};
 // Dans app.js
 function displayPassengerForms() {
     const formsContainer = document.getElementById("passengers-forms");
@@ -2387,26 +2339,50 @@ function displayBookingSummary() {
     }
 }
 // Dans app.js
+// Dans app.js
 window.confirmBooking = async function(buttonElement) {
-    // --- Validation ---
+    // --- ÉTAPE 1 : VALIDATION DES ENTRÉES ---
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+    
+    if (!paymentMethod) {
+        Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
+        return;
+    }
     if (paymentMethod === "agency" && !canPayAtAgency()) {
         Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
         return;
     }
-    // ... (autres validations) ...
-
+    if (paymentMethod === "mtn" || paymentMethod === "airtel") {
+        const phoneInput = document.getElementById(`${paymentMethod}-phone`);
+        if (!phoneInput.value.trim() || !Utils.validatePhone(phoneInput.value)) {
+            Utils.showToast(`Numéro ${paymentMethod.toUpperCase()} invalide.`, 'error');
+            return;
+        }
+    }
+    
+    // --- ÉTAPE 2 : FEEDBACK UTILISATEUR (SPINNER) ---
+    const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    buttonElement.innerHTML = `<span>Chargement...</span>`;
+    buttonElement.innerHTML = `
+        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
+        <span>Enregistrement...</span>
+    `;
     
     try {
-        // --- PRÉPARATION DES DONNÉES FIABLES ---
-        const baggageOptions = appState.selectedBus.baggageOptions || { standard: { price: 2000 }, oversized: { price: 5000 } };
+        // --- ÉTAPE 3 : PRÉPARATION DE L'OBJET RÉSERVATION COMPLET ---
+
+        // Récupérer les options de bagages dynamiques
+        const baggageOptions = appState.selectedBus.baggageOptions || { 
+            standard: { price: 2000 }, 
+            oversized: { price: 5000 } 
+        };
         
+        // Calculer le prix des billets
         const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
         
+        // Calculer le prix des bagages
         let totalStandardBaggage = 0, totalOversizedBaggage = 0;
         Object.values(appState.baggageCounts).forEach(paxBaggage => {
             totalStandardBaggage += paxBaggage.standard || 0;
@@ -2414,8 +2390,10 @@ window.confirmBooking = async function(buttonElement) {
         });
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
 
+        // Calculer le prix total final
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
+        // Définir le statut et la deadline en fonction du mode de paiement
         let reservationStatus = "Confirmé", paymentDeadline = null, agencyInfo = null;
         if (paymentMethod === "agency") {
             reservationStatus = "En attente de paiement";
@@ -2423,18 +2401,19 @@ window.confirmBooking = async function(buttonElement) {
             agencyInfo = getNearestAgency(appState.selectedBus.from);
         }
         
-        // ✅ L'OBJET RÉSERVATION COMPLET ET CORRECT
+        // Construction de l'objet final à envoyer
         const reservation = {
             bookingNumber: Utils.generateBookingNumber(),
-            route: appState.selectedBus, // Contient la 'duration' et toutes les infos du trajet
-            returnRoute: appState.selectedReturnBus || null,
+            route: appState.selectedBus,                  // Info du trajet aller
+            returnRoute: appState.selectedReturnBus,      // Info du trajet retour (ou null)
             date: appState.currentSearch.date,
-            returnDate: appState.currentSearch.returnDate || null,
+            returnDate: appState.currentSearch.returnDate,
             passengers: appState.passengerInfo,
             seats: appState.selectedSeats,
-            returnSeats: appState.selectedReturnSeats || [],
-            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
-            totalPriceNumeric: finalTotalPriceNumeric, // La valeur numérique est cruciale
+            returnSeats: appState.selectedReturnSeats,
+            busIdentifier: appState.selectedBus.busIdentifier, // N° du bus aller
+            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`, // Pour affichage
+            totalPriceNumeric: finalTotalPriceNumeric,           // Pour calculs
             paymentMethod: paymentMethod,
             status: reservationStatus,
             paymentDeadline: paymentDeadline,
@@ -2442,66 +2421,44 @@ window.confirmBooking = async function(buttonElement) {
             createdAt: new Date().toISOString()
         };
         
-        console.log("📦 OBJET FINAL ENVOYÉ :", reservation);
+        console.log("📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :", reservation);
 
+        // --- ÉTAPE 4 : APPEL AU BACKEND ET GESTION DU SUCCÈS ---
+        
         await saveReservationToBackend(reservation);
         
-        appState.currentReservation = reservation; // Stocker l'objet complet
+        appState.currentReservation = reservation; // Stocker l'objet complet pour la suite
+        
         displayConfirmation(reservation);
         showPage("confirmation");
         
-        // ... (messages de succès)
-
-    } catch (error) {
-        Utils.showToast(error.message, 'error');
-    } finally {
-        buttonElement.disabled = false;
-        buttonElement.innerHTML = "Confirmer la Réservation";
-    }
-}
-function displayConfirmation(reservation) {
-    // Lien de suivi GPS
-    // ✅ NOUVEAU CODE (compatible PWA mobile)
-const trackLink = document.getElementById("track-bus-link");
-if (trackLink) {
-    if (reservation.route && reservation.route.trackerId) {
-        const trackerId = reservation.route.trackerId;
-        
-        // Construire l'URL complète
-        const currentOrigin = window.location.origin;
-        const trackingUrl = `${currentOrigin}/suivi/suivi.html?bus=${trackerId}`; 
-        
-        trackLink.href = trackingUrl;
-        
-        // Sur PWA/mobile, ouvrir dans la même fenêtre
-        if (window.matchMedia('(display-mode: standalone)').matches || window.innerWidth <= 768) {
-            trackLink.target = "_self";
+        if (paymentMethod === "agency") {
+            Utils.showToast(`Réservation créée ! Payez avant le ${new Date(paymentDeadline).toLocaleString('fr-FR')}`, 'success');
         } else {
-            trackLink.target = "_blank";
+            Utils.showToast("Réservation confirmée avec succès!", 'success');
         }
         
-        trackLink.style.display = "inline-flex";
+    } catch (error) {
+        // --- ÉTAPE 5 : GESTION DES ERREURS ---
+        console.error('❌ Erreur lors de la confirmation:', error);
+        Utils.showToast(error.message, 'error');
         
-        // Ajouter un event listener pour le suivi
-        trackLink.onclick = (e) => {
-            console.log('🛰️ Ouverture du suivi pour le bus:', trackerId);
-            // Laisser le comportement par défaut du lien
-        };
-        
-        console.log('✅ Lien de suivi configuré:', trackingUrl);
-    } else {
-        trackLink.style.display = "none";
-        console.log('⚠️ Pas de trackerId pour cette réservation');
+    } finally {
+        // --- ÉTAPE 6 : RÉINITIALISATION DU BOUTON ---
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalButtonText;
     }
 }
-
-    // Numéro de réservation
+// Dans app.js
+function displayConfirmation(reservation) {
+    
+    // --- 1. MISE À JOUR DU NUMÉRO DE RÉSERVATION ---
     const bookingDisplay = document.getElementById("booking-number-display");
     if (bookingDisplay) {
         bookingDisplay.textContent = reservation.bookingNumber;
     }
 
-    // Informations de trajet
+    // --- 2. MISE À JOUR DES DÉTAILS DU TRAJET ALLER ---
     const confOrigin = document.getElementById("conf-origin");
     const confDestination = document.getElementById("conf-destination");
     const confDate = document.getElementById("conf-date");
@@ -2509,112 +2466,110 @@ if (trackLink) {
     const confArrivalTime = document.getElementById("conf-arrival-time");
     const confDuration = document.getElementById("conf-duration");
 
-    // ✅ NOUVEAU BLOC CORRIGÉ
-if (confOrigin) confOrigin.textContent = reservation.route.from;
-if (confDestination) confDestination.textContent = reservation.route.to;
-if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
-if (confTime) confTime.textContent = reservation.route.departure;
-if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
-
-// On ajoute une vérification pour la durée
-    // Dans displayConfirmation()
-if (confDuration) {
-    const durationText = reservation.route.duration || 'Non spécifiée';
-    confDuration.textContent = durationText;
-}
-
-    // ✅ NOUVELLE - Grille de détails avec types de passagers
-    // ✅ NOUVELLE - Grille de détails avec types de passagers
-const detailsContainer = document.getElementById("confirmation-details");
-if (detailsContainer) {
-    const adultsCount = reservation.passengers.filter((p, index) => 
-        index < appState.passengerCounts.adults
-    ).length;
-    const childrenCount = reservation.passengers.length - adultsCount;
-
-    let passengersText = `${adultsCount} Adulte(s)`;
-    if (childrenCount > 0) {
-        passengersText += `, ${childrenCount} Enfant(s)`;
+    if (confOrigin) confOrigin.textContent = reservation.route.from;
+    if (confDestination) confDestination.textContent = reservation.route.to;
+    if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
+    if (confTime) confTime.textContent = reservation.route.departure;
+    if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
+    if (confDuration) {
+        confDuration.textContent = reservation.route.duration || 'Non spécifiée';
     }
 
-    detailsContainer.innerHTML = `
-        <div class="detail-item-modern">
-            <span class="detail-label">🚌 Compagnie</span>
-            <span class="detail-value">${reservation.route.company}</span>
-        </div>
-        <div class="detail-item-modern">
-            <span class="detail-label">👥 Passagers</span>
-            <span class="detail-value">${passengersText}</span>
-        </div>
-        <div class="detail-item-modern">
-            <span class="detail-label">💺 Sièges</span>
-            <span class="detail-value">${reservation.seats.join(', ')}</span>
-        </div>
-        <div class="detail-item-modern">
-            <span class="detail-label">💰 Prix total</span>
-            <!-- ✅ LIGNE CORRIGÉE -->
-            <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</span>
-        </div>
-    `;
-}
+    // --- 3. MISE À JOUR DE LA GRILLE DE DÉTAILS (PRIX, ETC.) ---
+    const detailsContainer = document.getElementById("confirmation-details");
+    if (detailsContainer) {
+        const adultsCount = reservation.passengers.filter((p, index) => 
+            index < appState.passengerCounts.adults
+        ).length;
+        const childrenCount = reservation.passengers.length - adultsCount;
 
-    // ✅ QR Code simplifié v2.0
+        let passengersText = `${adultsCount} Adulte(s)`;
+        if (childrenCount > 0) {
+            passengersText += `, ${childrenCount} Enfant(s)`;
+        }
+
+        detailsContainer.innerHTML = `
+            <div class="detail-item-modern">
+                <span class="detail-label">🚌 Compagnie</span>
+                <span class="detail-value">${reservation.route.company}</span>
+            </div>
+            <div class="detail-item-modern">
+                <span class="detail-label">👥 Passagers</span>
+                <span class="detail-value">${passengersText}</span>
+            </div>
+            <div class="detail-item-modern">
+                <span class="detail-label">💺 Sièges (Aller)</span>
+                <span class="detail-value">${reservation.seats.join(', ')}</span>
+            </div>
+            ${reservation.returnSeats && reservation.returnSeats.length > 0 ? `
+            <div class="detail-item-modern">
+                <span class="detail-label">💺 Sièges (Retour)</span>
+                <span class="detail-value">${reservation.returnSeats.join(', ')}</span>
+            </div>
+            ` : ''}
+            <div class="detail-item-modern">
+                <span class="detail-label">💰 Prix total</span>
+                <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</span>
+            </div>
+        `;
+    }
+
+    // --- 4. GÉNÉRATION DES BOUTONS D'ACTION (AVEC LOGIQUE ALLER-RETOUR) ---
+    const actionsContainer = document.querySelector('.confirmation-actions-modern');
+    if (actionsContainer) {
+        actionsContainer.innerHTML = ''; // Vider les anciens boutons
+
+        // Bouton pour le billet ALLER
+        actionsContainer.innerHTML += `
+            <button class="btn-modern btn-download" onclick="downloadTicket(false)">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Télécharger Billet ALLER</span>
+            </button>
+        `;
+
+        // Si c'est un aller-retour, ajouter le bouton pour le billet RETOUR
+        if (reservation.returnRoute) {
+            actionsContainer.innerHTML += `
+                <button class="btn-modern btn-download" onclick="downloadTicket(true)">
+                    <span class="btn-icon">📥</span>
+                    <span class="btn-text">Télécharger Billet RETOUR</span>
+                </button>
+            `;
+        }
+
+        // Ajouter les autres boutons
+        actionsContainer.innerHTML += `
+            <a id="track-bus-link" class="btn-modern btn-track" href="#" style="display: none;">
+                <span class="btn-icon">🛰️</span>
+                <span class="btn-text">Suivre mon bus</span>
+            </a>
+            <button class="btn-modern btn-home" onclick="showPage('home')">
+                <span class="btn-icon">🏠</span>
+                <span class="btn-text">Retour à l'accueil</span>
+            </button>
+        `;
+        
+        // Activer le lien de suivi s'il existe
+        const trackLink = document.getElementById("track-bus-link");
+        if (trackLink && reservation.route.trackerId) {
+            trackLink.href = `suivi.html?bus=${reservation.route.trackerId}`;
+            trackLink.style.display = 'inline-flex';
+        }
+    }
+    
+    // --- 5. GÉNÉRATION DU QR CODE ---
     const qrContainer = document.getElementById("qr-placeholder");
     if (qrContainer) {
         qrContainer.innerHTML = '';
-        
-        // ✅ GÉNÉRER DONNÉES SIMPLIFIÉES
         const qrData = Utils.generateQRCodeData(reservation);
-        
-        console.log("📱 Génération QR Code simplifié v2.0");
-        console.log("Raw JSON:", qrData);
-        
         try {
-            new QRCode(qrContainer, {
-                text: qrData,
-                width: 200,
-                height: 200,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
-            });
-            
-            console.log("✅ QR Code généré avec succès !");
-            
-            // ✅ AFFICHER APERÇU SIMPLIFIÉ
-            const qrInfo = document.querySelector('.qr-info');
-            if (qrInfo) {
-                const parsedData = JSON.parse(qrData);
-                
-                qrInfo.innerHTML = `
-                    <p class="qr-title">🎫 Votre billet électronique</p>
-                    <p class="qr-instruction">Présentez ce QR code à l'embarquement</p>
-                    <details style="margin-top: 16px; text-align: left; font-size: 12px; color: var(--color-text-secondary);">
-                        <summary style="cursor: pointer; font-weight: 600; text-align: center;">📋 Contenu du QR Code</summary>
-                        <div style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; font-family: monospace;">
-                            <div><strong>Version:</strong> ${parsedData.v}</div>
-                            <div><strong>Réservation:</strong> ${parsedData.b}</div>
-                            <div><strong>Passagers:</strong> ${parsedData.p}</div>
-                            <div><strong>Date:</strong> ${parsedData.d}</div>
-                            <div><strong>Statut:</strong> ${parsedData.s === 'C' ? 'Confirmé ✅' : 'En attente ⏳'}</div>
-                        </div>
-                    </details>
-                `;
-            }
-            
+            new QRCode(qrContainer, { text: qrData, width: 200, height: 200 });
+            // ... (logique pour afficher les détails du QR code)
         } catch (error) {
             console.error("❌ Erreur génération QR Code:", error);
-            qrContainer.innerHTML = `
-                <div style="padding: 20px; text-align: center; color: #f44336;">
-                    ❌ Erreur génération QR Code<br>
-                    <small>${error.message}</small>
-                </div>
-            `;
         }
     }
-
 }
-
 
 async function displayReservations() {
     const reservationsList = document.getElementById("reservations-list");
