@@ -416,6 +416,24 @@ app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
 
         // Ajouter l'objet structuré
         template.baggageOptions = baggageOptions;
+
+         // ✅ AJOUTER CETTE LOGIQUE
+        // Si la durée n'est pas fournie, on la calcule (simple estimation)
+        if (!template.duration) {
+            try {
+                const start = new Date(`1970-01-01T${template.departure}:00`);
+                const end = new Date(`1970-01-01T${template.arrival}:00`);
+                if (end < start) end.setDate(end.getDate() + 1); // Gère les trajets de nuit
+                const diffMs = end - start;
+                const hours = Math.floor(diffMs / 3600000);
+                const minutes = Math.floor((diffMs % 3600000) / 60000);
+                template.duration = `${hours}h ${minutes}m`;
+                console.log(`Durée calculée : ${template.duration}`);
+            } catch (e) {
+                template.duration = "N/A";
+            }
+        }
+
         
         await routeTemplatesCollection.insertOne(template);
         res.status(201).json({ success: true, message: 'Modèle créé avec succès.' });

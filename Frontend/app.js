@@ -614,23 +614,26 @@ const Utils = {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+// Dans app.js
 function canPayAtAgency() {
-    if (!appState.currentSearch.date || !appState.selectedBus) {
+    if (!appState.currentSearch?.date || !appState.selectedBus?.departure) {
+        console.warn("⚠️ Données manquantes pour canPayAtAgency.");
         return false;
     }
     
-    // CORRECTION: Utiliser directement la date sans "T"
-    const [year, month, day] = appState.currentSearch.date.split('-');
-    const [hours, minutes] = appState.selectedBus.departure.split(':');
-    
-    const departureDateTime = new Date(year, month - 1, day, hours, minutes);
-    
+    // Construit une chaîne de date ISO 8601, la méthode la plus fiable
+    const departureDateTimeString = `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`;
+    const departureDateTime = new Date(departureDateTimeString);
+
     if (isNaN(departureDateTime.getTime())) {
+        console.error("❌ Date de départ invalide construite:", departureDateTimeString);
         return false;
     }
     
     const now = new Date();
     const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
+    
+    console.log(`⏰ Heures avant le départ: ${hoursUntilDeparture.toFixed(2)}h`);
     
     return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
 }
@@ -2332,117 +2335,79 @@ if (canPayAtAgency()) {
 
 // Dans Frontend/app.js
 
-window.confirmBooking = async function(buttonElement) { // ✅ 'buttonElement' est le nouveau paramètre
-    // --- Validation des champs ---
+// Dans app.js
+window.confirmBooking = async function(buttonElement) {
+    // --- Validation ---
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
-
-   // ✅ VÉRIFICATION CRUCIALE AJOUTÉE
     if (paymentMethod === "agency" && !canPayAtAgency()) {
         Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
-        return; // Bloque l'envoi
-    }
-
-
-    if (!paymentMethod) {
-        Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
         return;
     }
+    // ... (autres validations) ...
 
-    if (paymentMethod === "mtn" || paymentMethod === "airtel") {
-        const phoneInput = document.getElementById(`${paymentMethod}-phone`);
-        if (!phoneInput.value.trim()) {
-            Utils.showToast(`Veuillez renseigner votre numéro ${paymentMethod.toUpperCase()}`, 'error');
-            return;
-        }
-        if (!Utils.validatePhone(phoneInput.value)) {
-            Utils.showToast(`Numéro ${paymentMethod.toUpperCase()} invalide`, 'error');
-            return;
-        }
-    }
-    
-    if (paymentMethod === "agency" && !canPayAtAgency()) {
-        Utils.showToast("Le paiement en agence n'est plus disponible (moins de 1h avant le départ).", 'error');
-        return;
-    }
-
-    // --- Ajout de l'état de chargement sur le bouton ---
-    const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    buttonElement.innerHTML = `
-        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
-        <span>Enregistrement...</span>
-    `;
+    buttonElement.innerHTML = `<span>Chargement...</span>`;
     
     try {
-        // --- Préparation de l'objet reservation ---
-        const bookingNumber = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
-        const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
-        const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
+        // --- PRÉPARATION DES DONNÉES FIABLES ---
+        const baggageOptions = appState.selectedBus.baggageOptions || { standard: { price: 2000 }, oversized: { price: 5000 } };
+        
         const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
-        const totalPrice = ticketsPrice + baggagePrice;
         
-        let reservationStatus = "Confirmé";
-        let paymentDeadline = null;
-        let agencyInfo = null;
-        
+        let totalStandardBaggage = 0, totalOversizedBaggage = 0;
+        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+            totalStandardBaggage += paxBaggage.standard || 0;
+            totalOversizedBaggage += paxBaggage.oversized || 0;
+        });
+        const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
+
+        const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
+
+        let reservationStatus = "Confirmé", paymentDeadline = null, agencyInfo = null;
         if (paymentMethod === "agency") {
             reservationStatus = "En attente de paiement";
             paymentDeadline = calculatePaymentDeadline().toISOString();
             agencyInfo = getNearestAgency(appState.selectedBus.from);
         }
         
+        // ✅ L'OBJET RÉSERVATION COMPLET ET CORRECT
         const reservation = {
-            bookingNumber,
-            route: appState.selectedBus,
+            bookingNumber: Utils.generateBookingNumber(),
+            route: appState.selectedBus, // Contient la 'duration' et toutes les infos du trajet
             returnRoute: appState.selectedReturnBus || null,
             date: appState.currentSearch.date,
             returnDate: appState.currentSearch.returnDate || null,
             passengers: appState.passengerInfo,
             seats: appState.selectedSeats,
             returnSeats: appState.selectedReturnSeats || [],
-            totalPrice: Utils.formatPrice(totalPrice) + " FCFA",
-            totalPriceNumeric: totalPrice,
+            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
+            totalPriceNumeric: finalTotalPriceNumeric, // La valeur numérique est cruciale
             paymentMethod: paymentMethod,
             status: reservationStatus,
             paymentDeadline: paymentDeadline,
             agency: agencyInfo,
             createdAt: new Date().toISOString()
         };
-         // ✅ AJOUTER CE CONSOLE.LOG
-        console.log("📦 OBJET ENVOYÉ AU BACKEND :", JSON.parse(JSON.stringify(reservation)));
-        // --- Appel au backend ---
+        
+        console.log("📦 OBJET FINAL ENVOYÉ :", reservation);
+
         await saveReservationToBackend(reservation);
         
-        // --- Si succès ---
-        appState.currentReservation = reservation;
-
-        // ✅ AJOUTER CE CONSOLE.LOG
-        console.log("✅ OBJET PASSÉ À LA CONFIRMATION :", JSON.parse(JSON.stringify(appState.currentReservation)));
-
+        appState.currentReservation = reservation; // Stocker l'objet complet
         displayConfirmation(reservation);
         showPage("confirmation");
         
-        if (paymentMethod === "agency") {
-            Utils.showToast(`Réservation créée ! Payez avant le ${new Date(paymentDeadline).toLocaleString('fr-FR')}`, 'success');
-        } else {
-            Utils.showToast("Réservation confirmée avec succès!", 'success');
-        }
-        
+        // ... (messages de succès)
+
     } catch (error) {
-        // --- Si erreur ---
-        console.error('❌ Erreur lors de la confirmation:', error);
-        // Affiche le message d'erreur précis à l'utilisateur
         Utils.showToast(error.message, 'error');
-        
     } finally {
-        // --- Dans tous les cas (succès ou erreur), réactiver le bouton ---
         buttonElement.disabled = false;
-        buttonElement.innerHTML = originalButtonText;
+        buttonElement.innerHTML = "Confirmer la Réservation";
     }
 }
-
 function displayConfirmation(reservation) {
     // Lien de suivi GPS
     // ✅ NOUVEAU CODE (compatible PWA mobile)
@@ -2508,39 +2473,39 @@ if (confDuration) {
 }
 
     // ✅ NOUVELLE - Grille de détails avec types de passagers
-    const detailsContainer = document.getElementById("confirmation-details");
-    if (detailsContainer) {
-        // Compter adultes et enfants
-        const adultsCount = reservation.passengers.filter((p, index) => 
-            index < appState.passengerCounts.adults
-        ).length;
-        const childrenCount = reservation.passengers.length - adultsCount;
+    // ✅ NOUVELLE - Grille de détails avec types de passagers
+const detailsContainer = document.getElementById("confirmation-details");
+if (detailsContainer) {
+    const adultsCount = reservation.passengers.filter((p, index) => 
+        index < appState.passengerCounts.adults
+    ).length;
+    const childrenCount = reservation.passengers.length - adultsCount;
 
-        let passengersText = `${adultsCount} Adulte(s)`;
-        if (childrenCount > 0) {
-            passengersText += `, ${childrenCount} Enfant(s)`;
-        }
-
-        detailsContainer.innerHTML = `
-            <div class="detail-item-modern">
-                <span class="detail-label">🚌 Compagnie</span>
-                <span class="detail-value">${reservation.route.company}</span>
-            </div>
-            <div class="detail-item-modern">
-                <span class="detail-label">👥 Passagers</span>
-                <span class="detail-value">${passengersText}</span>
-            </div>
-            <div class="detail-item-modern">
-                <span class="detail-label">💺 Sièges</span>
-                <span class="detail-value">${reservation.seats.join(', ')}</span>
-            </div>
-            <div class="detail-item-modern">
-                <span class="detail-label">💰 Prix total</span>
-                <!-- ✅ NOUVELLE LIGNE CORRIGÉE -->
-            <span class="detail-value">${reservation.totalPriceNumeric ? Utils.formatPrice(reservation.totalPriceNumeric) : reservation.totalPrice}</span>
-            </div>
-        `;
+    let passengersText = `${adultsCount} Adulte(s)`;
+    if (childrenCount > 0) {
+        passengersText += `, ${childrenCount} Enfant(s)`;
     }
+
+    detailsContainer.innerHTML = `
+        <div class="detail-item-modern">
+            <span class="detail-label">🚌 Compagnie</span>
+            <span class="detail-value">${reservation.route.company}</span>
+        </div>
+        <div class="detail-item-modern">
+            <span class="detail-label">👥 Passagers</span>
+            <span class="detail-value">${passengersText}</span>
+        </div>
+        <div class="detail-item-modern">
+            <span class="detail-label">💺 Sièges</span>
+            <span class="detail-value">${reservation.seats.join(', ')}</span>
+        </div>
+        <div class="detail-item-modern">
+            <span class="detail-label">💰 Prix total</span>
+            <!-- ✅ LIGNE CORRIGÉE -->
+            <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</span>
+        </div>
+    `;
+}
 
     // ✅ QR Code simplifié v2.0
     const qrContainer = document.getElementById("qr-placeholder");
