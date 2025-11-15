@@ -692,6 +692,73 @@ app.get('/api/trips/:id/seats', async (req, res) => {
     }
 });
 
+
+
+// ============================================
+// 🎫 CRÉATION DE RÉSERVATION CLIENT
+// ============================================
+app.post('/api/reservations', strictLimiter, [
+    body('bookingNumber').notEmpty(),
+    body('route').isObject(),
+    body('date').isISO8601(),
+    body('passengers').isArray({ min: 1 }),
+    body('passengers.*.name').notEmpty(),
+    body('passengers.*.phone').notEmpty(),
+    body('totalPrice').notEmpty(),
+    body('status').isIn(['Confirmé', 'En attente de paiement']),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const reservationData = req.body;
+        
+        // Mettre à jour les sièges du voyage correspondant
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Le voyage sélectionné n\'existe plus.' });
+        }
+
+        const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
+        
+        // Vérifier si les sièges sont toujours disponibles
+        const alreadyTaken = trip.seats.filter(s => 
+            seatNumbersToOccupy.includes(s.number) && s.status !== 'available'
+        );
+
+        if (alreadyTaken.length > 0) {
+            return res.status(409).json({ // 409 Conflict
+                error: `Conflit : Les sièges ${alreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` 
+            });
+        }
+
+        // Mettre à jour les sièges comme 'occupied'
+        await tripsCollection.updateOne(
+            { _id: new ObjectId(trip.id) },
+            { $set: { "seats.$[elem].status": "occupied" } },
+            { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+        );
+        
+        // Insérer la réservation
+        const result = await reservationsCollection.insertOne(reservationData);
+
+        // Envoyer l'email de confirmation
+        sendConfirmationEmail(reservationData);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Réservation créée avec succès.',
+            reservationId: result.insertedId 
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur création réservation:', error);
+        res.status(500).json({ error: 'Erreur serveur lors de la création de la réservation.' });
+    }
+});
+
 // ============================================
 // 🐛 ROUTE DE DEBUG (À SUPPRIMER APRÈS TEST)
 // ============================================
@@ -714,6 +781,10 @@ app.get('/api/debug/trips', authenticateToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+
+
 
 
 
