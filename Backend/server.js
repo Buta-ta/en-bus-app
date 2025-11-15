@@ -149,7 +149,8 @@ app.post('/api/admin/trips', authenticateToken, [
     body('startDate').isISO8601().withMessage('Date de début invalide.'),
     body('endDate').isISO8601().withMessage('Date de fin invalide.'),
     body('daysOfWeek').isArray({ min: 1 }).withMessage('Veuillez sélectionner au moins un jour.'),
-    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.')
+    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.'),
+    body('busIdentifier').optional().isString().trim() // ✅ NOUVELLE VALIDATION
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -157,8 +158,7 @@ app.post('/api/admin/trips', authenticateToken, [
     }
 
     try {
-        const { routeId, startDate, endDate, daysOfWeek, seatCount } = req.body; // ✅ Ajout de seatCount
-        
+        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier } = req.body; // ✅ RÉCUPÉRER
         const routeTemplate = await routeTemplatesCollection.findOne({ 
             _id: new ObjectId(routeId) 
         });
@@ -186,6 +186,7 @@ app.post('/api/admin/trips', authenticateToken, [
                     date: currentDate.toISOString().split('T')[0],
                     route: routeTemplate,
                     seats: seats,
+                    busIdentifier: busIdentifier || null, // ✅ AJOUTER
                     createdAt: new Date()
                 });
             }
@@ -557,7 +558,8 @@ app.get('/api/search', [
             return {
                 tripId: trip._id,
                 route: trip.route,
-                availableSeats: availableSeatsCount
+                availableSeats: availableSeatsCount,
+                busIdentifier: trip.busIdentifier || 'N/A', // ✅ AJOUTER
             };
         });
 
@@ -698,6 +700,8 @@ function sendConfirmationEmail(reservation) {
                 <tr><td>Date</td><td>${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
                 <tr><td>Heure de Départ</td><td>${reservation.route.departure}</td></tr>
                 <tr><td>Compagnie</td><td>${reservation.route.company}</td></tr>
+                <!-- ✅ AJOUTER CETTE LIGNE -->
+            ${reservation.busIdentifier ? `<tr><td>Numéro du Bus</td><td><strong>${reservation.busIdentifier}</strong></td></tr>` : ''}
                 <tr><td>Siège(s)</td><td>${reservation.seats.join(', ')}</td></tr>
                 <tr><td>Passagers</td><td>${reservation.passengers.length}</td></tr>
                 <tr><td>Prix Total</td><td>${reservation.totalPrice}</td></tr>
