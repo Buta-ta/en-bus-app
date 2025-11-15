@@ -26,7 +26,6 @@ console.log('API URL:', API_CONFIG.baseUrl);
 
 const CONFIG = {
     CHILD_TICKET_PRICE: 5000,
-    EXTRA_BAGGAGE_PRICE: 7500,
     MAX_BAGGAGE_PER_PERSON: 5,
     SEAT_TOTAL: 61, // ✅ 14 rangées × 4 + 5 arrière
     OCCUPANCY_RATE: { min: 0.3, max: 0.5 },
@@ -2263,82 +2262,236 @@ window.proceedToPassengerInfo = function() {
     showPage("passengers");
 }
 
+// Dans app.js
 function displayPassengerForms() {
     const formsContainer = document.getElementById("passengers-forms");
     const baggageContainer = document.getElementById("baggage-options");
+    const baggageInfo = document.getElementById("baggage-section-info"); // Assurez-vous d'avoir un élément avec cet ID
+
     let formsHTML = "";
     let baggageHTML = "";
     appState.baggageCounts = {};
     
+    // ✅ ÉTAPE 1 : Récupérer les options de bagages du trajet sélectionné (avec des valeurs par défaut)
+    const baggageOptions = appState.selectedBus.baggageOptions || {
+        standard: { included: 1, max: 5, price: 2000 },
+        oversized: { max: 2, price: 5000 }
+    };
+
+    // ✅ ÉTAPE 2 : Mettre à jour l'information sur les bagages inclus
+    if (baggageInfo) {
+        baggageInfo.innerHTML = `
+            Chaque passager a droit à <strong>${baggageOptions.standard.included} bagage(s) en soute</strong> inclus.
+        `;
+    }
+
+    // ✅ ÉTAPE 3 : Créer les formulaires pour chaque passager
     for (let i = 0; i < appState.currentSearch.passengers; i++) {
         const passengerType = i < appState.passengerCounts.adults ? "Adulte" : "Enfant";
         const seatNumber = appState.selectedSeats[i];
         
+        // Le HTML pour le formulaire passager ne change pas
         formsHTML += `
-        <div class="passenger-form">
-            <h3>Passager ${i + 1} (${passengerType}) - Siège ${seatNumber}</h3>
-            <div class="form-group">
-                <label for="name-${i}">Nom complet *</label>
-                <input type="text" id="name-${i}" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="phone-${i}">Numéro de téléphone (international accepté) *</label>
-                <input type="tel" id="phone-${i}" class="form-control" placeholder="Ex: +242 06 123 4567 ou 06 123 4567" required>
-                <small style="color: var(--color-text-secondary); font-size: 13px; margin-top: 4px; display: block;">
-                    Formats acceptés : +XXX XXXXXXXXX, 00XXX XXXXXXXXX, ou national
-                </small>
-            </div>
-            <div class="form-group">
-                <label for="email-${i}">Email (optionnel)</label>
-                <input type="email" id="email-${i}" class="form-control" placeholder="exemple@email.com">
-            </div>
-        </div>`;
+            <div class="passenger-form">
+                <h3>Passager ${i + 1} (${passengerType}) - Siège ${seatNumber}</h3>
+                <div class="form-group">
+                    <label for="name-${i}">Nom complet *</label>
+                    <input type="text" id="name-${i}" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone-${i}">Numéro de téléphone (international accepté) *</label>
+                    <input type="tel" id="phone-${i}" class="form-control" placeholder="Ex: +242 06 123 4567 ou 06 123 4567" required>
+                    <small style="color: var(--color-text-secondary); font-size: 13px; margin-top: 4px; display: block;">
+                        Formats acceptés : +XXX..., 00XXX..., ou national
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="email-${i}">Email (optionnel)</label>
+                    <input type="email" id="email-${i}" class="form-control" placeholder="exemple@email.com">
+                </div>
+            </div>`;
         
-        appState.baggageCounts[i] = 0;
-        baggageHTML += `<div class="baggage-row"><span class="baggage-label">Bagage(s) supp. pour Passager ${i + 1} (+${Utils.formatPrice(CONFIG.EXTRA_BAGGAGE_PRICE)} FCFA/pce)</span><div class="passenger-counter"><button type="button" class="counter-btn" data-passenger-index="${i}" data-action="decrement">-</button><span id="baggage-count-${i}">0</span><button type="button" class="counter-btn" data-passenger-index="${i}" data-action="increment">+</button></div></div>`;
+        // ✅ ÉTAPE 4 : Initialiser le compteur de bagages pour chaque passager (avec les 2 types)
+        appState.baggageCounts[i] = { standard: 0, oversized: 0 };
+        
+        // ✅ ÉTAPE 5 : Afficher les options de bagages avec les prix DYNAMIQUES
+        baggageHTML += `
+            <div class="baggage-passenger-section">
+                <h4>Options pour Passager ${i + 1} (Siège ${seatNumber})</h4>
+                <div class="baggage-row">
+                    <span class="baggage-label">
+                        Bagage standard suppl. (+${Utils.formatPrice(baggageOptions.standard.price)} FCFA/pce)
+                    </span>
+                    <div class="passenger-counter">
+                        <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="standard" data-action="decrement">-</button>
+                        <span id="baggage-count-${i}-standard">0</span>
+                        <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="standard" data-action="increment">+</button>
+                    </div>
+                </div>
+                <div class="baggage-row">
+                    <span class="baggage-label">
+                        Bagage hors format (+${Utils.formatPrice(baggageOptions.oversized.price)} FCFA/pce)
+                    </span>
+                    <div class="passenger-counter">
+                        <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="oversized" data-action="decrement">-</button>
+                        <span id="baggage-count-${i}-oversized">0</span>
+                        <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="oversized" data-action="increment">+</button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
+
+    // Appliquer les changements au DOM
     formsContainer.innerHTML = formsHTML;
     baggageContainer.innerHTML = baggageHTML;
+    
+    // Attacher les événements aux nouveaux boutons
     document.querySelectorAll("#baggage-options .counter-btn").forEach(btn => {
         btn.addEventListener("click", handleBaggageChange);
     });
+    
+    // Mettre à jour le récapitulatif des prix
+    updateBookingSummary();
 }
-
+// Dans app.js
 function handleBaggageChange(event) {
     const passengerIndex = parseInt(event.target.dataset.passengerIndex);
+    const baggageType = event.target.dataset.type; // 'standard' ou 'oversized'
     const action = event.target.dataset.action;
-    if (action === "increment" && appState.baggageCounts[passengerIndex] < CONFIG.MAX_BAGGAGE_PER_PERSON) {
-        appState.baggageCounts[passengerIndex]++;
-    } else if (action === "decrement" && appState.baggageCounts[passengerIndex] > 0) {
-        appState.baggageCounts[passengerIndex]--;
+
+    const baggageOptions = appState.selectedBus.baggageOptions || {
+        standard: { max: 5 },
+        oversized: { max: 2 }
+    };
+    const max = baggageOptions[baggageType].max;
+
+    if (action === "increment" && appState.baggageCounts[passengerIndex][baggageType] < max) {
+        appState.baggageCounts[passengerIndex][baggageType]++;
+    } else if (action === "decrement" && appState.baggageCounts[passengerIndex][baggageType] > 0) {
+        appState.baggageCounts[passengerIndex][baggageType]--;
     }
-    document.getElementById(`baggage-count-${passengerIndex}`).textContent = appState.baggageCounts[passengerIndex];
-    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-action="decrement"]`).disabled = appState.baggageCounts[passengerIndex] <= 0;
-    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-action="increment"]`).disabled = appState.baggageCounts[passengerIndex] >= CONFIG.MAX_BAGGAGE_PER_PERSON;
+
+    document.getElementById(`baggage-count-${passengerIndex}-${baggageType}`).textContent = appState.baggageCounts[passengerIndex][baggageType];
+    
+    // Mettre à jour l'état des boutons
+    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-type="${baggageType}"][data-action="decrement"]`).disabled = appState.baggageCounts[passengerIndex][baggageType] <= 0;
+    document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-type="${baggageType}"][data-action="increment"]`).disabled = appState.baggageCounts[passengerIndex][baggageType] >= max;
+
+    updateBookingSummary(); // Mettre à jour le récapitulatif à chaque changement
 }
 
+
+// Dans app.js
+
+// ============================================
+// 💰 MISE À JOUR DU RÉCAPITULATIF DE PRIX
+// ============================================
+function updateBookingSummary() {
+    const summaryContainer = document.getElementById("booking-summary");
+    if (!summaryContainer) {
+        // Si on n'est pas sur la page de paiement, on ne fait rien
+        return; 
+    }
+
+    // Récupérer les options de bagages du trajet (avec valeurs par défaut)
+    const baggageOptions = appState.selectedBus.baggageOptions || {
+        standard: { price: 2000 },
+        oversized: { price: 5000 }
+    };
+    
+    // Calcul du prix des billets
+    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
+    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
+    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    
+    // Calcul du prix des bagages
+    let totalStandardBaggage = 0;
+    let totalOversizedBaggage = 0;
+    if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
+        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+            totalStandardBaggage += paxBaggage.standard || 0;
+            totalOversizedBaggage += paxBaggage.oversized || 0;
+        });
+    }
+
+    const standardBaggagePrice = totalStandardBaggage * baggageOptions.standard.price;
+    const oversizedBaggagePrice = totalOversizedBaggage * baggageOptions.oversized.price;
+    const totalBaggagePrice = standardBaggagePrice + oversizedBaggagePrice;
+
+    // Calcul du prix total
+    const totalPrice = ticketsPrice + totalBaggagePrice;
+    
+    // Mise à jour de l'affichage du récapitulatif
+    summaryContainer.innerHTML = `
+        <div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
+        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div>
+        <div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(standardBaggagePrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(oversizedBaggagePrice)} FCFA</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>
+    `;
+
+    // Mettre à jour les champs de paiement
+    const bookingRef = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
+    const amountStr = `${Utils.formatPrice(totalPrice)} FCFA`;
+    
+    ['mtn', 'airtel', 'agency'].forEach(method => {
+        const amountInput = document.getElementById(`${method}-amount`);
+        const refInput = document.getElementById(`${method}-booking-ref`);
+        if (amountInput) amountInput.value = amountStr;
+        if (refInput) refInput.value = bookingRef;
+    });
+}
+
+// Dans app.js
 window.proceedToPayment = function() {
     appState.passengerInfo = [];
+    let allFieldsValid = true;
+
     for (let i = 0; i < appState.currentSearch.passengers; i++) {
         const name = document.getElementById(`name-${i}`).value.trim();
         const phone = document.getElementById(`phone-${i}`).value.trim();
         const email = document.getElementById(`email-${i}`).value.trim();
+        
         if (!name || !phone) {
             Utils.showToast(`Veuillez remplir tous les champs obligatoires pour le passager ${i + 1}`, 'error');
-            return;
+            allFieldsValid = false;
+            break; // Arrêter à la première erreur
         }
+        
         if (!Utils.validatePhone(phone)) {
-            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}. Formats acceptés : +XXX..., 00XXX..., ou national`, 'error');
-            return;
+            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}`, 'error');
+            allFieldsValid = false;
+            break;
         }
+        
         if (email && !Utils.validateEmail(email)) {
             Utils.showToast(`Email invalide pour le passager ${i + 1}`, 'error');
-            return;
+            allFieldsValid = false;
+            break;
         }
-        appState.passengerInfo.push({seat: appState.selectedSeats[i],name: name,phone: phone,email: email,baggage: appState.baggageCounts[i] || 0});
+        
+        // Ajouter les infos du passager et ses bagages
+        appState.passengerInfo.push({
+            seat: appState.selectedSeats[i],
+            name: name,
+            phone: phone,
+            email: email,
+            baggage: appState.baggageCounts[i] || { standard: 0, oversized: 0 }
+        });
     }
-    displayBookingSummary();
-    showPage("payment");
+
+    // Si tout est valide, continuer
+    if (allFieldsValid) {
+        // ✅ APPEL DE LA NOUVELLE FONCTION
+        updateBookingSummary();
+        showPage("payment");
+    }
 }
 
 function displayBookingSummary() {
