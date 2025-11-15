@@ -2418,20 +2418,41 @@ function displayBookingSummary() {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+// Dans app.js
 window.confirmBooking = async function(buttonElement) {
-    // ... (Validations au début)
+    // --- ÉTAPE 1 : VALIDATION DES ENTRÉES ---
+    const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+    
+    if (!paymentMethod) {
+        Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
+        return;
+    }
+    if (paymentMethod === "agency" && !canPayAtAgency()) {
+        Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
+        return;
+    }
+    // ... (autres validations)
 
+    // --- ÉTAPE 2 : FEEDBACK UTILISATEUR (SPINNER) ---
+    const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
     buttonElement.innerHTML = `<span>Chargement...</span>`;
     
     try {
-        // --- PRÉPARATION DES DONNÉES FIABLES ---
-        const baggageOptions = appState.selectedBus.baggageOptions || { standard: { price: 2000 }, oversized: { price: 5000 } };
+        // --- ÉTAPE 3 : PRÉPARATION DE L'OBJET RÉSERVATION COMPLET ---
+
+        // Récupérer les options de bagages dynamiques
+        const baggageOptions = appState.selectedBus.baggageOptions || { 
+            standard: { price: 2000 }, 
+            oversized: { price: 5000 } 
+        };
         
+        // Calculer le prix des billets
         const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
         
+        // Calculer le prix des bagages
         let totalStandardBaggage = 0, totalOversizedBaggage = 0;
         Object.values(appState.baggageCounts).forEach(paxBaggage => {
             totalStandardBaggage += paxBaggage.standard || 0;
@@ -2439,8 +2460,10 @@ window.confirmBooking = async function(buttonElement) {
         });
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
 
+        // Calculer le prix total final
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
+        // Définir le statut et la deadline
         let reservationStatus = "Confirmé", paymentDeadline = null, agencyInfo = null;
         if (paymentMethod === "agency") {
             reservationStatus = "En attente de paiement";
@@ -2448,11 +2471,11 @@ window.confirmBooking = async function(buttonElement) {
             agencyInfo = getNearestAgency(appState.selectedBus.from);
         }
         
-        // ✅ L'OBJET RÉSERVATION SIMPLIFIÉ ET COMPLET
+        // Construction de l'objet final
         const reservation = {
             bookingNumber: Utils.generateBookingNumber(),
-            route: appState.selectedBus,                  // Objet complet pour l'aller
-            returnRoute: appState.selectedReturnBus,      // Objet complet pour le retour (ou null)
+            route: appState.selectedBus,
+            returnRoute: appState.selectedReturnBus,
             date: appState.currentSearch.date,
             returnDate: appState.currentSearch.returnDate,
             passengers: appState.passengerInfo,
@@ -2460,18 +2483,17 @@ window.confirmBooking = async function(buttonElement) {
             returnSeats: appState.selectedReturnSeats,
             totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
             totalPriceNumeric: finalTotalPriceNumeric,
-            paymentMethod: paymentMethod,
+            paymentMethod: paymentMethod, // ✅ La variable est bien définie ici
             status: reservationStatus,
             paymentDeadline: paymentDeadline,
             agency: agencyInfo,
             createdAt: new Date().toISOString()
-            // ❌ ON NE MET PLUS busIdentifier ici. Il est déjà dans reservation.route.
         };
         
         console.log("📦 OBJET FINAL ENVOYÉ :", reservation);
 
+        // --- ÉTAPE 4 : APPEL AU BACKEND ET GESTION DU SUCCÈS ---
         await saveReservationToBackend(reservation);
-        
         appState.currentReservation = reservation;
         displayConfirmation(reservation);
         showPage("confirmation");
@@ -2479,10 +2501,13 @@ window.confirmBooking = async function(buttonElement) {
         // ... (messages de succès)
 
     } catch (error) {
+        console.error('❌ Erreur lors de la confirmation:', error);
         Utils.showToast(error.message, 'error');
+        
     } finally {
+        // --- ÉTAPE 6 : RÉINITIALISATION DU BOUTON ---
         buttonElement.disabled = false;
-        buttonElement.innerHTML = "Confirmer la Réservation";
+        buttonElement.innerHTML = originalButtonText;
     }
 }
 // Dans app.js
