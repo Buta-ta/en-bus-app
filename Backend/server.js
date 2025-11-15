@@ -144,21 +144,33 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
 });
 
 // Dans Backend/server.js
+
+// Dans server.js
+
+// ============================================
+// 🚌 CRÉATION DE NOUVEAUX VOYAGES
+// ============================================
 app.post('/api/admin/trips', authenticateToken, [
+    // Validations des données reçues
     body('routeId').notEmpty().withMessage('Un modèle de trajet est requis.'),
     body('startDate').isISO8601().withMessage('Date de début invalide.'),
     body('endDate').isISO8601().withMessage('Date de fin invalide.'),
     body('daysOfWeek').isArray({ min: 1 }).withMessage('Veuillez sélectionner au moins un jour.'),
     body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.'),
-    body('busIdentifier').optional().isString().trim() // ✅ NOUVELLE VALIDATION
+    body('busIdentifier').optional().isString().trim().escape() // Valide et nettoie le numéro de bus
 ], async (req, res) => {
+    
+    // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier } = req.body; // ✅ RÉCUPÉRER
+        // Récupérer les données du corps de la requête
+        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier } = req.body;
+        
+        // Trouver le modèle de trajet correspondant dans la base de données
         const routeTemplate = await routeTemplatesCollection.findOne({ 
             _id: new ObjectId(routeId) 
         });
@@ -172,43 +184,49 @@ app.post('/api/admin/trips', authenticateToken, [
         const lastDate = new Date(endDate);
         const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
+        // Boucler sur la plage de dates
         while (currentDate <= lastDate) {
             const dayName = dayMap[currentDate.getUTCDay()];
             
+            // Si le jour actuel est dans les jours sélectionnés par l'admin
             if (daysOfWeek.includes(dayName)) {
-                // ✅ Utiliser seatCount au lieu de 61 en dur
+                
+                // Créer le tableau de sièges avec le bon nombre
                 const seats = Array.from({ length: seatCount }, (_, i) => ({ 
                     number: i + 1, 
                     status: 'available' 
                 }));
                 
+                // Ajouter le nouveau voyage à la liste
                 newTrips.push({
                     date: currentDate.toISOString().split('T')[0],
                     route: routeTemplate,
                     seats: seats,
-                    busIdentifier: busIdentifier || null, // ✅ AJOUTER
+                    busIdentifier: busIdentifier || null, // ✅ ENREGISTRER LE NUMÉRO DE BUS
                     createdAt: new Date()
                 });
             }
+            // Passer au jour suivant
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
+        // Insérer tous les nouveaux voyages en une seule fois dans la base de données
         if (newTrips.length > 0) {
             await tripsCollection.insertMany(newTrips);
-            console.log(`✅ ${newTrips.length} voyage(s) inséré(s) en base de données`);
+            console.log(`✅ ${newTrips.length} voyage(s) inséré(s) en base de données.`);
         }
         
+        // Envoyer une réponse de succès
         res.status(201).json({ 
             success: true, 
             message: `${newTrips.length} voyage(s) créé(s) avec ${seatCount} sièges chacun.` 
         });
 
     } catch (error) {
-        console.error("❌ Erreur création voyages:", error);
+        console.error("❌ Erreur lors de la création des voyages:", error);
         res.status(500).json({ error: 'Erreur serveur lors de la création des voyages.' });
     }
-}); // ✅ CORRECTION : Ajout de "); " pour fermer app.post()
-
+});
 // Supprimer un modèle de trajet
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
     try {
@@ -711,20 +729,25 @@ app.get('/api/trips/:id/seats', async (req, res) => {
 });
 
 
+// Dans server.js
 
 // ============================================
 // 🎫 CRÉATION DE RÉSERVATION CLIENT
 // ============================================
 app.post('/api/reservations', strictLimiter, [
-    body('bookingNumber').notEmpty(),
-    body('route').isObject(),
-    body('date').isISO8601(),
-    body('passengers').isArray({ min: 1 }),
-    body('passengers.*.name').notEmpty(),
-    body('passengers.*.phone').notEmpty(),
-    body('totalPrice').notEmpty(),
-    body('status').isIn(['Confirmé', 'En attente de paiement']),
+    // Validation des données essentielles
+    body('bookingNumber').notEmpty().withMessage('Le numéro de réservation est requis.'),
+    body('route').isObject().withMessage('Les informations du trajet sont requises.'),
+    body('route.id').notEmpty().withMessage('L\'ID du trajet est requis.'),
+    body('date').isISO8601().withMessage('La date doit être au format ISO8601.'),
+    body('passengers').isArray({ min: 1 }).withMessage('Il doit y avoir au moins un passager.'),
+    body('passengers.*.name').notEmpty().withMessage('Le nom du passager est requis.'),
+    body('passengers.*.phone').notEmpty().withMessage('Le téléphone du passager est requis.'),
+    body('totalPrice').notEmpty().withMessage('Le prix total est requis.'),
+    body('status').isIn(['Confirmé', 'En attente de paiement']).withMessage('Le statut est invalide.')
 ], async (req, res) => {
+    
+    // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -733,38 +756,66 @@ app.post('/api/reservations', strictLimiter, [
     try {
         const reservationData = req.body;
         
-        // Mettre à jour les sièges du voyage correspondant
+        // --- GESTION DES SIÈGES POUR LE TRAJET ALLER ---
+        
         const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
         if (!trip) {
-            return res.status(404).json({ error: 'Le voyage sélectionné n\'existe plus.' });
+            return res.status(404).json({ error: 'Le voyage aller sélectionné n\'existe plus.' });
         }
 
         const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
         
-        // Vérifier si les sièges sont toujours disponibles
+        // Vérifier si les sièges aller sont toujours disponibles
         const alreadyTaken = trip.seats.filter(s => 
             seatNumbersToOccupy.includes(s.number) && s.status !== 'available'
         );
 
         if (alreadyTaken.length > 0) {
             return res.status(409).json({ // 409 Conflict
-                error: `Conflit : Les sièges ${alreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` 
+                error: `Conflit : Les sièges aller ${alreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` 
             });
         }
 
-        // Mettre à jour les sièges comme 'occupied'
+        // Mettre à jour les sièges aller comme 'occupied'
         await tripsCollection.updateOne(
-            { _id: new ObjectId(trip.id) },
+            { _id: new ObjectId(trip._id) },
             { $set: { "seats.$[elem].status": "occupied" } },
             { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
         );
         
-        // Insérer la réservation
+        // --- GESTION DES SIÈGES POUR LE TRAJET RETOUR (si applicable) ---
+        if (reservationData.returnRoute && reservationData.returnSeats && reservationData.returnSeats.length > 0) {
+            const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
+            if (!returnTrip) {
+                return res.status(404).json({ error: 'Le voyage de retour sélectionné n\'existe plus.' });
+            }
+            
+            const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
+            
+            const returnAlreadyTaken = returnTrip.seats.filter(s => 
+                returnSeatNumbers.includes(s.number) && s.status !== 'available'
+            );
+
+            if (returnAlreadyTaken.length > 0) {
+                return res.status(409).json({ error: `Conflit : Les sièges retour ${returnAlreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` });
+            }
+
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(returnTrip._id) },
+                { $set: { "seats.$[elem].status": "occupied" } },
+                { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] }
+            );
+        }
+        
+        // --- FINALISATION ---
+        
+        // Insérer la réservation complète dans la base de données
         const result = await reservationsCollection.insertOne(reservationData);
 
         // Envoyer l'email de confirmation
         sendConfirmationEmail(reservationData);
         
+        // Envoyer une réponse de succès
         res.status(201).json({ 
             success: true, 
             message: 'Réservation créée avec succès.',
@@ -772,7 +823,7 @@ app.post('/api/reservations', strictLimiter, [
         });
 
     } catch (error) {
-        console.error('❌ Erreur création réservation:', error);
+        console.error('❌ Erreur lors de la création de la réservation:', error);
         res.status(500).json({ error: 'Erreur serveur lors de la création de la réservation.' });
     }
 });
