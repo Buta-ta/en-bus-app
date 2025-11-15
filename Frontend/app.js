@@ -2494,42 +2494,77 @@ window.proceedToPayment = function() {
     }
 }
 
+// Dans app.js
 function displayBookingSummary() {
     const summaryContainer = document.getElementById("booking-summary");
+
+    // ✅ ÉTAPE 1 : Récupérer les options de bagages dynamiques (avec fallback)
+    const baggageOptions = appState.selectedBus.baggageOptions || {
+        standard: { price: 2000 },
+        oversized: { price: 5000 }
+    };
+    
+    // Calcul du prix des billets
     const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
     const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
     const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
-    const totalBaggage = Object.values(appState.baggageCounts).reduce((sum, count) => sum + count, 0);
-    const baggagePrice = totalBaggage * CONFIG.EXTRA_BAGGAGE_PRICE;
-    const totalPrice = ticketsPrice + baggagePrice;
-    summaryContainer.innerHTML = `<div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div><div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div><div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div><div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div><div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div><div class="detail-row"><span>Bagages supp. (${totalBaggage}):</span><strong>${Utils.formatPrice(baggagePrice)} FCFA</strong></div><div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>`;
     
-    const bookingRef = Utils.generateBookingNumber();
-    const mtnAmount = document.getElementById("mtn-amount");
-    const mtnRef = document.getElementById("mtn-booking-ref");
-    const airtelAmount = document.getElementById("airtel-amount");
-    const airtelRef = document.getElementById("airtel-booking-ref");
-    if (mtnAmount) mtnAmount.value = `${Utils.formatPrice(totalPrice)} FCFA`;
-    if (mtnRef) mtnRef.value = bookingRef;
-    if (airtelAmount) airtelAmount.value = `${Utils.formatPrice(totalPrice)} FCFA`;
-    if (airtelRef) airtelRef.value = bookingRef;
+    // ✅ ÉTAPE 2 : Calculer le prix pour chaque type de bagage
+    let totalStandardBaggage = 0;
+    let totalOversizedBaggage = 0;
+    if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
+        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+            totalStandardBaggage += paxBaggage.standard || 0;
+            totalOversizedBaggage += paxBaggage.oversized || 0;
+        });
+    }
+
+    const standardBaggagePrice = totalStandardBaggage * baggageOptions.standard.price;
+    const oversizedBaggagePrice = totalOversizedBaggage * baggageOptions.oversized.price;
+    const totalBaggagePrice = standardBaggagePrice + oversizedBaggagePrice;
+
+    // Calcul du prix total
+    const totalPrice = ticketsPrice + totalBaggagePrice;
     
+    // ✅ ÉTAPE 3 : Mettre à jour l'affichage du récapitulatif détaillé
+    summaryContainer.innerHTML = `
+        <div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
+        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div>
+        <div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(standardBaggagePrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(oversizedBaggagePrice)} FCFA</strong></div>
+        <hr style="border-color: var(--color-border); margin: 8px 0;">
+        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>
+    `;
+
+    // Mettre à jour les champs de paiement (le reste de la fonction est bon)
+    const bookingRef = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
+    const amountStr = `${Utils.formatPrice(totalPrice)} FCFA`;
+    
+    ['mtn', 'airtel', 'agency'].forEach(method => {
+        const amountInput = document.getElementById(`${method}-amount`);
+        const refInput = document.getElementById(`${method}-booking-ref`);
+        if (amountInput) amountInput.value = amountStr;
+        if (refInput) refInput.value = bookingRef;
+    });
+
+    // Gestion de l'option "Paiement à l'agence"
     const agencyOption = document.getElementById('agency-payment-option');
     const agencySubtitle = document.getElementById('agency-payment-subtitle');
     
     if (canPayAtAgency()) {
-        agencyOption.style.display = 'block';
         agencyOption.style.opacity = '1';
         agencyOption.querySelector('input').disabled = false;
         
         const deadline = calculatePaymentDeadline();
         agencySubtitle.textContent = `Payez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-        
     } else {
-        agencyOption.style.display = 'block';
         agencyOption.style.opacity = '0.5';
         agencyOption.querySelector('input').disabled = true;
-        agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Disponible uniquement 1h avant le départ</span>`;
+        agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
     }
     
     const agency = getNearestAgency(appState.selectedBus.from);
@@ -2551,11 +2586,6 @@ function displayBookingSummary() {
         const deadline = calculatePaymentDeadline();
         deadlineInput.value = deadline.toLocaleString('fr-FR');
     }
-    
-    const agencyRefInput = document.getElementById('agency-booking-ref');
-    if (agencyRefInput) {
-        agencyRefInput.value = bookingRef;
-    }
 }
 
 // Dans Frontend/app.js
@@ -2563,6 +2593,14 @@ function displayBookingSummary() {
 window.confirmBooking = async function(buttonElement) { // ✅ 'buttonElement' est le nouveau paramètre
     // --- Validation des champs ---
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+
+    // ✅ VÉRIFICATION SUPPLÉMENTAIRE
+    if (paymentMethod === "agency" && !canPayAtAgency()) {
+        Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
+        return;
+    }
+
+
     if (!paymentMethod) {
         Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
         return;
@@ -2708,12 +2746,20 @@ if (trackLink) {
     const confArrivalTime = document.getElementById("conf-arrival-time");
     const confDuration = document.getElementById("conf-duration");
 
-    if (confOrigin) confOrigin.textContent = reservation.route.from;
-    if (confDestination) confDestination.textContent = reservation.route.to;
-    if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
-    if (confTime) confTime.textContent = reservation.route.departure;
-    if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
-    if (confDuration) confDuration.textContent = reservation.route.duration;
+    // ✅ NOUVEAU BLOC CORRIGÉ
+if (confOrigin) confOrigin.textContent = reservation.route.from;
+if (confDestination) confDestination.textContent = reservation.route.to;
+if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
+if (confTime) confTime.textContent = reservation.route.departure;
+if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
+
+// On ajoute une vérification pour la durée
+if (confDuration) {
+    const durationText = reservation.route.duration && reservation.route.duration !== "N/A"
+        ? reservation.route.duration
+        : 'durée du trajet'; // ✅ Si la durée est "N/A" ou vide, on affiche "durée du trajet"
+    confDuration.textContent = durationText;
+}
 
     // ✅ NOUVELLE - Grille de détails avec types de passagers
     const detailsContainer = document.getElementById("confirmation-details");
@@ -2744,7 +2790,8 @@ if (trackLink) {
             </div>
             <div class="detail-item-modern">
                 <span class="detail-label">💰 Prix total</span>
-                <span class="detail-value">${reservation.totalPrice}</span>
+                <!-- ✅ NOUVELLE LIGNE CORRIGÉE -->
+            <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric)} FCFA</span>
             </div>
         `;
     }
