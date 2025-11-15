@@ -2419,8 +2419,9 @@ function displayBookingSummary() {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+// Dans app.js
 window.confirmBooking = async function(buttonElement) {
-    // --- ÉTAPE 1 : VALIDATION DES ENTRÉES ---
+    // --- ÉTAPE 1 : VALIDATION DES ENTRÉES UTILISATEUR ---
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
     
     if (!paymentMethod) {
@@ -2431,17 +2432,26 @@ window.confirmBooking = async function(buttonElement) {
         Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
         return;
     }
-    // ... (autres validations)
-
-    // --- ÉTAPE 2 : FEEDBACK UTILISATEUR (SPINNER) ---
+    if (paymentMethod === "mtn" || paymentMethod === "airtel") {
+        const phoneInput = document.getElementById(`${paymentMethod}-phone`);
+        if (!phoneInput || !phoneInput.value.trim() || !Utils.validatePhone(phoneInput.value)) {
+            Utils.showToast(`Le numéro de téléphone ${paymentMethod.toUpperCase()} est invalide.`, 'error');
+            return;
+        }
+    }
+    
+    // --- ÉTAPE 2 : AFFICHER UN ÉTAT DE CHARGEMENT ---
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    buttonElement.innerHTML = `<span>Chargement...</span>`;
+    buttonElement.innerHTML = `
+        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
+        <span>Enregistrement...</span>
+    `;
     
     try {
         // --- ÉTAPE 3 : PRÉPARATION DE L'OBJET RÉSERVATION COMPLET ---
 
-        // Récupérer les options de bagages dynamiques
+        // Récupérer les options de bagages pour le calcul des prix
         const baggageOptions = appState.selectedBus.baggageOptions || { 
             standard: { price: 2000 }, 
             oversized: { price: 5000 } 
@@ -2452,18 +2462,20 @@ window.confirmBooking = async function(buttonElement) {
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
         
-        // Calculer le prix des bagages
+        // Calculer le prix des bagages supplémentaires
         let totalStandardBaggage = 0, totalOversizedBaggage = 0;
-        Object.values(appState.baggageCounts).forEach(paxBaggage => {
-            totalStandardBaggage += paxBaggage.standard || 0;
-            totalOversizedBaggage += paxBaggage.oversized || 0;
-        });
+        if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
+            Object.values(appState.baggageCounts).forEach(paxBaggage => {
+                totalStandardBaggage += paxBaggage.standard || 0;
+                totalOversizedBaggage += paxBaggage.oversized || 0;
+            });
+        }
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
 
         // Calculer le prix total final
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
-        // Définir le statut et la deadline
+        // Définir le statut et la deadline en fonction du mode de paiement
         let reservationStatus = "Confirmé", paymentDeadline = null, agencyInfo = null;
         if (paymentMethod === "agency") {
             reservationStatus = "En attente de paiement";
@@ -2471,36 +2483,44 @@ window.confirmBooking = async function(buttonElement) {
             agencyInfo = getNearestAgency(appState.selectedBus.from);
         }
         
-        // Construction de l'objet final
+        // Construction de l'objet final à envoyer au backend
         const reservation = {
             bookingNumber: Utils.generateBookingNumber(),
-            route: appState.selectedBus,
-            returnRoute: appState.selectedReturnBus,
+            route: appState.selectedBus,                  // Objet complet pour l'aller (contient duration, busIdentifier, etc.)
+            returnRoute: appState.selectedReturnBus,      // Objet complet pour le retour (ou null)
             date: appState.currentSearch.date,
             returnDate: appState.currentSearch.returnDate,
             passengers: appState.passengerInfo,
             seats: appState.selectedSeats,
             returnSeats: appState.selectedReturnSeats,
-            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
-            totalPriceNumeric: finalTotalPriceNumeric,
-            paymentMethod: paymentMethod, // ✅ La variable est bien définie ici
+            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`, // Formaté pour affichage
+            totalPriceNumeric: finalTotalPriceNumeric,           // Numérique pour calculs
+            paymentMethod: paymentMethod,
             status: reservationStatus,
             paymentDeadline: paymentDeadline,
             agency: agencyInfo,
             createdAt: new Date().toISOString()
         };
         
-        console.log("📦 OBJET FINAL ENVOYÉ :", reservation);
+        console.log("📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :", reservation);
 
         // --- ÉTAPE 4 : APPEL AU BACKEND ET GESTION DU SUCCÈS ---
+        
         await saveReservationToBackend(reservation);
-        appState.currentReservation = reservation;
+        
+        appState.currentReservation = reservation; // Stocker l'objet complet pour les étapes suivantes
+        
         displayConfirmation(reservation);
         showPage("confirmation");
         
-        // ... (messages de succès)
-
+        if (paymentMethod === "agency") {
+            Utils.showToast(`Réservation créée ! Payez avant le ${new Date(paymentDeadline).toLocaleString('fr-FR')}`, 'success');
+        } else {
+            Utils.showToast("Réservation confirmée avec succès!", 'success');
+        }
+        
     } catch (error) {
+        // --- ÉTAPE 5 : GESTION DES ERREURS ---
         console.error('❌ Erreur lors de la confirmation:', error);
         Utils.showToast(error.message, 'error');
         
