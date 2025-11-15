@@ -653,46 +653,6 @@ app.get('/api/search', async (req, res) => {
 
 
 
-// ============================================
-// 🔍 NOUVELLE ROUTE DE RECHERCHE CLIENT
-// ============================================
-
-app.get('/api/search', [
-    body('from').notEmpty(),
-    body('to').notEmpty(),
-    body('date').isISO8601(),
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    try {
-        const { from, to, date } = req.query;
-
-        const availableTrips = await tripsCollection.find({
-            "route.from": from,
-            "route.to": to,
-            "date": date
-        }).toArray();
-        
-        // Pour chaque voyage, on calcule le nombre de sièges disponibles
-        const results = availableTrips.map(trip => {
-            const availableSeatsCount = trip.seats.filter(s => s.status === 'available').length;
-            return {
-                tripId: trip._id,
-                route: trip.route,
-                availableSeats: availableSeatsCount,
-                busIdentifier: trip.busIdentifier || 'N/A', // ✅ AJOUTER
-            };
-        });
-
-        res.json({ success: true, results });
-
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-
 
 // ============================================
 // 💺 RÉCUPÉRER LES SIÈGES D'UN VOYAGE SPÉCIFIQUE
