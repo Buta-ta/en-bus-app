@@ -1497,6 +1497,38 @@
         </label>
     </div>
 </div>
+<div class="form-group form-group-full" style="padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--dark-border);">
+    <h4 style="color: var(--primary); margin-bottom: 1rem;">Options des bagages</h4>
+    
+    <div class="form-grid">
+        <!-- Bagages standards -->
+        <div class="form-group">
+            <label for="standard-baggage-included" class="form-label">Bagages standards inclus</label>
+            <input type="number" id="standard-baggage-included" class="form-control" value="1" min="0">
+        </div>
+        <div class="form-group">
+            <label for="standard-baggage-max" class="form-label">Max par passager</label>
+            <input type="number" id="standard-baggage-max" class="form-control" value="5" min="1">
+        </div>
+        <div class="form-group">
+            <label for="standard-baggage-price" class="form-label">Prix par bagage suppl.</label>
+            <input type="number" id="standard-baggage-price" class="form-control" value="2000" step="500">
+        </div>
+
+        <!-- Bagages hors format -->
+        <div class="form-group" style="grid-column: 1 / -1; margin-top: 1rem; border-top: 1px dashed var(--dark-border); padding-top: 1rem;">
+            <label class="form-label">Bagages Hors Format (Grand sac, Colis...)</label>
+        </div>
+        <div class="form-group">
+            <label for="oversized-baggage-max" class="form-label">Max par passager</label>
+            <input type="number" id="oversized-baggage-max" class="form-control" value="2" min="0">
+        </div>
+        <div class="form-group">
+            <label for="oversized-baggage-price" class="form-label">Prix par unité</label>
+            <input type="number" id="oversized-baggage-price" class="form-control" value="5000" step="500">
+        </div>
+    </div>
+</div>
 
                         
                         <button type="submit" class="btn btn-primary mt-4">
@@ -1963,6 +1995,9 @@
                         <span style="color:var(--gray-600);">🕐 ${t.departure} → ${t.arrival}</span>
                     </td>
                     <td>
+                        <!-- ✅ AJOUT DU BOUTON MODIFIER -->
+                <button class="btn btn-sm btn-ghost" onclick="showEditTemplateModal('${t._id}')">✏️ Modifier</button>
+
                         <button class="btn btn-sm btn-danger" onclick="handleDeleteTemplate('${t._id}', '${t.from} → ${t.to}')">
                             🗑️ Supprimer
                         </button>
@@ -2006,9 +2041,19 @@ async function handleCreateTemplate(e) {
         tripType: tripType,
         stops: stops,
         connections: connections,
-        breaks: stops.length
+        breaks: stops.length,
+
+        // ✅ ENVOYER LES DONNÉES BRUTES DES BAGAGES
+        standardBaggageIncluded: document.getElementById('standard-baggage-included').value,
+        standardBaggageMax: document.getElementById('standard-baggage-max').value,
+        standardBaggagePrice: document.getElementById('standard-baggage-price').value,
+        oversizedBaggageMax: document.getElementById('oversized-baggage-max').value,
+        oversizedBaggagePrice: document.getElementById('oversized-baggage-price').value,
     };
     
+
+
+
     const data = await apiCall('/admin/route-templates', 'POST', newTemplate);
     
     if (data) {
@@ -2550,6 +2595,55 @@ function removeConnection(connId) {
     document.getElementById(connId).remove();
 }
 
+
+
+// Dans Admin/index.html (section <script>)
+function showEditTemplateModal(templateId) {
+    const template = allTemplates.find(t => t._id === templateId);
+    if (!template) return;
+
+    // Utiliser des valeurs par défaut si baggageOptions n'existe pas
+    const baggage = template.baggageOptions || {
+        standard: { included: 1, max: 5, price: 2000 },
+        oversized: { max: 2, price: 5000 }
+    };
+
+    document.getElementById('modal-title').textContent = 'Modifier le Modèle de Trajet';
+    document.getElementById('modal-body').innerHTML = `
+        <form id="edit-template-form">
+            <!-- ... (champs from, to, company, price, etc.) ... -->
+            <!-- Gestion des bagages -->
+            <div class="form-group form-group-full">
+                <h4>Options des bagages</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit-standard-baggage-included">Bagages standards inclus</label>
+                        <input type="number" id="edit-standard-baggage-included" class="form-control" value="${baggage.standard.included}">
+                    </div>
+                    <!-- ... (autres champs de bagages) ... -->
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </form>
+    `;
+
+    document.getElementById('edit-template-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const updates = {
+            // ... (récupérer les valeurs des champs)
+            standardBaggageIncluded: document.getElementById('edit-standard-baggage-included').value,
+            // ...
+        };
+        const data = await apiCall(`/admin/route-templates/${templateId}`, 'PATCH', updates);
+        if (data) {
+            showNotification(data.message, 'success');
+            closeModal();
+            loadAllTemplates();
+        }
+    });
+
+    document.getElementById('details-modal').classList.add('active');
+}
 
     </script>
 </body>

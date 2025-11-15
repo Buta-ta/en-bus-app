@@ -394,12 +394,95 @@ app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
         if (template.to) template.to = template.to.trim();
         if (template.company) template.company = template.company.trim();
         
+        // ✅ GESTION DES OPTIONS DE BAGAGES
+        const baggageOptions = {
+            standard: {
+                included: parseInt(template.standardBaggageIncluded) || 1, // 1 par défaut
+                max: parseInt(template.standardBaggageMax) || 5,         // 5 par défaut
+                price: parseInt(template.standardBaggagePrice) || 2000    // 2000 FCFA par défaut
+            },
+            oversized: {
+                max: parseInt(template.oversizedBaggageMax) || 2,
+                price: parseInt(template.oversizedBaggagePrice) || 5000
+            }
+        };
+
+        // Supprimer les champs temporaires
+        delete template.standardBaggageIncluded;
+        delete template.standardBaggageMax;
+        delete template.standardBaggagePrice;
+        delete template.oversizedBaggageMax;
+        delete template.oversizedBaggagePrice;
+
+        // Ajouter l'objet structuré
+        template.baggageOptions = baggageOptions;
+        
         await routeTemplatesCollection.insertOne(template);
-        res.status(201).json({ success: true, message: 'Modèle créé.' });
+        res.status(201).json({ success: true, message: 'Modèle créé avec succès.' });
+
     } catch (error) { 
+        console.error('❌ Erreur création modèle:', error);
         res.status(500).json({ error: 'Erreur serveur' }); 
     }
 });
+
+
+// Dans server.js
+// ✅ NOUVELLE ROUTE : Mettre à jour un modèle de trajet
+app.patch('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        let updates = req.body;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de modèle invalide' });
+        }
+        
+        // Nettoyage des données
+        if (updates.from) updates.from = updates.from.trim();
+        if (updates.to) updates.to = updates.to.trim();
+        if (updates.company) updates.company = updates.company.trim();
+
+        // Gérer les options de bagages si elles sont envoyées
+        if (updates.standardBaggageIncluded !== undefined) {
+            updates.baggageOptions = {
+                standard: {
+                    included: parseInt(updates.standardBaggageIncluded),
+                    max: parseInt(updates.standardBaggageMax),
+                    price: parseInt(updates.standardBaggagePrice)
+                },
+                oversized: {
+                    max: parseInt(updates.oversizedBaggageMax),
+                    price: parseInt(updates.oversizedBaggagePrice)
+                }
+            };
+            // Supprimer les champs temporaires
+            delete updates.standardBaggageIncluded;
+            delete updates.standardBaggageMax;
+            delete updates.standardBaggagePrice;
+            delete updates.oversizedBaggageMax;
+            delete updates.oversizedBaggagePrice;
+        }
+
+        const result = await routeTemplatesCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updates }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(200).json({ success: true, message: 'Aucune modification détectée.' });
+        }
+
+        res.json({ success: true, message: 'Modèle mis à jour avec succès.' });
+
+    } catch (error) {
+        console.error('❌ Erreur mise à jour modèle:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
+
 
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
