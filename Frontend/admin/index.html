@@ -1363,7 +1363,16 @@
                                     <!-- Généré dynamiquement -->
                                 </div>
                             </div>
+
+                            <!-- ✅ AJOUTER CE CHAMP -->
+    <div class="form-group">
+        <label for="bus-identifier" class="form-label">Numéro du Bus (ex: B01)</label>
+        <input type="text" id="bus-identifier" class="form-control" placeholder="Identifiant unique">
+    </div>
+
                         </div>
+
+
                         
                         <button type="submit" class="btn btn-primary">
                             <span>➕</span>
@@ -1960,13 +1969,13 @@
             `).join('');
         }
 
-        async function handleCreateTemplate(e) {
+    // Dans Admin/index.html (section <script>)
+async function handleCreateTemplate(e) {
     e.preventDefault();
     
     const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(cb => cb.value);
     const tripType = document.getElementById('template-trip-type').value;
     
-    // ✅ RÉCUPÉRER LES ARRÊTS
     const stops = Array.from(document.querySelectorAll('.stop-item')).map(stopDiv => ({
         city: stopDiv.querySelector('.stop-city').value,
         arrivalTime: stopDiv.querySelector('.stop-arrival').value,
@@ -1974,12 +1983,14 @@
         duration: stopDiv.querySelector('.stop-duration').value
     }));
     
-    // ✅ RÉCUPÉRER LES CORRESPONDANCES
+    // ✅ RÉCUPÉRER LES CORRESPONDANCES AVEC LES NOUVEAUX CHAMPS
     const connections = Array.from(document.querySelectorAll('.connection-item')).map(connDiv => ({
         at: connDiv.querySelector('.conn-city').value,
         arrivalTime: connDiv.querySelector('.conn-arrival').value,
         waitTime: connDiv.querySelector('.conn-wait').value,
-        reason: connDiv.querySelector('.conn-reason').value
+        nextDeparture: connDiv.querySelector('.conn-next-departure').value, // Ajouté
+        nextCompany: connDiv.querySelector('.conn-next-company').value,   // Ajouté
+        nextBusNumber: connDiv.querySelector('.conn-next-bus-number').value // Ajouté
     }));
     
     const newTemplate = {
@@ -1993,13 +2004,13 @@
         tripType: tripType,
         stops: stops,
         connections: connections,
-        breaks: stops.length // Nombre de pauses = nombre d'arrêts
+        breaks: stops.length
     };
     
     const data = await apiCall('/admin/route-templates', 'POST', newTemplate);
     
     if (data) {
-        showNotification('Modèle créé avec équipements, arrêts et correspondances', 'success');
+        showNotification('Modèle créé avec succès', 'success');
         e.target.reset();
         document.getElementById('stops-container').innerHTML = '';
         document.getElementById('connections-container').innerHTML = '';
@@ -2007,7 +2018,6 @@
         loadAllTemplates();
     }
 }
-
         async function handleDeleteTemplate(templateId, templateName) {
             if (!confirm(`Supprimer le modèle "${templateName}" ?`)) return;
             
@@ -2105,59 +2115,68 @@
     }).join('');
 }
 
-        async function handleCreateTrips(e) {
-            e.preventDefault();
-            
-            const routeId = document.getElementById('route-template').value;
-            if (!routeId) {
-                showNotification('Sélectionnez un modèle de trajet', 'warning');
-                return;
-            }
-            
-            const dateValue = document.getElementById('trip-dates').value;
-            if (!dateValue) {
-                showNotification('Sélectionnez une date', 'warning');
-                return;
-            }
-            
-            const seatCount = parseInt(document.getElementById('seat-count').value);
-            if (!seatCount || seatCount < 10 || seatCount > 100) {
-                showNotification('Nombre de sièges invalide (10-100)', 'warning');
-                return;
-            }
-            
-            let startDate, endDate;
-            if (dateValue.includes(' au ')) {
-                [startDate, endDate] = dateValue.split(' au ');
-            } else {
-                startDate = endDate = dateValue;
-            }
-            
-            const selectedDays = Array.from(document.querySelectorAll('#days-selector input:checked')).map(cb => cb.value);
-            
-            if (selectedDays.length === 0 && startDate !== endDate) {
-                showNotification('Sélectionnez au moins un jour', 'warning');
-                return;
-            }
-            
-            const daysToSend = (startDate === endDate) 
-                ? ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] 
-                : selectedDays;
-            
-            const data = await apiCall('/admin/trips', 'POST', {
-                routeId,
-                startDate,
-                endDate,
-                daysOfWeek: daysToSend,
-                seatCount
-            });
-            
-            if (data) {
-                showNotification(data.message, 'success');
-                e.target.reset();
-                loadAllTrips();
-            }
-        }
+        // Dans Admin/index.html (section <script>)
+async function handleCreateTrips(e) {
+    e.preventDefault();
+    
+    // Récupération des valeurs du formulaire
+    const routeId = document.getElementById('route-template').value;
+    const dateValue = document.getElementById('trip-dates').value;
+    const seatCount = parseInt(document.getElementById('seat-count').value);
+    const busIdentifier = document.getElementById('bus-identifier').value.trim(); // ✅ NOUVEAU
+    
+    // --- Validations ---
+    if (!routeId) {
+        showNotification('Sélectionnez un modèle de trajet', 'warning');
+        return;
+    }
+    
+    if (!dateValue) {
+        showNotification('Sélectionnez une date', 'warning');
+        return;
+    }
+    
+    if (!seatCount || seatCount < 10 || seatCount > 100) {
+        showNotification('Nombre de sièges invalide (10-100)', 'warning');
+        return;
+    }
+
+    // --- Logique des dates et jours ---
+    let startDate, endDate;
+    if (dateValue.includes(' au ')) {
+        [startDate, endDate] = dateValue.split(' au ');
+    } else {
+        startDate = endDate = dateValue;
+    }
+    
+    const selectedDays = Array.from(document.querySelectorAll('#days-selector input:checked')).map(cb => cb.value);
+    
+    if (selectedDays.length === 0 && startDate !== endDate) {
+        showNotification('Sélectionnez au moins un jour pour une plage de dates', 'warning');
+        return;
+    }
+    
+    const daysToSend = (startDate === endDate) 
+        ? ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] 
+        : selectedDays;
+    
+    // --- Appel API ---
+    const data = await apiCall('/admin/trips', 'POST', {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek: daysToSend,
+        seatCount,
+        busIdentifier: busIdentifier || null // ✅ On envoie le numéro du bus (ou null s'il est vide)
+    });
+    
+    // --- Résultat ---
+    if (data) {
+        showNotification(data.message, 'success');
+        e.target.reset(); // Réinitialise le formulaire
+        loadAllTrips();   // Met à jour le tableau des voyages
+    }
+}
 
         function manageSeats(tripId) {
             const trip = allTrips.find(t => t._id === tripId);
@@ -2498,6 +2517,7 @@ function removeStop(stopId) {
 }
 
 let connectionCounter = 0;
+// Dans Admin/index.html (section <script>)
 function addConnection() {
     const container = document.getElementById('connections-container');
     const connId = `connection-${connectionCounter++}`;
@@ -2506,11 +2526,13 @@ function addConnection() {
     connDiv.className = 'connection-item';
     connDiv.id = connId;
     connDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 2fr auto; gap: 12px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; margin-bottom: 12px; border: 1px solid #ffc107;">
-            <input type="text" placeholder="Ville de correspondance" class="form-control conn-city" required>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 12px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; margin-bottom: 12px; border: 1px solid #ffc107;">
+            <input type="text" placeholder="Ville" class="form-control conn-city" required>
             <input type="time" placeholder="Arrivée" class="form-control conn-arrival" required>
-            <input type="text" placeholder="Attente (ex: 2h)" class="form-control conn-wait" required>
-            <input type="text" placeholder="Raison (ex: Changement de bus)" class="form-control conn-reason" required>
+            <input type="text" placeholder="Attente" class="form-control conn-wait" required>
+            <input type="time" placeholder="Prochain départ" class="form-control conn-next-departure" required>
+            <input type="text" placeholder="Compagnie partenaire" class="form-control conn-next-company" required>
+            <input type="text" placeholder="N° Bus partenaire" class="form-control conn-next-bus-number">
             <button type="button" class="btn btn-danger btn-icon" onclick="removeConnection('${connId}')">🗑️</button>
         </div>
     `;
