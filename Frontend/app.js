@@ -2031,6 +2031,7 @@ window.toggleSeat = function(seatNumber) {
 // ============================================
 
 // Dans app.js
+// Dans app.js
 function displaySeats() {
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
@@ -2065,24 +2066,44 @@ function displaySeats() {
         mainRows++; // Ajouter une rangée si le compte n'est pas rond
     }
 
-    let seatHTML = `<div class="modern-bus-container">
-        <!-- ... (zone chauffeur) ... -->
-        <div class="modern-seat-grid">`;
+    let seatHTML = `
+        <div class="modern-bus-container">
+            
+            <!-- ✅ ZONE CHAUFFEUR RÉINTÉGRÉE -->
+            <div class="bus-front-zone">
+                <div class="driver-section">
+                    <div class="driver-icon">🧑‍✈️</div>
+                    <span class="driver-label">Chauffeur</span>
+                </div>
+                <div class="front-door-section">
+                    <div class="bus-steps">
+                        <div class="step"></div>
+                        <div class="step"></div>
+                        <div class="step"></div>
+                    </div>
+                    <div class="door-icon">🚪</div>
+                    <span class="door-label">Entrée</span>
+                </div>
+            </div>
+            
+            <div class="modern-seat-grid">
+    `;
     
     let seatNumber = 1;
+    const seatsInMainRows = totalSeats - backRowSeatsCount;
     
     for (let row = 1; row <= mainRows; row++) {
         seatHTML += `<div class="seat-row" data-row="${row}">`;
         
         // Colonnes A & B
-        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
-        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `B${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `B${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
         
         seatHTML += `<div class="aisle-space"><div class="aisle-line"></div></div>`;
         
         // Colonnes C & D
-        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `C${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
-        if (seatNumber <= totalSeats - backRowSeatsCount) seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `C${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
+        if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
         
         seatHTML += `<div class="row-indicator">${row}</div></div>`;
     }
@@ -2090,7 +2111,12 @@ function displaySeats() {
     seatHTML += `</div>`; // Fin modern-seat-grid
     
     if (hasWC) {
-        seatHTML += `<div class="toilet-section"> ... </div>`;
+        seatHTML += `
+            <div class="toilet-section">
+                <div class="toilet-icon">🚻</div>
+                <span class="toilet-label">Toilettes</span>
+            </div>
+        `;
     }
     
     // Rangée arrière
@@ -2109,7 +2135,6 @@ function displaySeats() {
     seatGrid.innerHTML = seatHTML;
     updateSeatSummary();
 }
-
 
 // ✅ Fonction auxiliaire pour générer un siège moderne
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
