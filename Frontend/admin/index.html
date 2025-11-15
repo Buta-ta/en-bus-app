@@ -2223,10 +2223,15 @@ function showEditTripModal(tripId) {
     if (!trip) return;
     
     const occupiedSeatsCount = trip.seats.filter(s => s.status === 'occupied').length;
+    const allAmenities = ['wifi', 'wc', 'clim', 'prise'];
     
     document.getElementById('modal-title').textContent = `Modifier le voyage : ${trip.route.from} → ${trip.route.to}`;
+    
+    // ✅ CONSTRUCTION DU HTML DE LA MODALE (avec tous les champs)
     document.getElementById('modal-body').innerHTML = `
         <form id="edit-trip-form" style="display:grid;gap:var(--spacing-lg);">
+            
+            <!-- Champ DATE -->
             <div class="form-group">
                 <label for="edit-trip-date" class="form-label">Date du voyage</label>
                 <input 
@@ -2238,6 +2243,7 @@ function showEditTripModal(tripId) {
                 >
             </div>
             
+            <!-- Champ SIÈGES -->
             <div class="form-group">
                 <label for="edit-trip-seats" class="form-label">Nombre total de sièges</label>
                 <input 
@@ -2250,13 +2256,28 @@ function showEditTripModal(tripId) {
                     required
                 >
                 <small style="color:var(--text-muted);font-size:0.75rem;margin-top:4px;display:block;">
-                    ${occupiedSeatsCount > 0 ? `⚠️ Minimum requis : ${occupiedSeatsCount} (nombre de sièges déjà réservés)` : 'Le nombre de sièges doit être entre 10 et 100.'}
+                    ${occupiedSeatsCount > 0 ? `⚠️ Min: ${occupiedSeatsCount} (sièges réservés)` : 'Entre 10 et 100'}
                 </small>
             </div>
             
+            <!-- Champ ÉQUIPEMENTS -->
+            <div class="form-group form-group-full">
+                <label class="form-label">Équipements</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    ${allAmenities.map(amenity => `
+                        <label class="amenity-checkbox-label">
+                            <input type="checkbox" name="edit-amenity" value="${amenity}" 
+                                ${trip.route.amenities?.includes(amenity) ? 'checked' : ''}>
+                            <span>${amenity.charAt(0).toUpperCase() + amenity.slice(1)}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- Boutons d'action -->
             <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;padding-top:var(--spacing-md);border-top:1px solid var(--dark-border);">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
             </div>
         </form>
     `;
@@ -2265,23 +2286,42 @@ function showEditTripModal(tripId) {
     document.getElementById('edit-trip-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Récupérer les nouvelles valeurs
         const newDate = document.getElementById('edit-trip-date').value;
         const newSeatCount = parseInt(document.getElementById('edit-trip-seats').value);
+        const newAmenities = Array.from(document.querySelectorAll('input[name="edit-amenity"]:checked')).map(cb => cb.value);
         
+        // Construire l'objet 'updates'
         const updates = {};
+        let hasChanges = false;
+
+        // Comparer la date
         if (newDate !== new Date(trip.date).toISOString().split('T')[0]) {
             updates.date = newDate;
+            hasChanges = true;
         }
+
+        // Comparer le nombre de sièges
         if (newSeatCount !== trip.seats.length) {
             updates.seatCount = newSeatCount;
+            hasChanges = true;
+        }
+
+        // Comparer les équipements
+        const currentAmenities = trip.route.amenities || [];
+        if (JSON.stringify(newAmenities.sort()) !== JSON.stringify(currentAmenities.sort())) {
+            updates['route.amenities'] = newAmenities; // Utiliser la notation pointée
+            hasChanges = true;
         }
         
-        if (Object.keys(updates).length === 0) {
+        // Si aucun changement, ne pas envoyer de requête
+        if (!hasChanges) {
             showNotification('Aucune modification détectée.', 'info');
             closeModal();
             return;
         }
         
+        // Envoyer la requête API
         const data = await apiCall(`/admin/trips/${tripId}`, 'PATCH', updates);
         
         if (data) {
@@ -2293,7 +2333,6 @@ function showEditTripModal(tripId) {
     
     document.getElementById('details-modal').classList.add('active');
 }
-
 async function deleteTrip(tripId) {
     const trip = allTrips.find(t => t._id === tripId);
     if (!trip) return;
