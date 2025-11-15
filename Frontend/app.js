@@ -612,38 +612,24 @@ const Utils = {
 // Dans app.js
 // Dans app.js
 function canPayAtAgency() {
-    // ✅ AJOUTER CES CONSOLE.LOGS
-    console.group("🔍 DEBUG : canPayAtAgency");
-    console.log("Date de recherche :", appState.currentSearch.date);
-    console.log("Heure de départ du bus :", appState.selectedBus?.departure);
-
     if (!appState.currentSearch.date || !appState.selectedBus) {
-        console.warn("⚠️ Données manquantes.");
-        console.groupEnd();
         return false;
     }
     
-    const departureDateTimeString = `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`;
-    const departureDateTime = new Date(departureDateTimeString);
-    console.log("Date de départ construite :", departureDateTime.toString());
-
+    // CORRECTION: Utiliser directement la date sans "T"
+    const [year, month, day] = appState.currentSearch.date.split('-');
+    const [hours, minutes] = appState.selectedBus.departure.split(':');
+    
+    const departureDateTime = new Date(year, month - 1, day, hours, minutes);
+    
     if (isNaN(departureDateTime.getTime())) {
-        console.error("❌ Date de départ INVALIDE.");
-        console.groupEnd();
         return false;
     }
     
     const now = new Date();
     const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
     
-    console.log(`⏰ Heures restantes : ${hoursUntilDeparture.toFixed(1)}h`);
-    console.log(`Minimum requis : ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h`);
-    
-    const result = hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
-    console.log("Résultat (peut payer ?) :", result);
-    console.groupEnd();
-    
-    return result;
+    return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
 }
 function getNearestAgency(cityName) {
     let agency = agencies.find(a => a.city === cityName);
@@ -2512,14 +2498,11 @@ if (confTime) confTime.textContent = reservation.route.departure;
 if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
 
 // On ajoute une vérification pour la durée
-    // ✅ CORRECTION POUR LA DURÉE
-    if (confDuration) {
-        const durationText = reservation.route.duration && reservation.route.duration !== "N/A"
-            ? reservation.route.duration
-            : 'Durée non spécifiée';
-        confDuration.textContent = durationText;
-    }
-
+    // Dans displayConfirmation()
+if (confDuration) {
+    const durationText = reservation.route.duration || 'Non spécifiée';
+    confDuration.textContent = durationText;
+}
 
     // ✅ NOUVELLE - Grille de détails avec types de passagers
     const detailsContainer = document.getElementById("confirmation-details");
@@ -2551,7 +2534,7 @@ if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
             <div class="detail-item-modern">
                 <span class="detail-label">💰 Prix total</span>
                 <!-- ✅ NOUVELLE LIGNE CORRIGÉE -->
-            <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric)} FCFA</span>
+            <span class="detail-value">${reservation.totalPriceNumeric ? Utils.formatPrice(reservation.totalPriceNumeric) : reservation.totalPrice}</span>
             </div>
         `;
     }
