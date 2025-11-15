@@ -594,7 +594,10 @@ app.get('/api/search', async (req, res) => {
                 availableSeats: availableSeats,
                 totalSeats: trip.seats.length,
                 date: trip.date,
-                createdAt: trip.createdAt
+                createdAt: trip.createdAt,
+
+                // ✅ AJOUTER CETTE LIGNE
+                baggageOptions: trip.route.baggageOptions,
             };
         });
         
