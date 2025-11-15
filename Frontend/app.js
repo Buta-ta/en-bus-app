@@ -2217,20 +2217,9 @@ function updateBookingSummary() {
 }
 
 // Dans app.js
-// Dans app.js
 window.proceedToPayment = function() {
-    
-    // ✅ SÉCURITÉ AJOUTÉE
-    // Vérifie si un voyage a bien été sélectionné avant de continuer.
-    // C'est la cause la plus probable de vos erreurs.
-    if (!appState.selectedBus) {
-        Utils.showToast("Erreur critique : Aucun voyage sélectionné.", "error");
-        console.error("❌ Tentative de continuer vers le paiement sans 'appState.selectedBus' défini.");
-        // Redirige l'utilisateur vers l'accueil pour éviter qu'il soit bloqué.
-        showPage('home'); 
-        return;
-    }
 
+    
     appState.passengerInfo = [];
     let allFieldsValid = true;
 
@@ -2267,33 +2256,17 @@ window.proceedToPayment = function() {
         });
     }
 
-    // Si tous les formulaires sont valides, on continue vers la page de paiement
-    if (allFieldsValid) {
-        // Appelle la fonction qui met à jour le récapitulatif AVANT d'afficher la page
-        displayBookingSummary(); 
-        showPage("payment");
-    }
-}
-
     // Si tout est valide, continuer
     if (allFieldsValid) {
         // ✅ APPEL DE LA NOUVELLE FONCTION
         updateBookingSummary();
         showPage("payment");
     }
-
+}
 
 // Dans app.js
 // Dans app.js
 function displayBookingSummary() {
-
-    if (!appState.selectedBus) {
-        console.error("❌ Impossible d'afficher le récapitulatif : appState.selectedBus est manquant.");
-        return; // Arrêter l'exécution pour éviter de planter
-    }
-
-
-
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) return;
 
