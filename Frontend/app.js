@@ -608,20 +608,29 @@ const Utils = {
 // FONCTIONS PAIEMENT AGENCE
 // ============================================
 
+// Dans app.js
 function canPayAtAgency() {
     if (!appState.currentSearch.date || !appState.selectedBus) {
         return false;
     }
     
-    const departureDateTime = new Date(
-        `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`
-    );
+    // ✅ CRÉATION DE LA DATE DE DÉPART FIABLE
+    // On combine la date de recherche (ex: "2025-01-20") avec l'heure de départ (ex: "08:00")
+    const departureDateTimeString = `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`;
+    const departureDateTime = new Date(departureDateTimeString);
+
+    // Vérifier si la date est valide (pour éviter les erreurs si le format est mauvais)
+    if (isNaN(departureDateTime.getTime())) {
+        console.error("❌ Date de départ invalide:", departureDateTimeString);
+        return false;
+    }
     
     const now = new Date();
     const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
     
     console.log(`⏰ Heures avant départ: ${hoursUntilDeparture.toFixed(1)}h (minimum requis: ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h)`);
     
+    // Le paiement est possible s'il reste au moins X heures avant le départ
     return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
 }
 
@@ -1100,10 +1109,11 @@ async function generateTicketPDF(reservation) {
                     <div class="detail-label">Compagnie</div>
                     <div class="detail-value">${reservation.route.company}</div>
                 </div>
-                <div class="detail-item">
-                    <div class="detail-label">Durée estimée</div>
-                    <div class="detail-value">${reservation.route.duration || 'N/A'}</div>
-                </div>
+                 <div class="detail-item">
+                                <div class="detail-label">Durée estimée</div>
+                                <!-- ✅ CORRECTION DURÉE -->
+                                <div class="detail-value">${reservation.route.duration && reservation.route.duration !== "N/A" ? reservation.route.duration : 'N/A'}</div>
+                            </div>
                 <div class="detail-item">
                     <div class="detail-label">Numéros de siège</div>
                     <div class="detail-value">${reservation.seats.join(', ')}</div>
@@ -1132,9 +1142,10 @@ async function generateTicketPDF(reservation) {
 </div>
 
             <div class="price-box">
-                <div class="price-label">PRIX TOTAL</div>
-                <div class="price-value">${reservation.totalPrice}</div>
-            </div>
+                            <div class="price-label">PRIX TOTAL</div>
+                            <!-- ✅ CORRECTION PRIX -->
+                            <div class="price-value">${Utils.formatPrice(reservation.totalPriceNumeric)} FCFA</div>
+                        </div>
         </div>
 
         <div class="ticket-footer">
