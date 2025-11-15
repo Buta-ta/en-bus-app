@@ -811,15 +811,27 @@ window.downloadTicket = async function(reservation) {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+// Dans app.js
 async function generateTicketPDF(reservation) {
     try {
         const qrData = Utils.generateQRCodeData(reservation);
-        // On augmente la taille pour une meilleure qualité
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 200);
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 150);
 
-        // ... (toute la logique pour agencyInfoHTML est bonne) ...
+        // ✅ CORRECTION : La variable est déclarée ici pour être toujours accessible
+        let agencyInfoHTML = '';
+        
+        if (reservation.status === 'En attente de paiement' && reservation.agency) {
+            agencyInfoHTML = `
+                <div class="payment-warning">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-text">
+                        <strong>PAIEMENT REQUIS À L'AGENCE</strong>
+                        <span>Ce billet ne sera valide qu'après paiement avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
+                    </div>
+                </div>
+            `;
+        }
 
-        // Le template HTML complet du billet
         const ticketHTML = `
             <!DOCTYPE html>
             <html lang="fr">
@@ -937,11 +949,14 @@ async function generateTicketPDF(reservation) {
                         <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
                     </div>
                 </div>
+                <script>
+                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
+                </script>
             </body>
             </html>
         `;
 
-        // ✅ LOGIQUE DE TÉLÉCHARGEMENT/IMPRESSION RÉINTÉGRÉE
+        // Logique de téléchargement et d'impression
         try {
             const blob = new Blob([ticketHTML], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
@@ -954,13 +969,11 @@ async function generateTicketPDF(reservation) {
             setTimeout(() => URL.revokeObjectURL(url), 100);
             Utils.showToast('Billet téléchargé !', 'success');
 
-            // Optionnel : ouvrir dans un nouvel onglet pour l'impression sur desktop
             if (window.innerWidth > 768) {
                 const printWindow = window.open('', '_blank');
                 if (printWindow) {
                     printWindow.document.write(ticketHTML);
                     printWindow.document.close();
-                    // L'impression se lancera automatiquement grâce au script dans le HTML du billet
                 }
             }
         } catch (downloadError) {
@@ -971,7 +984,6 @@ async function generateTicketPDF(reservation) {
     } catch (error) {
         console.error('Erreur lors de la génération du billet:', error);
         Utils.showToast('Erreur critique lors de la génération du billet.', 'error');
-        // On ne propage pas l'erreur pour ne pas bloquer l'interface
     }
 }
 // ============================================
