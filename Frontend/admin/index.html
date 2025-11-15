@@ -1390,11 +1390,13 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Trajet</th>
-                                    <th>Compagnie</th>
-                                    <th>Disponibilité</th>
-                                    <th>Actions</th>
+                                                <th>Date</th>
+            <th>Trajet</th>
+            <th>Compagnie</th>
+            <th>N° Bus</th> <!-- ✅ NOUVELLE COLONNE -->
+            <th>Disponibilité</th>
+            <th style="min-width: 180px;">Actions</th>
+
                                 </tr>
                             </thead>
                             <tbody id="trips-body">
@@ -2053,7 +2055,8 @@ async function handleCreateTemplate(e) {
             renderTripsTable();
         }
 
-        function renderTripsTable() {
+    // Dans Admin/index.html (section <script>)
+function renderTripsTable() {
     const tbody = document.getElementById('trips-body');
     
     if (allTrips.length === 0) {
@@ -2082,6 +2085,10 @@ async function handleCreateTemplate(e) {
                     <div class="text-xs" style="color:var(--text-muted);">🕐 ${trip.route.departure} • ${trip.route.price} FCFA</div>
                 </td>
                 <td>${trip.route.company}</td>
+                
+                <!-- ✅ AFFICHER LE NUMÉRO DE BUS -->
+                <td class="font-bold font-mono" style="color: var(--primary);">${trip.busIdentifier || 'N/A'}</td>
+                
                 <td>
                     <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
                         <div style="flex:1;background:var(--dark-elevated);height:8px;border-radius:9999px;overflow:hidden;">
