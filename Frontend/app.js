@@ -615,27 +615,50 @@ const Utils = {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+// Dans app.js
 function canPayAtAgency() {
-    if (!appState.currentSearch?.date || !appState.selectedBus?.departure) {
-        console.warn("⚠️ Données manquantes pour canPayAtAgency.");
-        return false;
-    }
-    
-    // Construit une chaîne de date ISO 8601, la méthode la plus fiable
-    const departureDateTimeString = `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`;
-    const departureDateTime = new Date(departureDateTimeString);
+    console.group("🔍 DEBUG : canPayAtAgency - NOUVELLE VERSION");
 
-    if (isNaN(departureDateTime.getTime())) {
-        console.error("❌ Date de départ invalide construite:", departureDateTimeString);
+    // 1. Vérification des données de base
+    if (!appState.currentSearch?.date || !appState.selectedBus?.departure) {
+        console.warn("⚠️ Données manquantes (date de recherche ou heure de départ).");
+        console.groupEnd();
         return false;
     }
-    
-    const now = new Date();
-    const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
-    
-    console.log(`⏰ Heures avant le départ: ${hoursUntilDeparture.toFixed(2)}h`);
-    
-    return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
+    console.log("Date de recherche (string):", appState.currentSearch.date);
+    console.log("Heure de départ (string):", appState.selectedBus.departure);
+
+    // 2. Séparation des composants de la date et de l'heure
+    const [year, month, day] = appState.currentSearch.date.split('-').map(Number);
+    const [hours, minutes] = appState.selectedBus.departure.split(':').map(Number);
+
+    // 3. Création de la date de départ en UTC pour éviter les problèmes de fuseau horaire
+    // Le mois est 0-indexé en JavaScript, donc on fait 'month - 1'
+    const departureDateTimeUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+    console.log("Date de départ (objet Date en UTC) :", departureDateTimeUTC.toISOString());
+
+    // Sécurité : si la date est invalide, on refuse
+    if (isNaN(departureDateTimeUTC.getTime())) {
+        console.error("❌ La date de départ construite est INVALIDE.");
+        console.groupEnd();
+        return false;
+    }
+
+    // 4. Création de la date actuelle en UTC
+    const nowUTC = new Date();
+    console.log("Date actuelle (objet Date) :", nowUTC.toISOString());
+
+    // 5. Calcul de la différence en heures
+    const hoursUntilDeparture = (departureDateTimeUTC - nowUTC) / (1000 * 60 * 60);
+    console.log(`⏰ Heures restantes avant le départ : ${hoursUntilDeparture.toFixed(2)}h`);
+    console.log(`(Minimum requis : ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h)`);
+
+    // 6. Comparaison finale
+    const isAllowed = hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
+    console.log("Résultat (peut payer ?) :", isAllowed);
+    console.groupEnd();
+
+    return isAllowed;
 }
 function getNearestAgency(cityName) {
     let agency = agencies.find(a => a.city === cityName);
