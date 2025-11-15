@@ -610,30 +610,40 @@ const Utils = {
 
 // Dans app.js
 // Dans app.js
+// Dans app.js
 function canPayAtAgency() {
-    // Vérifie si les données nécessaires existent
-    if (!appState.currentSearch || !appState.currentSearch.date || !appState.selectedBus) {
-        console.warn("⚠️ Données manquantes pour vérifier le paiement agence.");
+    // ✅ AJOUTER CES CONSOLE.LOGS
+    console.group("🔍 DEBUG : canPayAtAgency");
+    console.log("Date de recherche :", appState.currentSearch.date);
+    console.log("Heure de départ du bus :", appState.selectedBus?.departure);
+
+    if (!appState.currentSearch.date || !appState.selectedBus) {
+        console.warn("⚠️ Données manquantes.");
+        console.groupEnd();
         return false;
     }
     
-    // Construit la date de départ au format ISO (le plus fiable)
     const departureDateTimeString = `${appState.currentSearch.date}T${appState.selectedBus.departure}:00`;
     const departureDateTime = new Date(departureDateTimeString);
+    console.log("Date de départ construite :", departureDateTime.toString());
 
-    // Sécurité : si la date est invalide, on refuse
     if (isNaN(departureDateTime.getTime())) {
-        console.error("❌ Date de départ invalide pour le calcul :", departureDateTimeString);
+        console.error("❌ Date de départ INVALIDE.");
+        console.groupEnd();
         return false;
     }
     
     const now = new Date();
     const hoursUntilDeparture = (departureDateTime - now) / (1000 * 60 * 60);
     
-    console.log(`⏰ Heures avant départ: ${hoursUntilDeparture.toFixed(1)}h (minimum requis: ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h)`);
+    console.log(`⏰ Heures restantes : ${hoursUntilDeparture.toFixed(1)}h`);
+    console.log(`Minimum requis : ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h`);
     
-    // Retourne 'true' si le temps restant est supérieur ou égal au minimum requis
-    return hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
+    const result = hoursUntilDeparture >= CONFIG.AGENCY_PAYMENT_MIN_HOURS;
+    console.log("Résultat (peut payer ?) :", result);
+    console.groupEnd();
+    
+    return result;
 }
 function getNearestAgency(cityName) {
     let agency = agencies.find(a => a.city === cityName);
@@ -2411,12 +2421,17 @@ window.confirmBooking = async function(buttonElement) { // ✅ 'buttonElement' e
             agency: agencyInfo,
             createdAt: new Date().toISOString()
         };
-        
+         // ✅ AJOUTER CE CONSOLE.LOG
+        console.log("📦 OBJET ENVOYÉ AU BACKEND :", JSON.parse(JSON.stringify(reservation)));
         // --- Appel au backend ---
         await saveReservationToBackend(reservation);
         
         // --- Si succès ---
         appState.currentReservation = reservation;
+
+        // ✅ AJOUTER CE CONSOLE.LOG
+        console.log("✅ OBJET PASSÉ À LA CONFIRMATION :", JSON.parse(JSON.stringify(appState.currentReservation)));
+
         displayConfirmation(reservation);
         showPage("confirmation");
         
