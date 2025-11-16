@@ -1828,71 +1828,71 @@
             renderReservationsTable(filtered);
         }
 
-        function renderReservationsTable(reservations) {
-            const tbody = document.getElementById('reservations-body');
-            
-            if (!reservations || reservations.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center" style="padding:3rem;">
-                            <div style="font-size:3rem;margin-bottom:1rem;">📭</div>
-                            <div style="color:var(--gray-500);font-weight:600;">Aucune réservation trouvée</div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = reservations.map(r => {
-                const p = r.passengers[0] || {};
-                const statusMap = {
-                    'Confirmé': 'success',
-                    'En attente de paiement': 'warning',
-                    'Annulé': 'danger',
-                    'Expiré': 'gray'
-                };
-                const badgeClass = statusMap[r.status] || 'gray';
-                
-                return `
-                    <tr>
-                        <td><span class="font-mono font-bold">${r.bookingNumber}</span></td>
-                        <td>${new Date(r.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                        <td>
-                            <div class="font-bold">${r.route.from} → ${r.route.to}</div>
-                            <div class="text-xs" style="color:var(--gray-500);">${r.route.company}</div>
-                        </td>
-                        <td>
-                            <div class="font-bold">${p.name || 'N/A'}</div>
-                            <div class="text-xs" style="color:var(--gray-500);">${p.phone || 'N/A'}</div>
-                        </td>
-                        <td class="font-bold">${r.totalPrice}</td>
-                        <td><span class="badge badge-${badgeClass}">${r.status}</span></td>
-                        <td>
-                            <div class="actions-cell">
-                                <button class="btn btn-icon btn-ghost" onclick="showDetails('${r.bookingNumber}')" title="Détails">
-                                    👁️
-                                </button>
-                                ${r.status === 'En attente de paiement' ? `
-                                    <button class="btn btn-icon btn-success" onclick="confirmPayment('${r.bookingNumber}')" title="Confirmer">
-                                        ✅
-                                    </button>
-                                    <!-- ✅ AJOUTEZ LE NOUVEAU BOUTON ICI -->
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">
-                        💺
-                    </button>
+        // DANS Admin/index.html (section <script>)
 
-                                ` : ''}
-                                ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
-        <button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">
-            ❌
-        </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+function renderTable(reservations) { 
+    const tbody = document.getElementById('reservations-body'); 
+    
+    if (!reservations || reservations.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`; 
+        return; 
+    } 
+    
+    tbody.innerHTML = reservations.map(r => { 
+        const p = r.passengers[0] || {}; 
+        const statusMap = {
+            'Confirmé': 'success',
+            'En attente de paiement': 'warning',
+            'Annulé': 'danger',
+            'Expiré': 'gray'
+        };
+        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+        
+        return `
+            <tr>
+                <td><strong class="font-mono">${r.bookingNumber}</strong></td>
+                <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
+                <td>
+                    <div class="font-bold">${r.route.from} → ${r.route.to}</div>
+                    <div class="text-xs text-muted">${r.route.company}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${p.name || 'N/A'}</div>
+                    <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
+                </td>
+                <td class="font-bold">${r.totalPrice}</td>
+                <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                <td class="actions-cell">
+                    <!-- Bouton pour voir les détails -->
+                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">
+                        👁️
+                    </button>
+                    
+                    <!-- Bouton pour confirmer le paiement (si en attente) -->
+                    ${r.status === 'En attente de paiement' ? `
+                        <button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer paiement">
+                            ✅
+                        </button>
+                    ` : ''}
+                    
+                    <!-- Bouton pour modifier les sièges (si la réservation est active) -->
+                    ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
+                        <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">
+                            💺
+                        </button>
+                    ` : ''}
+                    
+                    <!-- Bouton pour annuler (si la réservation est active) -->
+                    ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
+                        <button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">
+                            ❌
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `; 
+    }).join('');
+}
 
         async function confirmPayment(bookingNumber) {
             if (!confirm(`Confirmer le paiement pour ${bookingNumber} ?`)) return;
