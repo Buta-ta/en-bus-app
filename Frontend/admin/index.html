@@ -2276,36 +2276,51 @@ async function handleCreateTrips(e) {
         }
 
         // Dans Admin/index.html (section <script>)
+// Dans Admin/index.html (section <script>)
 async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
     let newStatus;
+    let actionMessage = '';
+
+    // ✅ NOUVELLE LOGIQUE DE CONTRÔLE ADMIN
     
-    // ✅ NOUVELLE LOGIQUE
-    // Si le siège est 'available' -> on le bloque
+    // Si le siège est DISPONIBLE, on le BLOQUE.
     if (currentStatus === 'available') {
         newStatus = 'blocked';
+        actionMessage = `Le siège ${seatNumber} a été bloqué.`;
     } 
-    // Si le siège est 'blocked' -> on le libère
-    else if (currentStatus === 'blocked') {
+    // Si le siège est BLOQUÉ ou OCCUPÉ, on le LIBÈRE.
+    else if (currentStatus === 'blocked' || currentStatus === 'occupied') {
+        
+        // Avertissement si on libère un siège occupé par un client
+        if (currentStatus === 'occupied') {
+            if (!confirm(`⚠️ ATTENTION : Le siège ${seatNumber} est déjà réservé par un client. Forcer sa libération annulera sa place sur ce trajet. Voulez-vous continuer ?`)) {
+                return; // L'admin annule l'opération
+            }
+        }
+        
         newStatus = 'available';
+        actionMessage = `Le siège ${seatNumber} a été libéré.`;
     } 
-    // Si le siège est 'occupied', on ne fait rien (on ne peut pas libérer un siège réservé par un client ici)
     else {
-        showNotification('Ce siège est occupé par une réservation et ne peut pas être modifié ici.', 'warning');
+        // Cas imprévu, on ne fait rien
         return;
     }
 
+    // Appel à l'API pour mettre à jour le statut en base de données
     const data = await apiCall(`/admin/trips/${tripId}/seats/${seatNumber}`, 'PATCH', { status: newStatus });
     
     if (data) {
-        // Mettre à jour l'état local pour un rafraîchissement immédiat
+        // Mettre à jour l'état local pour un rafraîchissement immédiat de l'interface
         const trip = allTrips.find(t => t._id === tripId);
-        const seat = trip.seats.find(s => s.number === seatNumber);
-        if (seat) {
-            seat.status = newStatus;
+        if (trip) {
+            const seat = trip.seats.find(s => s.number === seatNumber);
+            if (seat) {
+                seat.status = newStatus;
+            }
         }
         
-        showNotification(`✅ Siège ${seatNumber} mis à jour : ${newStatus}`, 'success');
-        manageSeats(tripId); // Rafraîchit la modale
+        showNotification(actionMessage, 'success');
+        manageSeats(tripId); // Rafraîchit la modale pour afficher le nouvel état
     }
 }
 
