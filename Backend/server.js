@@ -789,6 +789,141 @@ app.post('/api/reservations', strictLimiter, [
     }
 });
 
+
+// Dans server.js
+
+// ============================================
+// 🔄 ACTIONS SUR LES RÉSERVATIONS (Confirmation, Annulation)
+// ============================================
+app.patch('/api/reservations/:id/:action', authenticateToken, async (req, res) => {
+    const { id, action } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'ID de réservation invalide' });
+    }
+
+    try {
+        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+        if (!reservation) {
+            return res.status(404).json({ error: 'Réservation non trouvée.' });
+        }
+
+        // Action : Confirmer un paiement
+        if (action === 'confirm-payment') {
+            if (reservation.status !== 'En attente de paiement') {
+                return res.status(400).json({ error: 'Cette réservation n\'est pas en attente de paiement.' });
+            }
+            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: 'Confirmé' } });
+            // sendPaymentConfirmedEmail(reservation); // Décommentez si vous avez cette fonction email
+            return res.json({ success: true, message: 'Paiement confirmé.' });
+        }
+
+        // Action : Annuler une réservation
+        if (action === 'cancel') {
+            if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
+                return res.status(400).json({ error: 'Cette réservation est déjà annulée ou expirée.' });
+            }
+            
+            // --- Libérer les sièges ---
+            const tripId = reservation.route.id;
+            const seatNumbersToFree = reservation.seats.map(s => parseInt(s));
+
+            // Libérer les sièges du trajet aller
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $set: { "seats.$[elem].status": "available" } },
+                { arrayFilters: [{ "elem.number": { $in: seatNumbersToFree } }] }
+            );
+
+            // Libérer les sièges du trajet retour (si c'est un aller-retour)
+            if (reservation.returnRoute && reservation.returnSeats && reservation.returnSeats.length > 0) {
+                const returnTripId = reservation.returnRoute.id;
+                const returnSeatNumbersToFree = reservation.returnSeats.map(s => parseInt(s));
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(returnTripId) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: returnSeatNumbersToFree } }] }
+                );
+            }
+            
+            // Mettre à jour le statut de la réservation
+            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: 'Annulé', cancelledAt: new Date() } });
+            
+            return res.json({ success: true, message: 'Réservation annulée et sièges libérés.' });
+        }
+
+        // Si l'action n'est ni 'confirm-payment' ni 'cancel'
+        return res.status(400).json({ error: 'Action non reconnue.' });
+
+    } catch (error) {
+        console.error(`❌ Erreur lors de l'action '${action}' sur la réservation:`, error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
+
+
+// Dans server.js
+
+// ============================================
+// ✏️ MODIFICATION DES SIÈGES D'UNE RÉSERVATION
+// ============================================
+app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
+    body('newSeats').isArray({ min: 1 }).withMessage('Veuillez fournir une liste de nouveaux sièges.'),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { id } = req.params;
+        const { newSeats } = req.body; // ex: [10, 11]
+
+        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+        if (!reservation) return res.status(404).json({ error: 'Réservation non trouvée.' });
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
+        if (!trip) return res.status(404).json({ error: 'Voyage associé non trouvé.' });
+
+        const oldSeats = reservation.seats.map(s => parseInt(s));
+
+        // 1. Vérifier si les nouveaux sièges sont disponibles
+        const unavailable = trip.seats.filter(s => 
+            newSeats.includes(s.number) && s.status !== 'available' && !oldSeats.includes(s.number)
+        );
+        if (unavailable.length > 0) {
+            return res.status(409).json({ error: `Conflit : Siège(s) ${unavailable.map(s => s.number).join(', ')} déjà pris.` });
+        }
+
+        // 2. Libérer les anciens sièges
+        await tripsCollection.updateOne(
+            { _id: trip._id },
+            { $set: { "seats.$[elem].status": "available" } },
+            { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+        );
+
+        // 3. Occuper les nouveaux sièges
+        await tripsCollection.updateOne(
+            { _id: trip._id },
+            { $set: { "seats.$[elem].status": "occupied" } },
+            { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+        );
+
+        // 4. Mettre à jour la réservation avec les nouveaux sièges
+        await reservationsCollection.updateOne(
+            { _id: reservation._id },
+            { $set: { seats: newSeats, "passengers.$[].seat": newSeats } } // Logique simplifiée, à affiner si l'ordre compte
+        );
+
+        res.json({ success: true, message: 'Sièges modifiés avec succès.' });
+
+    } catch (error) {
+        console.error('❌ Erreur modification sièges:', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
+
+
 // ============================================
 // 🐛 ROUTE DE DEBUG (À SUPPRIMER APRÈS TEST)
 // ============================================
