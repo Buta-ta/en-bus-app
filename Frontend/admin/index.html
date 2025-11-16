@@ -2275,19 +2275,39 @@ async function handleCreateTrips(e) {
             document.getElementById('details-modal').classList.add('active');
         }
 
-        async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
-            const newStatus = currentStatus === 'available' ? 'blocked' : 'available';
-            
-            const data = await apiCall(`/admin/trips/${tripId}/seats/${seatNumber}`, 'PATCH', { status: newStatus });
-            
-            if (data) {
-                const trip = allTrips.find(t => t._id === tripId);
-                const seat = trip.seats.find(s => s.number === seatNumber);
-                seat.status = newStatus;
-                showNotification(`Siège ${seatNumber} ${newStatus === 'blocked' ? 'bloqué' : 'libéré'}`, 'success');
-                manageSeats(tripId);
-            }
+        // Dans Admin/index.html (section <script>)
+async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
+    let newStatus;
+    
+    // ✅ NOUVELLE LOGIQUE
+    // Si le siège est 'available' -> on le bloque
+    if (currentStatus === 'available') {
+        newStatus = 'blocked';
+    } 
+    // Si le siège est 'blocked' -> on le libère
+    else if (currentStatus === 'blocked') {
+        newStatus = 'available';
+    } 
+    // Si le siège est 'occupied', on ne fait rien (on ne peut pas libérer un siège réservé par un client ici)
+    else {
+        showNotification('Ce siège est occupé par une réservation et ne peut pas être modifié ici.', 'warning');
+        return;
+    }
+
+    const data = await apiCall(`/admin/trips/${tripId}/seats/${seatNumber}`, 'PATCH', { status: newStatus });
+    
+    if (data) {
+        // Mettre à jour l'état local pour un rafraîchissement immédiat
+        const trip = allTrips.find(t => t._id === tripId);
+        const seat = trip.seats.find(s => s.number === seatNumber);
+        if (seat) {
+            seat.status = newStatus;
         }
+        
+        showNotification(`✅ Siège ${seatNumber} mis à jour : ${newStatus}`, 'success');
+        manageSeats(tripId); // Rafraîchit la modale
+    }
+}
 
         // ============================================
 // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE

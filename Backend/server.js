@@ -867,17 +867,17 @@ app.patch('/api/reservations/:id/:action', authenticateToken, async (req, res) =
 // ============================================
 // ✏️ MODIFICATION DES SIÈGES D'UNE RÉSERVATION
 // ============================================
+
+// Dans server.js
 app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
     body('newSeats').isArray({ min: 1 }).withMessage('Veuillez fournir une liste de nouveaux sièges.'),
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
         const { id } = req.params;
-        const { newSeats } = req.body; // ex: [10, 11]
+        const { newSeats } = req.body;
 
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
         if (!reservation) return res.status(404).json({ error: 'Réservation non trouvée.' });
@@ -889,7 +889,9 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
 
         // 1. Vérifier si les nouveaux sièges sont disponibles
         const unavailable = trip.seats.filter(s => 
-            newSeats.includes(s.number) && s.status !== 'available' && !oldSeats.includes(s.number)
+            newSeats.includes(s.number) && 
+            s.status !== 'available' && 
+            !oldSeats.includes(s.number) // ✅ LA CORRECTION : On ignore les sièges qui appartenaient déjà à CETTE réservation
         );
         if (unavailable.length > 0) {
             return res.status(409).json({ error: `Conflit : Siège(s) ${unavailable.map(s => s.number).join(', ')} déjà pris.` });
@@ -910,9 +912,14 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
         );
 
         // 4. Mettre à jour la réservation avec les nouveaux sièges
+        // On suppose que l'ordre des passagers correspond à l'ordre des nouveaux sièges
+        const passengerUpdates = {};
+        reservation.passengers.forEach((passenger, index) => {
+            passengerUpdates[`passengers.${index}.seat`] = newSeats[index];
+        });
         await reservationsCollection.updateOne(
             { _id: reservation._id },
-            { $set: { seats: newSeats, "passengers.$[].seat": newSeats } } // Logique simplifiée, à affiner si l'ordre compte
+            { $set: { seats: newSeats, ...passengerUpdates } }
         );
 
         res.json({ success: true, message: 'Sièges modifiés avec succès.' });
