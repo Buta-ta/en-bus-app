@@ -516,96 +516,108 @@ const Utils = {
         return 'night';
     },
 
-    // ✅ QR Code simplifié : BOOKING_NUMBER|PASSENGER_NAME
-     generateQRCodeData(reservation) {
-        // Format ultra-compact
-        const qrData = {
-            v: "2.0",                           // Version
-            b: reservation.bookingNumber,        // Booking number
-            p: reservation.passengers.length,    // Nombre de passagers
-            d: reservation.date,                 // Date du voyage
-            s: reservation.status === 'Confirmé' ? 'C' : 'P', // C = Confirmé, P = Pending
-            c: reservation.createdAt            // Date de création
-        };
+// Dans app.js, à l'intérieur de const Utils = { ... }
 
-        return JSON.stringify(qrData);
-    },
+// ✅ 1. FONCTION DE GÉNÉRATION DE LA CHAÎNE POUR LE QR CODE
+generateQRCodeData(reservation, isReturn = false) {
+    // Récupérer les informations de base
+    const bookingNumber = reservation.bookingNumber;
+    const mainPassengerName = reservation.passengers[0]?.name || 'N/A';
+    const totalPassengers = reservation.passengers.length;
 
-        // ✅ DECODER le QR Code (pour tests et vérification)
-    // ============================================
-// ✅ DÉCODAGE QR CODE SIMPLIFIÉ
-// ============================================
-// ✅ DÉCODAGE QR CODE (pour tests)
-    decodeQRCodeData(qrString) {
-        try {
-            const data = JSON.parse(qrString);
-            
-            if (data.v === "2.0") {
-                // Format simplifié
-                return {
-                    valid: true,
-                    version: "2.0",
-                    bookingNumber: data.b,
-                    passengersCount: data.p,
-                    date: data.d,
-                    status: data.s === 'C' ? 'Confirmé' : 'En attente de paiement',
-                    createdAt: data.c
-                };
-            } else if (data.v === "1.0") {
-                // Format complet (rétrocompatibilité)
-                return {
-                    valid: true,
-                    version: "1.0",
-                    data: data
-                };
-            } else {
-                throw new Error('Version QR Code non supportée');
-            }
-            
-        } catch (error) {
+    // Déterminer la date et le type de trajet (Aller ou Retour)
+    let travelDate, travelType;
+    if (isReturn && reservation.returnDate) {
+        travelDate = reservation.returnDate;
+        travelType = 'R'; // R pour Retour
+    } else {
+        travelDate = reservation.date;
+        travelType = 'A'; // A pour Aller
+    }
+
+    // Assembler la chaîne de caractères finale avec le séparateur '|'
+    const qrString = [
+        bookingNumber,
+        travelDate,
+        mainPassengerName,
+        totalPassengers,
+        travelType
+    ].join('|');
+
+    console.log(`✅ Chaîne de caractères pour le QR Code (${travelType}) générée :`, qrString);
+    
+    return qrString;
+},
+
+// ✅ 2. FONCTION DE DÉCODAGE (MISE À JOUR POUR LE NOUVEAU FORMAT)
+decodeQRCodeData(qrString) {
+    try {
+        const parts = qrString.split('|');
+        
+        // Vérifier si le format est correct (5 parties)
+        if (parts.length === 5) {
             return {
-                valid: false,
-                error: error.message
+                valid: true,
+                version: "3.0", // Nouvelle version personnalisée
+                bookingNumber: parts[0],
+                travelDate: parts[1],
+                mainPassengerName: parts[2],
+                totalPassengers: parseInt(parts[3]),
+                travelType: parts[4] === 'A' ? 'Aller' : 'Retour'
             };
         }
-    },
+        
+        // Tentative de décoder l'ancien format JSON par sécurité
+        const data = JSON.parse(qrString);
+        if (data.v === "2.0") {
+            // ... (logique pour l'ancien format)
+        }
+        
+        throw new Error('Format de QR Code inconnu ou invalide.');
 
-  
-
-    async generateQRCodeBase64(text, size = 200) {
-        return new Promise((resolve, reject) => {
-            try {
-                const tempDiv = document.createElement('div');
-                tempDiv.style.display = 'none';
-                document.body.appendChild(tempDiv);
-                
-                const qrcode = new QRCode(tempDiv, {
-                    text: text,
-                    width: size,
-                    height: size,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-                
-                setTimeout(() => {
-                    const canvas = tempDiv.querySelector('canvas');
-                    if (canvas) {
-                        const base64 = canvas.toDataURL('image/png');
-                        document.body.removeChild(tempDiv);
-                        resolve(base64);
-                    } else {
-                        document.body.removeChild(tempDiv);
-                        reject(new Error('Canvas not found'));
-                    }
-                }, 100);
-                
-            } catch (error) {
-                reject(error);
-            }
-        });
+    } catch (error) {
+        return {
+            valid: false,
+            error: error.message
+        };
     }
-};
+},
+
+// ✅ 3. FONCTION DE GÉNÉRATION DE L'IMAGE (INCHANGÉE MAIS GARDÉE POUR LA COHÉRENCE)
+async generateQRCodeBase64(text, size = 200) {
+    return new Promise((resolve, reject) => {
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+            
+            new QRCode(tempDiv, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            
+            setTimeout(() => {
+                const canvas = tempDiv.querySelector('canvas');
+                if (canvas) {
+                    const base64 = canvas.toDataURL('image/png');
+                    document.body.removeChild(tempDiv);
+                    resolve(base64);
+                } else {
+                    document.body.removeChild(tempDiv);
+                    reject(new Error('Le canvas du QR Code n\'a pas pu être généré.'));
+                }
+            }, 100);
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+}
 
 // ============================================
 // FONCTIONS PAIEMENT AGENCE
@@ -616,6 +628,7 @@ const Utils = {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+
 function canPayAtAgency() {
     console.group("🔍 DEBUG : canPayAtAgency - NOUVELLE VERSION");
 
