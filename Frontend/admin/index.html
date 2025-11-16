@@ -1882,10 +1882,10 @@
                     </button>
 
                                 ` : ''}
-                                ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `
-                                    <button class="btn btn-icon btn-danger" onclick="cancelReservation('${r.bookingNumber}')" title="Annuler">
-                                        ❌
-                                    </button>
+                                ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
+        <button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">
+            ❌
+        </button>
                                 ` : ''}
                             </div>
                         </td>
@@ -2703,18 +2703,29 @@ function showEditTemplateModal(templateId) {
 // Dans Admin/index.html (section <script>)
 
 async function showChangeSeatsModal(reservationId) {
+    console.group("🔍 DEBUG: showChangeSeatsModal");
+    console.log("ID de réservation reçu :", reservationId);
+
     const reservation = allReservations.find(r => r._id === reservationId);
     if (!reservation) {
+        console.error("❌ Réservation non trouvée dans 'allReservations'.");
+        console.groupEnd();
         showNotification("Erreur : réservation non trouvée.", "error");
         return;
     }
+    console.log("Réservation trouvée :", reservation);
 
-    // Charger l'état actuel des sièges du voyage directement depuis le backend
+    console.log("ID du voyage associé :", reservation.route.id);
     const tripSeatsData = await apiCall(`/trips/${reservation.route.id}/seats`);
+    
     if (!tripSeatsData) {
+        console.error("❌ Impossible de charger les données des sièges depuis l'API.");
+        console.groupEnd();
         showNotification("Erreur : impossible de charger les sièges du voyage.", "error");
         return;
     }
+    console.log("Données des sièges reçues :", tripSeatsData);
+
 
     document.getElementById('modal-title').textContent = `Modifier les sièges - Résa ${reservation.bookingNumber}`;
     
