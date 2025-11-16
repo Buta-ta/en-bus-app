@@ -2278,6 +2278,9 @@ async function handleCreateTrips(e) {
         // Dans Admin/index.html (section <script>)
 // Dans Admin/index.html (section <script>)
 async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
+
+    alert(`Fonction appelée ! Siège: ${seatNumber}, Statut: ${currentStatus}`);
+    
     let newStatus;
     let actionMessage = '';
 
