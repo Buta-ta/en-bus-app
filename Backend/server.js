@@ -631,6 +631,7 @@ app.get('/api/search', async (req, res) => {
                 totalSeats: trip.seats.length,
                 date: trip.date,
                 createdAt: trip.createdAt,
+                 busIdentifier: trip.busIdentifier || null, 
 
                 // ✅ AJOUTER CETTE LIGNE
                 baggageOptions: trip.route.baggageOptions,
