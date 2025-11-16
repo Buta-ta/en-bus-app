@@ -2234,46 +2234,57 @@ async function handleCreateTrips(e) {
     }
 }
 
-        function manageSeats(tripId) {
-            const trip = allTrips.find(t => t._id === tripId);
-            if (!trip) return;
-            
-            document.getElementById('modal-title').textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to}`;
-            
-            let seatMapHTML = '<div class="seat-map-container"><div class="seat-map">';
-            
-            trip.seats.forEach((seat, index) => {
-                const seatClass = `seat seat-${seat.status}`;
-                const onClick = seat.status !== 'occupied' ? `onclick="toggleSeatStatus('${trip._id}', ${seat.number}, '${seat.status}')"` : '';
-                seatMapHTML += `<div class="${seatClass}" ${onClick} title="Siège ${seat.number}">${seat.number}</div>`;
-                
-                if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
-                    seatMapHTML += '<div class="seat-aisle"></div>';
-                }
-            });
-            
-            seatMapHTML += `
-                </div>
-                <div class="seat-legend">
-                    <div class="legend-item">
-                        <div class="legend-box" style="background:var(--secondary);"></div>
-                        <span>Disponible</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box" style="background:var(--danger);"></div>
-                        <span>Occupé</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-box" style="background:var(--gray-400);"></div>
-                        <span>Bloqué</span>
-                    </div>
-                </div>
-                </div>
-            `;
-            
-            document.getElementById('modal-body').innerHTML = seatMapHTML;
-            document.getElementById('details-modal').classList.add('active');
+    // Dans Admin/index.html (section <script>)
+function manageSeats(tripId) {
+    const trip = allTrips.find(t => t._id === tripId);
+    if (!trip) {
+        showNotification("Erreur : Le voyage n'a pas été trouvé.", "error");
+        return;
+    }
+    
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    
+    modalTitle.textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to} (${new Date(trip.date).toLocaleDateString('fr-FR')})`;
+    
+    let seatMapHTML = '<div class="seat-map-container"><div class="seat-map">';
+    
+    trip.seats.forEach((seat, index) => {
+        const seatClass = `seat seat-${seat.status}`;
+        
+        // ✅ CORRECTION : ON AJOUTE TOUJOURS L'ATTRIBUT ONCLICK
+        const onClick = `onclick="toggleSeatStatus('${trip._id}', ${seat.number}, '${seat.status}')"`;
+        
+        seatMapHTML += `<div class="${seatClass}" ${onClick} title="Siège ${seat.number}: ${seat.status}">${seat.number}</div>`;
+        
+        if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
+            seatMapHTML += '<div class="seat-aisle"></div>';
         }
+    });
+    
+    seatMapHTML += `</div></div>`;
+    
+    modalBody.innerHTML = `
+        <p>Cliquez sur un siège pour changer son statut (Disponible ↔ Bloqué) ou pour libérer un siège occupé.</p>
+        ${seatMapHTML}
+        <div class="seat-legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--primary);"></div>
+                <span>Disponible</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:#ef5350;"></div>
+                <span>Occupé</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background:var(--dark-border);"></div>
+                <span>Bloqué</span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('details-modal').classList.add('active');
+}
 
         // Dans Admin/index.html (section <script>)
 // Dans Admin/index.html (section <script>)
