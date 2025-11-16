@@ -2700,56 +2700,86 @@ function showEditTemplateModal(templateId) {
 
 
 // Dans Admin/index.html (section <script>)
+// Dans Admin/index.html (section <script>)
+
 async function showChangeSeatsModal(reservationId) {
     const reservation = allReservations.find(r => r._id === reservationId);
-    if (!reservation) return;
+    if (!reservation) {
+        showNotification("Erreur : réservation non trouvée.", "error");
+        return;
+    }
 
-    // Charger l'état actuel des sièges du voyage
+    // Charger l'état actuel des sièges du voyage directement depuis le backend
     const tripSeatsData = await apiCall(`/trips/${reservation.route.id}/seats`);
-    if (!tripSeatsData) return;
+    if (!tripSeatsData) {
+        showNotification("Erreur : impossible de charger les sièges du voyage.", "error");
+        return;
+    }
 
     document.getElementById('modal-title').textContent = `Modifier les sièges - Résa ${reservation.bookingNumber}`;
     
-    let seatMapHTML = '<p>Sélectionnez les nouveaux sièges pour les passagers.</p><div class="seat-map-container"><div class="seat-map">';
+    let seatMapHTML = `
+        <p>Sélectionnez les nouveaux sièges pour les passagers. Vous pouvez choisir des sièges disponibles (verts) ou bloqués (gris).</p>
+        <div class="seat-map-container">
+            <div class="seat-map">
+    `;
+    
     tripSeatsData.seats.forEach(seat => {
         let seatClass = `seat seat-${seat.status}`;
         let onClick = '';
+        let title = `Siège ${seat.number}: ${seat.status}`;
 
-        // Si le siège est celui de la réservation actuelle, il est sélectionnable
-        if (reservation.seats.includes(seat.number)) {
-            seatClass += ' selected';
+        // On peut cliquer sur un siège s'il n'est pas occupé par une AUTRE réservation.
+        // Les sièges de la réservation actuelle sont considérés comme "libres" pour cette modification.
+        if (seat.status === 'available' || seat.status === 'blocked' || reservation.seats.includes(seat.number)) {
             onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
-        } 
-        // Si le siège est disponible, il est sélectionnable
-        else if (seat.status === 'available') {
-            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
+        } else {
+            title += ' (non disponible)';
         }
         
-        seatMapHTML += `<div class="${seatClass}" ${onClick} data-seat-number="${seat.number}">${seat.number}</div>`;
+        // Pré-sélectionner les sièges qui appartiennent actuellement à cette réservation
+        if (reservation.seats.includes(seat.number)) {
+            seatClass += ' selected';
+        }
+        
+        seatMapHTML += `<div class="${seatClass}" ${onClick} title="${title}" data-seat-number="${seat.number}">${seat.number}</div>`;
     });
-    seatMapHTML += '</div></div><button id="save-seats-btn" class="btn btn-primary mt-4">Enregistrer les nouveaux sièges</button>';
+    
+    seatMapHTML += `
+            </div>
+        </div>
+        <div class="seat-legend">
+            <div class="legend-item"><div class="legend-box" style="background:var(--primary);"></div><span>Disponible</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#ef5350;"></div><span>Occupé</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--dark-border);"></div><span>Bloqué</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#007bff; border: 2px solid white;"></div><span>Sélectionné</span></div>
+        </div>
+        <button id="save-seats-btn" class="btn btn-primary mt-4">Enregistrer les nouveaux sièges</button>
+    `;
     
     document.getElementById('modal-body').innerHTML = seatMapHTML;
     document.getElementById('details-modal').classList.add('active');
 
+    // Attacher l'événement au bouton "Enregistrer"
     document.getElementById('save-seats-btn').onclick = async () => {
-        const selectedSeats = Array.from(document.querySelectorAll('.seat.selected'))
-            .map(el => parseInt(el.dataset.seatNumber));
+        const selectedSeatsElements = document.querySelectorAll('.seat.selected');
+        const newSeats = Array.from(selectedSeatsElements).map(el => parseInt(el.dataset.seatNumber));
         
-        if (selectedSeats.length !== reservation.passengers.length) {
-            showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'error');
+        if (newSeats.length !== reservation.passengers.length) {
+            showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s) (actuellement ${newSeats.length} sélectionné(s)).`, 'error');
             return;
         }
 
-        const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats: selectedSeats });
+        // Appel à l'API pour mettre à jour les sièges
+        const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats: newSeats });
+        
         if (data) {
             showNotification(data.message, 'success');
             closeModal();
-            loadAdminData();
+            loadAdminData(); // Recharger toutes les réservations pour voir les changements
         }
     };
 }
-
 function toggleAdminSeat(element, seatNumber) {
     element.classList.toggle('selected');
 }
