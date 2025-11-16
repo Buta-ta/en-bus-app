@@ -828,9 +828,8 @@ window.downloadTicket = async function(isReturn = false) {
 // Dans app.js
 async function generateTicketPDF(reservation, isReturn = false) {
     try {
-        const qrData = Utils.generateQRCodeData(reservation);
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrData, 150);
-
+        const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150);
         // --- 1. SÉLECTION DES BONNES DONNÉES (ALLER OU RETOUR) ---
         const route = isReturn ? reservation.returnRoute : reservation.route;
         const date = isReturn ? reservation.returnDate : reservation.date;
