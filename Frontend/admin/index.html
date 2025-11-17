@@ -1808,25 +1808,27 @@
             `;
         }
 
-        function applyFilters() {
-            let filtered = allReservations;
-            const activeStatus = document.querySelector('.filter-pill.active').dataset.status;
-            
-            if (activeStatus !== 'all') {
-                filtered = filtered.filter(r => r.status === activeStatus);
-            }
-            
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            if (searchTerm) {
-                filtered = filtered.filter(r => 
-                    r.bookingNumber.toLowerCase().includes(searchTerm) ||
-                    (r.passengers[0]?.name.toLowerCase().includes(searchTerm)) ||
-                    (r.passengers[0]?.phone.includes(searchTerm))
-                );
-            }
-            
-            renderReservationsTable(filtered);
-        }
+        // ✅ NOUVELLE VERSION (CORRECTE)
+function applyFilters() { 
+    let filtered = allReservations; 
+    const activeStatus = document.querySelector('.filter-pill.active').dataset.status; 
+    
+    if (activeStatus !== 'all') {
+        filtered = filtered.filter(r => r.status === activeStatus); 
+    }
+    
+    const searchTerm = document.getElementById('search-input').value.toLowerCase(); 
+    if (searchTerm) {
+        filtered = filtered.filter(r => 
+            r.bookingNumber.toLowerCase().includes(searchTerm) || 
+            (r.passengers[0]?.name.toLowerCase().includes(searchTerm)) || 
+            (r.passengers[0]?.phone.includes(searchTerm))
+        ); 
+    }
+    
+    // On appelle la bonne fonction : renderTable
+    renderTable(filtered); 
+}
 
         // DANS Admin/index.html (section <script>)
 
