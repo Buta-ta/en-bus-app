@@ -1,5 +1,5 @@
 // ============================================
-// 🚀 EN-BUS BACKEND - VERSION FINALE COMPLÈTE
+// 🚀 EN-BUS BACKEND - VERSION CORRIGÉE
 // ============================================
 
 require('dotenv').config();
@@ -8,7 +8,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
-const { MongoClient, ObjectId } = require('mongodb'); // ✅ On importe aussi ObjectId
+const { MongoClient, ObjectId } = require('mongodb');
 const cron = require('node-cron');
 const { Resend } = require('resend');
 const rateLimit = require('express-rate-limit');
@@ -16,7 +16,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { body, param, validationResult } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 
 // ============================================
 // ✅ VALIDATION DES VARIABLES D'ENVIRONNEMENT
@@ -53,36 +53,36 @@ const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
 app.use('/api/', generalLimiter);
 
 // ============================================
-// 📧 CONFIGURATION RESEND (API HTTP)
+// 📧 CONFIGURATION RESEND
 // ============================================
 const resend = new Resend(process.env.RESEND_API_KEY);
-console.log('✅ Service email prêt (via Resend API).');
+console.log('✅ Service email prêt.');
 
 // ============================================
 // 🗄️ CONNEXION MONGODB
 // ============================================
 const dbClient = new MongoClient(process.env.MONGODB_URI);
-let reservationsCollection, positionsCollection, tripsCollection, routeTemplatesCollection;;
+let reservationsCollection, positionsCollection, tripsCollection, routeTemplatesCollection;
+
 async function connectToDb() {
     try {
         await dbClient.connect();
         const database = dbClient.db('en-bus-db');
         reservationsCollection = database.collection('reservations');
         positionsCollection = database.collection('positions');
-
-        tripsCollection = database.collection('trips'); // ✅ AJOUTER CETTE LIGNE
-        routeTemplatesCollection = database.collection('route_templates'); // ✅ AJOUTER CETTE LIGNE
+        tripsCollection = database.collection('trips');
+        routeTemplatesCollection = database.collection('route_templates');
+        
+        await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 });
         console.log("✅ Connecté à MongoDB et index créés.");
-        await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 }); 
-        console.log("✅ Connecté à MongoDB et index créés.");
-    } catch (error) { 
+    } catch (error) {
         console.error("❌ Erreur connexion DB:", error.message);
         process.exit(1);
     }
 }
 
 // ============================================
-// 🔐 MIDDLEWARE & ROUTES
+// 🔐 MIDDLEWARE
 // ============================================
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -95,45 +95,53 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// ============================================
 // === ROUTES ADMIN ===
-app.post('/api/admin/login', loginLimiter, [body('username').notEmpty(), body('password').notEmpty()], async (req, res) => {
+// ============================================
+
+app.post('/api/admin/login', loginLimiter, [
+    body('username').notEmpty(),
+    body('password').notEmpty()
+], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    
     const { username, password } = req.body;
     if (username !== process.env.ADMIN_USERNAME || !await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH)) {
         return res.status(401).json({ error: 'Identifiants incorrects' });
     }
-    const token = jwt.sign({ username, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    
+    const token = jwt.sign({ username, role: 'admin' }, process.env.JWT_SECRET, { 
+        expiresIn: process.env.JWT_EXPIRES_IN || '7d' 
+    });
     res.json({ success: true, token });
+});
+
+app.get('/api/admin/verify', authenticateToken, (req, res) => {
+    res.json({ valid: true, user: req.user, expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 });
 
 app.get('/api/admin/reservations', authenticateToken, async (req, res) => {
     try {
         const reservations = await reservationsCollection.find({}).sort({ createdAt: -1 }).toArray();
-        const stats = { total: reservations.length, confirmed: reservations.filter(r => r.status === 'Confirmé').length, pending: reservations.filter(r => r.status === 'En attente de paiement').length, cancelled: reservations.filter(r => r.status === 'Annulé').length, expired: reservations.filter(r => r.status === 'Expiré').length };
+        const stats = {
+            total: reservations.length,
+            confirmed: reservations.filter(r => r.status === 'Confirmé').length,
+            pending: reservations.filter(r => r.status === 'En attente de paiement').length,
+            cancelled: reservations.filter(r => r.status === 'Annulé').length,
+            expired: reservations.filter(r => r.status === 'Expiré').length
+        };
         res.json({ success: true, count: reservations.length, stats, reservations });
-    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
-});
-
-// Dans server.js, dans la section des routes admin
-
-
-// ============================================
-// 🔐 ROUTE DE VÉRIFICATION DU TOKEN
-// ============================================
-app.get('/api/admin/verify', authenticateToken, (req, res) => {
-    res.json({ 
-        valid: true, 
-        user: req.user,
-        expiresIn: process.env.JWT_EXPIRES_IN 
-    });
+    } catch (error) {
+        console.error('Erreur récupération réservations:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
 });
 
 // ============================================
-// 🚌 NOUVELLES ROUTES ADMIN - GESTION DES MODÈLES DE TRAJETS
+// GESTION DES MODÈLES DE TRAJETS
 // ============================================
 
-// Lister tous les modèles de trajets
 app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
     try {
         const templates = await routeTemplatesCollection.find({}).toArray();
@@ -141,283 +149,21 @@ app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Erreur serveur' });
     }
-});
-
-// Dans Backend/server.js
-
-// Dans server.js
-
-// ============================================
-// 🚌 CRÉATION DE NOUVEAUX VOYAGES
-// ============================================
-app.post('/api/admin/trips', authenticateToken, [
-    // Validations des données reçues
-    body('routeId').notEmpty().withMessage('Un modèle de trajet est requis.'),
-    body('startDate').isISO8601().withMessage('Date de début invalide.'),
-    body('endDate').isISO8601().withMessage('Date de fin invalide.'),
-    body('daysOfWeek').isArray({ min: 1 }).withMessage('Veuillez sélectionner au moins un jour.'),
-    body('seatCount').isInt({ min: 10, max: 100 }).withMessage('Le nombre de sièges doit être entre 10 et 100.'),
-    body('busIdentifier').optional().isString().trim().escape() // Valide et nettoie le numéro de bus
-], async (req, res) => {
-    
-    // Vérifier les erreurs de validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-        // Récupérer les données du corps de la requête
-        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier } = req.body;
-        
-        // Trouver le modèle de trajet correspondant dans la base de données
-        const routeTemplate = await routeTemplatesCollection.findOne({ 
-            _id: new ObjectId(routeId) 
-        });
-
-        if (!routeTemplate) {
-            return res.status(404).json({ error: 'Modèle de trajet non trouvé.' });
-        }
-
-        let newTrips = [];
-        let currentDate = new Date(startDate);
-        const lastDate = new Date(endDate);
-        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-        // Boucler sur la plage de dates
-        while (currentDate <= lastDate) {
-            const dayName = dayMap[currentDate.getUTCDay()];
-            
-            // Si le jour actuel est dans les jours sélectionnés par l'admin
-            if (daysOfWeek.includes(dayName)) {
-                
-                // Créer le tableau de sièges avec le bon nombre
-                const seats = Array.from({ length: seatCount }, (_, i) => ({ 
-                    number: i + 1, 
-                    status: 'available' 
-                }));
-                
-                // Ajouter le nouveau voyage à la liste
-                newTrips.push({
-                    date: currentDate.toISOString().split('T')[0],
-                    route: routeTemplate,
-                    seats: seats,
-                    busIdentifier: busIdentifier || null, // ✅ ENREGISTRER LE NUMÉRO DE BUS
-                    createdAt: new Date()
-                });
-            }
-            // Passer au jour suivant
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // Insérer tous les nouveaux voyages en une seule fois dans la base de données
-        if (newTrips.length > 0) {
-            await tripsCollection.insertMany(newTrips);
-            console.log(`✅ ${newTrips.length} voyage(s) inséré(s) en base de données.`);
-        }
-        
-        // Envoyer une réponse de succès
-        res.status(201).json({ 
-            success: true, 
-            message: `${newTrips.length} voyage(s) créé(s) avec ${seatCount} sièges chacun.` 
-        });
-
-    } catch (error) {
-        console.error("❌ Erreur lors de la création des voyages:", error);
-        res.status(500).json({ error: 'Erreur serveur lors de la création des voyages.' });
-    }
-});
-// Supprimer un modèle de trajet
-app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // ✅ Utilisation corrigée de ObjectId.isValid()
-        if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ error: 'ID de modèle invalide' });
-        }
-
-        const result = await routeTemplatesCollection.deleteOne({ 
-            // ✅ Utilisation corrigée de new ObjectId()
-            _id: new ObjectId(id) 
-        });
-
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ error: 'Modèle de trajet non trouvé' });
-        }
-
-        res.json({ success: true, message: 'Modèle de trajet supprimé avec succès.' });
-
-    } catch (error) {
-        console.error("Erreur suppression modèle:", error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-// ✅ NOUVELLES ROUTES AJOUTÉES
-app.get('/api/admin/trips', authenticateToken, async (req, res) => {
-    try {
-        const trips = await tripsCollection.find({}).sort({ date: -1 }).toArray();
-        res.json({ success: true, trips });
-    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
-});
-
-
-// ============================================
-// 🚌 MODIFICATION ET SUPPRESSION DE VOYAGES
-// ============================================
-
-// Modifier un voyage (date, sièges, équipements)
-app.patch('/api/admin/trips/:id', authenticateToken, [
-    body('date').optional().isISO8601(),
-    body('seatCount').optional().isInt({ min: 10, max: 100 }),
-    body('route.amenities').optional().isArray() // ✅ On ajoute la validation pour les équipements
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-        const { id } = req.params;
-        const updates = req.body;
-
-        if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ error: 'ID de voyage invalide' });
-        }
-
-        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-        if (!trip) {
-            return res.status(404).json({ error: 'Voyage non trouvé' });
-        }
-
-        // Si modification du nombre de sièges
-        if (updates.seatCount && updates.seatCount !== trip.seats.length) {
-            const currentOccupied = trip.seats.filter(s => s.status === 'occupied');
-            
-            if (updates.seatCount < currentOccupied.length) {
-                return res.status(400).json({ 
-                    error: `Impossible : ${currentOccupied.length} sièges déjà occupés` 
-                });
-            }
-
-            const newSeats = [];
-            for (let i = 0; i < updates.seatCount; i++) {
-                const existingSeat = trip.seats[i];
-                newSeats.push(existingSeat || { number: i + 1, status: 'available' });
-            }
-            updates.seats = newSeats; // On va mettre à jour tout le tableau 'seats'
-            delete updates.seatCount; // On retire 'seatCount' car on met à jour 'seats' directement
-        }
-
-        // ✅ La logique pour les équipements est déjà gérée car `updates`
-        // contiendra déjà `route.amenities` envoyé par le frontend.
-        // On n'a pas besoin de code spécial ici.
-
-        const result = await tripsCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: { ...updates, updatedAt: new Date() } }
-        );
-
-        if (result.modifiedCount === 0 && result.matchedCount > 0) {
-            return res.status(200).json({ success: true, message: 'Aucune modification nécessaire.' });
-        }
-        
-        if (result.matchedCount === 0) {
-            return res.status(404).json({ error: 'Voyage non trouvé pour la mise à jour.' });
-        }
-
-        res.json({ success: true, message: 'Voyage modifié avec succès' });
-
-    } catch (error) {
-        console.error("Erreur modification voyage:", error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-// Supprimer un voyage
-app.delete('/api/admin/trips/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ error: 'ID de voyage invalide' });
-        }
-
-        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-        if (!trip) {
-            return res.status(404).json({ error: 'Voyage non trouvé' });
-        }
-
-        // Vérifier s'il y a des réservations
-        const occupiedSeats = trip.seats.filter(s => s.status === 'occupied').length;
-        if (occupiedSeats > 0) {
-            return res.status(400).json({ 
-                error: `Impossible de supprimer : ${occupiedSeats} siège(s) réservé(s)` 
-            });
-        }
-
-        const result = await tripsCollection.deleteOne({ _id: new ObjectId(id) });
-
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ error: 'Voyage non trouvé' });
-        }
-
-        res.json({ success: true, message: 'Voyage supprimé avec succès' });
-
-    } catch (error) {
-        console.error("Erreur suppression voyage:", error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-
-app.post('/api/admin/trips', authenticateToken, [ /* ... validations ... */ ], async (req, res) => {
-    try {
-        const { routeId, startDate, endDate, daysOfWeek } = req.body;
-        const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
-        if (!routeTemplate) return res.status(404).json({ error: 'Modèle non trouvé' });
-
-        let newTrips = [];
-        let currentDate = new Date(startDate);
-        const lastDate = new Date(endDate);
-        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-        while (currentDate <= lastDate) {
-            const dayName = dayMap[currentDate.getUTCDay()];
-            if (daysOfWeek.includes(dayName)) {
-                const seats = Array.from({ length: 61 }, (_, i) => ({ number: i + 1, status: 'available' }));
-                newTrips.push({ date: currentDate.toISOString().split('T')[0], route: routeTemplate, seats, createdAt: new Date() });
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        if (newTrips.length > 0) await tripsCollection.insertMany(newTrips);
-        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s).` });
-    } catch (error) { console.error("Erreur création voyages:", error); res.status(500).json({ error: 'Erreur serveur' }); }
-});
-
-app.get('/api/admin/route-templates', authenticateToken, async (req, res) => {
-    try {
-        const templates = await routeTemplatesCollection.find({}).toArray();
-        res.json({ success: true, templates });
-    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
 app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
     try {
         const template = req.body;
         
-        // ✅ NETTOYAGE AUTOMATIQUE DES ESPACES
         if (template.from) template.from = template.from.trim();
         if (template.to) template.to = template.to.trim();
         if (template.company) template.company = template.company.trim();
         
-        // ✅ GESTION DES OPTIONS DE BAGAGES
         const baggageOptions = {
             standard: {
-                included: parseInt(template.standardBaggageIncluded) || 1, // 1 par défaut
-                max: parseInt(template.standardBaggageMax) || 5,         // 5 par défaut
-                price: parseInt(template.standardBaggagePrice) || 2000    // 2000 FCFA par défaut
+                included: parseInt(template.standardBaggageIncluded) || 1,
+                max: parseInt(template.standardBaggageMax) || 5,
+                price: parseInt(template.standardBaggagePrice) || 2000
             },
             oversized: {
                 max: parseInt(template.oversizedBaggageMax) || 2,
@@ -425,46 +171,37 @@ app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
             }
         };
 
-        // Supprimer les champs temporaires
         delete template.standardBaggageIncluded;
         delete template.standardBaggageMax;
         delete template.standardBaggagePrice;
         delete template.oversizedBaggageMax;
         delete template.oversizedBaggagePrice;
 
-        // Ajouter l'objet structuré
         template.baggageOptions = baggageOptions;
 
-         // ✅ AJOUTER CETTE LOGIQUE
-        // Si la durée n'est pas fournie, on la calcule (simple estimation)
         if (!template.duration) {
             try {
                 const start = new Date(`1970-01-01T${template.departure}:00`);
                 const end = new Date(`1970-01-01T${template.arrival}:00`);
-                if (end < start) end.setDate(end.getDate() + 1); // Gère les trajets de nuit
+                if (end < start) end.setDate(end.getDate() + 1);
                 const diffMs = end - start;
                 const hours = Math.floor(diffMs / 3600000);
                 const minutes = Math.floor((diffMs % 3600000) / 60000);
                 template.duration = `${hours}h ${minutes}m`;
-                console.log(`Durée calculée : ${template.duration}`);
             } catch (e) {
                 template.duration = "N/A";
             }
         }
-
         
         await routeTemplatesCollection.insertOne(template);
         res.status(201).json({ success: true, message: 'Modèle créé avec succès.' });
 
-    } catch (error) { 
+    } catch (error) {
         console.error('❌ Erreur création modèle:', error);
-        res.status(500).json({ error: 'Erreur serveur' }); 
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
-
-// Dans server.js
-// ✅ NOUVELLE ROUTE : Mettre à jour un modèle de trajet
 app.patch('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -474,12 +211,10 @@ app.patch('/api/admin/route-templates/:id', authenticateToken, async (req, res) 
             return res.status(400).json({ error: 'ID de modèle invalide' });
         }
         
-        // Nettoyage des données
         if (updates.from) updates.from = updates.from.trim();
         if (updates.to) updates.to = updates.to.trim();
         if (updates.company) updates.company = updates.company.trim();
 
-        // Gérer les options de bagages si elles sont envoyées
         if (updates.standardBaggageIncluded !== undefined) {
             updates.baggageOptions = {
                 standard: {
@@ -492,7 +227,6 @@ app.patch('/api/admin/route-templates/:id', authenticateToken, async (req, res) 
                     price: parseInt(updates.oversizedBaggagePrice)
                 }
             };
-            // Supprimer les champs temporaires
             delete updates.standardBaggageIncluded;
             delete updates.standardBaggageMax;
             delete updates.standardBaggagePrice;
@@ -517,26 +251,192 @@ app.patch('/api/admin/route-templates/:id', authenticateToken, async (req, res) 
     }
 });
 
-
-
-
 app.delete('/api/admin/route-templates/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'ID invalide' });
+    
     try {
         const result = await routeTemplatesCollection.deleteOne({ _id: new ObjectId(id) });
         if (result.deletedCount === 0) return res.status(404).json({ error: 'Modèle non trouvé' });
         res.json({ success: true, message: 'Modèle supprimé.' });
-    } catch (error) { res.status(500).json({ error: 'Erreur serveur' }); }
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
 });
 
-
-
 // ============================================
-// 💺 GESTION INDIVIDUELLE DES SIÈGES
+// GESTION DES VOYAGES
 // ============================================
+
+app.get('/api/admin/trips', authenticateToken, async (req, res) => {
+    try {
+        const trips = await tripsCollection.find({}).sort({ date: -1 }).toArray();
+        res.json({ success: true, trips });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.post('/api/admin/trips', authenticateToken, [
+    body('routeId').notEmpty(),
+    body('startDate').isISO8601(),
+    body('endDate').isISO8601(),
+    body('daysOfWeek').isArray({ min: 1 }),
+    body('seatCount').isInt({ min: 10, max: 100 }),
+    body('busIdentifier').optional().isString().trim().escape()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier } = req.body;
+        
+        const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
+        if (!routeTemplate) {
+            return res.status(404).json({ error: 'Modèle de trajet non trouvé.' });
+        }
+
+        let newTrips = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+        while (currentDate <= lastDate) {
+            const dayName = dayMap[currentDate.getUTCDay()];
+            
+            if (daysOfWeek.includes(dayName)) {
+                const seats = Array.from({ length: seatCount }, (_, i) => ({ 
+                    number: i + 1, 
+                    status: 'available' 
+                }));
+                
+                newTrips.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    route: routeTemplate,
+                    seats: seats,
+                    busIdentifier: busIdentifier || null,
+                    createdAt: new Date()
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (newTrips.length > 0) {
+            await tripsCollection.insertMany(newTrips);
+            console.log(`✅ ${newTrips.length} voyage(s) créé(s).`);
+        }
+        
+        res.status(201).json({ 
+            success: true, 
+            message: `${newTrips.length} voyage(s) créé(s) avec ${seatCount} sièges chacun.` 
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur création voyages:", error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
+
+app.patch('/api/admin/trips/:id', authenticateToken, [
+    body('date').optional().isISO8601(),
+    body('seatCount').optional().isInt({ min: 10, max: 100 }),
+    body('route.amenities').optional().isArray()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        if (updates.seatCount && updates.seatCount !== trip.seats.length) {
+            const currentOccupied = trip.seats.filter(s => s.status === 'occupied');
+            
+            if (updates.seatCount < currentOccupied.length) {
+                return res.status(400).json({ 
+                    error: `Impossible : ${currentOccupied.length} sièges déjà occupés` 
+                });
+            }
+
+            const newSeats = [];
+            for (let i = 0; i < updates.seatCount; i++) {
+                const existingSeat = trip.seats[i];
+                newSeats.push(existingSeat || { number: i + 1, status: 'available' });
+            }
+            updates.seats = newSeats;
+            delete updates.seatCount;
+        }
+
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { ...updates, updatedAt: new Date() } }
+        );
+
+        if (result.modifiedCount === 0 && result.matchedCount > 0) {
+            return res.status(200).json({ success: true, message: 'Aucune modification nécessaire.' });
+        }
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Voyage non trouvé.' });
+        }
+
+        res.json({ success: true, message: 'Voyage modifié avec succès' });
+
+    } catch (error) {
+        console.error("Erreur modification voyage:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+app.delete('/api/admin/trips/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        const occupiedSeats = trip.seats.filter(s => s.status === 'occupied').length;
+        if (occupiedSeats > 0) {
+            return res.status(400).json({ 
+                error: `Impossible de supprimer : ${occupiedSeats} siège(s) réservé(s)` 
+            });
+        }
+
+        const result = await tripsCollection.deleteOne({ _id: new ObjectId(id) });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Voyage non trouvé' });
+        }
+
+        res.json({ success: true, message: 'Voyage supprimé avec succès' });
+
+    } catch (error) {
+        console.error("Erreur suppression voyage:", error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 app.patch('/api/admin/trips/:tripId/seats/:seatNumber', authenticateToken, [
-    body('status').isIn(['available', 'blocked']).withMessage('Statut de siège invalide.')
+    body('status').isIn(['available', 'blocked'])
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -553,7 +453,6 @@ app.patch('/api/admin/trips/:tripId/seats/:seatNumber', authenticateToken, [
 
         const seatNum = parseInt(seatNumber);
         
-        // Mettre à jour le statut du siège dans le tableau 'seats'
         const result = await tripsCollection.updateOne(
             { _id: new ObjectId(tripId), "seats.number": seatNum },
             { $set: { "seats.$.status": status } }
@@ -567,39 +466,31 @@ app.patch('/api/admin/trips/:tripId/seats/:seatNumber', authenticateToken, [
             return res.status(200).json({ success: true, message: 'Statut du siège déjà à jour.' });
         }
 
-        res.json({ success: true, message: `Siège ${seatNum} mis à jour avec le statut ${status}` });
+        res.json({ success: true, message: `Siège ${seatNum} mis à jour` });
 
     } catch (error) {
         console.error('❌ Erreur mise à jour siège:', error);
         res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
-// ============================================
-// 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
-// ============================================
 
 // ============================================
-// 🔍 ROUTE DE RECHERCHE CLIENT (données dynamiques)
+// RECHERCHE CLIENT
 // ============================================
 
 app.get('/api/search', async (req, res) => {
     let { from, to, date } = req.query;
     
-    // Validation
     if (!from || !to || !date) {
-        return res.status(400).json({ 
-            error: 'Paramètres manquants. Requis : from, to, date' 
-        });
+        return res.status(400).json({ error: 'Paramètres manquants' });
     }
     
-    // ✅ NETTOYAGE DES PARAMÈTRES
     from = from.trim();
     to = to.trim();
     
     try {
         console.log(`🔍 Recherche : ${from} → ${to} le ${date}`);
         
-        // ✅ RECHERCHE AVEC REGEX POUR IGNORER LES ESPACES/VIRGULES
         const trips = await tripsCollection.find({
             "route.from": { $regex: `^${from}`, $options: 'i' },
             "route.to": { $regex: `^${to}`, $options: 'i' },
@@ -608,7 +499,6 @@ app.get('/api/search', async (req, res) => {
         
         console.log(`✅ ${trips.length} voyage(s) trouvé(s)`);
         
-        // Transformer les données pour le frontend
         const results = trips.map(trip => {
             const availableSeats = trip.seats.filter(s => s.status === 'available').length;
             
@@ -631,45 +521,28 @@ app.get('/api/search', async (req, res) => {
                 totalSeats: trip.seats.length,
                 date: trip.date,
                 createdAt: trip.createdAt,
-                 busIdentifier: trip.busIdentifier || null, 
-
-                // ✅ AJOUTER CETTE LIGNE
-                baggageOptions: trip.route.baggageOptions,
+                busIdentifier: trip.busIdentifier || null,
+                baggageOptions: trip.route.baggageOptions
             };
         });
         
-        res.json({ 
-            success: true, 
-            count: results.length,
-            results: results 
-        });
+        res.json({ success: true, count: results.length, results });
         
     } catch (error) {
         console.error('❌ Erreur recherche:', error);
-        res.status(500).json({ 
-            error: 'Erreur serveur lors de la recherche' 
-        });
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
-
-
-
-// ============================================
-// 💺 RÉCUPÉRER LES SIÈGES D'UN VOYAGE SPÉCIFIQUE
-// ============================================
 app.get('/api/trips/:id/seats', async (req, res) => {
     try {
         const { id } = req.params;
         
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ error: 'ID de voyage invalide' });
+            return res.status(400).json({ error: 'ID invalide' });
         }
         
-        const trip = await tripsCollection.findOne({ 
-            _id: new ObjectId(id) 
-        });
-        
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
         if (!trip) {
             return res.status(404).json({ error: 'Voyage non trouvé' });
         }
@@ -684,78 +557,66 @@ app.get('/api/trips/:id/seats', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Erreur récupération sièges:', error);
+        console.error('❌ Erreur sièges:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
-
-// Dans server.js
-
 // ============================================
-// 🎫 CRÉATION DE RÉSERVATION CLIENT
+// RÉSERVATIONS
 // ============================================
+
 app.post('/api/reservations', strictLimiter, [
-    // Validation des données essentielles
-    body('bookingNumber').notEmpty().withMessage('Le numéro de réservation est requis.'),
-    body('route').isObject().withMessage('Les informations du trajet sont requises.'),
-    body('route.id').notEmpty().withMessage('L\'ID du trajet est requis.'),
-    body('date').isISO8601().withMessage('La date doit être au format ISO8601.'),
-    body('passengers').isArray({ min: 1 }).withMessage('Il doit y avoir au moins un passager.'),
-    body('passengers.*.name').notEmpty().withMessage('Le nom du passager est requis.'),
-    body('passengers.*.phone').notEmpty().withMessage('Le téléphone du passager est requis.'),
-    body('totalPrice').notEmpty().withMessage('Le prix total est requis.'),
-    body('status').isIn(['Confirmé', 'En attente de paiement']).withMessage('Le statut est invalide.')
+    body('bookingNumber').notEmpty(),
+    body('route').isObject(),
+    body('route.id').notEmpty(),
+    body('date').isISO8601(),
+    body('passengers').isArray({ min: 1 }),
+    body('totalPrice').notEmpty(),
+    body('status').isIn(['Confirmé', 'En attente de paiement'])
 ], async (req, res) => {
-    
-    // Vérifier les erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // ✅ AJOUTER CE LOG
-        console.log("📥 Type de réservation reçue:", {
+    try {
+        const reservationData = req.body;
+        
+        // ✅ LOG CORRIGÉ (APRÈS la déclaration de reservationData)
+        console.log("📥 Type de réservation:", {
             hasReturnRoute: !!reservationData.returnRoute,
             hasReturnSeats: !!reservationData.returnSeats,
             tripType: reservationData.returnRoute ? 'ALLER-RETOUR' : 'ALLER SIMPLE'
         });
-
-    try {
-        const reservationData = req.body;
-        
-        // --- GESTION DES SIÈGES POUR LE TRAJET ALLER ---
         
         const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
         if (!trip) {
-            return res.status(404).json({ error: 'Le voyage aller sélectionné n\'existe plus.' });
+            return res.status(404).json({ error: 'Voyage aller introuvable.' });
         }
 
         const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
         
-        // Vérifier si les sièges aller sont toujours disponibles
         const alreadyTaken = trip.seats.filter(s => 
             seatNumbersToOccupy.includes(s.number) && s.status !== 'available'
         );
 
         if (alreadyTaken.length > 0) {
-            return res.status(409).json({ // 409 Conflict
-                error: `Conflit : Les sièges aller ${alreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` 
+            return res.status(409).json({ 
+                error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(', ')} indisponibles.` 
             });
         }
 
-        // Mettre à jour les sièges aller comme 'occupied'
         await tripsCollection.updateOne(
             { _id: new ObjectId(trip._id) },
             { $set: { "seats.$[elem].status": "occupied" } },
             { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
         );
         
-        // --- GESTION DES SIÈGES POUR LE TRAJET RETOUR (si applicable) ---
         if (reservationData.returnRoute && reservationData.returnSeats && reservationData.returnSeats.length > 0) {
             const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
             if (!returnTrip) {
-                return res.status(404).json({ error: 'Le voyage de retour sélectionné n\'existe plus.' });
+                return res.status(404).json({ error: 'Voyage retour introuvable.' });
             }
             
             const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
@@ -765,7 +626,13 @@ app.post('/api/reservations', strictLimiter, [
             );
 
             if (returnAlreadyTaken.length > 0) {
-                return res.status(409).json({ error: `Conflit : Les sièges retour ${returnAlreadyTaken.map(s => s.number).join(', ')} ne sont plus disponibles.` });
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(trip._id) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+                );
+                
+                return res.status(409).json({ error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(', ')} indisponibles.` });
             }
 
             await tripsCollection.updateOne(
@@ -775,188 +642,37 @@ app.post('/api/reservations', strictLimiter, [
             );
         }
         
-        // --- FINALISATION ---
-        
-        // Insérer la réservation complète dans la base de données
         const result = await reservationsCollection.insertOne(reservationData);
-
-        // Envoyer l'email de confirmation
         sendConfirmationEmail(reservationData);
         
-        // Envoyer une réponse de succès
         res.status(201).json({ 
             success: true, 
-            message: 'Réservation créée avec succès.',
+            message: 'Réservation créée.',
             reservationId: result.insertedId 
         });
 
     } catch (error) {
-        console.error('❌ Erreur lors de la création de la réservation:', error);
-        res.status(500).json({ error: 'Erreur serveur lors de la création de la réservation.' });
-    }
-});
-
-
-// Dans server.js
-
-// ============================================
-// 🔄 ACTIONS SUR LES RÉSERVATIONS (Confirmation, Annulation)
-// ============================================
-app.patch('/api/reservations/:id/:action', authenticateToken, async (req, res) => {
-    const { id, action } = req.params;
-
-    if (!ObjectId.isValid(id)) {
-        return res.status(400).json({ error: 'ID de réservation invalide' });
-    }
-
-    try {
-        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
-        if (!reservation) {
-            return res.status(404).json({ error: 'Réservation non trouvée.' });
-        }
-
-        // Action : Confirmer un paiement
-        if (action === 'confirm-payment') {
-            if (reservation.status !== 'En attente de paiement') {
-                return res.status(400).json({ error: 'Cette réservation n\'est pas en attente de paiement.' });
-            }
-            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: 'Confirmé' } });
-            // sendPaymentConfirmedEmail(reservation); // Décommentez si vous avez cette fonction email
-            return res.json({ success: true, message: 'Paiement confirmé.' });
-        }
-
-        // Action : Annuler une réservation
-        if (action === 'cancel') {
-            if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
-                return res.status(400).json({ error: 'Cette réservation est déjà annulée ou expirée.' });
-            }
-            
-            // --- Libérer les sièges ---
-            const tripId = reservation.route.id;
-            const seatNumbersToFree = reservation.seats.map(s => parseInt(s));
-
-            // Libérer les sièges du trajet aller
-            await tripsCollection.updateOne(
-                { _id: new ObjectId(tripId) },
-                { $set: { "seats.$[elem].status": "available" } },
-                { arrayFilters: [{ "elem.number": { $in: seatNumbersToFree } }] }
-            );
-
-            // Libérer les sièges du trajet retour (si c'est un aller-retour)
-            if (reservation.returnRoute && reservation.returnSeats && reservation.returnSeats.length > 0) {
-                const returnTripId = reservation.returnRoute.id;
-                const returnSeatNumbersToFree = reservation.returnSeats.map(s => parseInt(s));
-                await tripsCollection.updateOne(
-                    { _id: new ObjectId(returnTripId) },
-                    { $set: { "seats.$[elem].status": "available" } },
-                    { arrayFilters: [{ "elem.number": { $in: returnSeatNumbersToFree } }] }
-                );
-            }
-            
-            // Mettre à jour le statut de la réservation
-            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: 'Annulé', cancelledAt: new Date() } });
-            
-            return res.json({ success: true, message: 'Réservation annulée et sièges libérés.' });
-        }
-
-        // Si l'action n'est ni 'confirm-payment' ni 'cancel'
-        return res.status(400).json({ error: 'Action non reconnue.' });
-
-    } catch (error) {
-        console.error(`❌ Erreur lors de l'action '${action}' sur la réservation:`, error);
+        console.error('❌ Erreur réservation:', error);
         res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
 
-
-// Dans server.js
-
-// ============================================
-// ✏️ MODIFICATION DES SIÈGES D'UNE RÉSERVATION
-// ============================================
-
-// Dans server.js
-app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
-    body('newSeats').isArray({ min: 1 }).withMessage('Veuillez fournir une liste de nouveaux sièges.'),
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    try {
-        const { id } = req.params;
-        const { newSeats } = req.body;
-
-        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
-        if (!reservation) return res.status(404).json({ error: 'Réservation non trouvée.' });
-
-        const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
-        if (!trip) return res.status(404).json({ error: 'Voyage associé non trouvé.' });
-
-        const oldSeats = reservation.seats.map(s => parseInt(s));
-
-        // 1. Vérifier si les nouveaux sièges sont disponibles
-        const unavailable = trip.seats.filter(s => 
-            newSeats.includes(s.number) && 
-            s.status !== 'available' && 
-            !oldSeats.includes(s.number) // ✅ LA CORRECTION : On ignore les sièges qui appartenaient déjà à CETTE réservation
-        );
-        if (unavailable.length > 0) {
-            return res.status(409).json({ error: `Conflit : Siège(s) ${unavailable.map(s => s.number).join(', ')} déjà pris.` });
-        }
-
-        // 2. Libérer les anciens sièges
-        await tripsCollection.updateOne(
-            { _id: trip._id },
-            { $set: { "seats.$[elem].status": "available" } },
-            { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
-        );
-
-        // 3. Occuper les nouveaux sièges
-        await tripsCollection.updateOne(
-            { _id: trip._id },
-            { $set: { "seats.$[elem].status": "occupied" } },
-            { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
-        );
-
-        // 4. Mettre à jour la réservation avec les nouveaux sièges
-        // On suppose que l'ordre des passagers correspond à l'ordre des nouveaux sièges
-        const passengerUpdates = {};
-        reservation.passengers.forEach((passenger, index) => {
-            passengerUpdates[`passengers.${index}.seat`] = newSeats[index];
-        });
-        await reservationsCollection.updateOne(
-            { _id: reservation._id },
-            { $set: { seats: newSeats, ...passengerUpdates } }
-        );
-
-        res.json({ success: true, message: 'Sièges modifiés avec succès.' });
-
-    } catch (error) {
-        console.error('❌ Erreur modification sièges:', error);
-        res.status(500).json({ error: 'Erreur serveur.' });
-    }
-});
-
-// ============================================
-// 🔄 ACTIONS SUR LES RÉSERVATIONS (Version Admin)
-// ============================================
 app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, res) => {
     const { id, action } = req.params;
 
     if (!ObjectId.isValid(id)) {
-        return res.status(400).json({ error: 'ID de réservation invalide' });
+        return res.status(400).json({ error: 'ID invalide' });
     }
 
     try {
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
         if (!reservation) {
-            return res.status(404).json({ error: 'Réservation non trouvée.' });
+            return res.status(404).json({ error: 'Réservation introuvable.' });
         }
 
-        // Action : Confirmer un paiement
         if (action === 'confirm-payment') {
             if (reservation.status !== 'En attente de paiement') {
-                return res.status(400).json({ error: 'Cette réservation n\'est pas en attente de paiement.' });
+                return res.status(400).json({ error: 'Pas en attente de paiement.' });
             }
             
             await reservationsCollection.updateOne(
@@ -964,18 +680,14 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
                 { $set: { status: 'Confirmé', confirmedAt: new Date() } }
             );
             
-            // sendPaymentConfirmedEmail(reservation); // Optionnel
-            
-            return res.json({ success: true, message: 'Paiement confirmé avec succès.' });
+            return res.json({ success: true, message: 'Paiement confirmé.' });
         }
 
-        // Action : Annuler une réservation
         if (action === 'cancel') {
             if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
-                return res.status(400).json({ error: 'Cette réservation est déjà annulée ou expirée.' });
+                return res.status(400).json({ error: 'Déjà annulée ou expirée.' });
             }
             
-            // --- Libérer les sièges du trajet ALLER ---
             const tripId = reservation.route.id;
             const seatNumbersToFree = reservation.seats.map(s => parseInt(s));
 
@@ -985,9 +697,6 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
                 { arrayFilters: [{ "elem.number": { $in: seatNumbersToFree } }] }
             );
 
-            console.log(`✅ Libéré ${seatNumbersToFree.length} siège(s) aller: ${seatNumbersToFree.join(', ')}`);
-
-            // --- Libérer les sièges du trajet RETOUR (si aller-retour) ---
             if (reservation.returnRoute && reservation.returnSeats && reservation.returnSeats.length > 0) {
                 const returnTripId = reservation.returnRoute.id;
                 const returnSeatNumbersToFree = reservation.returnSeats.map(s => parseInt(s));
@@ -997,235 +706,136 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
                     { $set: { "seats.$[elem].status": "available" } },
                     { arrayFilters: [{ "elem.number": { $in: returnSeatNumbersToFree } }] }
                 );
-
-                console.log(`✅ Libéré ${returnSeatNumbersToFree.length} siège(s) retour: ${returnSeatNumbersToFree.join(', ')}`);
             }
             
-            // Mettre à jour le statut de la réservation
             await reservationsCollection.updateOne(
                 { _id: reservation._id }, 
                 { $set: { status: 'Annulé', cancelledAt: new Date() } }
             );
             
-            console.log(`✅ Réservation ${reservation.bookingNumber} annulée.`);
-            
-            return res.json({ success: true, message: 'Réservation annulée et sièges libérés avec succès.' });
+            return res.json({ success: true, message: 'Réservation annulée.' });
         }
 
-        // Si l'action n'est ni 'confirm-payment' ni 'cancel'
-        return res.status(400).json({ error: 'Action non reconnue. Actions valides : confirm-payment, cancel' });
+        return res.status(400).json({ error: 'Action invalide.' });
 
     } catch (error) {
-        console.error(`❌ Erreur lors de l'action '${action}' sur la réservation ${id}:`, error);
-        res.status(500).json({ error: 'Erreur serveur lors du traitement de l\'action.' });
+        console.error(`❌ Erreur action ${action}:`, error);
+        res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
 
-// ============================================
-// 🐛 ROUTE DE DEBUG (À SUPPRIMER APRÈS TEST)
-// ============================================
-app.get('/api/debug/trips', authenticateToken, async (req, res) => {
+app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
+    body('newSeats').isArray({ min: 1 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
     try {
-        const allTrips = await tripsCollection.find({}).limit(10).toArray();
+        const { id } = req.params;
+        const { newSeats } = req.body;
+
+        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+        if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
+        if (!trip) return res.status(404).json({ error: 'Voyage introuvable.' });
+
+        const oldSeats = reservation.seats.map(s => parseInt(s));
+
+        const unavailable = trip.seats.filter(s => 
+            newSeats.includes(s.number) && 
+            s.status !== 'available' && 
+            !oldSeats.includes(s.number)
+        );
         
-        res.json({
-            count: allTrips.length,
-            trips: allTrips.map(t => ({
-                id: t._id,
-                date: t.date,
-                from: t.route?.from,
-                to: t.route?.to,
-                company: t.route?.company,
-                seatsTotal: t.seats?.length
-            }))
+        if (unavailable.length > 0) {
+            return res.status(409).json({ error: `Sièges ${unavailable.map(s => s.number).join(', ')} déjà pris.` });
+        }
+
+        await tripsCollection.updateOne(
+            { _id: trip._id },
+            { $set: { "seats.$[elem].status": "available" } },
+            { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+        );
+
+        await tripsCollection.updateOne(
+            { _id: trip._id },
+            { $set: { "seats.$[elem].status": "occupied" } },
+            { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+        );
+
+        const passengerUpdates = {};
+        reservation.passengers.forEach((passenger, index) => {
+            passengerUpdates[`passengers.${index}.seat`] = newSeats[index];
         });
+        
+        await reservationsCollection.updateOne(
+            { _id: reservation._id },
+            { $set: { seats: newSeats, ...passengerUpdates } }
+        );
+
+        res.json({ success: true, message: 'Sièges modifiés.' });
+
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('❌ Erreur modification sièges:', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
 
-
-
-
-
-
-
 // ============================================
-// 📧 FONCTIONS D'ENVOI D'EMAIL (complètes)
+// EMAILS
 // ============================================
+
 async function sendEmailWithResend(mailOptions) {
     try {
         const { data, error } = await resend.emails.send(mailOptions);
         if (error) throw error;
-        console.log(`✅ Email envoyé à ${mailOptions.to} via Resend. ID: ${data.id}`);
-    } catch (error) { console.error(`❌ Erreur envoi email (Resend) à ${mailOptions.to}:`, error.message); }
+        console.log(`✅ Email envoyé à ${mailOptions.to}`);
+    } catch (error) {
+        console.error(`❌ Erreur email:`, error.message);
+    }
 }
-
-// Dans Backend/server.js
 
 function sendConfirmationEmail(reservation) {
     const passenger = reservation.passengers[0];
     if (!passenger || !passenger.email) return;
 
-    // ✅ TEMPLATE HTML PROFESSIONNEL
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f7; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; }
-        .header { background-color: #10101A; color: #73d700; padding: 40px 20px; text-align: center; }
-        .header h1 { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px; }
-        .content { padding: 30px; }
-        .greeting { font-size: 18px; margin-bottom: 25px; line-height: 1.6; }
-        .booking-number { background-color: #f0f0f0; padding: 25px; border-radius: 8px; text-align: center; margin: 30px 0; border: 1px dashed #ccc; }
-        .booking-label { font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
-        .booking-value { font-size: 32px; font-weight: bold; color: #73d700; font-family: 'Courier New', Courier, monospace; }
-        .details-table { width: 100%; margin: 30px 0; border-collapse: collapse; }
-        .details-table td { padding: 15px 0; border-bottom: 1px solid #eeeeee; font-size: 15px; }
-        .details-table tr:last-child td { border-bottom: none; }
-        .details-table td:first-child { color: #555; }
-        .details-table td:last-child { font-weight: 700; text-align: right; }
-        .info-box { background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 20px; margin: 30px 0; border-radius: 5px; }
-        .info-box strong { color: #2e7d32; display: block; margin-bottom: 10px; }
-        .info-box ul { margin: 0; padding-left: 20px; color: #388e3c; }
-        .info-box li { margin-bottom: 8px; }
-        .button-container { text-align: center; margin: 30px 0; }
-        .button { display: inline-block; background-color: #73d700; color: #ffffff; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: background-color 0.2s; }
-        .footer { background-color: #f4f4f7; padding: 25px; text-align: center; font-size: 12px; color: #888; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>En-Bus</h1>
-        </div>
-        <div class="content">
-            <p class="greeting">Bonjour <strong>${passenger.name}</strong>,</p>
-            <p style="line-height: 1.6;">Votre réservation a été enregistrée avec succès ! Voici un récapitulatif complet de votre prochain voyage :</p>
-            
-            <div class="booking-number">
-                <div class="booking-label">Numéro de Réservation</div>
-                <div class="booking-value">${reservation.bookingNumber}</div>
-            </div>
-            
-            <h3 style="font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #73d700; padding-bottom: 5px;">Détails du Voyage</h3>
-            <table class="details-table">
-                <tr><td>Statut</td><td><strong>${reservation.status}</strong></td></tr>
-                <tr><td>Trajet</td><td>${reservation.route.from} → ${reservation.route.to}</td></tr>
-                <tr><td>Date</td><td>${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
-                <tr><td>Heure de Départ</td><td>${reservation.route.departure}</td></tr>
-                <tr><td>Compagnie</td><td>${reservation.route.company}</td></tr>
-                <!-- ✅ AJOUTER CETTE LIGNE -->
-            ${reservation.busIdentifier ? `<tr><td>Numéro du Bus</td><td><strong>${reservation.busIdentifier}</strong></td></tr>` : ''}
-                <tr><td>Siège(s)</td><td>${reservation.seats.join(', ')}</td></tr>
-                <tr><td>Passagers</td><td>${reservation.passengers.length}</td></tr>
-                <tr><td>Prix Total</td><td>${reservation.totalPrice}</td></tr>
-            </table>
-            
-            ${reservation.status === 'En attente de paiement' ? `
-                <div style="background-color: #fff8e1; border-left: 5px solid #ffab00; padding: 20px; margin: 30px 0; border-radius: 5px;">
-                    <strong style="color: #e65100; display: block; margin-bottom: 10px;">⚠️ PAIEMENT REQUIS À L'AGENCE</strong>
-                    <p style="color: #e65100;">Vous devez effectuer le paiement avant le <strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong> pour valider ce billet.</p>
-                </div>
-            ` : ''}
-            
-            <div class="info-box">
-                <strong>Informations importantes pour l'embarquement :</strong>
-                <ul>
-                    <li>Présentez-vous <strong>30 minutes avant l'heure de départ</strong>.</li>
-                    <li>Une <strong>pièce d'identité valide</strong> est obligatoire.</li>
-                    <li>Bagages inclus : 1 bagage en soute (20kg) et 1 bagage à main.</li>
-                </ul>
-            </div>
-            
-            <div class="button-container">
-                <a href="${process.env.PRODUCTION_URL || process.env.FRONTEND_URL}" class="button">Voir ma réservation en ligne</a>
-            </div>
-        </div>
-        <div class="footer">
-            <p>Cet email est envoyé automatiquement. Pour toute question, contactez notre service client.</p>
-            <p>&copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.</p>
-        </div>
-    </div>
-</body>
-</html>
-    `;
+    const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"></head><body><h1>Réservation confirmée</h1><p>Numéro: ${reservation.bookingNumber}</p></body></html>`;
 
     sendEmailWithResend({
         from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: passenger.email,
-        subject: `✅ Réservation ${reservation.status === 'En attente de paiement' ? 'enregistrée' : 'confirmée'} : ${reservation.bookingNumber}`,
-        html: htmlContent
-    });
-}
-
-function sendReminderEmail(reservation) {
-    const passenger = reservation.passengers[0];
-    if (!passenger || !passenger.email) return;
-    const htmlContent = `<h1>Rappel de votre voyage demain</h1><p>N'oubliez pas votre trajet ${reservation.route.from} → ${reservation.route.to} demain à ${reservation.route.departure}.</p>`;
-    sendEmailWithResend({
-        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
-        to: passenger.email,
-        subject: `🔔 Rappel de voyage : ${reservation.bookingNumber}`,
-        html: htmlContent
-    });
-}
-
-function sendExpirationEmail(reservation) {
-    const passenger = reservation.passengers[0];
-    if (!passenger || !passenger.email) return;
-    const htmlContent = `<h1>Réservation expirée</h1><p>Votre réservation ${reservation.bookingNumber} a expiré.</p>`;
-    sendEmailWithResend({
-        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
-        to: passenger.email,
-        subject: `❌ Réservation expirée : ${reservation.bookingNumber}`,
-        html: htmlContent
-    });
-}
-
-function sendPaymentConfirmedEmail(reservation) {
-    const passenger = reservation.passengers[0];
-    if (!passenger || !passenger.email) return;
-    const htmlContent = `<h1>Paiement Confirmé</h1><p>Votre paiement pour la réservation ${reservation.bookingNumber} a été reçu.</p>`;
-    sendEmailWithResend({
-        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
-        to: passenger.email,
-        subject: `✅ Paiement confirmé : ${reservation.bookingNumber}`,
+        subject: `Réservation ${reservation.bookingNumber}`,
         html: htmlContent
     });
 }
 
 // ============================================
-// ⏰ CRON JOBS
+// CRON JOBS
 // ============================================
+
 if (process.env.NODE_ENV === 'production' && process.env.CRON_ENABLED === 'true') {
     cron.schedule('0 * * * *', async () => {
         const now = new Date();
-        const expiredReservations = await reservationsCollection.find({ status: 'En attente de paiement', paymentDeadline: { $lt: now.toISOString() } }).toArray();
+        const expiredReservations = await reservationsCollection.find({
+            status: 'En attente de paiement',
+            paymentDeadline: { $lt: now.toISOString() }
+        }).toArray();
+        
         for (const reservation of expiredReservations) {
-            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: 'Expiré', cancelledAt: now } });
-            sendExpirationEmail(reservation);
+            await reservationsCollection.updateOne(
+                { _id: reservation._id },
+                { $set: { status: 'Expiré', cancelledAt: now } }
+            );
         }
     });
-    cron.schedule('0 8 * * *', async () => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        const reservationsToRemind = await reservationsCollection.find({ status: 'Confirmé', date: tomorrowStr }).toArray();
-        for (const reservation of reservationsToRemind) {
-            sendReminderEmail(reservation);
-        }
-    });
-    console.log('✅ Cron jobs activés pour la production.');
+    console.log('✅ Cron jobs activés.');
 }
 
 // ============================================
-// 🛰️ WEBSOCKET POUR TRACKING GPS
+// WEBSOCKET
 // ============================================
+
 const io = new Server(server, { cors: { origin: allowedOrigins } });
 io.on('connection', (socket) => {
     socket.on('subscribeToBus', async (busId) => {
@@ -1234,9 +844,11 @@ io.on('connection', (socket) => {
         if (lastPosition) socket.emit('updatePosition', lastPosition);
     });
 });
+
 app.post('/track/update', async (req, res) => {
     const { tid, lat, lon, tst } = req.body;
     if (!tid || !lat || !lon) return res.status(400).json({ error: "Données invalides" });
+    
     const newPosition = { busId: tid, lat, lon, timestamp: new Date(tst * 1000) };
     await positionsCollection.updateOne({ busId: tid }, { $set: newPosition }, { upsert: true });
     io.to(tid).emit('updatePosition', newPosition);
@@ -1244,20 +856,22 @@ app.post('/track/update', async (req, res) => {
 });
 
 // ============================================
-// 🚀 DÉMARRAGE SERVEUR
+// DÉMARRAGE
 // ============================================
+
 const PORT = process.env.PORT || 3000;
+
 (async () => {
     await connectToDb();
     server.listen(PORT, () => {
         console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 Backend En-Bus (SÉCURISÉ) démarré
+🚀 Backend En-Bus démarré
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📡 Port : ${PORT}
-🌐 Environnement : ${process.env.NODE_ENV}
-🛡️ Sécurité : ✅ Helmet, CORS, Rate Limit, JWT
-📧 Email : ✅ via Resend API
+🌐 Environnement : ${process.env.NODE_ENV || 'development'}
+🛡️ Sécurité : ✅
+📧 Email : ✅
 ⏰ Cron : ${process.env.NODE_ENV === 'production' ? '✅' : '❌'}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         `);
