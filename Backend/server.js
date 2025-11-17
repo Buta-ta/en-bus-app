@@ -796,16 +796,406 @@ async function sendEmailWithResend(mailOptions) {
     }
 }
 
+// Dans server.js - Remplacer la fonction sendConfirmationEmail existante
+
 function sendConfirmationEmail(reservation) {
     const passenger = reservation.passengers[0];
     if (!passenger || !passenger.email) return;
 
-    const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"></head><body><h1>Réservation confirmée</h1><p>Numéro: ${reservation.bookingNumber}</p></body></html>`;
+    // Calculer les détails du voyage
+    const departureDate = new Date(reservation.date);
+    const isRoundTrip = !!reservation.returnRoute;
+    const isPendingPayment = reservation.status === 'En attente de paiement';
+    
+    // Générer la liste des passagers
+    const passengersListHTML = reservation.passengers.map((p, index) => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 12px 8px; font-weight: 600;">${p.name}</td>
+            <td style="padding: 12px 8px; text-align: center;">${reservation.seats[index]}</td>
+            <td style="padding: 12px 8px; text-align: center;">${p.phone}</td>
+        </tr>
+    `).join('');
+
+    // Section pour le trajet retour (si applicable)
+    let returnTripHTML = '';
+    if (isRoundTrip) {
+        const returnPassengersList = reservation.passengers.map((p, index) => `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px 8px; font-weight: 600;">${p.name}</td>
+                <td style="padding: 12px 8px; text-align: center;">${reservation.returnSeats[index]}</td>
+            </tr>
+        `).join('');
+
+        returnTripHTML = `
+            <div style="margin-top: 40px; padding-top: 30px; border-top: 3px dashed #e0e0e0;">
+                <h2 style="font-size: 22px; color: #1a73e8; margin-bottom: 20px; display: flex; align-items: center;">
+                    <span style="background: #1a73e8; color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 18px;">🔙</span>
+                    Trajet Retour
+                </h2>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 15px;">
+                        <div>
+                            <div style="font-size: 24px; font-weight: 700; color: #202124;">${reservation.returnRoute.from}</div>
+                            <div style="font-size: 32px; font-weight: 800; color: #1a73e8; margin-top: 5px;">${reservation.returnRoute.departure}</div>
+                            <div style="font-size: 13px; color: #5f6368; margin-top: 5px;">${new Date(reservation.returnDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                        </div>
+                        <div style="text-align: center; color: #5f6368;">
+                            <div style="font-size: 40px;">→</div>
+                            <div style="font-size: 12px; margin-top: 5px;">${reservation.returnRoute.duration || 'N/A'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 24px; font-weight: 700; color: #202124;">${reservation.returnRoute.to}</div>
+                            <div style="font-size: 32px; font-weight: 800; color: #ea4335; margin-top: 5px;">${reservation.returnRoute.arrival}</div>
+                            <div style="font-size: 13px; color: #5f6368; margin-top: 5px;">Compagnie: ${reservation.returnRoute.company}</div>
+                        </div>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <thead>
+                        <tr style="background: #f1f3f4;">
+                            <th style="padding: 12px 8px; text-align: left; font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px;">Passager</th>
+                            <th style="padding: 12px 8px; text-align: center; font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px;">Siège</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${returnPassengersList}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Bloc de paiement en attente (si applicable)
+    let paymentWarningHTML = '';
+    if (isPendingPayment && reservation.agency) {
+        const deadline = new Date(reservation.paymentDeadline);
+        const now = new Date();
+        const hoursLeft = Math.floor((deadline - now) / (1000 * 60 * 60));
+        const minutesLeft = Math.floor(((deadline - now) % (1000 * 60 * 60)) / (1000 * 60));
+
+        paymentWarningHTML = `
+            <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe7a1 100%); border-left: 6px solid #ff9800; padding: 25px; border-radius: 12px; margin: 30px 0; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2);">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <span style="font-size: 48px; margin-right: 15px;">⏰</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 20px; color: #e65100; font-weight: 800;">PAIEMENT REQUIS À L'AGENCE</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #e65100;">Votre réservation sera automatiquement annulée si le paiement n'est pas effectué avant la date limite.</p>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 8px; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div>
+                            <div style="font-size: 13px; color: #5f6368; margin-bottom: 5px;">DATE LIMITE DE PAIEMENT</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #d32f2f;">
+                                ${deadline.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 13px; color: #5f6368; margin-bottom: 5px;">TEMPS RESTANT</div>
+                            <div style="font-size: 32px; font-weight: 900; color: #ff6f00; font-family: 'Courier New', monospace;">
+                                ${hoursLeft}h ${minutesLeft}min
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 2px dashed #ff9800; margin: 20px 0;">
+                    
+                    <div style="background: #fff; padding: 15px; border-radius: 8px; border: 2px solid #ff9800;">
+                        <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #e65100; font-weight: 700;">📍 Agence de paiement</h4>
+                        <div style="font-size: 18px; font-weight: 700; color: #202124; margin-bottom: 8px;">${reservation.agency.name}</div>
+                        <div style="font-size: 14px; color: #5f6368; line-height: 1.6;">
+                            <div style="margin-bottom: 6px;"><strong>Adresse :</strong> ${reservation.agency.address}</div>
+                            <div style="margin-bottom: 6px;"><strong>Téléphone :</strong> ${reservation.agency.phone}</div>
+                            <div style="margin-bottom: 6px;"><strong>Horaires :</strong> ${reservation.agency.hours}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #1976d2;">
+                        <p style="margin: 0; font-size: 13px; color: #0d47a1; line-height: 1.5;">
+                            <strong>💡 Important :</strong> Présentez votre numéro de réservation <strong>${reservation.bookingNumber}</strong> et une pièce d'identité à l'agence pour effectuer le paiement.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de réservation - En-Bus</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+        <tr>
+            <td style="padding: 20px 0;">
+                <table role="presentation" style="max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    
+                    <!-- En-tête avec logo -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10101A 0%, #1a1a2e 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 48px; font-weight: 900; color: #73d700; text-shadow: 0 0 30px rgba(115, 215, 0, 0.5); letter-spacing: 2px;">EN-BUS</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #b0bac9; letter-spacing: 1px; text-transform: uppercase;">Votre voyage en toute sérénité</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Corps du message -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            
+                            <!-- Message de bienvenue -->
+                            <div style="text-align: center; margin-bottom: 35px;">
+                                <div style="font-size: 64px; margin-bottom: 15px;">✅</div>
+                                <h2 style="margin: 0; font-size: 28px; color: #202124; font-weight: 700;">
+                                    ${isPendingPayment ? 'Réservation enregistrée !' : 'Réservation confirmée !'}
+                                </h2>
+                                <p style="margin: 10px 0 0 0; font-size: 16px; color: #5f6368;">
+                                    Bonjour <strong>${passenger.name}</strong>, votre voyage est ${isPendingPayment ? 'en attente de paiement' : 'confirmé'}.
+                                </p>
+                            </div>
+                            
+                            <!-- Numéro de réservation -->
+                            <div style="background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%); border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 35px; border: 2px dashed #dadce0;">
+                                <div style="font-size: 12px; color: #5f6368; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">Numéro de réservation</div>
+                                <div style="font-size: 36px; font-weight: 900; color: #73d700; font-family: 'Courier New', monospace; letter-spacing: 3px; text-shadow: 2px 2px 0px rgba(115, 215, 0, 0.1);">${reservation.bookingNumber}</div>
+                            </div>
+                            
+                            ${paymentWarningHTML}
+                            
+                            <!-- Trajet Aller -->
+                            <div style="margin-bottom: 30px;">
+                                <h2 style="font-size: 22px; color: #34a853; margin-bottom: 20px; display: flex; align-items: center;">
+                                    <span style="background: #34a853; color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 18px;">✈️</span>
+                                    Trajet Aller
+                                </h2>
+                                
+                                <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e9 100%); padding: 25px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid #34a853;">
+                                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 15px;">
+                                        <div>
+                                            <div style="font-size: 24px; font-weight: 700; color: #202124;">${reservation.route.from}</div>
+                                            <div style="font-size: 36px; font-weight: 800; color: #34a853; margin-top: 5px;">${reservation.route.departure}</div>
+                                            <div style="font-size: 13px; color: #5f6368; margin-top: 5px;">${departureDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                        </div>
+                                        <div style="text-align: center; color: #5f6368;">
+                                            <div style="font-size: 40px;">→</div>
+                                            <div style="font-size: 12px; margin-top: 5px;">${reservation.route.duration || 'N/A'}</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 24px; font-weight: 700; color: #202124;">${reservation.route.to}</div>
+                                            <div style="font-size: 36px; font-weight: 800; color: #ea4335; margin-top: 5px;">${reservation.route.arrival}</div>
+                                            <div style="font-size: 13px; color: #5f6368; margin-top: 5px;">Compagnie: ${reservation.route.company}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tableau des passagers (Aller) -->
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    <thead>
+                                        <tr style="background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);">
+                                            <th style="padding: 15px 10px; text-align: left; font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Passager</th>
+                                            <th style="padding: 15px 10px; text-align: center; font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Siège</th>
+                                            <th style="padding: 15px 10px; text-align: center; font-size: 12px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Téléphone</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${passengersListHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            ${returnTripHTML}
+                            
+                            <!-- Prix total -->
+                            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 12px; margin: 30px 0; text-align: center; border: 3px solid #66bb6a;">
+                                <div style="font-size: 13px; color: #2e7d32; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Prix Total</div>
+                                <div style="font-size: 42px; font-weight: 900; color: #1b5e20;">${reservation.totalPrice}</div>
+                            </div>
+                            
+                            <!-- Informations importantes -->
+                            <div style="background: #e3f2fd; border-left: 5px solid #1976d2; padding: 20px; border-radius: 8px; margin: 30px 0;">
+                                <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #0d47a1; display: flex; align-items: center;">
+                                    <span style="font-size: 24px; margin-right: 10px;">ℹ️</span>
+                                    Informations importantes
+                                </h3>
+                                <ul style="margin: 0; padding-left: 20px; color: #1565c0; line-height: 1.8;">
+                                    <li><strong>Présentez-vous 30 minutes avant le départ</strong> avec une pièce d'identité valide.</li>
+                                    <li>Bagages inclus : <strong>1 bagage en soute (20kg)</strong> + <strong>1 bagage à main</strong>.</li>
+                                    <li>En cas de modification ou annulation, contactez notre service client.</li>
+                                    ${reservation.route.busIdentifier ? `<li>Numéro de bus : <strong>${reservation.route.busIdentifier}</strong></li>` : ''}
+                                </ul>
+                            </div>
+                            
+                            <!-- Bouton d'action -->
+                            <div style="text-align: center; margin: 35px 0;">
+                                <a href="${process.env.FRONTEND_URL || process.env.PRODUCTION_URL || 'https://votre-site.com'}" style="display: inline-block; background: linear-gradient(135deg, #73d700 0%, #5cb300 100%); color: #10101A; padding: 18px 45px; text-decoration: none; border-radius: 50px; font-weight: 800; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 8px 20px rgba(115, 215, 0, 0.4); transition: all 0.3s;">
+                                    📱 Voir ma réservation
+                                </a>
+                            </div>
+                            
+                        </td>
+                    </tr>
+                    
+                    <!-- Pied de page -->
+                    <tr>
+                        <td style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0 0 10px 0; font-size: 13px; color: #5f6368;">
+                                Cet email a été envoyé automatiquement. Pour toute question, contactez notre service client.
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9e9e9e;">
+                                &copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.
+                            </p>
+                            <div style="margin-top: 20px;">
+                                <a href="#" style="color: #5f6368; text-decoration: none; margin: 0 10px; font-size: 12px;">Conditions d'utilisation</a>
+                                <span style="color: #dadce0;">|</span>
+                                <a href="#" style="color: #5f6368; text-decoration: none; margin: 0 10px; font-size: 12px;">Politique de confidentialité</a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `;
 
     sendEmailWithResend({
         from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: passenger.email,
-        subject: `Réservation ${reservation.bookingNumber}`,
+        subject: `${isPendingPayment ? '⏰ Réservation en attente' : '✅ Réservation confirmée'} - ${reservation.bookingNumber}`,
+        html: htmlContent
+    });
+}
+
+
+
+// Dans server.js - Ajouter cette nouvelle fonction
+
+function sendPaymentExpirationEmail(reservation) {
+    const passenger = reservation.passengers[0];
+    if (!passenger || !passenger.email) return;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+        <tr>
+            <td style="padding: 20px 0;">
+                <table role="presentation" style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    
+                    <!-- En-tête -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%); padding: 40px 30px; text-align: center;">
+                            <div style="font-size: 72px; margin-bottom: 15px;">❌</div>
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 900; color: #ffffff;">Réservation Annulée</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #ffcdd2; letter-spacing: 1px;">Délai de paiement dépassé</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Corps -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            
+                            <p style="font-size: 16px; color: #202124; line-height: 1.6; margin: 0 0 20px 0;">
+                                Bonjour <strong>${passenger.name}</strong>,
+                            </p>
+                            
+                            <p style="font-size: 16px; color: #5f6368; line-height: 1.6; margin: 0 0 25px 0;">
+                                Nous vous informons que votre réservation <strong>${reservation.bookingNumber}</strong> a été automatiquement annulée car le paiement n'a pas été effectué dans les délais requis.
+                            </p>
+                            
+                            <!-- Détails de la réservation annulée -->
+                            <div style="background: #fbe9e7; border-left: 5px solid #d32f2f; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                                <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #c62828;">Détails de la réservation annulée</h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Numéro de réservation :</td>
+                                        <td style="padding: 8px 0; color: #202124; font-weight: 700; text-align: right;">${reservation.bookingNumber}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Trajet :</td>
+                                        <td style="padding: 8px 0; color: #202124; font-weight: 700; text-align: right;">${reservation.route.from} → ${reservation.route.to}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Date de départ :</td>
+                                        <td style="padding: 8px 0; color: #202124; font-weight: 700; text-align: right;">${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Heure de départ :</td>
+                                        <td style="padding: 8px 0; color: #202124; font-weight: 700; text-align: right;">${reservation.route.departure}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Sièges :</td>
+                                        <td style="padding: 8px 0; color: #202124; font-weight: 700; text-align: right;">${reservation.seats.join(', ')}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Montant :</td>
+                                        <td style="padding: 8px 0; color: #d32f2f; font-weight: 900; text-align: right; font-size: 18px;">${reservation.totalPrice}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #5f6368; font-size: 14px;">Date limite de paiement :</td>
+                                        <td style="padding: 8px 0; color: #c62828; font-weight: 700; text-align: right;">${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <!-- Information -->
+                            <div style="background: #fff3e0; border-left: 5px solid #ff9800; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e65100; display: flex; align-items: center;">
+                                    <span style="font-size: 24px; margin-right: 10px;">💡</span>
+                                    Que faire maintenant ?
+                                </h3>
+                                <p style="margin: 0; color: #5f6368; line-height: 1.6; font-size: 14px;">
+                                    Si vous souhaitez toujours voyager avec En-Bus, vous pouvez effectuer une nouvelle réservation sur notre site web ou application mobile. Les sièges que vous aviez réservés sont désormais disponibles pour d'autres voyageurs.
+                                </p>
+                            </div>
+                            
+                            <!-- Bouton -->
+                            <div style="text-align: center; margin: 35px 0;">
+                                <a href="${process.env.FRONTEND_URL || process.env.PRODUCTION_URL || 'https://votre-site.com'}" style="display: inline-block; background: linear-gradient(135deg, #73d700 0%, #5cb300 100%); color: #10101A; padding: 18px 45px; text-decoration: none; border-radius: 50px; font-weight: 800; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 8px 20px rgba(115, 215, 0, 0.4);">
+                                    🎫 Faire une nouvelle réservation
+                                </a>
+                            </div>
+                            
+                            <p style="font-size: 14px; color: #9e9e9e; text-align: center; margin-top: 30px;">
+                                Pour toute question, contactez notre service client.
+                            </p>
+                            
+                        </td>
+                    </tr>
+                    
+                    <!-- Pied de page -->
+                    <tr>
+                        <td style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0; font-size: 12px; color: #9e9e9e;">
+                                &copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `;
+
+    sendEmailWithResend({
+        from: `"${process.env.EMAIL_FROM_NAME || 'En-Bus'}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+        to: passenger.email,
+        subject: `❌ Réservation ${reservation.bookingNumber} annulée - Délai de paiement dépassé`,
         html: htmlContent
     });
 }
@@ -814,22 +1204,54 @@ function sendConfirmationEmail(reservation) {
 // CRON JOBS
 // ============================================
 
+// Dans server.js - Remplacer le CRON existant
+
 if (process.env.NODE_ENV === 'production' && process.env.CRON_ENABLED === 'true') {
-    cron.schedule('0 * * * *', async () => {
+    cron.schedule('*/5 * * * *', async () => {  // ✅ Toutes les 5 minutes au lieu de 1 heure
         const now = new Date();
         const expiredReservations = await reservationsCollection.find({
             status: 'En attente de paiement',
             paymentDeadline: { $lt: now.toISOString() }
         }).toArray();
         
+        console.log(`⏰ CRON: ${expiredReservations.length} réservation(s) expirée(s) trouvée(s)`);
+        
         for (const reservation of expiredReservations) {
+            // Libérer les sièges aller
+            const tripId = reservation.route.id;
+            const seatNumbersToFree = reservation.seats.map(s => parseInt(s));
+            
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $set: { "seats.$[elem].status": "available" } },
+                { arrayFilters: [{ "elem.number": { $in: seatNumbersToFree } }] }
+            );
+            
+            // Libérer les sièges retour (si applicable)
+            if (reservation.returnRoute && reservation.returnSeats && reservation.returnSeats.length > 0) {
+                const returnTripId = reservation.returnRoute.id;
+                const returnSeatNumbersToFree = reservation.returnSeats.map(s => parseInt(s));
+                
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(returnTripId) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: returnSeatNumbersToFree } }] }
+                );
+            }
+            
+            // Mettre à jour le statut
             await reservationsCollection.updateOne(
                 { _id: reservation._id },
                 { $set: { status: 'Expiré', cancelledAt: now } }
             );
+            
+            // ✅ ENVOYER L'EMAIL D'ANNULATION
+            sendPaymentExpirationEmail(reservation);
+            
+            console.log(`✅ Réservation ${reservation.bookingNumber} expirée et email envoyé`);
         }
     });
-    console.log('✅ Cron jobs activés.');
+    console.log('✅ Cron jobs activés (vérification toutes les 5 minutes).');
 }
 
 // ============================================
