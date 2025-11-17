@@ -1277,6 +1277,118 @@ app.post('/track/update', async (req, res) => {
     res.sendStatus(200);
 });
 
+
+
+// Dans server.js
+
+// ============================================
+// 💳 INTÉGRATION MTN MOBILE MONEY
+// ============================================
+
+const mtnPayment = require('./services/mtnPayment');
+
+// Initier un paiement MTN
+app.post('/api/payment/mtn/initiate', strictLimiter, [
+    body('phone').notEmpty(),
+    body('amount').isNumeric(),
+    body('bookingNumber').notEmpty()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { phone, amount, bookingNumber, customerName } = req.body;
+        const currency = 'XAF'; // Franc CFA
+
+        console.log('💳 Initiation paiement MTN:', { phone, amount, bookingNumber });
+
+        const result = await mtnPayment.requestToPay(
+            phone,
+            amount,
+            currency,
+            bookingNumber,
+            `Réservation ${bookingNumber}`
+        );
+
+        if (result.success) {
+            // Enregistrer la transaction
+            await reservationsCollection.updateOne(
+                { bookingNumber: bookingNumber },
+                { 
+                    $set: { 
+                        paymentTransactionId: result.transactionId,
+                        paymentProvider: 'MTN',
+                        paymentStatus: 'pending',
+                        paymentInitiatedAt: new Date()
+                    } 
+                }
+            );
+
+            res.json({
+                success: true,
+                message: result.message,
+                transactionId: result.transactionId
+            });
+        } else {
+            res.status(400).json({ success: false, error: result.error });
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur initiation MTN:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Vérifier le statut d'un paiement MTN
+// Dans server.js - Remplacer cette fonction
+
+// Vérifier le statut d'un paiement MTN
+app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
+    try {
+        const { transactionId } = req.params;
+        const result = await mtnPayment.getTransactionStatus(transactionId);
+
+        if (result.success) {
+            if (result.status === 'SUCCESSFUL') {
+                const reservation = await reservationsCollection.findOneAndUpdate(
+                    { paymentTransactionId: transactionId },
+                    { 
+                        $set: { 
+                            status: 'Confirmé',
+                            paymentStatus: 'completed',
+                            paymentConfirmedAt: new Date(),
+                            paymentDetails: {
+                                transactionId: transactionId,
+                                amount: result.amount,
+                                currency: result.currency,
+                                provider: 'MTN',
+                                status: result.status,
+                                payerMessage: result.payerMessage || null,
+                                reason: result.reason || null
+                            }
+                        } 
+                    },
+                    { returnDocument: 'after' }
+                );
+
+                if (reservation.value) {
+                    sendConfirmationEmail(reservation.value);
+                }
+            }
+            res.json({ success: true, status: result.status });
+        } else {
+            res.status(400).json({ success: false, error: result.error });
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur vérification statut MTN:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
 // ============================================
 // DÉMARRAGE
 // ============================================
