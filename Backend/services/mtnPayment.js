@@ -45,8 +45,8 @@ class MTNPaymentService {
             const credentials = Buffer.from(`${this.userId}:${this.apiKey}`).toString('base64');
             
             const response = await axios.post(
-    `${this.baseURL}/collection/token/`,  // ✅ Sans la variable collectionPath
-    {},
+                `${this.baseURL}${this.collectionPath}/token`,
+                {},
                 {
                     headers: {
                         'Authorization': `Basic ${credentials}`,

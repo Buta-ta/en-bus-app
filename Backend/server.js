@@ -1281,6 +1281,38 @@ app.post('/track/update', async (req, res) => {
 
 // Dans server.js
 
+
+// Route de test MTN (avant les autres routes)
+app.post('/api/payment/mtn/test', async (req, res) => {
+    console.log('\n🧪 TEST MTN DIRECT');
+    console.log('Body:', req.body);
+    
+    try {
+        const result = await mtnPayment.requestToPay(
+            '46733123453', // Numéro de test sandbox
+            100,
+            'EUR',
+            'TEST-' + Date.now(),
+            'Test direct'
+        );
+        
+        console.log('Résultat:', result);
+        
+        if (result.success) {
+            // Attendre 3 secondes puis vérifier le statut
+            setTimeout(async () => {
+                const status = await mtnPayment.getTransactionStatus(result.transactionId);
+                console.log('Statut après 3s:', status);
+            }, 3000);
+        }
+        
+        res.json(result);
+    } catch (error) {
+        console.error('Erreur:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============================================
 // 💳 INTÉGRATION MTN MOBILE MONEY
 // ============================================
@@ -1300,7 +1332,7 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
 
     try {
         const { phone, amount, bookingNumber, customerName } = req.body;
-        const currency = 'XAF'; // Franc CFA
+        const currency = 'EUR'; // Franc CFA
 
         console.log('💳 Initiation paiement MTN:', { phone, amount, bookingNumber });
 
@@ -1400,6 +1432,80 @@ app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
     }
 });
 
+
+// Dans server.js - Route MTN Initiate
+app.post('/api/payment/mtn/initiate', strictLimiter, [
+    body('phone').notEmpty(),
+    body('amount').isNumeric(),
+    body('bookingNumber').notEmpty()
+], async (req, res) => {
+    console.log('\n═══════════════════════════════════════');
+    console.log('🔵 NOUVELLE REQUÊTE MTN REÇUE');
+    console.log('═══════════════════════════════════════');
+    console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
+    console.log('🌐 IP client:', req.ip);
+    console.log('═══════════════════════════════════════\n');
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.error('❌ Erreurs de validation:', errors.array());
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { phone, amount, bookingNumber, customerName } = req.body;
+        const currency = 'EUR'; // ⚠️ SANDBOX utilise EUR, pas XAF
+
+        console.log('💳 Tentative paiement MTN:', {
+            phone,
+            amount,
+            currency,
+            bookingNumber,
+            customerName
+        });
+
+        const result = await mtnPayment.requestToPay(
+            phone,
+            amount,
+            currency,
+            bookingNumber,
+            `Réservation ${bookingNumber}`
+        );
+
+        console.log('📤 Résultat MTN API:', JSON.stringify(result, null, 2));
+
+        if (result.success) {
+            await reservationsCollection.updateOne(
+                { bookingNumber: bookingNumber },
+                { 
+                    $set: { 
+                        paymentTransactionId: result.transactionId,
+                        paymentProvider: 'MTN',
+                        paymentStatus: 'pending',
+                        paymentInitiatedAt: new Date()
+                    } 
+                }
+            );
+
+            console.log('✅ Transaction enregistrée dans la BDD');
+
+            res.json({
+                success: true,
+                message: result.message,
+                transactionId: result.transactionId
+            });
+        } else {
+            console.error('❌ Échec MTN API:', result.error);
+            res.status(400).json({ success: false, error: result.error });
+        }
+
+    } catch (error) {
+        console.error('❌ ERREUR CRITIQUE:', error);
+        console.error('Stack:', error.stack);
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
+    }
+});
 
 // ============================================
 // DÉMARRAGE
