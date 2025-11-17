@@ -1109,6 +1109,16 @@
             height: 32px;
             font-size: 1rem;
         }
+
+
+        .seat.selected {
+    background: #2196F3 !important;
+    color: white !important;
+    border: 3px solid white !important;
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+}
     }
     
     /* ============================================
@@ -1894,6 +1904,47 @@ function renderTable(reservations) {
             </tr>
         `; 
     }).join('');
+}
+
+
+// ============================================
+// 🎯 ACTIONS SUR LES RÉSERVATIONS
+// ============================================
+
+async function performAction(reservationId, action) {
+    const reservation = allReservations.find(r => r._id === reservationId);
+    if (!reservation) {
+        showNotification("Erreur : réservation non trouvée.", "error");
+        return;
+    }
+
+    let confirmMessage = '';
+    let successMessage = '';
+    
+    if (action === 'confirm-payment') {
+        confirmMessage = `Confirmer le paiement pour la réservation ${reservation.bookingNumber} ?\n\nPassager : ${reservation.passengers[0]?.name}\nMontant : ${reservation.totalPrice}`;
+        successMessage = 'Paiement confirmé avec succès !';
+    } else if (action === 'cancel') {
+        confirmMessage = `⚠️ ATTENTION : Annuler la réservation ${reservation.bookingNumber} ?\n\nCette action va :\n- Libérer les ${reservation.seats.length} siège(s) : ${reservation.seats.join(', ')}\n- Marquer la réservation comme "Annulé"\n\nCette action est irréversible.`;
+        successMessage = 'Réservation annulée et sièges libérés.';
+    } else {
+        showNotification("Action non reconnue.", "error");
+        return;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        return; // L'utilisateur a annulé
+    }
+    
+    // Appel à l'API
+    const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH');
+    
+    if (data && data.success) {
+        showNotification(successMessage, 'success');
+        loadAdminData(); // Recharger toutes les réservations pour voir les changements
+    } else {
+        showNotification(data?.error || "Erreur lors de l'action.", "error");
+    }
 }
 
         async function confirmPayment(bookingNumber) {
@@ -2693,34 +2744,28 @@ function showEditTemplateModal(templateId) {
 // Dans Admin/index.html (section <script>)
 
 async function showChangeSeatsModal(reservationId) {
-    console.group("🔍 DEBUG: showChangeSeatsModal");
-    console.log("ID de réservation reçu :", reservationId);
-
     const reservation = allReservations.find(r => r._id === reservationId);
     if (!reservation) {
-        console.error("❌ Réservation non trouvée dans 'allReservations'.");
-        console.groupEnd();
         showNotification("Erreur : réservation non trouvée.", "error");
         return;
     }
-    console.log("Réservation trouvée :", reservation);
 
-    console.log("ID du voyage associé :", reservation.route.id);
-    const tripSeatsData = await apiCall(`/trips/${reservation.route.id}/seats`);
+    // Utiliser l'ID du voyage depuis la réservation
+    const tripId = reservation.route.id;
+    const tripSeatsData = await apiCall(`/trips/${tripId}/seats`);
     
     if (!tripSeatsData) {
-        console.error("❌ Impossible de charger les données des sièges depuis l'API.");
-        console.groupEnd();
         showNotification("Erreur : impossible de charger les sièges du voyage.", "error");
         return;
     }
-    console.log("Données des sièges reçues :", tripSeatsData);
-
 
     document.getElementById('modal-title').textContent = `Modifier les sièges - Résa ${reservation.bookingNumber}`;
     
+    // Convertir les sièges actuels en nombres pour la comparaison
+    const currentSeats = reservation.seats.map(s => typeof s === 'string' ? parseInt(s) : s);
+    
     let seatMapHTML = `
-        <p>Sélectionnez les nouveaux sièges pour les passagers. Vous pouvez choisir des sièges disponibles (verts) ou bloqués (gris).</p>
+        <p>Sélectionnez ${reservation.passengers.length} nouveau(x) siège(s). Sièges actuels : ${currentSeats.join(', ')}</p>
         <div class="seat-map-container">
             <div class="seat-map">
     `;
@@ -2730,17 +2775,17 @@ async function showChangeSeatsModal(reservationId) {
         let onClick = '';
         let title = `Siège ${seat.number}: ${seat.status}`;
 
-        // On peut cliquer sur un siège s'il n'est pas occupé par une AUTRE réservation.
-        // Les sièges de la réservation actuelle sont considérés comme "libres" pour cette modification.
-        if (seat.status === 'available' || seat.status === 'blocked' || reservation.seats.includes(seat.number)) {
+        // Permettre la sélection des sièges disponibles, bloqués, ou déjà occupés par cette réservation
+        if (seat.status === 'available' || seat.status === 'blocked' || currentSeats.includes(seat.number)) {
             onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
+            
+            // Pré-sélectionner les sièges actuels de la réservation
+            if (currentSeats.includes(seat.number)) {
+                seatClass += ' selected';
+                seat.status = 'selected'; // Pour l'affichage
+            }
         } else {
-            title += ' (non disponible)';
-        }
-        
-        // Pré-sélectionner les sièges qui appartiennent actuellement à cette réservation
-        if (reservation.seats.includes(seat.number)) {
-            seatClass += ' selected';
+            title += ' (indisponible - réservé par un autre client)';
         }
         
         seatMapHTML += `<div class="${seatClass}" ${onClick} title="${title}" data-seat-number="${seat.number}">${seat.number}</div>`;
@@ -2751,15 +2796,23 @@ async function showChangeSeatsModal(reservationId) {
         </div>
         <div class="seat-legend">
             <div class="legend-item"><div class="legend-box" style="background:var(--primary);"></div><span>Disponible</span></div>
-            <div class="legend-item"><div class="legend-box" style="background:#ef5350;"></div><span>Occupé</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#ef5350;"></div><span>Occupé (autre client)</span></div>
             <div class="legend-item"><div class="legend-box" style="background:var(--dark-border);"></div><span>Bloqué</span></div>
-            <div class="legend-item"><div class="legend-box" style="background:#007bff; border: 2px solid white;"></div><span>Sélectionné</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#2196F3; border: 3px solid white;"></div><span>Sélectionné</span></div>
         </div>
-        <button id="save-seats-btn" class="btn btn-primary mt-4">Enregistrer les nouveaux sièges</button>
+        <div style="margin-top: 20px; padding: 15px; background: var(--dark-elevated); border-radius: 8px;">
+            <p style="margin: 0; color: var(--text-secondary);">
+                <strong>Sièges sélectionnés :</strong> <span id="selected-seats-count">0</span> / ${reservation.passengers.length}
+            </p>
+        </div>
+        <button id="save-seats-btn" class="btn btn-primary mt-4" disabled>Enregistrer les nouveaux sièges</button>
     `;
     
     document.getElementById('modal-body').innerHTML = seatMapHTML;
     document.getElementById('details-modal').classList.add('active');
+
+    // Mettre à jour le compteur initial
+    updateSelectedSeatsCount();
 
     // Attacher l'événement au bouton "Enregistrer"
     document.getElementById('save-seats-btn').onclick = async () => {
@@ -2767,19 +2820,53 @@ async function showChangeSeatsModal(reservationId) {
         const newSeats = Array.from(selectedSeatsElements).map(el => parseInt(el.dataset.seatNumber));
         
         if (newSeats.length !== reservation.passengers.length) {
-            showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s) (actuellement ${newSeats.length} sélectionné(s)).`, 'error');
+            showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'error');
             return;
         }
 
-        // Appel à l'API pour mettre à jour les sièges
-        const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats: newSeats });
+        const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
         
         if (data) {
-            showNotification(data.message, 'success');
+            showNotification('Sièges modifiés avec succès !', 'success');
             closeModal();
-            loadAdminData(); // Recharger toutes les réservations pour voir les changements
+            loadAdminData();
         }
     };
+}
+
+// Fonction helper pour toggle les sièges
+function toggleAdminSeat(element, seatNumber) {
+    element.classList.toggle('selected');
+    
+    // Changer visuellement le statut
+    if (element.classList.contains('selected')) {
+        element.style.background = '#2196F3';
+        element.style.color = 'white';
+        element.style.border = '3px solid white';
+    } else {
+        // Restaurer le style original
+        element.style = '';
+    }
+    
+    updateSelectedSeatsCount();
+}
+
+// Fonction pour mettre à jour le compteur et activer/désactiver le bouton
+function updateSelectedSeatsCount() {
+    const selectedCount = document.querySelectorAll('.seat.selected').length;
+    const totalRequired = parseInt(document.querySelector('#selected-seats-count').parentElement.textContent.split('/')[1]);
+    
+    document.getElementById('selected-seats-count').textContent = selectedCount;
+    
+    const saveButton = document.getElementById('save-seats-btn');
+    if (saveButton) {
+        saveButton.disabled = selectedCount !== totalRequired;
+        if (selectedCount === totalRequired) {
+            saveButton.style.opacity = '1';
+        } else {
+            saveButton.style.opacity = '0.5';
+        }
+    }
 }
 function toggleAdminSeat(element, seatNumber) {
     element.classList.toggle('selected');
