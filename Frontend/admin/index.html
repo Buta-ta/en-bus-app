@@ -1063,6 +1063,10 @@
     }
 
 
+
+
+
+
     /* ============================================
    💺 STYLES POUR LA SÉLECTION DES SIÈGES
    ============================================ */
@@ -1203,6 +1207,85 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+
+/* ============================================
+   ⏱️ CHRONOMÈTRE DE PAIEMENT EN AGENCE
+   ============================================ */
+
+.payment-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+.payment-countdown.urgent {
+    background: linear-gradient(135deg, rgba(239, 83, 80, 0.15) 0%, rgba(229, 57, 53, 0.15) 100%);
+    color: #ef5350;
+    border: 2px solid rgba(239, 83, 80, 0.3);
+    animation: pulse-urgent 2s ease-in-out infinite;
+}
+
+.payment-countdown.warning {
+    background: linear-gradient(135deg, rgba(255, 167, 38, 0.15) 0%, rgba(251, 140, 0, 0.15) 100%);
+    color: #ffa726;
+    border: 2px solid rgba(255, 167, 38, 0.3);
+}
+
+.payment-countdown.normal {
+    background: linear-gradient(135deg, rgba(115, 215, 0, 0.15) 0%, rgba(92, 179, 0, 0.15) 100%);
+    color: var(--primary);
+    border: 2px solid rgba(115, 215, 0, 0.3);
+}
+
+@keyframes pulse-urgent {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(239, 83, 80, 0);
+    }
+}
+
+.countdown-icon {
+    font-size: 16px;
+    animation: tick 1s infinite;
+}
+
+@keyframes tick {
+    0%, 50% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.countdown-time {
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.countdown-label {
+    font-size: 11px;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Badge amélioré pour les réservations en attente */
+.reservation-row.pending-payment {
+    background: rgba(255, 193, 7, 0.03);
+    border-left: 4px solid #ffc107;
+}
+
+.reservation-row.expired-payment {
+    background: rgba(239, 83, 80, 0.03);
+    border-left: 4px solid #ef5350;
+    opacity: 0.6;
 }
 </style>
 </head>
@@ -1866,6 +1949,8 @@ function applyFilters() {
 
         // DANS Admin/index.html (section <script>)
 
+// Dans Admin/index.html - Remplacer la fonction renderTable existante
+
 function renderTable(reservations) { 
     const tbody = document.getElementById('reservations-body'); 
     
@@ -1884,8 +1969,50 @@ function renderTable(reservations) {
         };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
+        // ✅ CALCUL DU TEMPS RESTANT POUR LE PAIEMENT
+        let countdownHTML = '';
+        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+            const now = new Date();
+            const deadline = new Date(r.paymentDeadline);
+            const timeLeft = deadline - now;
+            
+            if (timeLeft > 0) {
+                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                
+                let countdownClass = 'normal';
+                let icon = '⏱️';
+                
+                if (hoursLeft < 1) {
+                    countdownClass = 'urgent';
+                    icon = '🚨';
+                } else if (hoursLeft < 3) {
+                    countdownClass = 'warning';
+                    icon = '⚠️';
+                }
+                
+                countdownHTML = `
+                    <div class="payment-countdown ${countdownClass}" data-deadline="${r.paymentDeadline}" data-reservation-id="${r._id}">
+                        <span class="countdown-icon">${icon}</span>
+                        <span class="countdown-time">${hoursLeft}h ${minutesLeft}min</span>
+                        <span class="countdown-label">restantes</span>
+                    </div>
+                `;
+            } else {
+                // Le délai est dépassé mais la réservation n'est pas encore marquée comme expirée
+                countdownHTML = `
+                    <div class="payment-countdown urgent">
+                        <span class="countdown-icon">❌</span>
+                        <span class="countdown-time">EXPIRÉ</span>
+                    </div>
+                `;
+            }
+        }
+        
+        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
+        
         return `
-            <tr>
+            <tr class="${rowClass}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
                 <td>
@@ -1897,28 +2024,27 @@ function renderTable(reservations) {
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
-                <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                <td>
+                    <span class="badge ${badgeClass}">${r.status}</span>
+                    ${countdownHTML}
+                </td>
                 <td class="actions-cell">
-                    <!-- Bouton pour voir les détails -->
                     <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">
                         👁️
                     </button>
                     
-                    <!-- Bouton pour confirmer le paiement (si en attente) -->
                     ${r.status === 'En attente de paiement' ? `
                         <button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer paiement">
                             ✅
                         </button>
                     ` : ''}
                     
-                    <!-- Bouton pour modifier les sièges (si la réservation est active) -->
                     ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
                         <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">
                             💺
                         </button>
                     ` : ''}
                     
-                    <!-- Bouton pour annuler (si la réservation est active) -->
                     ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
                         <button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">
                             ❌
@@ -1928,9 +2054,90 @@ function renderTable(reservations) {
             </tr>
         `; 
     }).join('');
+    
+    // ✅ DÉMARRER LE CHRONOMÈTRE EN TEMPS RÉEL
+    startCountdownUpdates();
 }
 
 
+
+// Dans Admin/index.html - Ajouter après renderTable()
+
+// ============================================
+// ⏱️ MISE À JOUR DES CHRONOMÈTRES EN TEMPS RÉEL
+// ============================================
+
+let countdownInterval = null;
+
+function startCountdownUpdates() {
+    // Arrêter l'ancien intervalle s'il existe
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    // Mettre à jour toutes les secondes
+    countdownInterval = setInterval(() => {
+        const countdowns = document.querySelectorAll('.payment-countdown[data-deadline]');
+        
+        countdowns.forEach(countdown => {
+            const deadline = new Date(countdown.dataset.deadline);
+            const now = new Date();
+            const timeLeft = deadline - now;
+            
+            if (timeLeft > 0) {
+                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                // Mettre à jour le texte
+                const timeElement = countdown.querySelector('.countdown-time');
+                if (timeElement) {
+                    timeElement.textContent = `${hoursLeft}h ${minutesLeft}min ${secondsLeft}s`;
+                }
+                
+                // Changer le style selon le temps restant
+                countdown.classList.remove('normal', 'warning', 'urgent');
+                
+                const iconElement = countdown.querySelector('.countdown-icon');
+                
+                if (hoursLeft < 1) {
+                    countdown.classList.add('urgent');
+                    if (iconElement) iconElement.textContent = '🚨';
+                } else if (hoursLeft < 3) {
+                    countdown.classList.add('warning');
+                    if (iconElement) iconElement.textContent = '⚠️';
+                } else {
+                    countdown.classList.add('normal');
+                    if (iconElement) iconElement.textContent = '⏱️';
+                }
+                
+            } else {
+                // Le délai est dépassé
+                countdown.classList.remove('normal', 'warning');
+                countdown.classList.add('urgent');
+                
+                const timeElement = countdown.querySelector('.countdown-time');
+                const iconElement = countdown.querySelector('.countdown-icon');
+                
+                if (timeElement) timeElement.textContent = 'EXPIRÉ';
+                if (iconElement) iconElement.textContent = '❌';
+                
+                // Recharger les données pour mettre à jour le statut
+                // (optionnel, pour éviter trop de requêtes)
+                // setTimeout(() => loadAdminData(), 5000);
+            }
+        });
+        
+    }, 1000); // Mise à jour toutes les secondes
+}
+
+// Arrêter les mises à jour quand on quitte la page des réservations
+function stopCountdownUpdates() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+}
 // ============================================
 // 🎯 ACTIONS SUR LES RÉSERVATIONS
 // ============================================
@@ -1990,8 +2197,9 @@ async function performAction(reservationId, action) {
         }
 
        // Dans Admin/index.html (section <script>)
+// Dans Admin/index.html - Remplacer showDetails existante
+
 function showDetails(reservationId) {
-    // ✅ Cherche par _id au lieu de bookingNumber
     const r = allReservations.find(res => res._id === reservationId); 
     if (!r) {
         showNotification("Erreur : Impossible de trouver les détails de cette réservation.", "error");
@@ -1999,20 +2207,88 @@ function showDetails(reservationId) {
     }
 
     document.getElementById('modal-title').textContent = `Détails - ${r.bookingNumber}`; 
+    
+    // ✅ SECTION PAIEMENT EN AGENCE SI APPLICABLE
+    let paymentInfoHTML = '';
+    if (r.status === 'En attente de paiement' && r.paymentDeadline && r.agency) {
+        const deadline = new Date(r.paymentDeadline);
+        const now = new Date();
+        const timeLeft = deadline - now;
+        
+        if (timeLeft > 0) {
+            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            
+            paymentInfoHTML = `
+                <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe7a1 100%); border-left: 5px solid #ff9800; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: #e65100; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 24px;">⏰</span>
+                        Paiement requis à l'agence
+                    </h4>
+                    <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <div style="font-size: 13px; color: #666; margin-bottom: 5px;">TEMPS RESTANT</div>
+                        <div style="font-size: 28px; font-weight: 900; color: #d32f2f; font-family: var(--font-mono);">
+                            ${hoursLeft}h ${minutesLeft}min
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Deadline : ${deadline.toLocaleString('fr-FR')}
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 6px;">
+                        <div style="font-weight: 700; margin-bottom: 8px;">📍 ${r.agency.name}</div>
+                        <div style="font-size: 13px; color: #666; line-height: 1.6;">
+                            ${r.agency.address}<br>
+                            📞 ${r.agency.phone}<br>
+                            🕐 ${r.agency.hours}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            paymentInfoHTML = `
+                <div style="background: #ffebee; border-left: 5px solid #ef5350; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0; color: #c62828; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 24px;">❌</span>
+                        Délai de paiement dépassé - Cette réservation sera bientôt expirée
+                    </h4>
+                </div>
+            `;
+        }
+    }
+    
     document.getElementById('modal-body').innerHTML = `
-        <h4 style="font-weight: 700;">Passagers</h4>
-        <ul style="list-style-type: none; padding: 0; margin-bottom: 1rem;">
+        ${paymentInfoHTML}
+        
+        <h4 style="font-weight: 700; margin-bottom: 15px; color: var(--primary);">👥 Passagers</h4>
+        <ul style="list-style-type: none; padding: 0; margin-bottom: 20px;">
             ${r.passengers.map(p => `
-                <li style="padding: 8px 0; border-bottom: 1px solid var(--dark-border);">
-                    <strong>${p.name}</strong> (${p.phone}) - Siège: ${p.seat}
+                <li style="padding: 12px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${p.name}</strong><br>
+                        <span style="font-size: 13px; color: var(--text-muted);">${p.phone}</span>
+                    </div>
+                    <span style="background: var(--dark-elevated); padding: 4px 12px; border-radius: 6px; font-weight: 700;">
+                        💺 ${p.seat}
+                    </span>
                 </li>
             `).join('')}
         </ul>
-        <hr style="margin:15px 0; border-color: var(--dark-border);">
-        <h4 style="font-weight: 700;">Paiement</h4>
-        <p><strong>Méthode:</strong> ${r.paymentMethod}</p>
-        <p><strong>Total:</strong> ${r.totalPrice}</p>
+        
+        <hr style="margin: 20px 0; border-color: var(--dark-border);">
+        
+        <h4 style="font-weight: 700; margin-bottom: 15px; color: var(--primary);">💰 Paiement</h4>
+        <div style="background: var(--dark-elevated); padding: 15px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>Méthode :</span>
+                <strong>${r.paymentMethod || 'N/A'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total :</span>
+                <strong style="color: var(--primary); font-size: 18px;">${r.totalPrice}</strong>
+            </div>
+        </div>
     `; 
+    
     document.getElementById('details-modal').classList.add('active'); 
 }
 
@@ -2558,6 +2834,36 @@ function switchTab(tabName) {
             loadAllTemplates();
             break;
     }
+
+    // Arrêter les chronomètres si on quitte l'onglet réservations
+    if (tabName !== 'reservations') {
+        stopCountdownUpdates();
+    }
+    
+    // Gérer les classes 'active'
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.querySelector(`.nav-link[data-tab="${tabName}"]`).classList.add('active');
+    
+    console.log(`🚀 Changement vers l'onglet : ${tabName}`);
+    
+    // Charger les données spécifiques à l'onglet
+    switch (tabName) {
+        case 'reservations':
+            loadAdminData(); // Cela va appeler renderTable() qui démarre les chronomètres
+            break;
+        case 'trips':
+            loadAllTemplates().then(loadAllTrips);
+            break;
+        case 'templates':
+            loadAllTemplates();
+            break;
+    }
+
+
+    
 }
 
         // ============================================

@@ -970,7 +970,7 @@ function sendConfirmationEmail(reservation) {
                             <!-- Trajet Aller -->
                             <div style="margin-bottom: 30px;">
                                 <h2 style="font-size: 22px; color: #34a853; margin-bottom: 20px; display: flex; align-items: center;">
-                                    <span style="background: #34a853; color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 18px;">✈️</span>
+                                    <span style="background: #34a853; color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 18px;">🚌</span>
                                     Trajet Aller
                                 </h2>
                                 
