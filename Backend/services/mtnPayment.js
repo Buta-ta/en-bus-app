@@ -3,7 +3,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-// Fonction pour générer un UUID v4
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
@@ -16,14 +15,11 @@ class MTNPaymentService {
     constructor() {
         this.environment = process.env.MTN_ENVIRONMENT || 'sandbox';
         
-        // URLs de l'API selon l'environnement
         this.baseURL = this.environment === 'production'
             ? 'https://proxy.momoapi.mtn.com'
             : 'https://sandbox.momodeveloper.mtn.com';
         
-        this.collectionPath = '/collection/v1_0';
-        
-        // Identifiants
+        // ✅ CORRECTION : Pas de path global
         this.primaryKey = process.env.MTN_COLLECTION_PRIMARY_KEY;
         this.userId = process.env.MTN_COLLECTION_USER_ID;
         this.apiKey = process.env.MTN_COLLECTION_API_KEY;
@@ -32,20 +28,21 @@ class MTNPaymentService {
         this.tokenExpiry = null;
     }
 
-    /**
-     * Obtenir un token d'accès
-     */
     async getAccessToken() {
-        // Vérifier si on a déjà un token valide
         if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
+            console.log('♻️ Réutilisation token existant');
             return this.accessToken;
         }
 
         try {
+            console.log('\n🔑 Obtention token MTN');
+            console.log('URL:', `${this.baseURL}/collection/token/`);
+            
             const credentials = Buffer.from(`${this.userId}:${this.apiKey}`).toString('base64');
             
+            // ✅ CORRECTION : URL correcte pour le token
             const response = await axios.post(
-                `${this.baseURL}${this.collectionPath}/token`,
+                `${this.baseURL}/collection/token/`,
                 {},
                 {
                     headers: {
@@ -56,111 +53,88 @@ class MTNPaymentService {
             );
 
             this.accessToken = response.data.access_token;
-            // Le token expire après 1 heure, on le renouvelle 5 minutes avant
             this.tokenExpiry = new Date(Date.now() + 55 * 60 * 1000);
 
-            console.log('✅ Token MTN obtenu avec succès');
+            console.log('✅ Token MTN obtenu');
             return this.accessToken;
 
         } catch (error) {
-            console.error('❌ Erreur obtention token MTN:', error.response?.data || error.message);
+            console.error('❌ Erreur token MTN:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
             throw new Error('Impossible d\'obtenir le token MTN');
         }
     }
 
-    /**
-     * Initier une demande de paiement (Request to Pay)
-     */
     async requestToPay(phone, amount, currency, reference, payerMessage) {
-    try {
-        console.log('\n🔵 DÉBUT requestToPay');
-        console.log('─────────────────────────────────');
-        console.log('Environnement:', this.environment);
-        console.log('Base URL:', this.baseURL);
-        console.log('Primary Key présente:', !!this.primaryKey);
-        console.log('User ID:', this.userId);
-        console.log('API Key présente:', !!this.apiKey);
-        
-        const token = await this.getAccessToken();
-        console.log('✅ Token obtenu:', token ? 'OUI' : 'NON');
-        
-        const transactionId = generateUUID();
-        const formattedPhone = phone.replace(/\D/g, '');
-        
-        const payload = {
-            amount: amount.toString(),
-            currency: currency,
-            externalId: reference,
-            payer: {
-                partyIdType: 'MSISDN',
-                partyId: formattedPhone
-            },
-            payerMessage: payerMessage || 'Paiement En-Bus',
-            payeeNote: `Réservation ${reference}`
-        };
+        try {
+            const token = await this.getAccessToken();
+            const transactionId = generateUUID();
+            const formattedPhone = phone.replace(/\D/g, '');
+            
+            const payload = {
+                amount: amount.toString(),
+                currency: currency,
+                externalId: reference,
+                payer: {
+                    partyIdType: 'MSISDN',
+                    partyId: formattedPhone
+                },
+                payerMessage: payerMessage || 'Paiement En-Bus',
+                payeeNote: `Réservation ${reference}`
+            };
 
-        console.log('📦 Payload:', JSON.stringify(payload, null, 2));
-        console.log('🔑 Transaction ID:', transactionId);
-        
-        const url = `${this.baseURL}${this.collectionPath}/requesttopay`;
-        console.log('🌐 URL complète:', url);
+            console.log('📤 Request to Pay MTN');
+            console.log('URL:', `${this.baseURL}/collection/v1_0/requesttopay`);
 
-        const headers = {
-            'Authorization': `Bearer ${token}`,
-            'X-Reference-Id': transactionId,
-            'X-Target-Environment': this.environment,
-            'Ocp-Apim-Subscription-Key': this.primaryKey,
-            'Content-Type': 'application/json'
-        };
-        console.log('📋 Headers:', JSON.stringify(headers, null, 2));
+            // ✅ CORRECTION : URL correcte pour requesttopay
+            await axios.post(
+                `${this.baseURL}/collection/v1_0/requesttopay`,
+                payload,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'X-Reference-Id': transactionId,
+                        'X-Target-Environment': this.environment,
+                        'Ocp-Apim-Subscription-Key': this.primaryKey,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
 
-        const response = await axios.post(url, payload, { headers });
-        
-        console.log('✅ Réponse MTN status:', response.status);
-        console.log('✅ Réponse MTN data:', response.data);
+            console.log('✅ Paiement MTN initié:', transactionId);
 
-        return {
-            success: true,
-            transactionId: transactionId,
-            status: 'PENDING',
-            message: 'Paiement initié. Veuillez confirmer sur votre téléphone.'
-        };
+            return {
+                success: true,
+                transactionId: transactionId,
+                status: 'PENDING',
+                message: 'Paiement initié. Veuillez confirmer sur votre téléphone.'
+            };
 
-    } catch (error) {
-        console.error('\n❌ ERREUR DÉTAILLÉE requestToPay:');
-        console.error('─────────────────────────────────');
-        console.error('Message:', error.message);
-        console.error('Code:', error.code);
-        
-        if (error.response) {
-            console.error('Status HTTP:', error.response.status);
-            console.error('Headers réponse:', JSON.stringify(error.response.headers, null, 2));
-            console.error('Data réponse:', JSON.stringify(error.response.data, null, 2));
-        } else if (error.request) {
-            console.error('Requête envoyée mais pas de réponse');
-            console.error('Request:', error.request);
-        } else {
-            console.error('Erreur configuration:', error.message);
+        } catch (error) {
+            console.error('❌ Erreur requestToPay:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+            
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Erreur lors de l\'initiation du paiement MTN',
+                details: error.response?.data
+            };
         }
-        console.error('Stack:', error.stack);
-        console.error('─────────────────────────────────\n');
-        
-        return {
-            success: false,
-            error: error.response?.data?.message || error.message || 'Erreur lors de l\'initiation du paiement MTN',
-            details: error.response?.data
-        };
     }
-}
-    /**
-     * Vérifier le statut d'un paiement
-     */
+
     async getTransactionStatus(transactionId) {
         try {
             const token = await this.getAccessToken();
 
+            // ✅ CORRECTION : URL correcte pour le statut
             const response = await axios.get(
-                `${this.baseURL}${this.collectionPath}/requesttopay/${transactionId}`,
+                `${this.baseURL}/collection/v1_0/requesttopay/${transactionId}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -170,7 +144,7 @@ class MTNPaymentService {
                 }
             );
 
-            console.log('📊 Statut transaction MTN:', response.data);
+            console.log('📊 Statut MTN:', response.data);
 
             return {
                 success: true,
@@ -182,7 +156,7 @@ class MTNPaymentService {
             };
 
         } catch (error) {
-            console.error('❌ Erreur vérification statut MTN:', error.response?.data || error.message);
+            console.error('❌ Erreur statut MTN:', error.response?.data || error.message);
             
             return {
                 success: false,
@@ -191,15 +165,13 @@ class MTNPaymentService {
         }
     }
 
-    /**
-     * Vérifier le solde du compte
-     */
     async getAccountBalance() {
         try {
             const token = await this.getAccessToken();
 
+            // ✅ CORRECTION : URL correcte pour le solde
             const response = await axios.get(
-                `${this.baseURL}${this.collectionPath}/account/balance`,
+                `${this.baseURL}/collection/v1_0/account/balance`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -209,11 +181,11 @@ class MTNPaymentService {
                 }
             );
 
-            console.log('💰 Solde compte MTN:', response.data);
+            console.log('💰 Solde MTN:', response.data);
             return response.data;
 
         } catch (error) {
-            console.error('❌ Erreur récupération solde:', error.response?.data || error.message);
+            console.error('❌ Erreur solde:', error.response?.data || error.message);
             return null;
         }
     }
