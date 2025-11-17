@@ -2624,41 +2624,76 @@ function displayConfirmation(reservation) {
         `;
     }
 
-    // --- 4. GÉNÉRATION DES BOUTONS D'ACTION (AVEC LOGIQUE ALLER-RETOUR) ---
     const actionsContainer = document.querySelector('.confirmation-actions-modern');
-    if (actionsContainer) {
-        actionsContainer.innerHTML = ''; // Vider les anciens boutons
+if (actionsContainer) {
+    actionsContainer.innerHTML = ''; // Vider les anciens boutons
 
-        // Bouton pour le billet ALLER
+    // Bouton pour le billet ALLER
+    actionsContainer.innerHTML += `
+        <button class="btn-modern btn-download" onclick="downloadTicket(false)">
+            <span class="btn-icon">📥</span>
+            <span class="btn-text">Télécharger Billet ALLER</span>
+        </button>
+    `;
+
+    // Si c'est un aller-retour, ajouter le bouton pour le billet RETOUR
+    if (reservation.returnRoute) {
         actionsContainer.innerHTML += `
-            <button class="btn-modern btn-download" onclick="downloadTicket(false)">
+            <button class="btn-modern btn-download" onclick="downloadTicket(true)">
                 <span class="btn-icon">📥</span>
-                <span class="btn-text">Télécharger Billet ALLER</span>
+                <span class="btn-text">Télécharger Billet RETOUR</span>
             </button>
         `;
+    }
 
-        // Si c'est un aller-retour, ajouter le bouton pour le billet RETOUR
-        if (reservation.returnRoute) {
-            actionsContainer.innerHTML += `
-                <button class="btn-modern btn-download" onclick="downloadTicket(true)">
-                    <span class="btn-icon">📥</span>
-                    <span class="btn-text">Télécharger Billet RETOUR</span>
-                </button>
-            `;
-        }
 
-        // Ajouter les autres boutons
+    // Dans displayConfirmation() - Ajouter ce bloc après les boutons de téléchargement
+
+if (!reservation.route.trackerId && !reservation.returnRoute?.trackerId) {
+    actionsContainer.innerHTML += `
+        <div style="background: rgba(94, 163, 184, 0.1); border: 2px dashed #5ea3b8; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+            <div style="font-size: 32px; margin-bottom: 10px;">📡</div>
+            <div style="color: #5ea3b8; font-weight: 600; margin-bottom: 5px;">Suivi GPS non disponible</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.6);">
+                Le suivi en temps réel n'est pas activé pour ce trajet.
+            </div>
+        </div>
+    `;
+}
+
+    // ✅ NOUVEAU : Bouton pour le suivi GPS (si le trackerId existe)
+    if (reservation.route.trackerId) {
         actionsContainer.innerHTML += `
-            <a id="track-bus-link" class="btn-modern btn-track" href="#" style="display: none;">
+            <a href="Suivi/suivi.html?bus=${reservation.route.trackerId}" 
+               target="_blank" 
+               class="btn-modern btn-track" 
+               id="track-bus-link">
                 <span class="btn-icon">🛰️</span>
-                <span class="btn-text">Suivre mon bus</span>
+                <span class="btn-text">Suivre mon bus en temps réel</span>
             </a>
-            <button class="btn-modern btn-home" onclick="resetAndGoHome()">
-                <span class="btn-icon">🏠</span>
-                <span class="btn-text">Retour à l'accueil</span>
-            </button>
         `;
-        
+    }
+
+    // ✅ NOUVEAU : Bouton de suivi pour le retour (si applicable)
+    if (reservation.returnRoute && reservation.returnRoute.trackerId) {
+        actionsContainer.innerHTML += `
+            <a href="Suivi/suivi.html?bus=${reservation.returnRoute.trackerId}" 
+               target="_blank" 
+               class="btn-modern btn-track" 
+               style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border-color: #1a73e8;">
+                <span class="btn-icon">🛰️</span>
+                <span class="btn-text">Suivre mon bus RETOUR</span>
+            </a>
+        `;
+    }
+
+    // Bouton retour à l'accueil
+    actionsContainer.innerHTML += `
+        <button class="btn-modern btn-home" onclick="resetAndGoHome()">
+            <span class="btn-icon">🏠</span>
+            <span class="btn-text">Retour à l'accueil</span>
+        </button>
+    `;
         // Activer le lien de suivi s'il existe
         const trackLink = document.getElementById("track-bus-link");
         if (trackLink && reservation.route.trackerId) {
@@ -2827,4 +2862,18 @@ function resetBookingState() {
 window.resetAndGoHome = function() {
     resetBookingState();
     showPage('home');
+}
+
+
+// Dans app.js - Version améliorée avec numéro de réservation
+
+if (reservation.route.trackerId) {
+    actionsContainer.innerHTML += `
+        <a href="Suivi/suivi.html?bus=${reservation.route.trackerId}&booking=${reservation.bookingNumber}" 
+           target="_blank" 
+           class="btn-modern btn-track">
+            <span class="btn-icon">🛰️</span>
+            <span class="btn-text">Suivre mon bus en temps réel</span>
+        </a>
+    `;
 }
