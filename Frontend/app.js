@@ -2662,7 +2662,70 @@ window.confirmBooking = async function(buttonElement) {
         buttonElement.innerHTML = originalButtonText;
     }
 };
+
+
+// ============================================
+// 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
+// ============================================
+function displayConfirmation(reservation) {
+    const confirmationContainer = document.getElementById('confirmation-details');
+    if (!confirmationContainer) {
+        console.error('❌ Élément confirmation-details introuvable');
+        return;
+    }
+
+    const isPending = reservation.status === 'En attente de paiement';
+    const isConfirmed = reservation.status === 'Confirmé';
+
+    let statusHTML = '';
+    if (isPending && reservation.agency) {
+        const deadline = new Date(reservation.paymentDeadline);
+        statusHTML = `
+            <div class="alert alert-warning">
+                <h3>⏰ Paiement requis à l'agence</h3>
+                <p>Vous devez payer avant le <strong>${deadline.toLocaleString('fr-FR')}</strong></p>
+                <hr>
+                <h4>${reservation.agency.name}</h4>
+                <p>📍 ${reservation.agency.address}</p>
+                <p>📞 ${reservation.agency.phone}</p>
+                <p>🕐 ${reservation.agency.hours}</p>
+            </div>
+        `;
+    } else if (isConfirmed) {
+        statusHTML = `
+            <div class="alert alert-success">
+                <h3>✅ Réservation confirmée !</h3>
+                <p>Votre billet est prêt. Bon voyage !</p>
+            </div>
+        `;
+    }
+
+    confirmationContainer.innerHTML = `
+        ${statusHTML}
+        <div class="confirmation-info">
+            <h2>Réservation ${reservation.bookingNumber}</h2>
+            <p><strong>De :</strong> ${reservation.route.from} (${reservation.route.departure})</p>
+            <p><strong>À :</strong> ${reservation.route.to} (${reservation.route.arrival})</p>
+            <p><strong>Date :</strong> ${Utils.formatDate(reservation.date)}</p>
+            <p><strong>Compagnie :</strong> ${reservation.route.company}</p>
+            <p><strong>Sièges :</strong> ${reservation.seats.join(', ')}</p>
+            <p><strong>Prix total :</strong> ${reservation.totalPrice}</p>
+        </div>
+        <div class="confirmation-actions">
+            <button class="btn btn-primary" onclick="downloadTicket(false)">
+                📥 Télécharger le billet
+            </button>
+            <button class="btn btn-secondary" onclick="resetAndGoHome()">
+                🏠 Retour à l'accueil
+            </button>
+        </div>
+    `;
+}
+
+
 window.addEventListener("DOMContentLoaded", initApp);
+
+
 
 
 // ============================================
