@@ -1914,50 +1914,32 @@ function renderTable(reservations) {
             }
         }
 
-        function showDetails(bookingNumber) {
-            const r = allReservations.find(res => res.bookingNumber === bookingNumber);
-            if (!r) return;
-            
-            document.getElementById('modal-title').textContent = `Réservation ${r.bookingNumber}`;
-            document.getElementById('modal-body').innerHTML = `
-                <div style="display:grid;gap:var(--spacing-lg);">
-                    <div>
-                        <h3 style="font-size:1.125rem;font-weight:700;margin-bottom:var(--spacing-md);color:var(--gray-900);">
-                            👥 Passagers
-                        </h3>
-                        <div style="background:var(--gray-50);padding:var(--spacing-md);border-radius:var(--radius-md);">
-                            ${r.passengers.map((p, i) => `
-                                <div style="padding:var(--spacing-sm);${i > 0 ? 'border-top:1px solid var(--gray-200);margin-top:var(--spacing-sm);padding-top:var(--spacing-sm);' : ''}">
-                                    <div style="font-weight:700;">${p.name}</div>
-                                    <div style="font-size:0.875rem;color:var(--gray-600);">
-                                        📱 ${p.phone} • 💺 Siège ${p.seat}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <h3 style="font-size:1.125rem;font-weight:700;margin-bottom:var(--spacing-md);color:var(--gray-900);">
-                            💳 Informations de paiement
-                        </h3>
-                        <div style="background:var(--gray-50);padding:var(--spacing-md);border-radius:var(--radius-md);">
-                            <div style="display:grid;gap:var(--spacing-sm);">
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--gray-600);">Méthode</span>
-                                    <span style="font-weight:700;">${r.paymentMethod}</span>
-                                </div>
-                                <div style="display:flex;justify-content:space-between;">
-                                    <span style="color:var(--gray-600);">Montant total</span>
-                                    <span style="font-weight:700;font-size:1.25rem;color:var(--primary);">${r.totalPrice}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('details-modal').classList.add('active');
-        }
+       // Dans Admin/index.html (section <script>)
+function showDetails(reservationId) {
+    // ✅ Cherche par _id au lieu de bookingNumber
+    const r = allReservations.find(res => res._id === reservationId); 
+    if (!r) {
+        showNotification("Erreur : Impossible de trouver les détails de cette réservation.", "error");
+        return;
+    }
+
+    document.getElementById('modal-title').textContent = `Détails - ${r.bookingNumber}`; 
+    document.getElementById('modal-body').innerHTML = `
+        <h4 style="font-weight: 700;">Passagers</h4>
+        <ul style="list-style-type: none; padding: 0; margin-bottom: 1rem;">
+            ${r.passengers.map(p => `
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--dark-border);">
+                    <strong>${p.name}</strong> (${p.phone}) - Siège: ${p.seat}
+                </li>
+            `).join('')}
+        </ul>
+        <hr style="margin:15px 0; border-color: var(--dark-border);">
+        <h4 style="font-weight: 700;">Paiement</h4>
+        <p><strong>Méthode:</strong> ${r.paymentMethod}</p>
+        <p><strong>Total:</strong> ${r.totalPrice}</p>
+    `; 
+    document.getElementById('details-modal').classList.add('active'); 
+}
 
         function closeModal() {
             document.getElementById('details-modal').classList.remove('active');
