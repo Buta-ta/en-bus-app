@@ -714,6 +714,13 @@ app.post('/api/reservations', strictLimiter, [
         return res.status(400).json({ errors: errors.array() });
     }
 
+    // ✅ AJOUTER CE LOG
+        console.log("📥 Type de réservation reçue:", {
+            hasReturnRoute: !!reservationData.returnRoute,
+            hasReturnSeats: !!reservationData.returnSeats,
+            tripType: reservationData.returnRoute ? 'ALLER-RETOUR' : 'ALLER SIMPLE'
+        });
+
     try {
         const reservationData = req.body;
         
