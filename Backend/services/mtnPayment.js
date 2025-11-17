@@ -72,66 +72,86 @@ class MTNPaymentService {
      * Initier une demande de paiement (Request to Pay)
      */
     async requestToPay(phone, amount, currency, reference, payerMessage) {
-        try {
-            const token = await this.getAccessToken();
-            const transactionId = generateUUID();
+    try {
+        console.log('\n🔵 DÉBUT requestToPay');
+        console.log('─────────────────────────────────');
+        console.log('Environnement:', this.environment);
+        console.log('Base URL:', this.baseURL);
+        console.log('Primary Key présente:', !!this.primaryKey);
+        console.log('User ID:', this.userId);
+        console.log('API Key présente:', !!this.apiKey);
+        
+        const token = await this.getAccessToken();
+        console.log('✅ Token obtenu:', token ? 'OUI' : 'NON');
+        
+        const transactionId = generateUUID();
+        const formattedPhone = phone.replace(/\D/g, '');
+        
+        const payload = {
+            amount: amount.toString(),
+            currency: currency,
+            externalId: reference,
+            payer: {
+                partyIdType: 'MSISDN',
+                partyId: formattedPhone
+            },
+            payerMessage: payerMessage || 'Paiement En-Bus',
+            payeeNote: `Réservation ${reference}`
+        };
 
-            // Formater le numéro de téléphone (doit être au format international sans +)
-            const formattedPhone = phone.replace(/\D/g, '');
-            
-            const payload = {
-                amount: amount.toString(),
-                currency: currency,
-                externalId: reference,
-                payer: {
-                    partyIdType: 'MSISDN',
-                    partyId: formattedPhone
-                },
-                payerMessage: payerMessage || 'Paiement En-Bus',
-                payeeNote: `Réservation ${reference}`
-            };
+        console.log('📦 Payload:', JSON.stringify(payload, null, 2));
+        console.log('🔑 Transaction ID:', transactionId);
+        
+        const url = `${this.baseURL}${this.collectionPath}/requesttopay`;
+        console.log('🌐 URL complète:', url);
 
-            console.log('📤 Envoi demande paiement MTN:', {
-                transactionId,
-                phone: formattedPhone,
-                amount,
-                currency
-            });
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'X-Reference-Id': transactionId,
+            'X-Target-Environment': this.environment,
+            'Ocp-Apim-Subscription-Key': this.primaryKey,
+            'Content-Type': 'application/json'
+        };
+        console.log('📋 Headers:', JSON.stringify(headers, null, 2));
 
-            await axios.post(
-                `${this.baseURL}${this.collectionPath}/requesttopay`,
-                payload,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-Reference-Id': transactionId,
-                        'X-Target-Environment': this.environment,
-                        'Ocp-Apim-Subscription-Key': this.primaryKey,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+        const response = await axios.post(url, payload, { headers });
+        
+        console.log('✅ Réponse MTN status:', response.status);
+        console.log('✅ Réponse MTN data:', response.data);
 
-            console.log('✅ Demande de paiement MTN initiée:', transactionId);
+        return {
+            success: true,
+            transactionId: transactionId,
+            status: 'PENDING',
+            message: 'Paiement initié. Veuillez confirmer sur votre téléphone.'
+        };
 
-            return {
-                success: true,
-                transactionId: transactionId,
-                status: 'PENDING',
-                message: 'Paiement initié. Veuillez confirmer sur votre téléphone.'
-            };
-
-        } catch (error) {
-            console.error('❌ Erreur request to pay MTN:', error.response?.data || error.message);
-            
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Erreur lors de l\'initiation du paiement MTN',
-                details: error.response?.data
-            };
+    } catch (error) {
+        console.error('\n❌ ERREUR DÉTAILLÉE requestToPay:');
+        console.error('─────────────────────────────────');
+        console.error('Message:', error.message);
+        console.error('Code:', error.code);
+        
+        if (error.response) {
+            console.error('Status HTTP:', error.response.status);
+            console.error('Headers réponse:', JSON.stringify(error.response.headers, null, 2));
+            console.error('Data réponse:', JSON.stringify(error.response.data, null, 2));
+        } else if (error.request) {
+            console.error('Requête envoyée mais pas de réponse');
+            console.error('Request:', error.request);
+        } else {
+            console.error('Erreur configuration:', error.message);
         }
+        console.error('Stack:', error.stack);
+        console.error('─────────────────────────────────\n');
+        
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message || 'Erreur lors de l\'initiation du paiement MTN',
+            details: error.response?.data
+        };
     }
-
+}
     /**
      * Vérifier le statut d'un paiement
      */

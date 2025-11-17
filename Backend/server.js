@@ -782,6 +782,123 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
     }
 });
 
+
+// ============================================
+// 💳 PAIEMENT MTN MOBILE MONEY
+// ============================================
+
+const mtnPayment = require('./services/mtnPayment');
+
+// Route de diagnostic
+app.get('/api/mtn/config', (req, res) => {
+    res.json({
+        environment: process.env.MTN_ENVIRONMENT,
+        hasPrimaryKey: !!process.env.MTN_COLLECTION_PRIMARY_KEY,
+        hasUserId: !!process.env.MTN_COLLECTION_USER_ID,
+        hasApiKey: !!process.env.MTN_COLLECTION_API_KEY
+    });
+});
+
+// Test token
+app.get('/api/mtn/test-token', async (req, res) => {
+    try {
+        const token = await mtnPayment.getAccessToken();
+        res.json({ success: true, hasToken: !!token });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Initiation paiement MTN (VERSION COMPLÈTE AVEC LOGS)
+app.post('/api/payment/mtn/initiate', strictLimiter, [
+    body('phone').notEmpty(),
+    body('amount').isNumeric(),
+    body('bookingNumber').notEmpty()
+], async (req, res) => {
+    console.log('\n═══════════════════════════════════════');
+    console.log('🔵 NOUVELLE REQUÊTE MTN REÇUE');
+    console.log('═══════════════════════════════════════');
+    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    console.log('═══════════════════════════════════════\n');
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.error('❌ Validation:', errors.array());
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { phone, amount, bookingNumber } = req.body;
+        const currency = 'EUR';
+
+        console.log('💳 Paiement MTN:', { phone, amount, currency, bookingNumber });
+
+        const result = await mtnPayment.requestToPay(
+            phone, amount, currency, bookingNumber, `Réservation ${bookingNumber}`
+        );
+
+        console.log('📤 Résultat MTN:', JSON.stringify(result, null, 2));
+
+        if (result.success) {
+            await reservationsCollection.updateOne(
+                { bookingNumber },
+                { $set: { 
+                    paymentTransactionId: result.transactionId,
+                    paymentProvider: 'MTN',
+                    paymentStatus: 'pending',
+                    paymentInitiatedAt: new Date()
+                }}
+            );
+
+            res.json({
+                success: true,
+                message: result.message,
+                transactionId: result.transactionId
+            });
+        } else {
+            console.error('❌ MTN Error:', result.error);
+            res.status(400).json({ success: false, error: result.error });
+        }
+
+    } catch (error) {
+        console.error('❌ ERREUR:', error);
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
+    }
+});
+
+// Vérification statut paiement
+app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
+    try {
+        const { transactionId } = req.params;
+        console.log(`🔍 Vérif statut: ${transactionId}`);
+        
+        const result = await mtnPayment.getTransactionStatus(transactionId);
+
+        if (result.success && result.status === 'SUCCESSFUL') {
+            const reservation = await reservationsCollection.findOneAndUpdate(
+                { paymentTransactionId: transactionId },
+                { $set: { 
+                    status: 'Confirmé',
+                    paymentStatus: 'completed',
+                    paymentConfirmedAt: new Date()
+                }},
+                { returnDocument: 'after' }
+            );
+
+            if (reservation.value) {
+                sendConfirmationEmail(reservation.value);
+            }
+        }
+        
+        res.json({ success: true, status: result.status });
+        
+    } catch (error) {
+        console.error('❌ Erreur statut:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+
 // ============================================
 // EMAILS
 // ============================================
@@ -1279,8 +1396,20 @@ app.post('/track/update', async (req, res) => {
 
 
 
-// Dans server.js
+// Debug log MTN
 
+
+app.get('/api/mtn/config', (req, res) => {
+    res.json({
+        environment: process.env.MTN_ENVIRONMENT,
+        hasPrimaryKey: !!process.env.MTN_COLLECTION_PRIMARY_KEY,
+        primaryKeyLength: process.env.MTN_COLLECTION_PRIMARY_KEY?.length,
+        hasUserId: !!process.env.MTN_COLLECTION_USER_ID,
+        userId: process.env.MTN_COLLECTION_USER_ID,
+        hasApiKey: !!process.env.MTN_COLLECTION_API_KEY,
+        apiKeyLength: process.env.MTN_COLLECTION_API_KEY?.length
+    });
+});
 
 // Route de test MTN (avant les autres routes)
 app.post('/api/payment/mtn/test', async (req, res) => {
@@ -1313,65 +1442,6 @@ app.post('/api/payment/mtn/test', async (req, res) => {
     }
 });
 
-// ============================================
-// 💳 INTÉGRATION MTN MOBILE MONEY
-// ============================================
-
-const mtnPayment = require('./services/mtnPayment');
-
-// Initier un paiement MTN
-app.post('/api/payment/mtn/initiate', strictLimiter, [
-    body('phone').notEmpty(),
-    body('amount').isNumeric(),
-    body('bookingNumber').notEmpty()
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-        const { phone, amount, bookingNumber, customerName } = req.body;
-        const currency = 'EUR'; // Franc CFA
-
-        console.log('💳 Initiation paiement MTN:', { phone, amount, bookingNumber });
-
-        const result = await mtnPayment.requestToPay(
-            phone,
-            amount,
-            currency,
-            bookingNumber,
-            `Réservation ${bookingNumber}`
-        );
-
-        if (result.success) {
-            // Enregistrer la transaction
-            await reservationsCollection.updateOne(
-                { bookingNumber: bookingNumber },
-                { 
-                    $set: { 
-                        paymentTransactionId: result.transactionId,
-                        paymentProvider: 'MTN',
-                        paymentStatus: 'pending',
-                        paymentInitiatedAt: new Date()
-                    } 
-                }
-            );
-
-            res.json({
-                success: true,
-                message: result.message,
-                transactionId: result.transactionId
-            });
-        } else {
-            res.status(400).json({ success: false, error: result.error });
-        }
-
-    } catch (error) {
-        console.error('❌ Erreur initiation MTN:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
 
 // Vérifier le statut d'un paiement MTN
 // Dans server.js - Remplacer cette fonction
