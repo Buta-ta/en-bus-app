@@ -2476,24 +2476,30 @@ async function deleteTrip(tripId) {
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
-        function switchTab(tabName) {
-            // Update nav links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            
-            // Load data
-            if (tabName === 'reservations') loadAdminData();
-            else if (tabName === 'trips') { loadAllTemplates().then(loadAllTrips); }
-            else if (tabName === 'templates') loadAllTemplates();
-        }
+        // DANS Admin/index.html
+function switchTab(tabName) {
+    // 1. Gérer les classes 'active' pour le contenu et les liens
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.querySelector(`.nav-link[data-tab="${tabName}"]`).classList.add('active');
+    
+    console.log(`🚀 Changement vers l'onglet : ${tabName}`);
+    
+    // 2. Charger les données spécifiques à l'onglet
+    switch (tabName) {
+        case 'reservations':
+            loadAdminData();
+            break;
+        case 'trips':
+            loadAllTemplates().then(loadAllTrips);
+            break;
+        case 'templates':
+            loadAllTemplates();
+            break;
+    }
+}
 
         // ============================================
         // 🎯 INITIALISATION
@@ -2528,10 +2534,10 @@ function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     
-    // ✅ CORRECTION : GESTION DE LA NAVIGATION
+    // ✅ GESTION DE LA NAVIGATION PAR 'data-tab'
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault(); // Empêche le lien de remonter en haut de page
+            e.preventDefault();
             const tabName = link.getAttribute('data-tab');
             switchTab(tabName);
         });
