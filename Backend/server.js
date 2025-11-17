@@ -516,7 +516,7 @@ app.get('/api/search', async (req, res) => {
                 stops: trip.route.stops || [],
                 connections: trip.route.connections || [],
                 breaks: trip.route.breaks || 0,
-                trackerId: trip.route.trackerId || null,
+                trackerId: trip.busIdentifier || trip.route.trackerId || null,
                 availableSeats: availableSeats,
                 totalSeats: trip.seats.length,
                 date: trip.date,
