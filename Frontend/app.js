@@ -2261,6 +2261,10 @@ function updateBookingSummary() {
 // Dans app.js
 // Dans app.js
 window.proceedToPayment = function() {
+
+    console.log('🟢 proceedToPayment() appelée');
+    
+    appState.passengerInfo = [];
     
     // ✅ SÉCURITÉ AJOUTÉE
     // Vérifie si un voyage a bien été sélectionné avant de continuer.
@@ -2432,51 +2436,39 @@ function displayBookingSummary() {
 // Dans app.js
 // Dans app.js
 // Dans app.js
+
 // Dans app.js
-// Dans app.js
+
 window.confirmBooking = async function(buttonElement) {
-    // --- ÉTAPE 1 : VALIDATION DES ENTRÉES UTILISATEUR ---
-    const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+    console.group('💳 DÉBUT PROCESSUS DE PAIEMENT');
     
-    if (!paymentMethod) {
-        Utils.showToast('Veuillez sélectionner un mode de paiement.', 'error');
-        return;
-    }
-    if (paymentMethod === "agency" && !canPayAtAgency()) {
-        Utils.showToast("Le paiement en agence n'est plus disponible pour ce trajet.", 'error');
-        return;
-    }
-    if (paymentMethod === "mtn" || paymentMethod === "airtel") {
-        const phoneInput = document.getElementById(`${paymentMethod}-phone`);
-        if (!phoneInput || !phoneInput.value.trim() || !Utils.validatePhone(phoneInput.value)) {
-            Utils.showToast(`Le numéro de téléphone ${paymentMethod.toUpperCase()} est invalide.`, 'error');
-            return;
-        }
-    }
-    
-    // --- ÉTAPE 2 : AFFICHER UN ÉTAT DE CHARGEMENT ---
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    buttonElement.innerHTML = `
-        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
-        <span>Enregistrement...</span>
-    `;
     
-    try {
-        // --- ÉTAPE 3 : PRÉPARATION DE L'OBJET RÉSERVATION COMPLET ---
+    const showLoading = (message) => {
+        buttonElement.innerHTML = `
+            <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
+            <span>${message}</span>
+        `;
+    };
+    
+    showLoading('Vérification...');
 
-        // Récupérer les options de bagages pour le calcul des prix
+    try {
+        const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
+        console.log('1. Mode de paiement sélectionné:', paymentMethod);
+        
+        if (!paymentMethod) throw new Error('Veuillez sélectionner un mode de paiement.');
+
+        // Calcul du prix
         const baggageOptions = appState.selectedBus.baggageOptions || { 
             standard: { price: 2000 }, 
             oversized: { price: 5000 } 
         };
-        
-        // Calculer le prix des billets
         const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
         
-        // Calculer le prix des bagages supplémentaires
         let totalStandardBaggage = 0, totalOversizedBaggage = 0;
         if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
             Object.values(appState.baggageCounts).forEach(paxBaggage => {
@@ -2485,383 +2477,191 @@ window.confirmBooking = async function(buttonElement) {
             });
         }
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
-
-        // Calculer le prix total final
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
-        // Définir le statut et la deadline en fonction du mode de paiement
-        let reservationStatus = "Confirmé", paymentDeadline = null, agencyInfo = null;
-        if (paymentMethod === "agency") {
-            reservationStatus = "En attente de paiement";
-            paymentDeadline = calculatePaymentDeadline().toISOString();
-            agencyInfo = getNearestAgency(appState.selectedBus.from);
-        }
+        const bookingNumber = Utils.generateBookingNumber();
+        console.log('2. Numéro de réservation généré:', bookingNumber);
         
-        // Construction de l'objet final à envoyer au backend
+        // ✅ CRÉATION DE LA RÉSERVATION (SANS STATUS ENCORE)
         const reservation = {
-            bookingNumber: Utils.generateBookingNumber(),
-            route: appState.selectedBus,                  // Objet complet pour l'aller (contient duration, busIdentifier, etc.)
-            returnRoute: appState.selectedReturnBus,      // Objet complet pour le retour (ou null)
+            bookingNumber,
+            route: appState.selectedBus,
             date: appState.currentSearch.date,
-            returnDate: appState.currentSearch.returnDate,
             passengers: appState.passengerInfo,
             seats: appState.selectedSeats,
-            returnSeats: appState.selectedReturnSeats,
-            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`, // Formaté pour affichage
-            totalPriceNumeric: finalTotalPriceNumeric,           // Numérique pour calculs
-            paymentMethod: paymentMethod,
-            status: reservationStatus,
-            paymentDeadline: paymentDeadline,
-            agency: agencyInfo,
-
-            // ✅ AJOUTER EXPLICITEMENT busIdentifier au niveau racine
-            busIdentifier: appState.selectedBus.busIdentifier || appState.selectedBus.trackerId || null,
-        
+            totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
+            totalPriceNumeric: finalTotalPriceNumeric,
+            paymentMethod: paymentMethod.toUpperCase(),
+            busIdentifier: appState.selectedBus.busIdentifier || appState.selectedBus.trackerId,
             createdAt: new Date().toISOString()
         };
-
-        // ✅ AJOUTER LES DONNÉES RETOUR UNIQUEMENT SI C'EST UN ALLER-RETOUR
-if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
-    reservation.returnRoute = appState.selectedReturnBus;
-    reservation.returnDate = appState.currentSearch.returnDate;
-    reservation.returnSeats = appState.selectedReturnSeats;
-
-     // ✅ AJOUTER busIdentifier pour le retour
-        reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId || null;
-}
         
-        console.log("📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :", reservation);
-        console.log("🛰️ BusIdentifier aller:", reservation.busIdentifier);
-    if (reservation.returnBusIdentifier) {
-        console.log("🛰️ BusIdentifier retour:", reservation.returnBusIdentifier);
-    }
-
-
-        // --- ÉTAPE 4 : APPEL AU BACKEND ET GESTION DU SUCCÈS ---
-        
-        await saveReservationToBackend(reservation);
-        
-        appState.currentReservation = reservation; 
-        
-        // ✅ NE PAS RÉINITIALISER ICI, ON EN A BESOIN POUR L'AFFICHAGE
-// resetBookingState(); // ❌ NE PAS METTRE ICI
-
-displayConfirmation(reservation);
-showPage("confirmation");
-
-        // Stocker l'objet complet pour les étapes suivantes
-        
-        displayConfirmation(reservation);
-        showPage("confirmation");
-        
-        if (paymentMethod === "agency") {
-            Utils.showToast(`Réservation créée ! Payez avant le ${new Date(paymentDeadline).toLocaleString('fr-FR')}`, 'success');
-        } else {
-            Utils.showToast("Réservation confirmée avec succès!", 'success');
+        if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
+            reservation.returnRoute = appState.selectedReturnBus;
+            reservation.returnDate = appState.currentSearch.returnDate;
+            reservation.returnSeats = appState.selectedReturnSeats;
+            reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
         }
-        
+
+        console.log('📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :', reservation);
+        console.log('🛰️ BusIdentifier aller:', reservation.busIdentifier);
+
+        // ============================================
+        // 💳 TRAITEMENT SELON LE MODE DE PAIEMENT
+        // ============================================
+
+        if (paymentMethod === 'mtn') {
+            console.log('🔵 ENTRÉE DANS LE BLOC MTN');
+            
+            const phoneInput = document.getElementById('mtn-phone');
+            let phone = phoneInput.value.trim();
+            console.log('3. Numéro MTN saisi:', phone);
+            
+            if (!phone || !Utils.validatePhone(phone)) {
+                throw new Error('Numéro MTN invalide');
+            }
+
+            // ✅ AJOUT DU STATUS POUR MTN
+            reservation.status = 'En attente de paiement';
+            console.log('5. Enregistrement de la réservation en attente...');
+            
+            showLoading('Enregistrement...');
+            await saveReservationToBackend(reservation);
+
+            console.log('7. Initiation du paiement MTN...');
+            showLoading('Initialisation MTN...');
+            
+            const paymentURL = `${API_CONFIG.baseUrl}/api/payment/mtn/initiate`;
+            console.log('8. URL du paiement:', paymentURL);
+            
+            const paymentPayload = {
+                phone,
+                amount: finalTotalPriceNumeric,
+                bookingNumber,
+                customerName: appState.passengerInfo[0].name
+            };
+            console.log('9. Payload envoyé:', paymentPayload);
+            
+            const paymentResponse = await fetch(paymentURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paymentPayload)
+            });
+
+            console.log('10. Statut réponse MTN:', paymentResponse.status);
+            
+            const responseText = await paymentResponse.text();
+            console.log('11. Réponse brute:', responseText);
+            
+            let paymentData;
+            try {
+                paymentData = JSON.parse(responseText);
+            } catch (e) {
+                console.error('❌ Réponse non-JSON:', responseText);
+                throw new Error('Réponse serveur invalide');
+            }
+            
+            console.log('12. Données de paiement parsées:', paymentData);
+
+            if (!paymentResponse.ok || !paymentData.success) {
+                throw new Error(paymentData.error || 'Erreur initiation paiement');
+            }
+
+            console.log('13. Transaction ID:', paymentData.transactionId);
+            Utils.showToast('✅ Demande envoyée ! Vérification...', 'info');
+            showLoading('Vérification du paiement...');
+
+            // Vérification du statut
+            let checks = 0;
+            const maxChecks = 12; // 1 minute au lieu de 5
+            
+            const paymentChecker = setInterval(async () => {
+                checks++;
+                console.log(`14. Vérification N°${checks}/${maxChecks}`);
+
+                try {
+                    const statusRes = await fetch(`${API_CONFIG.baseUrl}/api/payment/mtn/status/${paymentData.transactionId}`);
+                    const statusData = await statusRes.json();
+                    
+                    console.log(`15. Statut reçu (check ${checks}):`, statusData);
+
+                    if (statusData.success && statusData.status === 'SUCCESSFUL') {
+                        clearInterval(paymentChecker);
+                        console.log('🎉 PAIEMENT CONFIRMÉ !');
+                        Utils.showToast('✅ Paiement confirmé avec succès !', 'success');
+                        
+                        reservation.status = 'Confirmé';
+                        appState.currentReservation = reservation;
+                        displayConfirmation(reservation);
+                        showPage("confirmation");
+                        
+                    } else if (statusData.status === 'FAILED') {
+                        clearInterval(paymentChecker);
+                        throw new Error('Paiement refusé par MTN');
+                        
+                    } else if (checks >= maxChecks) {
+                        clearInterval(paymentChecker);
+                        
+                        // ⚠️ EN SANDBOX : Proposer de simuler
+                        if (confirm('⏱️ Délai dépassé (normal en sandbox).\n\n🧪 Voulez-vous SIMULER le succès du paiement pour tester ?')) {
+                            const simulateRes = await fetch(`${API_CONFIG.baseUrl}/api/payment/mtn/simulate-success/${paymentData.transactionId}`, {
+                                method: 'POST'
+                            });
+                            const simulateData = await simulateRes.json();
+                            
+                            if (simulateData.success) {
+                                Utils.showToast('✅ Paiement simulé avec succès !', 'success');
+                                reservation.status = 'Confirmé';
+                                appState.currentReservation = reservation;
+                                displayConfirmation(reservation);
+                                showPage("confirmation");
+                            } else {
+                                throw new Error('Erreur de simulation');
+                            }
+                        } else {
+                            throw new Error('Délai de vérification expiré');
+                        }
+                    }
+                } catch (err) {
+                    clearInterval(paymentChecker);
+                    console.error('❌ Erreur vérification:', err);
+                    Utils.showToast(err.message, 'error');
+                    buttonElement.disabled = false;
+                    buttonElement.innerHTML = originalButtonText;
+                }
+
+            }, 5000);
+
+        } else if (paymentMethod === 'agency') {
+            if (!canPayAtAgency()) throw new Error("Le paiement en agence n'est plus disponible.");
+
+            // ✅ AJOUT DU STATUS POUR AGENCE
+            reservation.status = 'En attente de paiement';
+            reservation.paymentDeadline = calculatePaymentDeadline().toISOString();
+            reservation.agency = getNearestAgency(appState.selectedBus.from);
+            
+            await saveReservationToBackend(reservation);
+            
+            appState.currentReservation = reservation;
+            displayConfirmation(reservation);
+            showPage("confirmation");
+
+            Utils.showToast(`Réservation enregistrée !`, 'success');
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalButtonText;
+
+        } else {
+            throw new Error('Méthode de paiement non supportée');
+        }
+
     } catch (error) {
-        // --- ÉTAPE 5 : GESTION DES ERREURS ---
-        console.error('❌ Erreur lors de la confirmation:', error);
+        console.error('❌ ERREUR GLOBALE:', error);
+        console.groupEnd();
         Utils.showToast(error.message, 'error');
-        
-    } finally {
-        // --- ÉTAPE 6 : RÉINITIALISATION DU BOUTON ---
         buttonElement.disabled = false;
         buttonElement.innerHTML = originalButtonText;
     }
-}
-// Dans app.js
-function displayConfirmation(reservation) {
-    
-    // --- 1. MISE À JOUR DU NUMÉRO DE RÉSERVATION ---
-    const bookingDisplay = document.getElementById("booking-number-display");
-    if (bookingDisplay) {
-        bookingDisplay.textContent = reservation.bookingNumber;
-    }
-
-    // --- 2. MISE À JOUR DES DÉTAILS DU TRAJET ALLER ---
-    const confOrigin = document.getElementById("conf-origin");
-    const confDestination = document.getElementById("conf-destination");
-    const confDate = document.getElementById("conf-date");
-    const confTime = document.getElementById("conf-time");
-    const confArrivalTime = document.getElementById("conf-arrival-time");
-    const confDuration = document.getElementById("conf-duration");
-
-    if (confOrigin) confOrigin.textContent = reservation.route.from;
-    if (confDestination) confDestination.textContent = reservation.route.to;
-    if (confDate) confDate.textContent = Utils.formatDate(reservation.date);
-    if (confTime) confTime.textContent = reservation.route.departure;
-    if (confArrivalTime) confArrivalTime.textContent = reservation.route.arrival;
-    if (confDuration) {
-        confDuration.textContent = reservation.route.duration || 'Non spécifiée';
-    }
-
-    // --- 3. MISE À JOUR DE LA GRILLE DE DÉTAILS (PRIX, ETC.) ---
-    const detailsContainer = document.getElementById("confirmation-details");
-    if (detailsContainer) {
-        const adultsCount = reservation.passengers.filter((p, index) => 
-            index < appState.passengerCounts.adults
-        ).length;
-        const childrenCount = reservation.passengers.length - adultsCount;
-
-        let passengersText = `${adultsCount} Adulte(s)`;
-        if (childrenCount > 0) {
-            passengersText += `, ${childrenCount} Enfant(s)`;
-        }
-
-        detailsContainer.innerHTML = `
-            <div class="detail-item-modern">
-                <span class="detail-label">🚌 Compagnie</span>
-                <span class="detail-value">${reservation.route.company}</span>
-            </div>
-            <div class="detail-item-modern">
-                <span class="detail-label">👥 Passagers</span>
-                <span class="detail-value">${passengersText}</span>
-            </div>
-            <div class="detail-item-modern">
-                <span class="detail-label">💺 Sièges (Aller)</span>
-                <span class="detail-value">${reservation.seats.join(', ')}</span>
-            </div>
-            ${reservation.returnSeats && reservation.returnSeats.length > 0 ? `
-            <div class="detail-item-modern">
-                <span class="detail-label">💺 Sièges (Retour)</span>
-                <span class="detail-value">${reservation.returnSeats.join(', ')}</span>
-            </div>
-            ` : ''}
-            <div class="detail-item-modern">
-                <span class="detail-label">💰 Prix total</span>
-                <span class="detail-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</span>
-            </div>
-        `;
-    }
-
-    // --- 4. GÉNÉRATION DES BOUTONS D'ACTION (AVEC LOGIQUE ALLER-RETOUR) ---
-const actionsContainer = document.querySelector('.confirmation-actions-modern');
-if (actionsContainer) {
-    actionsContainer.innerHTML = ''; // Vider les anciens boutons
-
-    // Bouton pour le billet ALLER
-    actionsContainer.innerHTML += `
-        <button class="btn-modern btn-download" onclick="downloadTicket(false)">
-            <span class="btn-icon">📥</span>
-            <span class="btn-text">Télécharger Billet ALLER</span>
-        </button>
-    `;
-
-    // Si c'est un aller-retour, ajouter le bouton pour le billet RETOUR
-    if (reservation.returnRoute) {
-        actionsContainer.innerHTML += `
-            <button class="btn-modern btn-download" onclick="downloadTicket(true)">
-                <span class="btn-icon">📥</span>
-                <span class="btn-text">Télécharger Billet RETOUR</span>
-            </button>
-        `;
-    }
-
-    // ✅ MODIFICATION ICI : Utiliser busIdentifier OU trackerId
-    // On cherche dans cet ordre : busIdentifier de la réservation, trackerId de la route, busIdentifier de la route
-    const trackerIdAller = reservation.busIdentifier || reservation.route.trackerId || reservation.route.busIdentifier;
-    
-    // Afficher dans la console pour déboguer
-    console.log('🔍 Recherche du trackerId pour le suivi GPS:', {
-        busIdentifierReservation: reservation.busIdentifier,
-        trackerIdRoute: reservation.route.trackerId,
-        busIdentifierRoute: reservation.route.busIdentifier,
-        résultat: trackerIdAller
-    });
-
-    // Si on a trouvé un trackerId, afficher le bouton de suivi
-    if (trackerIdAller) {
-        actionsContainer.innerHTML += `
-            <a href="Suivi/suivi.html?bus=${trackerIdAller}" 
-               target="_blank" 
-               class="btn-modern btn-track">
-                <span class="btn-icon">🛰️</span>
-                <span class="btn-text">Suivre mon bus en temps réel</span>
-            </a>
-        `;
-        console.log(`✅ Bouton de suivi ajouté avec ID: ${trackerIdAller}`);
-    } else {
-        console.warn('⚠️ Aucun trackerId trouvé pour ce voyage');
-    }
-
-    // ✅ Bouton de suivi pour le retour (si applicable)
-    if (reservation.returnRoute) {
-        const trackerIdRetour = reservation.returnBusIdentifier || reservation.returnRoute.trackerId || reservation.returnRoute.busIdentifier;
-        
-        if (trackerIdRetour) {
-            actionsContainer.innerHTML += `
-                <a href="Suivi/suivi.html?bus=${trackerIdRetour}" 
-                   target="_blank" 
-                   class="btn-modern btn-track" 
-                   style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border-color: #1a73e8;">
-                    <span class="btn-icon">🛰️</span>
-                    <span class="btn-text">Suivre mon bus RETOUR</span>
-                </a>
-            `;
-            console.log(`✅ Bouton de suivi RETOUR ajouté avec ID: ${trackerIdRetour}`);
-        }
-    }
-
-    // Bouton retour à l'accueil
-    actionsContainer.innerHTML += `
-        <button class="btn-modern btn-home" onclick="resetAndGoHome()">
-            <span class="btn-icon">🏠</span>
-            <span class="btn-text">Retour à l'accueil</span>
-        </button>
-    `;
-    
-    // ✅ Message si aucun suivi disponible
-    if (!trackerIdAller && (!reservation.returnRoute || !trackerIdRetour)) {
-        actionsContainer.innerHTML += `
-            <div style="background: rgba(94, 163, 184, 0.1); border: 2px dashed #5ea3b8; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
-                <div style="font-size: 32px; margin-bottom: 10px;">📡</div>
-                <div style="color: #5ea3b8; font-weight: 600; margin-bottom: 5px;">Suivi GPS non disponible</div>
-                <div style="font-size: 13px; color: rgba(255,255,255,0.6);">
-                    Le suivi en temps réel n'est pas activé pour ce trajet.
-                </div>
-            </div>
-        `;
-    }
-}
-    
-    // --- 5. GÉNÉRATION DU QR CODE ---
-    const qrContainer = document.getElementById("qr-placeholder");
-    if (qrContainer) {
-        qrContainer.innerHTML = '';
-        const qrData = Utils.generateQRCodeData(reservation);
-        try {
-            new QRCode(qrContainer, { text: qrData, width: 200, height: 200 });
-            // ... (logique pour afficher les détails du QR code)
-        } catch (error) {
-            console.error("❌ Erreur génération QR Code:", error);
-        }
-    }
-}
-
-async function displayReservations() {
-    const reservationsList = document.getElementById("reservations-list");
-    if (!reservationsList) return;
-    const userPhone = prompt("Entrez votre numéro de téléphone pour voir vos réservations:");
-    if (!userPhone) {
-        reservationsList.innerHTML = `<div class="no-reservations"><p>Numéro de téléphone requis pour afficher vos réservations.</p></div>`;
-        return;
-    }
-    reservationsList.innerHTML = `<div style="text-align: center; padding: 48px;"><p>Chargement de vos réservations...</p></div>`;
-    try {
-        const reservations = await loadReservationsFromBackend(userPhone);
-        if (reservations.length === 0) {
-            reservationsList.innerHTML = `<div class="no-reservations"><p>Vous n'avez pas encore de réservations.</p><button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">Réserver un billet</button></div>`;
-        } else {
-            reservationsList.innerHTML = reservations.map(reservation => {
-                
-                let alertHTML = '';
-                let actionButtons = '';
-                
-                if (reservation.status === 'En attente de paiement') {
-                    const deadline = new Date(reservation.paymentDeadline);
-                    const now = new Date();
-                    const timeLeft = deadline - now;
-                    
-                    if (timeLeft > 0) {
-                        const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-                        const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                        
-                        alertHTML = `
-                            <div class="payment-alert" style="
-                                background: linear-gradient(135deg, #fff3cd, #ffe7a1); 
-                                border-left: 4px solid #ffc107; 
-                                padding: 15px; 
-                                margin-bottom: 15px;
-                                border-radius: 8px;
-                            ">
-                                <strong style="color: #856404;">⏰ Paiement requis à l'agence !</strong><br>
-                                <span style="color: #856404;">
-                                    Vous devez payer avant le <strong>${deadline.toLocaleString('fr-FR')}</strong><br>
-                                    ⏱️ Temps restant : <strong style="font-size: 18px;">${hoursLeft}h ${minutesLeft}min</strong>
-                                </span>
-                                ${reservation.agency ? `
-                                    <hr style="border-color: rgba(133, 100, 4, 0.2); margin: 10px 0;">
-                                    <div style="color: #856404; font-size: 14px;">
-                                        <strong>📍 ${reservation.agency.name}</strong><br>
-                                        ${reservation.agency.address}<br>
-                                        📞 ${reservation.agency.phone}<br>
-                                        🕐 ${reservation.agency.hours}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
-                        
-                        actionButtons = `
-                            <button class="btn btn-primary" onclick='downloadTicket(${JSON.stringify(reservation).replace(/'/g, "&apos;")})'>
-                                📥 Télécharger le reçu
-                            </button>
-                            <button class="btn btn-secondary" onclick="cancelReservation('${reservation.bookingNumber}')">
-                                Annuler
-                            </button>
-                        `;
-                    } else {
-                        alertHTML = `
-                            <div class="payment-alert" style="background: #f44336; color: white; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-                                <strong>❌ Paiement expiré</strong><br>
-                                Cette réservation sera automatiquement annulée.
-                            </div>
-                        `;
-                        actionButtons = `<button class="btn btn-primary" disabled>Expiré</button>`;
-                    }
-                    
-                } else if (reservation.status === 'Confirmé') {
-                    actionButtons = `
-                        <button class="btn btn-primary" onclick='downloadTicket(${JSON.stringify(reservation).replace(/'/g, "&apos;")})'>
-                            📥 Télécharger le billet
-                        </button>
-                        ${reservation.route.trackerId ? `
-                            <a href="suivi.html?bus=${reservation.route.trackerId}" target="_blank" class="btn btn-secondary">
-                                🛰️ Suivre le bus
-                            </a>
-                        ` : ''}
-                    `;
-                    
-                } else if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
-                    actionButtons = `
-                        <button class="btn btn-primary" disabled style="opacity: 0.5;">
-                            ${reservation.status}
-                        </button>
-                    `;
-                }
-                
-                return `
-                    <div class="reservation-card">
-                        ${alertHTML}
-                        
-                        <div class="reservation-header" style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                            <div class="reservation-number">${reservation.bookingNumber}</div>
-                            <div class="reservation-status status-${reservation.status.toLowerCase().replace(/ /g, '-')}">${reservation.status}</div>
-                        </div>
-                        
-                        <div class="reservation-details">
-                            <div><strong>Itinéraire:</strong> ${reservation.route.from} → ${reservation.route.to}</div>
-                            <div><strong>Date:</strong> ${Utils.formatDate(reservation.date)}</div>
-                            <div><strong>Heure:</strong> ${reservation.route.departure}</div>
-                            <div><strong>Compagnie:</strong> ${reservation.route.company}</div>
-                            <div><strong>Sièges:</strong> ${reservation.seats.join(", ")}</div>
-                            <div><strong>Prix total:</strong> ${reservation.totalPrice}</div>
-                        </div>
-                        
-                        <div style="display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
-                            ${actionButtons}
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-    } catch (error) {
-        console.error('Erreur chargement réservations:', error);
-        reservationsList.innerHTML = `<div class="no-reservations"><p>❌ Erreur lors du chargement de vos réservations.</p><button class="btn btn-secondary" onclick="displayReservations()" style="margin-top: 16px;">Réessayer</button></div>`;
-    }
-}
-
+};
 window.addEventListener("DOMContentLoaded", initApp);
 
 
