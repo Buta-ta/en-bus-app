@@ -1341,6 +1341,8 @@ function setupAmenitiesFilters() {
 }
 
 window.searchBuses = async function() {
+
+    resetBookingState();
     appState.isSelectingReturn = false;
     
     const origin = document.getElementById("origin").value;
@@ -2513,6 +2515,13 @@ window.confirmBooking = async function(buttonElement) {
             agency: agencyInfo,
             createdAt: new Date().toISOString()
         };
+
+        // ✅ AJOUTER LES DONNÉES RETOUR UNIQUEMENT SI C'EST UN ALLER-RETOUR
+if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
+    reservation.returnRoute = appState.selectedReturnBus;
+    reservation.returnDate = appState.currentSearch.returnDate;
+    reservation.returnSeats = appState.selectedReturnSeats;
+}
         
         console.log("📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :", reservation);
 
@@ -2520,7 +2529,15 @@ window.confirmBooking = async function(buttonElement) {
         
         await saveReservationToBackend(reservation);
         
-        appState.currentReservation = reservation; // Stocker l'objet complet pour les étapes suivantes
+        appState.currentReservation = reservation; 
+        
+        // ✅ NE PAS RÉINITIALISER ICI, ON EN A BESOIN POUR L'AFFICHAGE
+// resetBookingState(); // ❌ NE PAS METTRE ICI
+
+displayConfirmation(reservation);
+showPage("confirmation");
+
+        // Stocker l'objet complet pour les étapes suivantes
         
         displayConfirmation(reservation);
         showPage("confirmation");
@@ -2636,7 +2653,7 @@ function displayConfirmation(reservation) {
                 <span class="btn-icon">🛰️</span>
                 <span class="btn-text">Suivre mon bus</span>
             </a>
-            <button class="btn-modern btn-home" onclick="showPage('home')">
+            <button class="btn-modern btn-home" onclick="resetAndGoHome()">
                 <span class="btn-icon">🏠</span>
                 <span class="btn-text">Retour à l'accueil</span>
             </button>
@@ -2787,3 +2804,27 @@ async function displayReservations() {
 }
 
 window.addEventListener("DOMContentLoaded", initApp);
+
+
+// ============================================
+// 🧹 RÉINITIALISATION DE L'ÉTAT DE RÉSERVATION
+// ============================================
+function resetBookingState() {
+    appState.selectedBus = null;
+    appState.selectedReturnBus = null;
+    appState.isSelectingReturn = false;
+    appState.selectedSeats = [];
+    appState.selectedReturnSeats = [];
+    appState.occupiedSeats = [];
+    appState.occupiedReturnSeats = [];
+    appState.passengerInfo = [];
+    appState.baggageCounts = {};
+    appState.currentReservation = null;
+    
+    console.log('✅ État de réservation réinitialisé');
+}
+
+window.resetAndGoHome = function() {
+    resetBookingState();
+    showPage('home');
+}
