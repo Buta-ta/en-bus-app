@@ -45,6 +45,115 @@
         }
         @supports (padding: env(safe-area-inset-top)) { .info-panel { top: calc(env(safe-area-inset-top) + 20px); } }
         body.pwa-installed .info-panel { top: 20px; }
+
+
+        /* ============================================
+   🛰️ BOUTON DE SUIVI GPS
+   ============================================ */
+
+.btn-track {
+    background: linear-gradient(135deg, #00d9ff 0%, #00b8d4 100%);
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-track::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-track:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-track:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+    border-color: #00d9ff;
+}
+
+.btn-track .btn-icon {
+    animation: radar-pulse 2s ease-in-out infinite;
+}
+
+@keyframes radar-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+}
+
+/* Effet de brillance animée */
+.btn-track::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+}
+
+/* Badge "LIVE" optionnel */
+.btn-track .live-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4136;
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 4px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 10px rgba(255, 65, 54, 0.5);
+    animation: live-blink 1.5s infinite;
+}
+
+@keyframes live-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .btn-track {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -79,6 +188,8 @@
         // ============================================
         const urlParams = new URLSearchParams(window.location.search);
         const busIdToTrack = urlParams.get('bus');
+        const bookingNumber = urlParams.get('booking'); // ✅ Optionnel : récupérer le numéro de réservation
+
 
         const map = L.map('map-container').setView([2, 15], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,6 +209,13 @@
         const lastUpdateText = document.getElementById('last-update');
         const busIdDisplay = document.getElementById('bus-id-display');
         busIdDisplay.textContent = busIdToTrack || "Non spécifié";
+
+         // ✅ Afficher le numéro de réservation si fourni
+    if (bookingNumber) {
+        busIdDisplay.innerHTML = `${busIdToTrack || "Non spécifié"} <br><small style="font-size: 11px; opacity: 0.7;">Réservation: ${bookingNumber}</small>`;
+    } else {
+        busIdDisplay.textContent = busIdToTrack || "Non spécifié";
+    }
 
         // ============================================
         // 🔗 CONNEXION WEBSOCKET
@@ -194,6 +312,21 @@
         const style = document.createElement('style');
         style.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
         document.head.appendChild(style);
+
+
+        // Version avec badge LIVE
+if (reservation.route.trackerId) {
+    actionsContainer.innerHTML += `
+        <a href="Suivi/suivi.html?bus=${reservation.route.trackerId}" 
+           target="_blank" 
+           class="btn-modern btn-track" 
+           style="position: relative;">
+            <span class="live-badge">LIVE</span>
+            <span class="btn-icon">🛰️</span>
+            <span class="btn-text">Suivre mon bus en temps réel</span>
+        </a>
+    `;
+}
     </script>
 </body>
 </html>
