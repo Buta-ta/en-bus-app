@@ -1344,15 +1344,22 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
 // Vérifier le statut d'un paiement MTN
 // Dans server.js - Remplacer cette fonction
 
-// Vérifier le statut d'un paiement MTN
+// Dans server.js - Remplacer cette fonction
+
 app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
     try {
         const { transactionId } = req.params;
+        console.log(`\n🔍 Vérification du statut pour la transaction MTN: ${transactionId}`);
+        
         const result = await mtnPayment.getTransactionStatus(transactionId);
 
         if (result.success) {
+            console.log(`✅ Statut reçu de MTN: ${result.status}`);
+
             if (result.status === 'SUCCESSFUL') {
-                const reservation = await reservationsCollection.findOneAndUpdate(
+                console.log('🎉 PAIEMENT RÉUSSI ! Mise à jour de la réservation...');
+                
+                const reservationUpdate = await reservationsCollection.findOneAndUpdate(
                     { paymentTransactionId: transactionId },
                     { 
                         $set: { 
@@ -1365,25 +1372,30 @@ app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
                                 currency: result.currency,
                                 provider: 'MTN',
                                 status: result.status,
-                                payerMessage: result.payerMessage || null,
-                                reason: result.reason || null
+                                reason: result.reason || 'Paiement réussi'
                             }
                         } 
                     },
                     { returnDocument: 'after' }
                 );
 
-                if (reservation.value) {
-                    sendConfirmationEmail(reservation.value);
+                if (reservationUpdate.value) {
+                    console.log(`✅ Réservation ${reservationUpdate.value.bookingNumber} mise à jour en "Confirmé"`);
+                    sendConfirmationEmail(reservationUpdate.value);
+                } else {
+                    console.warn(`⚠️ Impossible de trouver la réservation pour la transaction ${transactionId}`);
                 }
             }
-            res.json({ success: true, status: result.status });
+            
+            res.json({ success: true, status: result.status, message: `Statut actuel : ${result.status}` });
+            
         } else {
+            console.error(`❌ Erreur lors de la vérification du statut chez MTN: ${result.error}`);
             res.status(400).json({ success: false, error: result.error });
         }
 
     } catch (error) {
-        console.error('❌ Erreur vérification statut MTN:', error);
+        console.error('❌ Erreur serveur lors de la vérification du statut MTN:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
