@@ -930,6 +930,89 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
     }
 });
 
+// ============================================
+// 🔄 ACTIONS SUR LES RÉSERVATIONS (Version Admin)
+// ============================================
+app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, res) => {
+    const { id, action } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'ID de réservation invalide' });
+    }
+
+    try {
+        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+        if (!reservation) {
+            return res.status(404).json({ error: 'Réservation non trouvée.' });
+        }
+
+        // Action : Confirmer un paiement
+        if (action === 'confirm-payment') {
+            if (reservation.status !== 'En attente de paiement') {
+                return res.status(400).json({ error: 'Cette réservation n\'est pas en attente de paiement.' });
+            }
+            
+            await reservationsCollection.updateOne(
+                { _id: reservation._id }, 
+                { $set: { status: 'Confirmé', confirmedAt: new Date() } }
+            );
+            
+            // sendPaymentConfirmedEmail(reservation); // Optionnel
+            
+            return res.json({ success: true, message: 'Paiement confirmé avec succès.' });
+        }
+
+        // Action : Annuler une réservation
+        if (action === 'cancel') {
+            if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
+                return res.status(400).json({ error: 'Cette réservation est déjà annulée ou expirée.' });
+            }
+            
+            // --- Libérer les sièges du trajet ALLER ---
+            const tripId = reservation.route.id;
+            const seatNumbersToFree = reservation.seats.map(s => parseInt(s));
+
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(tripId) },
+                { $set: { "seats.$[elem].status": "available" } },
+                { arrayFilters: [{ "elem.number": { $in: seatNumbersToFree } }] }
+            );
+
+            console.log(`✅ Libéré ${seatNumbersToFree.length} siège(s) aller: ${seatNumbersToFree.join(', ')}`);
+
+            // --- Libérer les sièges du trajet RETOUR (si aller-retour) ---
+            if (reservation.returnRoute && reservation.returnSeats && reservation.returnSeats.length > 0) {
+                const returnTripId = reservation.returnRoute.id;
+                const returnSeatNumbersToFree = reservation.returnSeats.map(s => parseInt(s));
+                
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(returnTripId) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: returnSeatNumbersToFree } }] }
+                );
+
+                console.log(`✅ Libéré ${returnSeatNumbersToFree.length} siège(s) retour: ${returnSeatNumbersToFree.join(', ')}`);
+            }
+            
+            // Mettre à jour le statut de la réservation
+            await reservationsCollection.updateOne(
+                { _id: reservation._id }, 
+                { $set: { status: 'Annulé', cancelledAt: new Date() } }
+            );
+            
+            console.log(`✅ Réservation ${reservation.bookingNumber} annulée.`);
+            
+            return res.json({ success: true, message: 'Réservation annulée et sièges libérés avec succès.' });
+        }
+
+        // Si l'action n'est ni 'confirm-payment' ni 'cancel'
+        return res.status(400).json({ error: 'Action non reconnue. Actions valides : confirm-payment, cancel' });
+
+    } catch (error) {
+        console.error(`❌ Erreur lors de l'action '${action}' sur la réservation ${id}:`, error);
+        res.status(500).json({ error: 'Erreur serveur lors du traitement de l\'action.' });
+    }
+});
 
 // ============================================
 // 🐛 ROUTE DE DEBUG (À SUPPRIMER APRÈS TEST)
