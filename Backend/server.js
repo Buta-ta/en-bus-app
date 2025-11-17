@@ -949,6 +949,53 @@ app.post('/api/payment/mtn/simulate-success/:transactionId', async (req, res) =>
 });
 
 // ============================================
+// 🧪 SIMULATION SUCCÈS PAIEMENT (SANDBOX UNIQUEMENT)
+// ============================================
+app.post('/api/payment/mtn/simulate-success/:transactionId', async (req, res) => {
+    if (process.env.NODE_ENV === 'production' && process.env.MTN_ENVIRONMENT === 'production') {
+        return res.status(403).json({ error: 'Route désactivée en production' });
+    }
+    
+    try {
+        const { transactionId } = req.params;
+        console.log(`🧪 Simulation succès paiement: ${transactionId}`);
+        
+        const reservation = await reservationsCollection.findOneAndUpdate(
+            { paymentTransactionId: transactionId },
+            { 
+                $set: { 
+                    status: 'Confirmé',
+                    paymentStatus: 'completed',
+                    paymentConfirmedAt: new Date(),
+                    paymentDetails: {
+                        transactionId: transactionId,
+                        provider: 'MTN',
+                        status: 'SUCCESSFUL',
+                        simulatedSuccess: true
+                    }
+                } 
+            },
+            { returnDocument: 'after' }
+        );
+        
+        if (reservation.value) {
+            console.log(`✅ Réservation ${reservation.value.bookingNumber} confirmée`);
+            sendConfirmationEmail(reservation.value);
+            res.json({ 
+                success: true, 
+                message: 'Paiement simulé avec succès',
+                bookingNumber: reservation.value.bookingNumber
+            });
+        } else {
+            res.status(404).json({ error: 'Transaction non trouvée dans la BDD' });
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur simulation:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+// ============================================
 // EMAILS
 // ============================================
 
