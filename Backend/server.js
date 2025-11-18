@@ -952,10 +952,10 @@ app.post('/api/payment/mtn/simulate-success/:transactionId', async (req, res) =>
         // ✅ CORRECTION : Vérifier AVANT d'accéder à .value
         if (!reservation || !reservation.value) {
             console.warn(`⚠️ Transaction ${transactionId} non trouvée dans la BDD`);
-            return res.status(404).json({ 
-                success: false,
-                error: 'Transaction non trouvée dans la base de données' 
-            });
+            return res.status(200).json({  // ✅ 200 au lieu de 404
+    success: false,
+    error: 'Transaction non trouvée dans la base de données' 
+});
         }
         
         console.log(`✅ Réservation ${reservation.value.bookingNumber} confirmée`);
