@@ -789,6 +789,15 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
 
 const mtnPayment = require('./services/mtnPayment');
 
+// 🔍 ENDPOINT DE DEBUG VERSION
+app.get('/api/version', (req, res) => {
+    res.json({ 
+        version: '2025-01-18-FINAL',
+        timestamp: new Date().toISOString(),
+        message: 'Si vous voyez ceci, le nouveau code est déployé'
+    });
+});
+
 // Route de diagnostic
 app.get('/api/mtn/config', (req, res) => {
     res.json({
