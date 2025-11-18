@@ -1601,29 +1601,42 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
         console.log('📤 Résultat MTN API:', JSON.stringify(result, null, 2));
 
         if (result.success) {
-            await reservationsCollection.updateOne(
-                { bookingNumber: bookingNumber },
-                { 
-                    $set: { 
-                        paymentTransactionId: result.transactionId,
-                        paymentProvider: 'MTN',
-                        paymentStatus: 'pending',
-                        paymentInitiatedAt: new Date()
-                    } 
-                }
-            );
-
-            console.log('✅ Transaction enregistrée dans la BDD');
-
-            res.json({
-                success: true,
-                message: result.message,
-                transactionId: result.transactionId
-            });
-        } else {
-            console.error('❌ Échec MTN API:', result.error);
-            res.status(400).json({ success: false, error: result.error });
+    console.log(`🔄 Tentative mise à jour réservation: ${bookingNumber}`);
+    
+    const updateResult = await reservationsCollection.updateOne(
+        { bookingNumber: bookingNumber },
+        { 
+            $set: { 
+                paymentTransactionId: result.transactionId,
+                paymentProvider: 'MTN',
+                paymentStatus: 'pending',
+                paymentInitiatedAt: new Date()
+            } 
         }
+    );
+
+    console.log('📊 Résultat update MongoDB:', {
+        matchedCount: updateResult.matchedCount,
+        modifiedCount: updateResult.modifiedCount,
+        bookingNumber: bookingNumber,
+        transactionId: result.transactionId
+    });
+
+    if (updateResult.matchedCount === 0) {
+        console.error(`❌ PROBLÈME: Aucune réservation trouvée avec bookingNumber="${bookingNumber}"`);
+        console.error('💡 Vérifiez que la réservation a bien été créée AVANT le paiement');
+    } else if (updateResult.modifiedCount === 0) {
+        console.warn(`⚠️ Réservation trouvée mais pas modifiée (peut-être déjà à jour)`);
+    } else {
+        console.log(`✅ Réservation ${bookingNumber} mise à jour avec succès`);
+    }
+
+    res.json({
+        success: true,
+        message: result.message,
+        transactionId: result.transactionId
+    });
+}
 
     } catch (error) {
         console.error('❌ ERREUR CRITIQUE:', error);
