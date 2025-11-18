@@ -2506,66 +2506,100 @@ window.confirmBooking = async function(buttonElement) {
         console.log('📦 OBJET FINAL PRÊT À ÊTRE ENVOYÉ :', reservation);
         console.log('🛰️ BusIdentifier aller:', reservation.busIdentifier);
 
-    // ============================================
-// 💳 TRAITEMENT SELON LE MODE DE PAIEMENT
-// ============================================
+        // ============================================
+        // 💳 TRAITEMENT SELON LE MODE DE PAIEMENT
+        // ============================================
 
-if (paymentMethod === 'mtn') {
-    console.log('💳 Paiement MTN manuel sélectionné');
-    
-    const phoneInput = document.getElementById('mtn-phone');
-    let phone = phoneInput.value.trim();
-    console.log('Numéro MTN saisi:', phone);
-    
-    if (!phone || !Utils.validatePhone(phone)) {
-        throw new Error('Numéro MTN invalide');
-    }
+        if (paymentMethod === 'mtn') {
+            console.log('💳 Paiement MTN manuel sélectionné');
+            
+            const phoneInput = document.getElementById('mtn-phone');
+            let phone = phoneInput.value.trim();
+            console.log('Numéro MTN saisi:', phone);
+            
+            if (!phone || !Utils.validatePhone(phone)) {
+                throw new Error('Numéro MTN invalide');
+            }
 
-    // ✅ Créer réservation en attente de paiement
-    reservation.status = 'En attente de paiement';
-    reservation.paymentMethod = 'MTN';
-    reservation.customerPhone = phone;
-    reservation.paymentDeadline = new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(); // 10 heures
-    reservation.paymentInstructions = {
-        merchantNumber: '+242 06 XXX XXXX', // ✅ REMPLACEZ PAR VOTRE NUMÉRO MTN MARCHAND
-        amount: finalTotalPriceNumeric,
-        reference: bookingNumber
-    };
-    
-    console.log('Enregistrement de la réservation...');
-    showLoading('Enregistrement...');
-    await saveReservationToBackend(reservation);
-    
-    // ✅ Redirection immédiate vers la page de confirmation
-    appState.currentReservation = reservation;
-    displayConfirmation(reservation);
-    showPage("confirmation");
-    
-    Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions de paiement MTN.', 'success');
-    buttonElement.disabled = false;
-    buttonElement.innerHTML = originalButtonText;
+            // ✅ Créer réservation en attente de paiement
+            reservation.status = 'En attente de paiement';
+            reservation.paymentMethod = 'MTN';
+            reservation.customerPhone = phone;
+            reservation.paymentDeadline = new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString();
+            reservation.paymentInstructions = {
+                merchantNumber: '+242 06 XXX XXXX', // ✅ REMPLACEZ PAR VOTRE NUMÉRO MTN MARCHAND
+                amount: finalTotalPriceNumeric,
+                reference: bookingNumber
+            };
+            
+            console.log('Enregistrement de la réservation...');
+            showLoading('Enregistrement...');
+            await saveReservationToBackend(reservation);
+            
+            // ✅ Redirection immédiate vers la page de confirmation
+            appState.currentReservation = reservation;
+            displayConfirmation(reservation);
+            showPage("confirmation");
+            
+            Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions de paiement MTN.', 'success');
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalButtonText;
 
-} else if (paymentMethod === 'agency') {
-    if (!canPayAtAgency()) throw new Error("Le paiement en agence n'est plus disponible.");
+        } else if (paymentMethod === 'airtel') {
+            console.log('💳 Paiement Airtel manuel sélectionné');
+            
+            const phoneInput = document.getElementById('airtel-phone');
+            let phone = phoneInput.value.trim();
+            console.log('Numéro Airtel saisi:', phone);
+            
+            if (!phone || !Utils.validatePhone(phone)) {
+                throw new Error('Numéro Airtel invalide');
+            }
 
-    // ✅ Réservation en attente pour paiement agence
-    reservation.status = 'En attente de paiement';
-    reservation.paymentDeadline = calculatePaymentDeadline().toISOString();
-    reservation.agency = getNearestAgency(appState.selectedBus.from);
-    
-    await saveReservationToBackend(reservation);
-    
-    appState.currentReservation = reservation;
-    displayConfirmation(reservation);
-    showPage("confirmation");
+            // ✅ Créer réservation en attente de paiement
+            reservation.status = 'En attente de paiement';
+            reservation.paymentMethod = 'AIRTEL';
+            reservation.customerPhone = phone;
+            reservation.paymentDeadline = new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString();
+            reservation.paymentInstructions = {
+                merchantNumber: '+242 06 YYY YYYY', // ✅ REMPLACEZ PAR VOTRE NUMÉRO AIRTEL MARCHAND
+                amount: finalTotalPriceNumeric,
+                reference: bookingNumber
+            };
+            
+            console.log('Enregistrement de la réservation...');
+            showLoading('Enregistrement...');
+            await saveReservationToBackend(reservation);
+            
+            appState.currentReservation = reservation;
+            displayConfirmation(reservation);
+            showPage("confirmation");
+            
+            Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions de paiement Airtel.', 'success');
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalButtonText;
 
-    Utils.showToast('✅ Réservation enregistrée !', 'success');
-    buttonElement.disabled = false;
-    buttonElement.innerHTML = originalButtonText;
+        } else if (paymentMethod === 'agency') {
+            if (!canPayAtAgency()) throw new Error("Le paiement en agence n'est plus disponible.");
 
-} else {
-    throw new Error('Méthode de paiement non supportée');
-}
+            // ✅ Réservation en attente pour paiement agence
+            reservation.status = 'En attente de paiement';
+            reservation.paymentDeadline = calculatePaymentDeadline().toISOString();
+            reservation.agency = getNearestAgency(appState.selectedBus.from);
+            
+            await saveReservationToBackend(reservation);
+            
+            appState.currentReservation = reservation;
+            displayConfirmation(reservation);
+            showPage("confirmation");
+
+            Utils.showToast('✅ Réservation enregistrée !', 'success');
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalButtonText;
+
+        } else {
+            throw new Error('Méthode de paiement non supportée');
+        }
 
     } catch (error) {
         console.error('❌ ERREUR GLOBALE:', error);
@@ -2574,11 +2608,12 @@ if (paymentMethod === 'mtn') {
         buttonElement.disabled = false;
         buttonElement.innerHTML = originalButtonText;
     }
-};    
-
+};
 // ============================================
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
 // ============================================
+// Dans app.js - Remplacer displayConfirmation
+
 function displayConfirmation(reservation) {
     const confirmationContainer = document.getElementById('confirmation-details');
     if (!confirmationContainer) {
@@ -2623,15 +2658,21 @@ function displayConfirmation(reservation) {
                         <div style="font-size: 24px; font-weight: 900; color: #d32f2f; font-family: monospace; background: #fff3e0; padding: 10px; border-radius: 4px; text-align: center;">${instructions.reference}</div>
                         <p style="font-size: 11px; color: #666; margin-top: 5px; text-align: center;">⚠️ Inscrivez cette référence dans le message du transfert</p>
                     </div>
+                    
+                    <div style="border-top: 2px dashed #2196f3; padding-top: 15px; margin-top: 15px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">VOTRE NUMÉRO ENREGISTRÉ</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #0d47a1; font-family: monospace;">${reservation.customerPhone}</div>
+                        <p style="font-size: 11px; color: #d32f2f; margin-top: 5px;">⚠️ Utilisez CE NUMÉRO pour effectuer le paiement</p>
+                    </div>
                 </div>
                 
                 <div style="background: #f1f8e9; padding: 15px; border-radius: 8px; border-left: 4px solid #689f38;">
                     <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #33691e; font-weight: 700;">📱 ÉTAPES DE PAIEMENT</h4>
                     <ol style="margin: 0; padding-left: 20px; color: #558b2f; line-height: 1.8; font-size: 13px;">
-                        <li>Composez <strong>*555#</strong> sur votre téléphone</li>
+                        <li>Composez <strong>*555#</strong> sur votre téléphone <strong>${reservation.customerPhone}</strong></li>
                         <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
-                        <li>Entrez le numéro : <strong>${instructions.merchantNumber}</strong></li>
-                        <li>Montant : <strong>${Utils.formatPrice(instructions.amount)}</strong></li>
+                        <li>Entrez le numéro marchand : <strong>${instructions.merchantNumber}</strong></li>
+                        <li>Montant : <strong>${Utils.formatPrice(instructions.amount)}</strong> FCFA</li>
                         <li>Message/Référence : <strong>${instructions.reference}</strong></li>
                         <li>Validez avec votre code PIN</li>
                     </ol>
@@ -2643,44 +2684,90 @@ function displayConfirmation(reservation) {
                         Votre réservation sera automatiquement annulée après ce délai.
                     </p>
                 </div>
+                
+                <!-- ✅ BOUTON DE VÉRIFICATION -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="check-payment-btn" class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); padding: 14px 28px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: 700;">
+                        🔄 Vérifier si mon paiement est validé
+                    </button>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">Cliquez après avoir effectué le paiement</p>
+                </div>
             </div>
         `;
     }
-    // ✅ INSTRUCTIONS PAIEMENT AGENCE
-    else if (isPending && reservation.agency) {
+    
+    // ✅ INSTRUCTIONS PAIEMENT AIRTEL MANUEL (même logique)
+    else if (isPending && reservation.paymentMethod === 'AIRTEL' && reservation.paymentInstructions) {
         const deadline = new Date(reservation.paymentDeadline);
+        const instructions = reservation.paymentInstructions;
+        
         statusHTML = `
-            <div class="alert alert-warning" style="background: linear-gradient(135deg, #fff3cd 0%, #ffe7a1 100%); border-left: 6px solid #ff9800; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
+            <div class="alert alert-info" style="background: linear-gradient(135deg, #ffe0e0 0%, #ffcccc 100%); border-left: 6px solid #e53935; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <span style="font-size: 48px; margin-right: 15px;">⏰</span>
+                    <span style="font-size: 48px; margin-right: 15px;">💳</span>
                     <div>
-                        <h3 style="margin: 0; font-size: 20px; color: #e65100; font-weight: 800;">PAIEMENT REQUIS À L'AGENCE</h3>
-                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #e65100;">Payez avant le ${deadline.toLocaleString('fr-FR')}</p>
+                        <h3 style="margin: 0; font-size: 20px; color: #b71c1c; font-weight: 800;">PAIEMENT AIRTEL MONEY</h3>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #c62828;">Finalisez votre réservation en effectuant le paiement</p>
                     </div>
                 </div>
-                <hr style="border-color: rgba(255, 152, 0, 0.3); margin: 15px 0;">
-                <h4 style="color: #e65100; margin-bottom: 10px;">${reservation.agency.name}</h4>
-                <p style="margin: 5px 0; color: #5d4037;"><strong>📍</strong> ${reservation.agency.address}</p>
-                <p style="margin: 5px 0; color: #5d4037;"><strong>📞</strong> ${reservation.agency.phone}</p>
-                <p style="margin: 5px 0; color: #5d4037;"><strong>🕐</strong> ${reservation.agency.hours}</p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">MONTANT À PAYER</div>
+                            <div style="font-size: 28px; font-weight: 900; color: #e53935;">${Utils.formatPrice(instructions.amount)} FCFA</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">NUMÉRO MARCHAND</div>
+                            <div style="font-size: 20px; font-weight: 700; color: #b71c1c; font-family: monospace;">${instructions.merchantNumber}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 2px dashed #e53935; padding-top: 15px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">RÉFÉRENCE (IMPORTANT)</div>
+                        <div style="font-size: 24px; font-weight: 900; color: #d32f2f; font-family: monospace; background: #fff3e0; padding: 10px; border-radius: 4px; text-align: center;">${instructions.reference}</div>
+                        <p style="font-size: 11px; color: #666; margin-top: 5px; text-align: center;">⚠️ Inscrivez cette référence dans le message du transfert</p>
+                    </div>
+                    
+                    <div style="border-top: 2px dashed #e53935; padding-top: 15px; margin-top: 15px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">VOTRE NUMÉRO ENREGISTRÉ</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #b71c1c; font-family: monospace;">${reservation.customerPhone}</div>
+                        <p style="font-size: 11px; color: #d32f2f; margin-top: 5px;">⚠️ Utilisez CE NUMÉRO pour effectuer le paiement</p>
+                    </div>
+                </div>
+                
+                <div style="background: #f1f8e9; padding: 15px; border-radius: 8px; border-left: 4px solid #689f38;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #33691e; font-weight: 700;">📱 ÉTAPES DE PAIEMENT</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #558b2f; line-height: 1.8; font-size: 13px;">
+                        <li>Composez <strong>*501#</strong> sur votre téléphone <strong>${reservation.customerPhone}</strong></li>
+                        <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
+                        <li>Entrez le numéro marchand : <strong>${instructions.merchantNumber}</strong></li>
+                        <li>Montant : <strong>${Utils.formatPrice(instructions.amount)}</strong> FCFA</li>
+                        <li>Message/Référence : <strong>${instructions.reference}</strong></li>
+                        <li>Validez avec votre code PIN</li>
+                    </ol>
+                </div>
+                
+                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #ff9800;">
+                    <p style="margin: 0; font-size: 13px; color: #e65100; line-height: 1.5;">
+                        <strong>⏰ Important :</strong> Effectuez le paiement avant le <strong>${deadline.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}</strong>. 
+                        Votre réservation sera automatiquement annulée après ce délai.
+                    </p>
+                </div>
+                
+                <!-- ✅ BOUTON DE VÉRIFICATION -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="check-payment-btn" class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); padding: 14px 28px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: 700;">
+                        🔄 Vérifier si mon paiement est validé
+                    </button>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">Cliquez après avoir effectué le paiement</p>
+                </div>
             </div>
         `;
     }
-    // ✅ CONFIRMATION PAIEMENT RÉUSSI
-    else if (isConfirmed) {
-        statusHTML = `
-            <div class="alert alert-success" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 6px solid #4caf50; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 48px; margin-right: 15px;">✅</span>
-                    <div>
-                        <h3 style="margin: 0; font-size: 20px; color: #2e7d32; font-weight: 800;">Réservation confirmée !</h3>
-                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #388e3c;">Votre billet est prêt. Bon voyage !</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
+    
+    // ... (reste du code pour agence et confirmation)
+    
     confirmationContainer.innerHTML = `
         ${statusHTML}
         <div class="confirmation-info">
@@ -2708,10 +2795,6 @@ function displayConfirmation(reservation) {
                     <span style="font-size: 20px;">🛰️</span>
                     <span>Suivre mon bus en temps réel</span>
                 </a>
-                <style>
-                    @keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-                    .btn-track:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5); }
-                </style>
             ` : ''}
             
             <button class="btn btn-secondary" onclick="resetAndGoHome()">
@@ -2720,6 +2803,60 @@ function displayConfirmation(reservation) {
         </div>
     `;
 }
+
+
+
+// Dans app.js - Ajouter cette nouvelle fonction
+
+async function checkPaymentStatus(bookingNumber) {
+    const button = document.getElementById('check-payment-btn');
+    if (!button) return;
+    
+    // Désactiver le bouton pendant la vérification
+    button.disabled = true;
+    button.innerHTML = '⏳ Vérification en cours...';
+    
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${encodeURIComponent(bookingNumber)}`);
+        
+        if (!response.ok) {
+            throw new Error('Erreur lors de la vérification');
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 'Confirmé') {
+            // ✅ PAIEMENT VALIDÉ !
+            Utils.showToast('🎉 Votre paiement a été validé ! Rechargement...', 'success');
+            
+            // Recharger la réservation mise à jour
+            appState.currentReservation.status = 'Confirmé';
+            
+            setTimeout(() => {
+                displayConfirmation(appState.currentReservation);
+            }, 2000);
+            
+        } else if (data.status === 'En attente de paiement') {
+            // ⏳ Toujours en attente
+            Utils.showToast('⏳ Paiement non encore validé. Réessayez dans quelques instants.', 'info');
+            button.disabled = false;
+            button.innerHTML = '🔄 Vérifier à nouveau';
+            
+        } else {
+            // ❌ Annulé ou expiré
+            Utils.showToast(`❌ Statut : ${data.status}`, 'error');
+            button.disabled = false;
+            button.innerHTML = '🔄 Vérifier le statut';
+        }
+        
+    } catch (error) {
+        console.error('Erreur vérification:', error);
+        Utils.showToast('Erreur de vérification. Réessayez.', 'error');
+        button.disabled = false;
+        button.innerHTML = '🔄 Réessayer';
+    }
+}
+
 
 window.addEventListener("DOMContentLoaded", initApp);
 

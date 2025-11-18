@@ -1951,6 +1951,8 @@ function applyFilters() {
 
 // Dans Admin/index.html - Remplacer la fonction renderTable existante
 
+// Dans Admin/index.html - Modifier renderTable
+
 function renderTable(reservations) { 
     const tbody = document.getElementById('reservations-body'); 
     
@@ -1969,47 +1971,17 @@ function renderTable(reservations) {
         };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
-        // ✅ CALCUL DU TEMPS RESTANT POUR LE PAIEMENT
-        let countdownHTML = '';
-        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            const now = new Date();
-            const deadline = new Date(r.paymentDeadline);
-            const timeLeft = deadline - now;
-            
-            if (timeLeft > 0) {
-                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                
-                let countdownClass = 'normal';
-                let icon = '⏱️';
-                
-                if (hoursLeft < 1) {
-                    countdownClass = 'urgent';
-                    icon = '🚨';
-                } else if (hoursLeft < 3) {
-                    countdownClass = 'warning';
-                    icon = '⚠️';
-                }
-                
-                countdownHTML = `
-                    <div class="payment-countdown ${countdownClass}" data-deadline="${r.paymentDeadline}" data-reservation-id="${r._id}">
-                        <span class="countdown-icon">${icon}</span>
-                        <span class="countdown-time">${hoursLeft}h ${minutesLeft}min</span>
-                        <span class="countdown-label">restantes</span>
-                    </div>
-                `;
-            } else {
-                // Le délai est dépassé mais la réservation n'est pas encore marquée comme expirée
-                countdownHTML = `
-                    <div class="payment-countdown urgent">
-                        <span class="countdown-icon">❌</span>
-                        <span class="countdown-time">EXPIRÉ</span>
-                    </div>
-                `;
-            }
+        // ✅ AFFICHER LE NUMÉRO DE PAIEMENT SI EN ATTENTE
+        let paymentPhoneHTML = '';
+        if (r.status === 'En attente de paiement' && r.customerPhone) {
+            paymentPhoneHTML = `
+                <div style="font-size: 11px; color: #ff9800; margin-top: 4px; font-weight: 700;">
+                    💳 N° Paiement: ${r.customerPhone}
+                </div>
+            `;
         }
         
-        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
+        // ... (reste du code inchangé)
         
         return `
             <tr class="${rowClass}">
@@ -2022,6 +1994,7 @@ function renderTable(reservations) {
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
+                    ${paymentPhoneHTML}
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
                 <td>
@@ -2029,33 +2002,12 @@ function renderTable(reservations) {
                     ${countdownHTML}
                 </td>
                 <td class="actions-cell">
-                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">
-                        👁️
-                    </button>
-                    
-                    ${r.status === 'En attente de paiement' ? `
-                        <button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer paiement">
-                            ✅
-                        </button>
-                    ` : ''}
-                    
-                    ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
-                        <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">
-                            💺
-                        </button>
-                    ` : ''}
-                    
-                    ${(r.status === 'Confirmé' || r.status === 'En attente de paiement') ? `
-                        <button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">
-                            ❌
-                        </button>
-                    ` : ''}
+                    <!-- Actions existantes -->
                 </td>
             </tr>
         `; 
     }).join('');
     
-    // ✅ DÉMARRER LE CHRONOMÈTRE EN TEMPS RÉEL
     startCountdownUpdates();
 }
 
