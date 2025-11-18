@@ -657,6 +657,8 @@ app.post('/api/reservations', strictLimiter, [
     }
 });
 
+// Dans server.js - REMPLACER la route existante
+
 app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, res) => {
     const { id, action } = req.params;
 
@@ -675,12 +677,35 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
                 return res.status(400).json({ error: 'Pas en attente de paiement.' });
             }
             
+            // ✅ Mise à jour complète avec détails du paiement
             await reservationsCollection.updateOne(
                 { _id: reservation._id }, 
-                { $set: { status: 'Confirmé', confirmedAt: new Date() } }
+                { 
+                    $set: { 
+                        status: 'Confirmé', 
+                        confirmedAt: new Date(),
+                        paymentDetails: {
+                            method: reservation.paymentMethod || 'UNKNOWN',
+                            customerPhone: reservation.customerPhone || 'N/A',
+                            confirmedByAdmin: req.user?.username || 'admin',
+                            confirmedAt: new Date()
+                        }
+                    } 
+                }
             );
             
-            return res.json({ success: true, message: 'Paiement confirmé.' });
+            // ✅ Récupérer la réservation mise à jour pour l'email
+            const updatedReservation = await reservationsCollection.findOne({ _id: reservation._id });
+            
+            // ✅ Envoyer l'email de confirmation
+            sendConfirmationEmail(updatedReservation);
+            
+            console.log(`✅ Paiement confirmé pour ${reservation.bookingNumber} par ${req.user?.username || 'admin'}`);
+            
+            return res.json({ 
+                success: true, 
+                message: 'Paiement confirmé avec succès !' 
+            });
         }
 
         if (action === 'cancel') {
@@ -1588,6 +1613,47 @@ app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
 });
 
 
+
+
+// Dans server.js - Ajouter après les autres routes /api/reservations
+
+// ============================================
+// 🔍 VÉRIFICATION DU STATUT D'UNE RÉSERVATION
+// ============================================
+
+app.get('/api/reservations/check/:bookingNumber', async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+        
+        console.log(`🔍 Vérification du statut pour : ${bookingNumber}`);
+        
+        const reservation = await reservationsCollection.findOne({ bookingNumber: bookingNumber });
+        
+        if (!reservation) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Réservation introuvable' 
+            });
+        }
+        
+        // Retourner uniquement les infos essentielles
+        res.json({
+            success: true,
+            bookingNumber: reservation.bookingNumber,
+            status: reservation.status,
+            paymentMethod: reservation.paymentMethod,
+            customerPhone: reservation.customerPhone,
+            confirmedAt: reservation.confirmedAt || null
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur vérification statut:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erreur serveur' 
+        });
+    }
+});
 
 
 // ============================================
