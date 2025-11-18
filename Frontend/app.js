@@ -2743,16 +2743,8 @@ window.confirmBooking = async function(buttonElement) {
 // ============================================
 // DANS app.js, REMPLACEZ LA FONCTION displayConfirmation
 
-// ============================================
-// 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
-// ============================================
-
 function displayConfirmation(reservation) {
-    console.log('📄 Affichage de la confirmation pour:', reservation.bookingNumber, 'Statut:', reservation.status);
-    
-    // ============================================
-    // 🎯 RÉCUPÉRATION DES ÉLÉMENTS DU DOM
-    // ============================================
+    // Récupération des éléments du DOM
     const confirmationTitle = document.querySelector('#confirmation-page .confirmation-title');
     const confirmationSubtitle = document.querySelector('#confirmation-page .confirmation-subtitle');
     const bookingNumberDisplay = document.getElementById('booking-number-display');
@@ -2763,9 +2755,7 @@ function displayConfirmation(reservation) {
     const detailsGrid = document.getElementById('confirmation-details');
     const infoCards = document.querySelector('#confirmation-page .info-cards');
 
-    // ============================================
-    // 📊 MISE À JOUR DES DONNÉES COMMUNES
-    // ============================================
+    // --- MISE À JOUR DES DONNÉES COMMUNES ---
     bookingNumberDisplay.textContent = reservation.bookingNumber;
     document.getElementById('conf-origin').textContent = reservation.route.from;
     document.getElementById('conf-destination').textContent = reservation.route.to;
@@ -2774,9 +2764,6 @@ function displayConfirmation(reservation) {
     document.getElementById('conf-arrival-time').textContent = reservation.route.arrival;
     document.getElementById('conf-duration').textContent = reservation.route.duration;
 
-    // ============================================
-    // 📋 DÉTAILS DE LA RÉSERVATION
-    // ============================================
     detailsGrid.innerHTML = `
         <div class="detail-item-modern">
             <div class="detail-label">Passagers</div>
@@ -2796,268 +2783,101 @@ function displayConfirmation(reservation) {
         </div>
     `;
 
-    // ============================================
-    // 🎬 LOGIQUE D'AFFICHAGE DYNAMIQUE
-    // ============================================
-    
-    const isPendingPayment = reservation.status === 'En attente de paiement';
-    const isConfirmed = reservation.status === 'Confirmé';
-    const isCancelled = reservation.status === 'Annulé';
-    const isExpired = reservation.status === 'Expiré';
-
-    // ============================================
-    // 📌 CAS 1 : PAIEMENT EN ATTENTE
-    // ============================================
-    if (isPendingPayment) {
-        confirmationTitle.textContent = "⏳ Paiement en cours de validation";
-        confirmationSubtitle.textContent = "Votre réservation sera confirmée après vérification du paiement";
+    // --- LOGIQUE D'AFFICHAGE DYNAMIQUE ---
+    if (reservation.status === 'En attente de paiement') {
+        // --- CAS 1: PAIEMENT EN ATTENTE ---
+        confirmationTitle.textContent = "Finalisez votre paiement";
+        confirmationSubtitle.textContent = "Votre réservation est en attente de confirmation";
+        statusBadge.className = 'status-badge'; // Classe neutre
+        statusBadge.style.background = '#ff9800'; // Orange
+        statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>En attente</span>`;
         
-        // Badge "En attente"
-        statusBadge.className = 'status-badge';
-        statusBadge.style.background = 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)';
-        statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>En attente de validation</span>`;
-        
-        // ✅ MASQUER le QR code, les boutons d'action et les info-cards
+        // Cacher les éléments non pertinents
         qrSection.style.display = 'none';
         actionsContainer.style.display = 'none';
         infoCards.style.display = 'none';
 
-        // ✅ AFFICHER les instructions de paiement
+        // Afficher les instructions de paiement
         let instructionsHTML = '';
-        const deadline = new Date(reservation.paymentDeadline);
-        const now = new Date();
-        const timeLeft = deadline - now;
+        const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
         
-        if (timeLeft > 0) {
-            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-            const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            
-            if (reservation.paymentMethod === 'MTN' || reservation.paymentMethod === 'AIRTEL') {
-                const isMtn = reservation.paymentMethod === 'MTN';
-                const merchantNumber = isMtn ? CONFIG.MTN_MERCHANT_NUMBER : CONFIG.AIRTEL_MERCHANT_NUMBER;
-                const ussdCode = isMtn ? '*555#' : '*130#';
-                
-                instructionsHTML = `
-                    <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
-                        <div class="info-icon" style="font-size: 40px;">📱</div>
-                        <div class="info-content">
-                            <h4>Instructions de paiement ${isMtn ? 'MTN Mobile Money' : 'Airtel Money'}</h4>
-                            <ol style="margin: 10px 0 0 20px; padding: 0; line-height: 1.8;">
-                                <li>Composez <strong>${ussdCode}</strong> sur votre téléphone ${reservation.paymentMethod} (<strong>${reservation.customerPhone}</strong>)</li>
-                                <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
-                                <li>Entrez le numéro marchand : <strong style="font-family: monospace; color: #ff9800; font-size: 1.1em;">${merchantNumber}</strong></li>
-                                <li>Montant : <strong>${reservation.totalPrice}</strong></li>
-                                <li><strong>IMPORTANT :</strong> Dans le motif/référence du transfert, indiquez : <strong style="font-family: monospace; color: #e53935; font-size: 1.2em;">${reservation.bookingNumber}</strong></li>
-                                <li>Validez avec votre code PIN</li>
-                                <li>Vous recevrez un SMS de confirmation de ${reservation.paymentMethod}</li>
-                            </ol>
-                            <p style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #ff9800;">
-                                ⚠️ <strong>Temps restant pour effectuer le paiement :</strong> ${hoursLeft}h ${minutesLeft}min<br>
-                                <small>Votre réservation sera confirmée une fois le paiement validé par notre équipe. Délai limite : <strong>${deadline.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}</strong></small>
-                            </p>
-                            
-                            <div style="margin-top: 20px; text-align: center;">
-                                <button 
-                                    class="btn btn-primary" 
-                                    onclick="checkPaymentStatus('${reservation.bookingNumber}')"
-                                    style="padding: 14px 28px; font-size: 16px;"
-                                >
-                                    <span style="font-size: 20px; margin-right: 8px;">🔄</span>
-                                    Vérifier le statut du paiement
-                                </button>
-                                <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">
-                                    Cliquez ici après avoir effectué le transfert pour vérifier si votre paiement a été validé
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-            } else if (reservation.paymentMethod === 'AGENCY') {
-                instructionsHTML = `
-                    <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
-                        <div class="info-icon" style="font-size: 40px;">🏢</div>
-                        <div class="info-content">
-                            <h4>Paiement requis à l'agence</h4>
-                            <p>Veuillez vous rendre à notre agence de départ pour effectuer le paiement de <strong>${reservation.totalPrice}</strong> avant le <strong>${deadline.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}</strong>.</p>
-                            <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                                <strong style="font-size: 16px;">${reservation.agency.name}</strong><br>
-                                <span style="font-size: 14px; color: #ddd;">
-                                    📍 ${reservation.agency.address}<br>
-                                    📞 Tél : ${reservation.agency.phone}<br>
-                                    🕐 Horaires : ${reservation.agency.hours}
-                                </span>
-                            </div>
-                            <p style="margin-top: 12px; padding: 10px; background: rgba(229, 57, 53, 0.15); border-radius: 6px; border-left: 4px solid #e53935;">
-                                ⏰ <strong>Temps restant :</strong> ${hoursLeft}h ${minutesLeft}min
-                            </p>
-                            
-                            <div style="margin-top: 20px; text-align: center;">
-                                <button 
-                                    class="btn btn-primary" 
-                                    onclick="checkPaymentStatus('${reservation.bookingNumber}')"
-                                    style="padding: 14px 28px; font-size: 16px;"
-                                >
-                                    <span style="font-size: 20px; margin-right: 8px;">🔄</span>
-                                    Vérifier le statut du paiement
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        } else {
-            // Délai dépassé
+        if (reservation.paymentMethod === 'MTN' || reservation.paymentMethod === 'AIRTEL') {
+            const isMtn = reservation.paymentMethod === 'MTN';
+            const merchantNumber = isMtn ? '+242 06 XXX XXXX' : '+242 05 YYY YYYY'; // METTEZ VOS VRAIS NUMÉROS
             instructionsHTML = `
-                <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(239, 83, 80, 0.1); border-color: #ef5350; margin-bottom: 24px;">
-                    <div class="info-icon" style="font-size: 40px;">❌</div>
+                <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
+                    <div class="info-icon" style="font-size: 40px;">📱</div>
                     <div class="info-content">
-                        <h4>Délai de paiement dépassé</h4>
-                        <p>Le délai de paiement pour cette réservation est expiré. La réservation sera bientôt marquée comme annulée.</p>
-                        <p style="margin-top: 10px;">Si vous avez effectué le paiement, contactez notre service client : <strong>+242 06 123 4567</strong></p>
+                        <h4>Instructions de paiement ${isMtn ? 'MTN Mobile Money' : 'Airtel Money'}</h4>
+                        <ol style="margin: 10px 0 0 20px; padding: 0; line-height: 1.8;">
+                            <li>Ouvrez votre application de paiement mobile.</li>
+                            <li>Effectuez un transfert de <strong>${reservation.totalPrice}</strong> au numéro marchand : <strong style="font-family: monospace; color: #ff9800; font-size: 1.1em;">${merchantNumber}</strong>.</li>
+                            <li><strong>IMPORTANT :</strong> Dans le motif/référence du transfert, indiquez votre numéro de réservation : <strong style="font-family: monospace; color: #e53935; font-size: 1.2em;">${reservation.bookingNumber}</strong>.</li>
+                        </ol>
+                        <p style="margin-top: 15px;">⚠️ Votre réservation sera confirmée une fois le paiement validé par notre équipe. Le délai de paiement est de <strong>${deadline}</strong>.</p>
+                    </div>
+                </div>
+            `;
+        } else if (reservation.paymentMethod === 'AGENCY') {
+            instructionsHTML = `
+                <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
+                    <div class="info-icon" style="font-size: 40px;">🏢</div>
+                    <div class="info-content">
+                        <h4>Paiement requis à l'agence</h4>
+                        <p>Veuillez vous rendre à notre agence de départ pour effectuer le paiement de <strong>${reservation.totalPrice}</strong> avant le <strong>${deadline}</strong>.</p>
+                        <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                            <strong>${reservation.agency.name}</strong><br>
+                            ${reservation.agency.address}<br>
+                            Tél : ${reservation.agency.phone}
+                        </div>
                     </div>
                 </div>
             `;
         }
         
-        // Insérer les instructions AVANT la carte du trajet
+        // Insérer les instructions avant la carte du trajet
         journeyCard.insertAdjacentHTML('beforebegin', instructionsHTML);
-    }
 
-    // ============================================
-    // ✅ CAS 2 : RÉSERVATION CONFIRMÉE
-    // ============================================
-    else if (isConfirmed) {
-        confirmationTitle.textContent = "✅ Réservation confirmée !";
+    } else {
+        // --- CAS 2: RÉSERVATION CONFIRMÉE ---
+        confirmationTitle.textContent = "Réservation confirmée !";
         confirmationSubtitle.textContent = "Votre billet a été réservé avec succès";
-        
-        // Badge "Confirmé"
         statusBadge.className = 'status-badge status-confirmed';
-        statusBadge.style.background = 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)';
+        statusBadge.style.background = ''; // Utilise le style CSS par défaut
         statusBadge.innerHTML = `<span class="status-icon">✓</span><span>Confirmé</span>`;
 
-        // ✅ AFFICHER le QR code, les boutons d'action et les info-cards
+        // Afficher les éléments pertinents
         qrSection.style.display = 'block';
         actionsContainer.style.display = 'flex';
         infoCards.style.display = 'grid';
 
-        // ✅ GÉNÉRER LE QR CODE
+        // Générer le QR Code
         const qrPlaceholder = document.getElementById('qr-placeholder');
         qrPlaceholder.innerHTML = ''; // Vider l'ancien QR code
-        
-        try {
-            const qrData = Utils.generateQRCodeData(reservation, false); // false = trajet aller
-            new QRCode(qrPlaceholder, {
-                text: qrData,
-                width: 160,
-                height: 160,
-                colorDark: "#10101A",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            console.log('✅ QR Code généré avec succès');
-        } catch (error) {
-            console.error('❌ Erreur génération QR Code:', error);
-            qrPlaceholder.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef5350;">⚠️ Erreur de génération du QR Code</div>';
-        }
+        new QRCode(qrPlaceholder, {
+            text: Utils.generateQRCodeData(reservation),
+            width: 160,
+            height: 160,
+            colorDark: "#10101A",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
 
-        // ✅ CONFIGURER LE BOUTON DE SUIVI DU BUS
+        // Configurer le bouton de suivi
         const trackLink = document.getElementById('track-bus-link');
         if (reservation.route.trackerId || reservation.busIdentifier) {
-            const busId = reservation.route.trackerId || reservation.busIdentifier;
-            trackLink.href = `Suivi/suivi.html?bus=${busId}&booking=${reservation.bookingNumber}`;
+            trackLink.href = `Suivi/suivi.html?bus=${reservation.route.trackerId || reservation.busIdentifier}&booking=${reservation.bookingNumber}`;
             trackLink.style.display = 'inline-flex';
-            console.log(`🛰️ Lien de suivi configuré : bus=${busId}, booking=${reservation.bookingNumber}`);
         } else {
             trackLink.style.display = 'none';
-            console.warn('⚠️ Pas de trackerId disponible pour ce bus');
         }
         
-        // ✅ NETTOYER les anciennes instructions de paiement si elles existent
+        // Nettoyer les instructions de paiement si elles existent
         const oldInstructions = document.querySelector('.info-card-warning');
-        if (oldInstructions) {
-            oldInstructions.remove();
-        }
-    }
-
-    // ============================================
-    // ❌ CAS 3 : RÉSERVATION ANNULÉE
-    // ============================================
-    else if (isCancelled) {
-        confirmationTitle.textContent = "❌ Réservation annulée";
-        confirmationSubtitle.textContent = "Cette réservation a été annulée";
-        
-        statusBadge.className = 'status-badge';
-        statusBadge.style.background = 'linear-gradient(135deg, #ef5350 0%, #e53935 100%)';
-        statusBadge.innerHTML = `<span class="status-icon">✕</span><span>Annulé</span>`;
-        
-        qrSection.style.display = 'none';
-        actionsContainer.style.display = 'none';
-        infoCards.style.display = 'none';
-        
-        journeyCard.insertAdjacentHTML('beforebegin', `
-            <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(239, 83, 80, 0.1); border-color: #ef5350; margin-bottom: 24px;">
-                <div class="info-icon" style="font-size: 40px;">❌</div>
-                <div class="info-content">
-                    <h4>Réservation annulée</h4>
-                    <p>Cette réservation a été annulée. Les sièges ont été libérés.</p>
-                    <p style="margin-top: 10px;">Pour toute question, contactez notre service client : <strong>+242 06 123 4567</strong></p>
-                </div>
-            </div>
-        `);
-    }
-
-    // ============================================
-    // ⏰ CAS 4 : RÉSERVATION EXPIRÉE
-    // ============================================
-    else if (isExpired) {
-        confirmationTitle.textContent = "⏰ Réservation expirée";
-        confirmationSubtitle.textContent = "Le délai de paiement a expiré";
-        
-        statusBadge.className = 'status-badge';
-        statusBadge.style.background = 'linear-gradient(135deg, #78909c 0%, #607d8b 100%)';
-        statusBadge.innerHTML = `<span class="status-icon">⏰</span><span>Expiré</span>`;
-        
-        qrSection.style.display = 'none';
-        actionsContainer.style.display = 'none';
-        infoCards.style.display = 'none';
-        
-        journeyCard.insertAdjacentHTML('beforebegin', `
-            <div class="info-card info-card-warning" style="grid-column: 1 / -1; background: rgba(120, 144, 156, 0.1); border-color: #78909c; margin-bottom: 24px;">
-                <div class="info-icon" style="font-size: 40px;">⏰</div>
-                <div class="info-content">
-                    <h4>Délai de paiement expiré</h4>
-                    <p>Le délai de paiement pour cette réservation est dépassé. La réservation a été automatiquement annulée et les sièges ont été libérés.</p>
-                    <p style="margin-top: 10px;">Vous pouvez effectuer une nouvelle réservation en retournant à l'accueil.</p>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button class="btn btn-primary" onclick="showPage('home')" style="padding: 14px 28px;">
-                            <span style="font-size: 20px; margin-right: 8px;">🏠</span>
-                            Retour à l'accueil
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `);
-    }
-
-    // ============================================
-    // 🔄 CAS PAR DÉFAUT : Statut inconnu
-    // ============================================
-    else {
-        confirmationTitle.textContent = "⚠️ Statut inconnu";
-        confirmationSubtitle.textContent = `Statut actuel : ${reservation.status}`;
-        
-        statusBadge.className = 'status-badge';
-        statusBadge.style.background = 'linear-gradient(135deg, #9e9e9e 0%, #757575 100%)';
-        statusBadge.innerHTML = `<span class="status-icon">?</span><span>${reservation.status}</span>`;
-        
-        qrSection.style.display = 'none';
-        actionsContainer.style.display = 'none';
-        infoCards.style.display = 'none';
-        
-        console.warn(`⚠️ Statut de réservation non géré : ${reservation.status}`);
+        if (oldInstructions) oldInstructions.remove();
     }
 }
+
 window.addEventListener("DOMContentLoaded", initApp);
 
 
