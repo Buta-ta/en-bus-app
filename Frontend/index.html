@@ -430,108 +430,267 @@
       </div>
     </div>
     
-    <div id="payment-page" class="page">
-      <div class="container">
+    <!-- ============================================
+     💳 PAGE PAIEMENT
+     ============================================ -->
+<div id="payment-page" class="page">
+    <div class="container">
         <div class="page-header">
-          <button class="btn btn-secondary" onclick="showPage('passengers')">← Retour</button>
-          <h2>Paiement</h2>
+            <button class="btn btn-secondary" onclick="showPage('passengers')">← Retour</button>
+            <h2>Paiement</h2>
         </div>
+        
         <div class="payment-container">
-          <div class="booking-summary-card">
-            <h3>Récapitulatif</h3>
-            <div id="booking-summary" class="booking-details"></div>
-          </div>
-          <div class="payment-methods-card">
-    <h3>💳 Mode de paiement</h3>
-    <div class="payment-methods">
-        
-        <!-- MTN Mobile Money -->
-        <label class="payment-method">
-            <input type="radio" name="payment" value="mtn" checked/>
-            <div class="method-content">
-                <div class="method-icon">📱</div>
-                <div class="method-info">
-                    <strong>
-                        MTN Mobile Money
-                        <span class="method-badge">Rapide</span>
-                    </strong>
-                    <span>⚡ Paiement instantané via MTN</span>
+            <!-- Récapitulatif -->
+            <div class="booking-summary-card">
+                <h3>Récapitulatif</h3>
+                <div id="booking-summary" class="booking-details"></div>
+            </div>
+            
+            <!-- Méthodes de paiement -->
+            <div class="payment-methods-card">
+                <h3>💳 Mode de paiement</h3>
+                <div class="payment-methods">
+                    
+                    <!-- MTN Mobile Money -->
+                    <label class="payment-method">
+                        <input type="radio" name="payment" value="mtn" checked/>
+                        <div class="method-content">
+                            <div class="method-icon">📱</div>
+                            <div class="method-info">
+                                <strong>
+                                    MTN Mobile Money
+                                    <span class="method-badge">Rapide</span>
+                                </strong>
+                                <span>⚡ Paiement instantané via MTN</span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="payment-details-form" id="mtn-details">
+                        <div class="form-group">
+                            <label for="mtn-phone">📞 Numéro de téléphone MTN</label>
+                            <input type="tel" id="mtn-phone" class="form-control" placeholder="Ex: 06 123 4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="mtn-amount">💰 Montant à payer</label>
+                            <input type="text" id="mtn-amount" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="mtn-booking-ref">🎫 Référence de réservation</label>
+                            <input type="text" id="mtn-booking-ref" class="form-control" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Airtel Money -->
+                    <label class="payment-method">
+                        <input type="radio" name="payment" value="airtel"/>
+                        <div class="method-content">
+                            <div class="method-icon">📱</div>
+                            <div class="method-info">
+                                <strong>Airtel Money</strong>
+                                <span>⚡ Paiement instantané via Airtel</span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="payment-details-form" id="airtel-details" style="display:none;">
+                        <div class="form-group">
+                            <label for="airtel-phone">📞 Numéro de téléphone Airtel</label>
+                            <input type="tel" id="airtel-phone" class="form-control" placeholder="Ex: 05 123 4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="airtel-amount">💰 Montant à payer</label>
+                            <input type="text" id="airtel-amount" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="airtel-booking-ref">🎫 Référence de réservation</label>
+                            <input type="text" id="airtel-booking-ref" class="form-control" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Paiement en agence -->
+                    <label class="payment-method" id="agency-payment-option">
+                        <input type="radio" name="payment" value="agency"/>
+                        <div class="method-content">
+                            <div class="method-icon">🏢</div>
+                            <div class="method-info">
+                                <strong>Paiement à l'agence</strong>
+                                <span id="agency-payment-subtitle">⏰ Payez dans les 10h à l'agence</span>
+                            </div>
+                        </div>
+                    </label>
+                    <div class="payment-details-form" id="agency-details" style="display:none;">
+                        <div class="agency-info-box">
+                            <h4>📍 Agence la plus proche</h4>
+                            <div id="selected-agency-info"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>⏰ Vous devez payer avant :</label>
+                            <input type="text" id="agency-deadline" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>📋 Référence de réservation</label>
+                            <input type="text" id="agency-booking-ref" class="form-control" readonly>
+                        </div>
+                        <div class="info-note">
+                            <strong>⚠️ Important :</strong>
+                            <ul style="margin: 10px 0 0 20px; font-size: 14px;">
+                                <li>Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué dans les 10h</li>
+                                <li>Présentez-vous à l'agence avec une pièce d'identité</li>
+                                <li>Le numéro de réservation sera requis</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </label>
-        <div class="payment-details-form" id="mtn-details">
-            <div class="form-group">
-                <label for="mtn-phone">📞 Numéro de téléphone MTN</label>
-                <input type="tel" id="mtn-phone" class="form-control" placeholder="Ex: 06 123 4567">
-            </div>
-            <div class="form-group">
-                <label for="mtn-amount">💰 Montant à payer</label>
-                <input type="text" id="mtn-amount" class="form-control" readonly>
-            </div>
-            <div class="form-group">
-                <label for="mtn-booking-ref">🎫 Référence de réservation</label>
-                <input type="text" id="mtn-booking-ref" class="form-control" readonly>
             </div>
         </div>
-        
-        <!-- Airtel Money -->
-        <label class="payment-method">
-            <input type="radio" name="payment" value="airtel"/>
-            <div class="method-content">
-                <div class="method-icon">📱</div>
-                <div class="method-info">
-                    <strong>Airtel Money</strong>
-                    <span>⚡ Paiement instantané via Airtel</span>
-                </div>
-            </div>
-        </label>
-        <div class="payment-details-form" id="airtel-details" style="display:none;">
-            <div class="form-group">
-                <label for="airtel-phone">📞 Numéro de téléphone Airtel</label>
-                <input type="tel" id="airtel-phone" class="form-control" placeholder="Ex: 05 123 4567">
-            </div>
-            <div class="form-group">
-                <label for="airtel-amount">💰 Montant à payer</label>
-                <input type="text" id="airtel-amount" class="form-control" readonly>
-            </div>
-            <div class="form-group">
-                <label for="airtel-booking-ref">🎫 Référence de réservation</label>
-                <input type="text" id="airtel-booking-ref" class="form-control" readonly>
-            </div>
+
+        <!-- ✅ BOUTONS DE LA PAGE PAIEMENT (À L'INTÉRIEUR DE payment-page) -->
+        <div class="page-actions">
+            <button class="btn btn-secondary" onclick="showPage('passengers')">Retour</button>
+            <button class="btn btn-primary btn-large" onclick="confirmBooking(this)">Confirmer la Réservation</button>
         </div>
         
-        <!-- Paiement en agence -->
-        <label class="payment-method" id="agency-payment-option">
-            <input type="radio" name="payment" value="agency"/>
-            <div class="method-content">
-                <div class="method-icon">🏢</div>
-                <div class="method-info">
-                    <strong>Paiement à l'agence</strong>
-                    <span id="agency-payment-subtitle">⏰ Payez dans les 10h à l'agence</span>
+    </div>
+</div>
+<!-- ✅ FIN DE payment-page -->
+
+<!-- ============================================
+     💳 PAGE INSTRUCTIONS DE PAIEMENT
+     ============================================ -->
+<div id="payment-instructions-page" class="page">
+    <div class="container">
+        <!-- Contenu généré dynamiquement par displayPaymentInstructions() -->
+    </div>
+</div>
+
+<!-- ============================================
+     ✅ PAGE CONFIRMATION
+     ============================================ -->
+<div id="confirmation-page" class="page">
+    <div class="container">
+        <div class="confirmation-container-modern">
+            
+            <!-- Animation de succès -->
+            <div class="success-animation">
+                <div class="success-checkmark">
+                    <div class="check-icon">
+                        <span class="icon-line line-tip"></span>
+                        <span class="icon-line line-long"></span>
+                        <div class="icon-circle"></div>
+                        <div class="icon-fix"></div>
+                    </div>
                 </div>
             </div>
-        </label>
-        <div class="payment-details-form" id="agency-details" style="display:none;">
-            <div class="agency-info-box">
-                <h4>📍 Agence la plus proche</h4>
-                <div id="selected-agency-info"></div>
+
+            <h1 class="confirmation-title">Réservation confirmée !</h1>
+            <p class="confirmation-subtitle">Votre billet a été réservé avec succès</p>
+
+            <!-- Carte de confirmation principale -->
+            <div class="confirmation-card-modern">
+                
+                <!-- En-tête avec numéro de réservation -->
+                <div class="confirmation-header">
+                    <div class="booking-badge">
+                        <span class="badge-label">N° de réservation</span>
+                        <span id="booking-number-display" class="badge-number"></span>
+                    </div>
+                    <div class="status-badge status-confirmed">
+                        <span class="status-icon">✓</span>
+                        <span>Confirmé</span>
+                    </div>
+                </div>
+
+                <!-- Détails du voyage -->
+                <div class="journey-card">
+                    <div class="journey-route">
+                        <div class="route-point route-origin">
+                            <div class="point-icon">📍</div>
+                            <div class="point-info">
+                                <span class="point-label">Départ</span>
+                                <span id="conf-origin" class="point-city"></span>
+                                <span id="conf-date" class="point-date"></span>
+                                <span id="conf-time" class="point-time"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="route-connector">
+                            <div class="connector-line"></div>
+                            <div class="connector-icon">🚌</div>
+                            <div class="connector-duration" id="conf-duration"></div>
+                        </div>
+                        
+                        <div class="route-point route-destination">
+                            <div class="point-icon">🏁</div>
+                            <div class="point-info">
+                                <span class="point-label">Arrivée</span>
+                                <span id="conf-destination" class="point-city"></span>
+                                <span id="conf-arrival-time" class="point-time"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails complets -->
+                <div id="confirmation-details" class="details-grid-modern"></div>
+
+                <!-- QR Code -->
+                <div class="qr-section-modern">
+                    <div class="qr-container">
+                        <div id="qr-placeholder" class="qr-code-box"></div>
+                        <div class="qr-info">
+                            <p class="qr-title">🎫 Votre billet électronique</p>
+                            <p class="qr-instruction">Présentez ce QR code à l'embarquement</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations importantes -->
+                <div class="info-cards">
+                    <div class="info-card info-card-warning">
+                        <div class="info-icon">⏰</div>
+                        <div class="info-content">
+                            <h4>Arrivez à l'avance</h4>
+                            <p>Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card info-card-info">
+                        <div class="info-icon">🎒</div>
+                        <div class="info-content">
+                            <h4>Bagages inclus</h4>
+                            <p>1 bagage en soute (20kg) + 1 bagage à main</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>⏰ Vous devez payer avant :</label>
-                <input type="text" id="agency-deadline" class="form-control" readonly>
+
+            <!-- Actions -->
+            <div class="confirmation-actions-modern">
+                <button class="btn-modern btn-download" onclick="downloadTicket()">
+                    <span class="btn-icon">📥</span>
+                    <span class="btn-text">Télécharger le billet</span>
+                </button>
+                
+                <a id="track-bus-link" class="btn-modern btn-track" href="#" style="display: none;">
+                    <span class="btn-icon">🛰️</span>
+                    <span class="btn-text">Suivre mon bus en temps réel</span>
+                </a>
+                
+                <button class="btn-modern btn-home" onclick="showPage('home')">
+                    <span class="btn-icon">🏠</span>
+                    <span class="btn-text">Retour à l'accueil</span>
+                </button>
             </div>
-            <div class="form-group">
-                <label>📋 Référence de réservation</label>
-                <input type="text" id="agency-booking-ref" class="form-control" readonly>
+
+            <!-- Footer avec support -->
+            <div class="confirmation-footer">
+                <p>Besoin d'aide ? Contactez-nous :</p>
+                <div class="contact-links">
+                    <a href="tel:+242061234567">📞 +242 06 123 4567</a>
+                    <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
+                </div>
             </div>
-            <div class="info-note">
-                <strong>⚠️ Important :</strong>
-                <ul style="margin: 10px 0 0 20px; font-size: 14px;">
-                    <li>Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué dans les 10h</li>
-                    <li>Présentez-vous à l'agence avec une pièce d'identité</li>
-                    <li>Le numéro de réservation sera requis</li>
-                </ul>
-            </div>
+
         </div>
     </div>
 </div>
