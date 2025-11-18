@@ -1659,6 +1659,42 @@ app.get('/api/reservations/check/:bookingNumber', async (req, res) => {
 });
 
 
+// Dans server.js - AJOUTER après la route /api/reservations/check/:bookingNumber
+
+// ============================================
+// 📦 RÉCUPÉRER UNE RÉSERVATION COMPLÈTE
+// ============================================
+
+app.get('/api/reservations/:bookingNumber', async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+        
+        console.log(`📦 Récupération de la réservation : ${bookingNumber}`);
+        
+        const reservation = await reservationsCollection.findOne({ bookingNumber: bookingNumber });
+        
+        if (!reservation) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Réservation introuvable' 
+            });
+        }
+        
+        // ✅ RETOURNER LA RÉSERVATION COMPLÈTE
+        res.json({
+            success: true,
+            reservation: reservation
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur récupération réservation:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Erreur serveur' 
+        });
+    }
+});
+
 // ============================================
 // DÉMARRAGE
 // ============================================
