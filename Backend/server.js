@@ -901,14 +901,14 @@ app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
 
 // 🧪 SIMULATION SUCCÈS PAIEMENT (SANDBOX UNIQUEMENT)
 app.post('/api/payment/mtn/simulate-success/:transactionId', async (req, res) => {
-    // Sécurité : uniquement en développement/sandbox
+    // Sécurité : uniquement en sandbox
     if (process.env.NODE_ENV === 'production' && process.env.MTN_ENVIRONMENT === 'production') {
         return res.status(403).json({ error: 'Route désactivée en production' });
     }
     
     try {
         const { transactionId } = req.params;
-        console.log(`🧪 Simulation succès paiement: ${transactionId}`);
+        console.log(`🧪 Simulation succès pour: ${transactionId}`);
         
         const reservation = await reservationsCollection.findOneAndUpdate(
             { paymentTransactionId: transactionId },
@@ -928,23 +928,30 @@ app.post('/api/payment/mtn/simulate-success/:transactionId', async (req, res) =>
             { returnDocument: 'after' }
         );
         
-        if (reservation.value) {
-            console.log(`✅ Réservation ${reservation.value.bookingNumber} confirmée`);
-            sendConfirmationEmail(reservation.value);
-            
-            res.json({ 
-                success: true, 
-                message: 'Paiement simulé avec succès',
-                bookingNumber: reservation.value.bookingNumber
-            });
-        } else {
+        // ✅ CORRECTION : Vérifier AVANT d'accéder à .value
+        if (!reservation || !reservation.value) {
             console.warn(`⚠️ Transaction ${transactionId} non trouvée dans la BDD`);
-            res.status(404).json({ error: 'Transaction non trouvée dans la BDD' });
+            return res.status(404).json({ 
+                success: false,
+                error: 'Transaction non trouvée dans la base de données' 
+            });
         }
+        
+        console.log(`✅ Réservation ${reservation.value.bookingNumber} confirmée`);
+        sendConfirmationEmail(reservation.value);
+        
+        res.json({ 
+            success: true, 
+            message: 'Paiement simulé avec succès',
+            bookingNumber: reservation.value.bookingNumber
+        });
         
     } catch (error) {
         console.error('❌ Erreur simulation:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
     }
 });
 // ============================================
