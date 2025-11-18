@@ -673,41 +673,47 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
         }
 
         if (action === 'confirm-payment') {
-            if (reservation.status !== 'En attente de paiement') {
-                return res.status(400).json({ error: 'Pas en attente de paiement.' });
-            }
-            
-            // ✅ Mise à jour complète avec détails du paiement
-            await reservationsCollection.updateOne(
-                { _id: reservation._id }, 
-                { 
-                    $set: { 
-                        status: 'Confirmé', 
-                        confirmedAt: new Date(),
-                        paymentDetails: {
-                            method: reservation.paymentMethod || 'UNKNOWN',
-                            customerPhone: reservation.customerPhone || 'N/A',
-                            confirmedByAdmin: req.user?.username || 'admin',
-                            confirmedAt: new Date()
-                        }
-                    } 
+    if (reservation.status !== 'En attente de paiement') {
+        return res.status(400).json({ error: 'Pas en attente de paiement.' });
+    }
+    
+    // ✅ RÉCUPÉRER LA PREUVE DE TRANSACTION (OBLIGATOIRE)
+    const { transactionProof } = req.body;
+    
+    if (!transactionProof || transactionProof.trim() === '') {
+        return res.status(400).json({ 
+            error: 'Veuillez saisir une preuve de transaction (ID transaction, référence, capture d\'écran, etc.)' 
+        });
+    }
+    
+    // ✅ Mise à jour avec preuve de transaction
+    await reservationsCollection.updateOne(
+        { _id: reservation._id }, 
+        { 
+            $set: { 
+                status: 'Confirmé', 
+                confirmedAt: new Date(),
+                paymentDetails: {
+                    method: reservation.paymentMethod || 'UNKNOWN',
+                    customerPhone: reservation.customerPhone || 'N/A',
+                    transactionProof: transactionProof.trim(), // ✅ NOUVEAU
+                    confirmedByAdmin: req.user?.username || 'admin',
+                    confirmedAt: new Date()
                 }
-            );
-            
-            // ✅ Récupérer la réservation mise à jour pour l'email
-            const updatedReservation = await reservationsCollection.findOne({ _id: reservation._id });
-            
-            // ✅ Envoyer l'email de confirmation
-            sendConfirmationEmail(updatedReservation);
-            
-            console.log(`✅ Paiement confirmé pour ${reservation.bookingNumber} par ${req.user?.username || 'admin'}`);
-            
-            return res.json({ 
-                success: true, 
-                message: 'Paiement confirmé avec succès !' 
-            });
+            } 
         }
-
+    );
+    
+    const updatedReservation = await reservationsCollection.findOne({ _id: reservation._id });
+    sendConfirmationEmail(updatedReservation);
+    
+    console.log(`✅ Paiement confirmé pour ${reservation.bookingNumber} par ${req.user?.username || 'admin'} (Preuve: ${transactionProof})`);
+    
+    return res.json({ 
+        success: true, 
+        message: 'Paiement confirmé avec succès !' 
+    });
+}
         if (action === 'cancel') {
             if (reservation.status === 'Annulé' || reservation.status === 'Expiré') {
                 return res.status(400).json({ error: 'Déjà annulée ou expirée.' });
@@ -1431,10 +1437,8 @@ function sendPaymentExpirationEmail(reservation) {
 // CRON JOBS
 // ============================================
 
-// Dans server.js - Remplacer le CRON existant
-
 if (process.env.NODE_ENV === 'production' && process.env.CRON_ENABLED === 'true') {
-    cron.schedule('*/5 * * * *', async () => {  // ✅ Toutes les 5 minutes au lieu de 1 heure
+    cron.schedule('*/5 * * * *', async () => {
         const now = new Date();
         const expiredReservations = await reservationsCollection.find({
             status: 'En attente de paiement',
@@ -1480,7 +1484,6 @@ if (process.env.NODE_ENV === 'production' && process.env.CRON_ENABLED === 'true'
     });
     console.log('✅ Cron jobs activés (vérification toutes les 5 minutes).');
 }
-
 // ============================================
 // WEBSOCKET
 // ============================================
