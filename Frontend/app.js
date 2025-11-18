@@ -2507,75 +2507,163 @@ window.confirmBooking = async function(buttonElement) {
         console.log('🛰️ BusIdentifier aller:', reservation.busIdentifier);
 
         // ============================================
+        // 💳 TRAITEMENT SELON LE MODE DE PAIEMENT
         // ============================================
-// 💳 TRAITEMENT SELON LE MODE DE PAIEMENT
-// ============================================
 
-if (paymentMethod === 'mtn') {
-    console.log('💳 Paiement MTN manuel sélectionné');
-    
-    const phoneInput = document.getElementById('mtn-phone');
-    let phone = phoneInput.value.trim();
-    console.log('Numéro MTN saisi:', phone);
-    
-    if (!phone || !Utils.validatePhone(phone)) {
-        throw new Error('Numéro MTN invalide');
+        if (paymentMethod === 'mtn') {
+            console.log('🔵 ENTRÉE DANS LE BLOC MTN');
+            
+            const phoneInput = document.getElementById('mtn-phone');
+            let phone = phoneInput.value.trim();
+            console.log('3. Numéro MTN saisi:', phone);
+            
+            if (!phone || !Utils.validatePhone(phone)) {
+                throw new Error('Numéro MTN invalide');
+            }
+
+            // ✅ AJOUT DU STATUS POUR MTN
+            reservation.status = 'En attente de paiement';
+            console.log('5. Enregistrement de la réservation en attente...');
+            
+            showLoading('Enregistrement...');
+            await saveReservationToBackend(reservation);
+
+            console.log('7. Initiation du paiement MTN...');
+            showLoading('Initialisation MTN...');
+            
+            const paymentURL = `${API_CONFIG.baseUrl}/api/payment/mtn/initiate`;
+            console.log('8. URL du paiement:', paymentURL);
+            
+            const paymentPayload = {
+                phone,
+                amount: finalTotalPriceNumeric,
+                bookingNumber,
+                customerName: appState.passengerInfo[0].name
+            };
+            console.log('9. Payload envoyé:', paymentPayload);
+            
+            const paymentResponse = await fetch(paymentURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paymentPayload)
+            });
+
+            console.log('10. Statut réponse MTN:', paymentResponse.status);
+            
+            const responseText = await paymentResponse.text();
+            console.log('11. Réponse brute:', responseText);
+            
+            let paymentData;
+            try {
+                paymentData = JSON.parse(responseText);
+            } catch (e) {
+                console.error('❌ Réponse non-JSON:', responseText);
+                throw new Error('Réponse serveur invalide');
+            }
+            
+            console.log('12. Données de paiement parsées:', paymentData);
+
+            if (!paymentResponse.ok || !paymentData.success) {
+                throw new Error(paymentData.error || 'Erreur initiation paiement');
+            }
+
+            console.log('13. Transaction ID:', paymentData.transactionId);
+            Utils.showToast('✅ Demande envoyée ! Vérification...', 'info');
+            showLoading('Vérification du paiement...');
+
+            // Vérification du statut
+            let checks = 0;
+            const maxChecks = 12; // 1 minute au lieu de 5
+            
+            const paymentChecker = setInterval(async () => {
+                checks++;
+                console.log(`14. Vérification N°${checks}/${maxChecks}`);
+
+                try {
+                    const statusRes = await fetch(`${API_CONFIG.baseUrl}/api/payment/mtn/status/${paymentData.transactionId}`);
+                    const statusData = await statusRes.json();
+                    
+                    console.log(`15. Statut reçu (check ${checks}):`, statusData);
+
+                    if (statusData.success && statusData.status === 'SUCCESSFUL') {
+                        clearInterval(paymentChecker);
+                        console.log('🎉 PAIEMENT CONFIRMÉ !');
+                        Utils.showToast('✅ Paiement confirmé avec succès !', 'success');
+                        
+                        reservation.status = 'Confirmé';
+                        appState.currentReservation = reservation;
+                        displayConfirmation(reservation);
+                        showPage("confirmation");
+                        
+                    } else if (statusData.status === 'FAILED') {
+                        clearInterval(paymentChecker);
+                        throw new Error('Paiement refusé par MTN');
+                        
+                    } else if (checks >= maxChecks) {
+                        clearInterval(paymentChecker);
+                        
+                        // ⚠️ EN SANDBOX : Proposer de simuler
+                        if (confirm('⏱️ Délai dépassé (normal en sandbox).\n\n🧪 Voulez-vous SIMULER le succès du paiement pour tester ?')) {
+                            const simulateRes = await fetch(`${API_CONFIG.baseUrl}/api/payment/mtn/simulate-success/${paymentData.transactionId}`, {
+                                method: 'POST'
+                            });
+                            const simulateData = await simulateRes.json();
+                            
+                            if (simulateData.success) {
+                                Utils.showToast('✅ Paiement simulé avec succès !', 'success');
+                                reservation.status = 'Confirmé';
+                                appState.currentReservation = reservation;
+                                displayConfirmation(reservation);
+                                showPage("confirmation");
+                            } else {
+                                throw new Error('Erreur de simulation');
+                            }
+                        } else {
+                            throw new Error('Délai de vérification expiré');
+                        }
+                    }
+                } catch (err) {
+                    clearInterval(paymentChecker);
+                    console.error('❌ Erreur vérification:', err);
+                    Utils.showToast(err.message, 'error');
+                    buttonElement.disabled = false;
+                    buttonElement.innerHTML = originalButtonText;
+                }
+
+            }, 5000);
+
+        } else if (paymentMethod === 'agency') {
+            if (!canPayAtAgency()) throw new Error("Le paiement en agence n'est plus disponible.");
+
+            // ✅ AJOUT DU STATUS POUR AGENCE
+            reservation.status = 'En attente de paiement';
+            reservation.paymentDeadline = calculatePaymentDeadline().toISOString();
+            reservation.agency = getNearestAgency(appState.selectedBus.from);
+            
+            await saveReservationToBackend(reservation);
+            
+            appState.currentReservation = reservation;
+            displayConfirmation(reservation);
+            showPage("confirmation");
+
+            Utils.showToast(`Réservation enregistrée !`, 'success');
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalButtonText;
+
+        } else {
+            throw new Error('Méthode de paiement non supportée');
+        }
+
+    } catch (error) {
+        console.error('❌ ERREUR GLOBALE:', error);
+        console.groupEnd();
+        Utils.showToast(error.message, 'error');
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = originalButtonText;
     }
-
-    // ✅ Créer réservation en attente de paiement
-    reservation.status = 'En attente de paiement';
-    reservation.paymentMethod = 'MTN';
-    reservation.customerPhone = phone;
-    reservation.paymentDeadline = new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString(); // 10 heures
-    reservation.paymentInstructions = {
-        merchantNumber: '+242 06 150 79 47', // ✅ REMPLACEZ PAR VOTRE NUMÉRO MTN MARCHAND
-        amount: finalTotalPriceNumeric,
-        reference: bookingNumber
-    };
-    
-    console.log('Enregistrement de la réservation...');
-    showLoading('Enregistrement...');
-    await saveReservationToBackend(reservation);
-    
-    // ✅ Redirection immédiate vers la page de confirmation
-    appState.currentReservation = reservation;
-    displayConfirmation(reservation);
-    showPage("confirmation");
-    
-    Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions de paiement MTN.', 'success');
-    buttonElement.disabled = false;
-    buttonElement.innerHTML = originalButtonText;
-
-} else if (paymentMethod === 'agency') {
-    if (!canPayAtAgency()) throw new Error("Le paiement en agence n'est plus disponible.");
-
-    // ✅ Réservation en attente pour paiement agence
-    reservation.status = 'En attente de paiement';
-    reservation.paymentDeadline = calculatePaymentDeadline().toISOString();
-    reservation.agency = getNearestAgency(appState.selectedBus.from);
-    
-    await saveReservationToBackend(reservation);
-    
-    appState.currentReservation = reservation;
-    displayConfirmation(reservation);
-    showPage("confirmation");
-
-    Utils.showToast('✅ Réservation enregistrée !', 'success');
-    buttonElement.disabled = false;
-    buttonElement.innerHTML = originalButtonText;
-
-} else {
-    throw new Error('Méthode de paiement non supportée');
-}
-
-} catch (error) {
-    console.error('❌ ERREUR GLOBALE:', error);
-    console.groupEnd();
-    Utils.showToast(error.message, 'error');
-    buttonElement.disabled = false;
-    buttonElement.innerHTML = originalButtonText;
-}
 };
+
+
 // ============================================
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
 // ============================================
