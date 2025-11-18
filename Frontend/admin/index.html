@@ -2178,6 +2178,35 @@ async function performAction(reservationId, action) {
        // Dans Admin/index.html (section <script>)
 // Dans Admin/index.html - Remplacer showDetails existante
 
+
+// ============================================
+// 🔄 FORCER LE CHARGEMENT AU DÉMARRAGE
+// ============================================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Chargement de la page admin...');
+    
+    if (await verifyToken()) {
+        console.log('✅ Token valide, chargement des données...');
+        showDashboard();
+        await loadAdminData(); // ✅ FORCER LE CHARGEMENT
+        startInactivityDetection();
+    } else {
+        console.log('❌ Token invalide, affichage du login');
+        localStorage.removeItem('admin_token');
+        showLogin();
+    }
+    
+    setupEventListeners();
+    buildDaysSelector();
+    
+    flatpickr("#trip-dates", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        locale: "fr",
+        minDate: "today"
+    });
+});
+
 function showDetails(reservationId) {
     const r = allReservations.find(res => res._id === reservationId); 
     if (!r) {
