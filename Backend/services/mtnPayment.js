@@ -1,7 +1,6 @@
 // Backend/services/mtnPayment.js
 
 const axios = require('axios');
-const crypto = require('crypto');
 
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -11,184 +10,196 @@ function generateUUID() {
     });
 }
 
-class MTNPaymentService {
-    constructor() {
-        this.environment = process.env.MTN_ENVIRONMENT || 'sandbox';
-        
-        this.baseURL = this.environment === 'production'
-            ? 'https://proxy.momoapi.mtn.com'
-            : 'https://sandbox.momodeveloper.mtn.com';
-        
-        // ✅ CORRECTION : Pas de path global
-        this.primaryKey = process.env.MTN_COLLECTION_PRIMARY_KEY;
-        this.userId = process.env.MTN_COLLECTION_USER_ID;
-        this.apiKey = process.env.MTN_COLLECTION_API_KEY;
-        
-        this.accessToken = null;
-        this.tokenExpiry = null;
+const MTN_CONFIG = {
+    environment: process.env.MTN_ENVIRONMENT || 'sandbox',
+    baseURL: process.env.MTN_ENVIRONMENT === 'production'
+        ? 'https://proxy.momoapi.mtn.com'
+        : 'https://sandbox.momodeveloper.mtn.com',
+    primaryKey: process.env.MTN_COLLECTION_PRIMARY_KEY,
+    userId: process.env.MTN_COLLECTION_USER_ID,
+    apiKey: process.env.MTN_COLLECTION_API_KEY
+};
+
+let cachedToken = null;
+let tokenExpiry = null;
+
+console.log('🔐 MTN Service chargé:', {
+    environment: MTN_CONFIG.environment,
+    baseURL: MTN_CONFIG.baseURL,
+    hasPrimaryKey: !!MTN_CONFIG.primaryKey,
+    hasUserId: !!MTN_CONFIG.userId,
+    hasApiKey: !!MTN_CONFIG.apiKey
+});
+
+async function getAccessToken() {
+    // Réutiliser le token si valide
+    if (cachedToken && tokenExpiry && new Date() < tokenExpiry) {
+        console.log('♻️ Token existant réutilisé');
+        return cachedToken;
     }
 
-    async getAccessToken() {
-        if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-            console.log('♻️ Réutilisation token existant');
-            return this.accessToken;
-        }
-
-        try {
-            console.log('\n🔑 Obtention token MTN');
-            console.log('URL:', `${this.baseURL}/collection/token/`);
-            
-            const credentials = Buffer.from(`${this.userId}:${this.apiKey}`).toString('base64');
-            
-            // ✅ CORRECTION : URL correcte pour le token
-            const response = await axios.post(
-                `${this.baseURL}/collection/token/`,
-                {},
-                {
-                    headers: {
-                        'Authorization': `Basic ${credentials}`,
-                        'Ocp-Apim-Subscription-Key': this.primaryKey
-                    }
-                }
-            );
-
-            this.accessToken = response.data.access_token;
-            this.tokenExpiry = new Date(Date.now() + 55 * 60 * 1000);
-
-            console.log('✅ Token MTN obtenu');
-            return this.accessToken;
-
-        } catch (error) {
-            console.error('❌ Erreur token MTN:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
-            });
-            throw new Error('Impossible d\'obtenir le token MTN');
-        }
-    }
-
-    async requestToPay(phone, amount, currency, reference, payerMessage) {
-        try {
-            const token = await this.getAccessToken();
-            const transactionId = generateUUID();
-            const formattedPhone = phone.replace(/\D/g, '');
-            
-            const payload = {
-                amount: amount.toString(),
-                currency: currency,
-                externalId: reference,
-                payer: {
-                    partyIdType: 'MSISDN',
-                    partyId: formattedPhone
+    try {
+        console.log('🔑 Demande nouveau token MTN');
+        
+        const credentials = Buffer.from(`${MTN_CONFIG.userId}:${MTN_CONFIG.apiKey}`).toString('base64');
+        
+        const response = await axios.post(
+            `${MTN_CONFIG.baseURL}/collection/token/`,
+            {},
+            {
+                headers: {
+                    'Authorization': `Basic ${credentials}`,
+                    'Ocp-Apim-Subscription-Key': MTN_CONFIG.primaryKey
                 },
-                payerMessage: payerMessage || 'Paiement En-Bus',
-                payeeNote: `Réservation ${reference}`
-            };
+                timeout: 10000
+            }
+        );
 
-            console.log('📤 Request to Pay MTN');
-            console.log('URL:', `${this.baseURL}/collection/v1_0/requesttopay`);
+        cachedToken = response.data.access_token;
+        tokenExpiry = new Date(Date.now() + 55 * 60 * 1000); // 55 min
 
-            // ✅ CORRECTION : URL correcte pour requesttopay
-            await axios.post(
-                `${this.baseURL}/collection/v1_0/requesttopay`,
-                payload,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-Reference-Id': transactionId,
-                        'X-Target-Environment': this.environment,
-                        'Ocp-Apim-Subscription-Key': this.primaryKey,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+        console.log('✅ Token obtenu (expire dans 55min)');
+        return cachedToken;
 
-            console.log('✅ Paiement MTN initié:', transactionId);
-
-            return {
-                success: true,
-                transactionId: transactionId,
-                status: 'PENDING',
-                message: 'Paiement initié. Veuillez confirmer sur votre téléphone.'
-            };
-
-        } catch (error) {
-            console.error('❌ Erreur requestToPay:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
-            });
-            
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Erreur lors de l\'initiation du paiement MTN',
-                details: error.response?.data
-            };
-        }
-    }
-
-    async getTransactionStatus(transactionId) {
-        try {
-            const token = await this.getAccessToken();
-
-            // ✅ CORRECTION : URL correcte pour le statut
-            const response = await axios.get(
-                `${this.baseURL}/collection/v1_0/requesttopay/${transactionId}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-Target-Environment': this.environment,
-                        'Ocp-Apim-Subscription-Key': this.primaryKey
-                    }
-                }
-            );
-
-            console.log('📊 Statut MTN:', response.data);
-
-            return {
-                success: true,
-                status: response.data.status,
-                amount: response.data.amount,
-                currency: response.data.currency,
-                externalId: response.data.externalId,
-                reason: response.data.reason
-            };
-
-        } catch (error) {
-            console.error('❌ Erreur statut MTN:', error.response?.data || error.message);
-            
-            return {
-                success: false,
-                error: 'Impossible de vérifier le statut du paiement'
-            };
-        }
-    }
-
-    async getAccountBalance() {
-        try {
-            const token = await this.getAccessToken();
-
-            // ✅ CORRECTION : URL correcte pour le solde
-            const response = await axios.get(
-                `${this.baseURL}/collection/v1_0/account/balance`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'X-Target-Environment': this.environment,
-                        'Ocp-Apim-Subscription-Key': this.primaryKey
-                    }
-                }
-            );
-
-            console.log('💰 Solde MTN:', response.data);
-            return response.data;
-
-        } catch (error) {
-            console.error('❌ Erreur solde:', error.response?.data || error.message);
-            return null;
-        }
+    } catch (error) {
+        console.error('❌ Erreur token MTN:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
+        throw new Error(`Impossible d'obtenir le token: ${error.response?.data?.error || error.message}`);
     }
 }
 
-module.exports = new MTNPaymentService();
+async function requestToPay(phone, amount, currency, reference, payerMessage) {
+    try {
+        console.log('💳 MTN RequestToPay:', { phone, amount, currency, reference });
+
+        const token = await getAccessToken();
+        const transactionId = generateUUID();
+        const formattedPhone = phone.replace(/\D/g, '');
+        
+        const payload = {
+            amount: amount.toString(),
+            currency: currency,
+            externalId: reference,
+            payer: {
+                partyIdType: 'MSISDN',
+                partyId: formattedPhone
+            },
+            payerMessage: payerMessage || 'Paiement En-Bus',
+            payeeNote: `Réservation ${reference}`
+        };
+
+        console.log('📤 Payload:', payload);
+        console.log('TransactionId:', transactionId);
+
+        const response = await axios.post(
+            `${MTN_CONFIG.baseURL}/collection/v1_0/requesttopay`,
+            payload,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Reference-Id': transactionId,
+                    'X-Target-Environment': MTN_CONFIG.environment,
+                    'Ocp-Apim-Subscription-Key': MTN_CONFIG.primaryKey,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 15000
+            }
+        );
+
+        console.log('✅ MTN accepté, status:', response.status);
+
+        return {
+            success: true,
+            transactionId: transactionId,
+            status: 'PENDING',
+            message: 'Demande envoyée. Confirmez sur votre téléphone.'
+        };
+
+    } catch (error) {
+        console.error('❌ RequestToPay error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        
+        return {
+            success: false,
+            error: error.response?.data?.message || 'Erreur lors de l\'initiation du paiement MTN',
+            details: error.response?.data
+        };
+    }
+}
+
+async function getTransactionStatus(transactionId) {
+    try {
+        console.log(`🔍 Vérif statut MTN: ${transactionId}`);
+
+        const token = await getAccessToken();
+
+        const response = await axios.get(
+            `${MTN_CONFIG.baseURL}/collection/v1_0/requesttopay/${transactionId}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Target-Environment': MTN_CONFIG.environment,
+                    'Ocp-Apim-Subscription-Key': MTN_CONFIG.primaryKey
+                },
+                timeout: 10000
+            }
+        );
+
+        console.log('📊 Statut:', response.data.status);
+
+        return {
+            success: true,
+            status: response.data.status,
+            amount: response.data.amount,
+            currency: response.data.currency,
+            externalId: response.data.externalId,
+            reason: response.data.reason
+        };
+
+    } catch (error) {
+        console.error('❌ GetStatus error:', error.response?.data || error.message);
+        
+        return {
+            success: false,
+            error: 'Impossible de vérifier le statut'
+        };
+    }
+}
+
+async function getAccountBalance() {
+    try {
+        const token = await getAccessToken();
+
+        const response = await axios.get(
+            `${MTN_CONFIG.baseURL}/collection/v1_0/account/balance`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-Target-Environment': MTN_CONFIG.environment,
+                    'Ocp-Apim-Subscription-Key': MTN_CONFIG.primaryKey
+                }
+            }
+        );
+
+        console.log('💰 Solde:', response.data);
+        return response.data;
+
+    } catch (error) {
+        console.error('❌ Erreur solde:', error.response?.data || error.message);
+        return null;
+    }
+}
+
+module.exports = {
+    getAccessToken,
+    requestToPay,
+    getTransactionStatus,
+    getAccountBalance
+};
