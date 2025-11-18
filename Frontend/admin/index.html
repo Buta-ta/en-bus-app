@@ -2130,14 +2130,35 @@ async function performAction(reservationId, action) {
     }
 }
 
-        async function confirmPayment(bookingNumber) {
-            if (!confirm(`Confirmer le paiement pour ${bookingNumber} ?`)) return;
-            const data = await apiCall(`/reservations/${bookingNumber}/confirm-payment`, 'PATCH');
-            if (data) {
-                showNotification('Paiement confirmé avec succès', 'success');
-                loadAdminData();
-            }
-        }
+        if (action === 'confirm-payment') {
+    // ✅ DEMANDER UNE PREUVE DE TRANSACTION
+    const transactionProof = prompt(`🔍 Confirmer le paiement pour ${reservation.bookingNumber}\n\nVeuillez saisir la preuve de transaction :\n(ID transaction, référence SMS, capture d'écran, etc.)`);
+    
+    if (!transactionProof || transactionProof.trim() === '') {
+        showNotification('❌ Preuve de transaction requise', 'error');
+        return;
+    }
+    
+    confirmMessage = `Confirmer le paiement pour la réservation ${reservation.bookingNumber} ?\n\nPassager : ${reservation.passengers[0]?.name}\nMontant : ${reservation.totalPrice}\nPreuve : ${transactionProof}`;
+    successMessage = 'Paiement confirmé avec succès !';
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // ✅ Envoyer la preuve au backend
+    const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { 
+        transactionProof: transactionProof.trim() 
+    });
+    
+    if (data && data.success) {
+        showNotification(successMessage, 'success');
+        loadAdminData();
+    } else {
+        showNotification(data?.error || "Erreur lors de l'action.", "error");
+    }
+    return; // ✅ Sortir ici pour éviter le double appel API
+}
 
         async function cancelReservation(bookingNumber) {
             if (!confirm(`Annuler la réservation ${bookingNumber} ?`)) return;
