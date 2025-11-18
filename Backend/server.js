@@ -828,7 +828,7 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
     }
 
     try {
-        const { phone, amount, bookingNumber } = req.body;
+        const { phone, amount, bookingNumber, customerName } = req.body;
         const currency = 'EUR';
 
         console.log('💳 Paiement MTN:', { phone, amount, currency, bookingNumber });
@@ -840,8 +840,10 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
         console.log('📤 Résultat MTN:', JSON.stringify(result, null, 2));
 
         if (result.success) {
-            await reservationsCollection.updateOne(
-                { bookingNumber },
+            console.log(`🔄 UPDATE - Recherche réservation: "${bookingNumber}"`);
+            
+            const updateResult = await reservationsCollection.updateOne(
+                { bookingNumber: bookingNumber },
                 { $set: { 
                     paymentTransactionId: result.transactionId,
                     paymentProvider: 'MTN',
@@ -849,6 +851,25 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
                     paymentInitiatedAt: new Date()
                 }}
             );
+
+            console.log(`📊 UPDATE RESULT:`, {
+                matchedCount: updateResult.matchedCount,
+                modifiedCount: updateResult.modifiedCount,
+                bookingNumber: bookingNumber,
+                transactionId: result.transactionId
+            });
+
+            if (updateResult.matchedCount === 0) {
+                console.error(`❌ RÉSERVATION NON TROUVÉE: "${bookingNumber}"`);
+                
+                const recent = await reservationsCollection.find({}).sort({ createdAt: -1 }).limit(3).toArray();
+                console.log('📋 3 dernières réservations:', recent.map(r => ({
+                    bookingNumber: r.bookingNumber,
+                    createdAt: r.createdAt
+                })));
+            } else {
+                console.log(`✅ Réservation mise à jour avec transactionId`);
+            }
 
             res.json({
                 success: true,
@@ -862,10 +883,10 @@ app.post('/api/payment/mtn/initiate', strictLimiter, [
 
     } catch (error) {
         console.error('❌ ERREUR:', error);
+        console.error('Stack:', error.stack);
         res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
-
 // Vérification statut paiement
 app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
     try {
@@ -1558,79 +1579,7 @@ app.get('/api/payment/mtn/status/:transactionId', async (req, res) => {
 });
 
 
-// Dans server.js - Route MTN Initiate
-app.post('/api/payment/mtn/initiate', strictLimiter, [
-    body('phone').notEmpty(),
-    body('amount').isNumeric(),
-    body('bookingNumber').notEmpty()
-], async (req, res) => {
-    console.log('\n═══════════════════════════════════════');
-    console.log('🔵 NOUVELLE REQUÊTE MTN REÇUE');
-    console.log('═══════════════════════════════════════');
-    console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('📦 Body reçu:', JSON.stringify(req.body, null, 2));
-    console.log('🌐 IP client:', req.ip);
-    console.log('═══════════════════════════════════════\n');
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        console.error('❌ Erreurs de validation:', errors.array());
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-        const { phone, amount, bookingNumber, customerName } = req.body;
-        const currency = 'EUR'; // ⚠️ SANDBOX utilise EUR, pas XAF
-
-        console.log('💳 Tentative paiement MTN:', {
-            phone,
-            amount,
-            currency,
-            bookingNumber,
-            customerName
-        });
-
-        const result = await mtnPayment.requestToPay(
-            phone,
-            amount,
-            currency,
-            bookingNumber,
-            `Réservation ${bookingNumber}`
-        );
-
-        console.log('📤 Résultat MTN API:', JSON.stringify(result, null, 2));
-
-        if (result.success) {
-            await reservationsCollection.updateOne(
-                { bookingNumber: bookingNumber },
-                { 
-                    $set: { 
-                        paymentTransactionId: result.transactionId,
-                        paymentProvider: 'MTN',
-                        paymentStatus: 'pending',
-                        paymentInitiatedAt: new Date()
-                    } 
-                }
-            );
-
-            console.log('✅ Transaction enregistrée dans la BDD');
-
-            res.json({
-                success: true,
-                message: result.message,
-                transactionId: result.transactionId
-            });
-        } else {
-            console.error('❌ Échec MTN API:', result.error);
-            res.status(400).json({ success: false, error: result.error });
-        }
-
-    } catch (error) {
-        console.error('❌ ERREUR CRITIQUE:', error);
-        console.error('Stack:', error.stack);
-        res.status(500).json({ error: 'Erreur serveur', details: error.message });
-    }
-});
 
 // ============================================
 // DÉMARRAGE
