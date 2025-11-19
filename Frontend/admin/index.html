@@ -2400,6 +2400,8 @@ function displayStats(stats) {
 
 // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
+// DANS Admin/index.html, REMPLACEZ la fonction renderTable
+
 function renderTable(reservations) { 
     const tbody = document.getElementById('reservations-body'); 
     
@@ -2418,19 +2420,24 @@ function renderTable(reservations) {
         };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
+        // ✅ CORRECTION : Le HTML complet du décompteur est restauré ici
         let countdownHTML = '';
         if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">...</div>`; // Le contenu est géré par startCountdownUpdates
+            countdownHTML = `
+                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
+                    <span class="countdown-icon">⏱️</span>
+                    <span class="countdown-time">Calcul...</span>
+                </div>
+            `;
         }
 
         const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
         
-        // ✅ NOUVELLE LOGIQUE : Afficher l'ID de transaction s'il existe
         let transactionIdHTML = '';
         if (r.paymentDetails && r.paymentDetails.clientTransactionId) {
             transactionIdHTML = `
                 <div class="transaction-id-display">
-                    🧾 ID Transaction: <strong>${r.paymentDetails.clientTransactionId}</strong>
+                    🧾 ID soumis: <strong>${r.paymentDetails.clientTransactionId}</strong>
                 </div>
             `;
         } else if (r.status === 'En attente de paiement' && (r.paymentMethod === 'MTN' || r.paymentMethod === 'AIRTEL')) {
@@ -2452,12 +2459,12 @@ function renderTable(reservations) {
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
-                    <!-- ✅ AFFICHAGE DE L'ID DE TRANSACTION ICI -->
                     ${transactionIdHTML}
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
                 <td>
                     <span class="badge ${badgeClass}">${r.status}</span>
+                    <!-- La variable countdownHTML contient maintenant le bon code -->
                     ${countdownHTML} 
                 </td>
                 <td class="actions-cell">
@@ -2470,6 +2477,7 @@ function renderTable(reservations) {
         `; 
     }).join('');
     
+    // Cet appel est crucial et va animer le décompteur
     startCountdownUpdates();
 }
       // Dans Admin/index.html - Ajouter après renderTable()
