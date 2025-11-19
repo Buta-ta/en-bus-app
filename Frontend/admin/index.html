@@ -1517,6 +1517,34 @@
     margin-top: 4px;
 }
 
+
+
+
+/* DANS Admin/index.html, dans <style> */
+
+.transaction-id-display {
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border-radius: var(--radius-sm);
+    background-color: rgba(var(--primary-light), 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(var(--primary-light), 0.3);
+    font-weight: 600;
+}
+
+.transaction-id-display strong {
+    color: white;
+}
+
+.transaction-id-display.pending {
+    background-color: rgba(255, 167, 38, 0.1);
+    color: #ffa726;
+    border-color: rgba(255, 167, 38, 0.3);
+    font-style: italic;
+}
+
     </style>
   </head>
   <body>
@@ -2370,6 +2398,8 @@ function displayStats(stats) {
 
 // DANS Admin/index.html, REMPLACEZ la fonction renderTable par celle-ci
 
+// DANS Admin/index.html, REMPLACEZ la fonction renderTable
+
 function renderTable(reservations) { 
     const tbody = document.getElementById('reservations-body'); 
     
@@ -2390,26 +2420,27 @@ function renderTable(reservations) {
         
         let countdownHTML = '';
         if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            // ✅ CORRECTION : Le HTML du minuteur est maintenant complet
-            countdownHTML = `
-                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
-                    <span class="countdown-icon">⏱️</span>
-                    <span class="countdown-time">Calcul...</span>
-                </div>
-            `;
+            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">...</div>`; // Le contenu est géré par startCountdownUpdates
         }
-        
-        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
 
-        let paymentPhoneHTML = '';
-        if (r.status === 'En attente de paiement' && r.customerPhone) {
-            paymentPhoneHTML = `
-                <div style="font-size: 11px; color: #ff9800; margin-top: 4px; font-weight: 700;">
-                    💳 N° Paiement: ${r.customerPhone}
+        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
+        
+        // ✅ NOUVELLE LOGIQUE : Afficher l'ID de transaction s'il existe
+        let transactionIdHTML = '';
+        if (r.paymentDetails && r.paymentDetails.clientTransactionId) {
+            transactionIdHTML = `
+                <div class="transaction-id-display">
+                    🧾 ID Transaction: <strong>${r.paymentDetails.clientTransactionId}</strong>
+                </div>
+            `;
+        } else if (r.status === 'En attente de paiement' && (r.paymentMethod === 'MTN' || r.paymentMethod === 'AIRTEL')) {
+             transactionIdHTML = `
+                <div class="transaction-id-display pending">
+                    🧾 ID Transaction non soumis
                 </div>
             `;
         }
-        
+
         return `
             <tr class="${rowClass}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
@@ -2421,7 +2452,8 @@ function renderTable(reservations) {
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
-                    ${paymentPhoneHTML}
+                    <!-- ✅ AFFICHAGE DE L'ID DE TRANSACTION ICI -->
+                    ${transactionIdHTML}
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
                 <td>
