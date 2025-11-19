@@ -2560,40 +2560,42 @@ function startCountdownUpdates() {
 
      // DANS Admin/index.html, REMPLACEZ la fonction performAction
 
+// DANS Admin/index.html, REMPLACEZ la fonction performAction
+
 async function performAction(reservationId, action) {
     const reservation = allReservations.find(r => r._id === reservationId);
     if (!reservation) return;
 
     if (action === 'confirm-payment') {
-        const transactionProof = prompt(
-            `🔍 Confirmer le paiement pour ${reservation.bookingNumber}\n\n` +
-            `Veuillez saisir la preuve de transaction :\n` +
-            `(ID transaction, référence SMS, etc.)`
-        );
-        
-        if (!transactionProof || transactionProof.trim() === '') {
-            showNotification('Preuve de transaction requise', 'warning');
+        // ✅ Utilisation de la nouvelle modale de saisie
+        const transactionProof = await showAdminInputModal({
+            title: 'Confirmer le Paiement',
+            message: `Saisissez la preuve de transaction (ID, référence, etc.) pour la réservation ${reservation.bookingNumber} de ${reservation.passengers[0]?.name}.`,
+            icon: '🧾',
+            iconClass: 'success',
+            label: 'ID de Transaction ou Référence de Paiement',
+            placeholder: 'Copiez la référence ici',
+            confirmText: 'Valider le Paiement'
+        });
+
+        // Si l'utilisateur a annulé la modale (a cliqué sur Annuler ou Echap)
+        if (transactionProof === null) {
+            showNotification('Opération annulée.', 'info');
             return;
         }
 
-        const confirmed = await showAdminConfirm({
-            title: 'Confirmer le Paiement ?',
-            message: `Réservation: ${reservation.bookingNumber}\nPassager: ${reservation.passengers[0]?.name}\nMontant: ${reservation.totalPrice}\n\nPreuve: ${transactionProof}`,
-            icon: '✅',
-            iconClass: 'success',
-            confirmText: 'Oui, confirmer',
-            confirmClass: 'btn-success'
+        // Si une valeur a été saisie, on continue
+        const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { 
+            transactionProof: transactionProof 
         });
-
-        if (confirmed) {
-            const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { transactionProof: transactionProof.trim() });
-            if (data && data.success) {
-                showNotification('Paiement confirmé avec succès !', 'success');
-                loadAdminData();
-            }
-        }
         
+        if (data && data.success) {
+            showNotification('Paiement confirmé avec succès !', 'success');
+            loadAdminData();
+        }
+
     } else if (action === 'cancel') {
+        // La logique d'annulation avec showAdminConfirm reste la même et est correcte
         const confirmed = await showAdminConfirm({
             title: 'Annuler la Réservation ?',
             message: `ATTENTION : Annuler la réservation ${reservation.bookingNumber} libérera les sièges ${reservation.seats.join(', ')}.\n\nCette action est irréversible.`,
@@ -3999,6 +4001,68 @@ function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warnin
 
 
 
+// DANS Admin/index.html, dans <script>
+
+function showAdminInputModal({ title, message, icon = '📝', iconClass = 'info', label, placeholder, confirmText = 'Valider' }) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('input-modal');
+        const titleEl = document.getElementById('input-modal-title');
+        const messageEl = document.getElementById('input-modal-message');
+        const iconEl = document.getElementById('input-modal-icon');
+        const labelEl = document.getElementById('input-modal-label');
+        const inputEl = document.getElementById('input-modal-field');
+        const errorEl = document.getElementById('input-modal-error');
+        const okBtn = document.getElementById('input-modal-ok-btn');
+        const cancelBtn = document.getElementById('input-modal-cancel-btn');
+
+        // Remplir les éléments de la modale
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        iconEl.textContent = icon;
+        iconEl.className = `custom-modal-icon ${iconClass}`;
+        labelEl.textContent = label;
+        inputEl.placeholder = placeholder || '';
+        okBtn.textContent = confirmText;
+        
+        // Réinitialiser les champs
+        inputEl.value = '';
+        errorEl.style.display = 'none';
+        
+        modal.style.display = 'flex';
+        inputEl.focus();
+
+        const close = (value) => {
+            modal.style.display = 'none';
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            document.removeEventListener('keydown', keydownHandler);
+            resolve(value); // Renvoie la valeur saisie ou null
+        };
+        
+        const keydownHandler = (e) => {
+            if (e.key === 'Enter') {
+                okBtn.click();
+            } else if (e.key === 'Escape') {
+                cancelBtn.click();
+            }
+        };
+
+        okBtn.onclick = () => {
+            const value = inputEl.value.trim();
+            if (!value) {
+                errorEl.textContent = 'Ce champ ne peut pas être vide.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            close(value);
+        };
+
+        cancelBtn.onclick = () => close(null); // Renvoie null si annulé
+        
+        document.addEventListener('keydown', keydownHandler);
+    });
+}
+
 
     </script>
 
@@ -4022,6 +4086,33 @@ function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warnin
         </div>
     </div>
 
+
+    <!-- DANS Admin/index.html, juste avant </body> -->
+
+<!-- ============================================
+     ✅ MODALE DE SAISIE DE PREUVE DE PAIEMENT
+     ============================================ -->
+<div id="input-modal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal-card">
+        <div class="custom-modal-header">
+            <span id="input-modal-icon" class="custom-modal-icon"></span>
+            <h3 id="input-modal-title"></h3>
+        </div>
+        <div class="custom-modal-body">
+            <p id="input-modal-message"></p>
+            <!-- Champ de saisie -->
+            <div class="form-group" style="margin-top: 1rem;">
+                <label id="input-modal-label" for="input-modal-field" class="form-label"></label>
+                <input type="text" id="input-modal-field" class="form-control" required>
+                <div id="input-modal-error" style="color: #ef5350; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button id="input-modal-cancel-btn" class="btn btn-ghost">Annuler</button>
+            <button id="input-modal-ok-btn" class="btn btn-success">Valider</button>
+        </div>
+    </div>
+</div>
 
   </body>
 </html>
