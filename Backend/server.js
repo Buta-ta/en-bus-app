@@ -435,6 +435,52 @@ app.delete('/api/admin/trips/:id', authenticateToken, async (req, res) => {
     }
 });
 
+
+// DANS server.js
+
+// ============================================
+// ✅ NOUVELLE ROUTE : RÉINITIALISER LES SIÈGES D'UN VOYAGE
+// ============================================
+app.patch('/api/admin/trips/:id/reset-seats', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'ID de voyage invalide' });
+        }
+
+        // Trouver le voyage pour connaître le nombre total de sièges
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: 'Voyage non trouvé.' });
+        }
+
+        // Créer un nouveau tableau de sièges où tous sont disponibles
+        const newSeats = Array.from({ length: trip.seats.length }, (_, i) => ({
+            number: i + 1,
+            status: 'available'
+        }));
+
+        // Mettre à jour le voyage avec le nouveau tableau de sièges
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { seats: newSeats, updatedAt: new Date() } }
+        );
+        
+        if (result.modifiedCount === 0 && result.matchedCount > 0) {
+            return res.status(200).json({ success: true, message: 'Les sièges étaient déjà tous disponibles.' });
+        }
+
+        console.log(`♻️ Réinitialisation des sièges pour le voyage ${id} par ${req.user?.username || 'admin'}.`);
+
+        res.json({ success: true, message: 'Tous les sièges du voyage ont été réinitialisés.' });
+
+    } catch (error) {
+        console.error('❌ Erreur réinitialisation sièges:', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
+
 app.patch('/api/admin/trips/:tripId/seats/:seatNumber', authenticateToken, [
     body('status').isIn(['available', 'blocked'])
 ], async (req, res) => {

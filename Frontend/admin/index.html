@@ -2892,6 +2892,11 @@ function renderTable(reservations) {
                         }')" title="Modifier le voyage">
                             ✏️
                         </button>
+
+                           <!-- ✅ AJOUT DU NOUVEAU BOUTON DE RÉINITIALISATION ICI -->
+                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges (y compris les réservés)">
+                            🔄
+                        </button>
                         ${
                           canBeDeleted
                             ? `
