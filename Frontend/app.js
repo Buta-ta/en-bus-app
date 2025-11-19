@@ -2719,8 +2719,10 @@ function displayBookingSummary() {
 
 // Dans app.js - REMPLACER la fonction confirmBooking()
 
+// DANS app.js, REMPLACEZ la fonction confirmBooking par celle-ci
+
 window.confirmBooking = async function(buttonElement) {
-    console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION MANUELLE');
+    console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION');
     
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
@@ -2735,7 +2737,6 @@ window.confirmBooking = async function(buttonElement) {
     showLoading('Création de la réservation...');
 
     try {
-        // ✅ 1. RÉCUPÉRER LE MODE DE PAIEMENT
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
         console.log('1. Mode de paiement sélectionné:', paymentMethod);
         
@@ -2743,16 +2744,13 @@ window.confirmBooking = async function(buttonElement) {
             throw new Error('Veuillez sélectionner un mode de paiement.');
         }
 
-        // ✅ 2. RÉCUPÉRER LE NUMÉRO DE TÉLÉPHONE DE PAIEMENT
         const phoneInputId = `${paymentMethod}-phone`;
         const phoneInput = document.getElementById(phoneInputId);
         
         let customerPhone;
         if (paymentMethod === 'agency') {
-            // Pour le paiement en agence, utiliser le téléphone du premier passager
             customerPhone = appState.passengerInfo[0]?.phone || '';
         } else {
-            // Pour MTN/Airtel, utiliser le numéro spécifique saisi
             customerPhone = phoneInput ? phoneInput.value.trim() : '';
         }
         
@@ -2760,7 +2758,6 @@ window.confirmBooking = async function(buttonElement) {
             throw new Error(`Numéro de téléphone ${paymentMethod.toUpperCase()} invalide ou manquant.`);
         }
 
-        // ✅ 3. CALCULER LE PRIX TOTAL
         const baggageOptions = appState.selectedBus.baggageOptions || { 
             standard: { price: 2000 }, 
             oversized: { price: 5000 } 
@@ -2779,9 +2776,22 @@ window.confirmBooking = async function(buttonElement) {
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
-        // ✅ 4. CRÉER L'OBJET RÉSERVATION
         const bookingNumber = Utils.generateBookingNumber();
         console.log('2. Numéro de réservation généré:', bookingNumber);
+
+        // ✅ CORRECTION : Le délai de paiement est maintenant conditionnel
+        let paymentDeadline;
+        if (paymentMethod === 'agency') {
+            if (!canPayAtAgency()) {
+                throw new Error("Le paiement en agence n'est plus disponible pour ce trajet (délai insuffisant).");
+            }
+            // Délai long pour l'agence
+            paymentDeadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
+        } else {
+            // Délai court pour le mobile money
+            paymentDeadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000).toISOString();
+        }
+        console.log('3. Délai de paiement calculé:', paymentDeadline);
 
         const reservation = {
             bookingNumber,
@@ -2794,12 +2804,11 @@ window.confirmBooking = async function(buttonElement) {
             paymentMethod: paymentMethod.toUpperCase(),
             busIdentifier: appState.selectedBus.busIdentifier || appState.selectedBus.trackerId,
             createdAt: new Date().toISOString(),
-            status: 'En attente de paiement', // ✅ STATUT INITIAL
-            customerPhone: customerPhone, // ✅ CRUCIAL : stocké pour validation admin
-            paymentDeadline: new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000).toISOString()
+            status: 'En attente de paiement',
+            customerPhone: customerPhone,
+            paymentDeadline: paymentDeadline // ✅ Utilisation du délai correct
         };
 
-        // Ajouter les infos de retour si applicable
         if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
             reservation.returnRoute = appState.selectedReturnBus;
             reservation.returnDate = appState.currentSearch.returnDate;
@@ -2807,29 +2816,23 @@ window.confirmBooking = async function(buttonElement) {
             reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
         }
         
-        // Ajouter les infos d'agence si paiement en agence
+        // ✅ CORRECTION : Ajout des informations de l'agence uniquement si nécessaire
         if (paymentMethod === 'agency') {
-            if (!canPayAtAgency()) {
-                throw new Error("Le paiement en agence n'est plus disponible pour ce trajet.");
-            }
             reservation.agency = getNearestAgency(appState.selectedBus.from);
         }
 
-        console.log('3. Objet réservation prêt à être envoyé :', reservation);
+        console.log('4. Objet réservation prêt à être envoyé :', reservation);
         showLoading('Enregistrement...');
 
-        // ✅ 5. ENVOYER AU BACKEND
         const savedReservation = await saveReservationToBackend(reservation);
-        console.log('4. Réservation enregistrée dans la BDD :', savedReservation);
+        console.log('5. Réservation enregistrée dans la BDD :', savedReservation);
         
-        // ✅ 6. STOCKER LA RÉSERVATION EN COURS
         appState.currentReservation = reservation;
 
-        // ✅ 7. AFFICHER LA PAGE D'INSTRUCTIONS (PAS LA PAGE DE CONFIRMATION)
         displayPaymentInstructions(reservation);
         showPage("payment-instructions");
 
-        Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions de paiement.', 'success');
+        Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions.', 'success');
 
     } catch (error) {
         console.error('❌ ERREUR GLOBALE:', error);
@@ -2840,7 +2843,6 @@ window.confirmBooking = async function(buttonElement) {
         console.groupEnd();
     }
 };
-
 // ============================================
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
 // ============================================
