@@ -3,44 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-   <!-- ✅ AJOUTER CETTE LIGNE -->
-    <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark">
   <title>En-Bus - Voyagez à travers l'Afrique</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"><link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css"/>
 
-  <!-- ✅ AJOUTER APRÈS LES <link> EXISTANTS -->
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#73d700">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="En-Bus">
+  <meta name="description" content="Réservez vos billets de bus en ligne facilement et rapidement à travers l'Afrique">
+  <meta name="keywords" content="bus, transport, afrique, réservation, billet, voyage">
 
-<!-- PWA Meta Tags -->
-<meta name="theme-color" content="#73d700">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="En-Bus">
-<meta name="description" content="Réservez vos billets de bus en ligne facilement et rapidement à travers l'Afrique">
-<meta name="keywords" content="bus, transport, afrique, réservation, billet, voyage">
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 
-<!-- Manifest -->
-<link rel="manifest" href="/manifest.json">
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png">
 
-<!-- Apple Touch Icons -->
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png">
 
-<!-- Favicon -->
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png">
-
-<!-- Microsoft Tiles -->
-<meta name="msapplication-TileColor" content="#73d700">
-<meta name="msapplication-TileImage" content="/icons/icon-144.png">
-
+  <!-- Microsoft Tiles -->
+  <meta name="msapplication-TileColor" content="#73d700">
+  <meta name="msapplication-TileImage" content="/icons/icon-144.png">
 
   <style>
-
-
     .seat-selected-anim {
       animation: pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1) 1;
     }
@@ -238,124 +232,94 @@
         </div>
         <div id="search-summary" class="search-summary"></div>
         <div class="filters-bar-enhanced">
-    <!-- ✅ Tri -->
-    <div class="filter-section">
-        <label for="sort-by" class="filter-label">
-            <span class="filter-icon">🔽</span>
-            Trier par :
-        </label>
-        <select id="sort-by" class="filter-select" onchange="updateFilter('sortBy', this.value)">
-            <option value="departure">Heure de départ</option>
-            <option value="price">Prix croissant</option>
-            <option value="duration">Durée du trajet</option>
-            <option value="company">Compagnie (A-Z)</option>
-        </select>
-    </div>
-    
-    <!-- ✅ Compagnie -->
-    <div class="filter-section">
-        <label for="filter-company" class="filter-label">
-            <span class="filter-icon">🚌</span>
-            Compagnie :
-        </label>
-        <select id="filter-company" class="filter-select" onchange="updateFilter('company', this.value)">
-            <option value="all">Toutes</option>
-            <option value="Océan du Nord">Océan du Nord</option>
-            <option value="Trans Bony">Trans Bony</option>
-            <option value="Stellimac">Stellimac</option>
-            <option value="United Express">United Express</option>
-            <option value="Touristique Express">Touristique Express</option>
-            <option value="Garantie Express">Garantie Express</option>
-            <option value="ABC Transport">ABC Transport</option>
-            <option value="STC">STC</option>
-        </select>
-    </div>
-    
-    <!-- ✅ Type de trajet -->
-    <div class="filter-section">
-        <label for="filter-trip-type" class="filter-label">
-            <span class="filter-icon">🛣️</span>
-            Type :
-        </label>
-        <select id="filter-trip-type" class="filter-select" onchange="updateFilter('tripType', this.value)">
-            <option value="all">Tous</option>
-            <option value="direct">Direct uniquement</option>
-            <option value="stops">Avec arrêts</option>
-            <option value="connections">Avec correspondances</option>
-        </select>
-    </div>
-    
-    <!-- ✅ Heure de départ -->
-    <div class="filter-section">
-        <label for="filter-time" class="filter-label">
-            <span class="filter-icon">🕐</span>
-            Départ :
-        </label>
-        <select id="filter-time" class="filter-select" onchange="updateFilter('departureTime', this.value)">
-            <option value="all">Toute la journée</option>
-            <option value="morning">Matin (5h-12h)</option>
-            <option value="afternoon">Après-midi (12h-17h)</option>
-            <option value="evening">Soirée (17h-21h)</option>
-            <option value="night">Nuit (21h-5h)</option>
-        </select>
-    </div>
-    
-    <!-- ✅ Prix (sliders) -->
-    <div class="filter-section filter-price">
-        <label class="filter-label">
-            <span class="filter-icon">💰</span>
-            Prix :
-        </label>
-        <div class="price-range-container">
-            <div class="price-inputs">
-                <div class="price-input-group">
-                    <label for="price-min" class="price-label">Min</label>
-                    <input 
-                        type="range" 
-                        id="price-min" 
-                        min="0" 
-                        max="100000" 
-                        step="1000" 
-                        value="0"
-                        oninput="updateFilter('priceMin', this.value)"
-                    >
-                    <span id="price-min-display" class="price-display">0</span> FCFA
-                </div>
-                <div class="price-input-group">
-                    <label for="price-max" class="price-label">Max</label>
-                    <input 
-                        type="range" 
-                        id="price-max" 
-                        min="0" 
-                        max="100000" 
-                        step="1000" 
-                        value="100000"
-                        oninput="updateFilter('priceMax', this.value)"
-                    >
-                    <span id="price-max-display" class="price-display">100 000</span> FCFA
-                </div>
-            </div>
+          <div class="filter-section">
+              <label for="sort-by" class="filter-label">
+                  <span class="filter-icon">🔽</span>
+                  Trier par :
+              </label>
+              <select id="sort-by" class="filter-select" onchange="updateFilter('sortBy', this.value)">
+                  <option value="departure">Heure de départ</option>
+                  <option value="price">Prix croissant</option>
+                  <option value="duration">Durée du trajet</option>
+                  <option value="company">Compagnie (A-Z)</option>
+              </select>
+          </div>
+          <div class="filter-section">
+              <label for="filter-company" class="filter-label">
+                  <span class="filter-icon">🚌</span>
+                  Compagnie :
+              </label>
+              <select id="filter-company" class="filter-select" onchange="updateFilter('company', this.value)">
+                  <option value="all">Toutes</option>
+                  <option value="Océan du Nord">Océan du Nord</option>
+                  <option value="Trans Bony">Trans Bony</option>
+                  <option value="Stellimac">Stellimac</option>
+                  <option value="United Express">United Express</option>
+                  <option value="Touristique Express">Touristique Express</option>
+                  <option value="Garantie Express">Garantie Express</option>
+                  <option value="ABC Transport">ABC Transport</option>
+                  <option value="STC">STC</option>
+              </select>
+          </div>
+          <div class="filter-section">
+              <label for="filter-trip-type" class="filter-label">
+                  <span class="filter-icon">🛣️</span>
+                  Type :
+              </label>
+              <select id="filter-trip-type" class="filter-select" onchange="updateFilter('tripType', this.value)">
+                  <option value="all">Tous</option>
+                  <option value="direct">Direct uniquement</option>
+                  <option value="stops">Avec arrêts</option>
+                  <option value="connections">Avec correspondances</option>
+              </select>
+          </div>
+          <div class="filter-section">
+              <label for="filter-time" class="filter-label">
+                  <span class="filter-icon">🕐</span>
+                  Départ :
+              </label>
+              <select id="filter-time" class="filter-select" onchange="updateFilter('departureTime', this.value)">
+                  <option value="all">Toute la journée</option>
+                  <option value="morning">Matin (5h-12h)</option>
+                  <option value="afternoon">Après-midi (12h-17h)</option>
+                  <option value="evening">Soirée (17h-21h)</option>
+                  <option value="night">Nuit (21h-5h)</option>
+              </select>
+          </div>
+          <div class="filter-section filter-price">
+              <label class="filter-label">
+                  <span class="filter-icon">💰</span>
+                  Prix :
+              </label>
+              <div class="price-range-container">
+                  <div class="price-inputs">
+                      <div class="price-input-group">
+                          <label for="price-min" class="price-label">Min</label>
+                          <input type="range" id="price-min" min="0" max="100000" step="1000" value="0" oninput="updateFilter('priceMin', this.value)">
+                          <span id="price-min-display" class="price-display">0</span> FCFA
+                      </div>
+                      <div class="price-input-group">
+                          <label for="price-max" class="price-label">Max</label>
+                          <input type="range" id="price-max" min="0" max="100000" step="1000" value="100000" oninput="updateFilter('priceMax', this.value)">
+                          <span id="price-max-display" class="price-display">100 000</span> FCFA
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="filter-section filter-amenities">
+              <label class="filter-label">
+                  <span class="filter-icon">⚙️</span>
+                  Équipements :
+              </label>
+              <div class="amenities-checkboxes" id="amenities-filter-container">
+              </div>
+          </div>
+          <div class="filter-section">
+              <button class="btn btn-secondary btn-reset-filters" onclick="resetFilters()">
+                  🔄 Réinitialiser
+              </button>
+          </div>
         </div>
-    </div>
-    
-    <!-- ✅ Équipements (checkboxes) -->
-    <!-- ✅ Équipements (checkboxes) -->
-<div class="filter-section filter-amenities">
-    <label class="filter-label">
-        <span class="filter-icon">⚙️</span>
-        Équipements :
-    </label>
-    <div class="amenities-checkboxes" id="amenities-filter-container">
-        <!-- Les checkboxes seront générées par JavaScript -->
-    </div>
-</div>
-    <!-- ✅ Bouton réinitialiser -->
-    <div class="filter-section">
-        <button class="btn btn-secondary btn-reset-filters" onclick="resetFilters()">
-            🔄 Réinitialiser
-        </button>
-    </div>
-</div>
         <div id="amenities-legend" class="amenities-legend"></div>
         <div id="results-list" class="results-list"></div>
       </div>
@@ -367,15 +331,11 @@
           <button class="btn btn-secondary" onclick="showPage('results')">← Retour</button>
           <h2>Sélection des sièges</h2>
         </div>
-
         <div class="max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
-          
           <div id="bus-info" class="text-center mb-6"></div>
-          
           <div class="bg-gray-700/60 p-4 rounded-lg border border-gray-600 overflow-x-auto">
             <div id="pro-seat-grid" class="min-w-[320px] mx-auto"></div>
           </div>
-          
           <div class="mt-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-white text-sm">
               <div class="flex items-center gap-2">
@@ -391,7 +351,6 @@
                 <span>Occupé</span>
               </div>
             </div>
-
             <div class="w-full md:w-auto flex flex-col items-center gap-4">
               <div class="text-white text-center">
                   <span>Sièges : <strong id="selected-seats-display" class="text-blue-400">Aucun</strong></span>
@@ -416,47 +375,36 @@
         <div id="passengers-forms" class="passengers-forms"></div>
         <div id="baggage-section" class="content-card" style="margin-top: 32px;">
           <h3>Bagages Supplémentaires</h3>
-          <!-- ✅ NOUVEL ÉLÉMENT POUR LE MESSAGE DYNAMIQUE -->
           <p id="baggage-section-info" style="margin-bottom: 1rem;"></p>
-  
-
-          <p>Chaque passager a droit à 1 bagage en soute (20kg) et 1 bagage à main inclus.</p>
           <div id="baggage-options"></div>
         </div>
-        
+        <div class="page-actions" style="display: flex; justify-content: space-between; margin-top: 32px;">
+          <button class="btn btn-secondary" onclick="showPage('seats')">Retour</button>
+          <button class="btn btn-primary" onclick="proceedToPayment()">Continuer vers paiement</button>
+        </div>
+      </div>
+    </div>
     
-    <!-- ============================================
-     💳 PAGE PAIEMENT
-     ============================================ -->
-<div id="payment-page" class="page">
-    <div class="container">
+    <div id="payment-page" class="page">
+      <div class="container">
         <div class="page-header">
             <button class="btn btn-secondary" onclick="showPage('passengers')">← Retour</button>
             <h2>Paiement</h2>
         </div>
-        
         <div class="payment-container">
-            <!-- Récapitulatif -->
             <div class="booking-summary-card">
                 <h3>Récapitulatif</h3>
                 <div id="booking-summary" class="booking-details"></div>
             </div>
-            
-            <!-- Méthodes de paiement -->
             <div class="payment-methods-card">
                 <h3>💳 Mode de paiement</h3>
                 <div class="payment-methods">
-                    
-                    <!-- MTN Mobile Money -->
                     <label class="payment-method">
                         <input type="radio" name="payment" value="mtn" checked/>
                         <div class="method-content">
                             <div class="method-icon">📱</div>
                             <div class="method-info">
-                                <strong>
-                                    MTN Mobile Money
-                                    <span class="method-badge">Rapide</span>
-                                </strong>
+                                <strong>MTN Mobile Money <span class="method-badge">Rapide</span></strong>
                                 <span>⚡ Paiement instantané via MTN</span>
                             </div>
                         </div>
@@ -475,8 +423,6 @@
                             <input type="text" id="mtn-booking-ref" class="form-control" readonly>
                         </div>
                     </div>
-                    
-                    <!-- Airtel Money -->
                     <label class="payment-method">
                         <input type="radio" name="payment" value="airtel"/>
                         <div class="method-content">
@@ -501,8 +447,6 @@
                             <input type="text" id="airtel-booking-ref" class="form-control" readonly>
                         </div>
                     </div>
-                    
-                    <!-- Paiement en agence -->
                     <label class="payment-method" id="agency-payment-option">
                         <input type="radio" name="payment" value="agency"/>
                         <div class="method-content">
@@ -538,34 +482,22 @@
                 </div>
             </div>
         </div>
-
-        <!-- ✅ BOUTONS DE LA PAGE PAIEMENT (À L'INTÉRIEUR DE payment-page) -->
         <div class="page-actions">
             <button class="btn btn-secondary" onclick="showPage('passengers')">Retour</button>
             <button class="btn btn-primary btn-large" onclick="confirmBooking(this)">Confirmer la Réservation</button>
         </div>
-        
+      </div>
     </div>
-</div>
-<!-- ✅ FIN DE payment-page -->
 
-<!-- ============================================
-     💳 PAGE INSTRUCTIONS DE PAIEMENT
-     ============================================ -->
-<div id="payment-instructions-page" class="page">
-    <div class="container">
-        <!-- Contenu généré dynamiquement par displayPaymentInstructions() -->
+    <div id="payment-instructions-page" class="page">
+      <div class="container">
+          <!-- Contenu généré dynamiquement par displayPaymentInstructions() -->
+      </div>
     </div>
-</div>
 
-<!-- ============================================
-     ✅ PAGE CONFIRMATION
-     ============================================ -->
-<div id="confirmation-page" class="page">
-    <div class="container">
+    <div id="confirmation-page" class="page">
+      <div class="container">
         <div class="confirmation-container-modern">
-            
-            <!-- Animation de succès -->
             <div class="success-animation">
                 <div class="success-checkmark">
                     <div class="check-icon">
@@ -580,10 +512,7 @@
             <h1 class="confirmation-title">Réservation confirmée !</h1>
             <p class="confirmation-subtitle">Votre billet a été réservé avec succès</p>
 
-            <!-- Carte de confirmation principale -->
             <div class="confirmation-card-modern">
-                
-                <!-- En-tête avec numéro de réservation -->
                 <div class="confirmation-header">
                     <div class="booking-badge">
                         <span class="badge-label">N° de réservation</span>
@@ -595,7 +524,6 @@
                     </div>
                 </div>
 
-                <!-- Détails du voyage -->
                 <div class="journey-card">
                     <div class="journey-route">
                         <div class="route-point route-origin">
@@ -607,13 +535,11 @@
                                 <span id="conf-time" class="point-time"></span>
                             </div>
                         </div>
-                        
                         <div class="route-connector">
                             <div class="connector-line"></div>
                             <div class="connector-icon">🚌</div>
                             <div class="connector-duration" id="conf-duration"></div>
                         </div>
-                        
                         <div class="route-point route-destination">
                             <div class="point-icon">🏁</div>
                             <div class="point-info">
@@ -625,10 +551,8 @@
                     </div>
                 </div>
 
-                <!-- Détails complets -->
                 <div id="confirmation-details" class="details-grid-modern"></div>
 
-                <!-- QR Code -->
                 <div class="qr-section-modern">
                     <div class="qr-container">
                         <div id="qr-placeholder" class="qr-code-box"></div>
@@ -639,7 +563,6 @@
                     </div>
                 </div>
 
-                <!-- Informations importantes -->
                 <div class="info-cards">
                     <div class="info-card info-card-warning">
                         <div class="info-icon">⏰</div>
@@ -648,7 +571,6 @@
                             <p>Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide</p>
                         </div>
                     </div>
-                    
                     <div class="info-card info-card-info">
                         <div class="info-icon">🎒</div>
                         <div class="info-content">
@@ -659,25 +581,21 @@
                 </div>
             </div>
 
-            <!-- Actions -->
             <div class="confirmation-actions-modern">
                 <button class="btn-modern btn-download" onclick="downloadTicket()">
                     <span class="btn-icon">📥</span>
                     <span class="btn-text">Télécharger le billet</span>
                 </button>
-                
                 <a id="track-bus-link" class="btn-modern btn-track" href="#" style="display: none;">
                     <span class="btn-icon">🛰️</span>
                     <span class="btn-text">Suivre mon bus en temps réel</span>
                 </a>
-                
                 <button class="btn-modern btn-home" onclick="showPage('home')">
                     <span class="btn-icon">🏠</span>
                     <span class="btn-text">Retour à l'accueil</span>
                 </button>
             </div>
 
-            <!-- Footer avec support -->
             <div class="confirmation-footer">
                 <p>Besoin d'aide ? Contactez-nous :</p>
                 <div class="contact-links">
@@ -685,159 +603,9 @@
                     <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
                 </div>
             </div>
-
-        </div>
-    </div>
-</div>
-
-          </div>
-        </div>
-
-      <!-- ============================================
-     💳 PAGE INSTRUCTIONS DE PAIEMENT
-     ============================================ -->
-<div id="payment-instructions-page" class="page">
-    <!-- Contenu généré dynamiquement par displayPaymentInstructions() -->
-</div>
-</div>
-
-
-        <div class="page-actions">
-          <button class="btn btn-secondary" onclick="showPage('passengers')">Retour</button>
-          <button class="btn btn-primary btn-large" onclick="confirmBooking(this)">Confirmer la Réservation</button>
         </div>
       </div>
     </div>
-    
-   <div id="confirmation-page" class="page">
-  <div class="container">
-    <div class="confirmation-container-modern">
-      
-      <!-- Animation de succès -->
-      <div class="success-animation">
-        <div class="success-checkmark">
-          <div class="check-icon">
-            <span class="icon-line line-tip"></span>
-            <span class="icon-line line-long"></span>
-            <div class="icon-circle"></div>
-            <div class="icon-fix"></div>
-          </div>
-        </div>
-      </div>
-
-      <h1 class="confirmation-title">Réservation confirmée !</h1>
-      <p class="confirmation-subtitle">Votre billet a été réservé avec succès</p>
-
-      <!-- Carte de confirmation principale -->
-      <div class="confirmation-card-modern">
-        
-        <!-- En-tête avec numéro de réservation -->
-        <div class="confirmation-header">
-          <div class="booking-badge">
-            <span class="badge-label">N° de réservation</span>
-            <span id="booking-number-display" class="badge-number"></span>
-          </div>
-          <div class="status-badge status-confirmed">
-            <span class="status-icon">✓</span>
-            <span>Confirmé</span>
-          </div>
-        </div>
-
-        <!-- Détails du voyage -->
-        <div class="journey-card">
-          <div class="journey-route">
-            <div class="route-point route-origin">
-              <div class="point-icon">📍</div>
-              <div class="point-info">
-                <span class="point-label">Départ</span>
-                <span id="conf-origin" class="point-city"></span>
-                <span id="conf-date" class="point-date"></span>
-                <span id="conf-time" class="point-time"></span>
-              </div>
-            </div>
-            
-            <div class="route-connector">
-              <div class="connector-line"></div>
-              <div class="connector-icon">🚌</div>
-              <div class="connector-duration" id="conf-duration"></div>
-            </div>
-            
-            <div class="route-point route-destination">
-              <div class="point-icon">🏁</div>
-              <div class="point-info">
-                <span class="point-label">Arrivée</span>
-                <span id="conf-destination" class="point-city"></span>
-                <span id="conf-arrival-time" class="point-time"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Détails complets -->
-        <div id="confirmation-details" class="details-grid-modern"></div>
-
-        <!-- QR Code -->
-        <div class="qr-section-modern">
-          <div class="qr-container">
-            <div id="qr-placeholder" class="qr-code-box"></div>
-            <div class="qr-info">
-              <p class="qr-title">🎫 Votre billet électronique</p>
-              <p class="qr-instruction">Présentez ce QR code à l'embarquement</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Informations importantes -->
-        <div class="info-cards">
-          <div class="info-card info-card-warning">
-            <div class="info-icon">⏰</div>
-            <div class="info-content">
-              <h4>Arrivez à l'avance</h4>
-              <p>Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide</p>
-            </div>
-          </div>
-          
-          <div class="info-card info-card-info">
-            <div class="info-icon">🎒</div>
-            <div class="info-content">
-              <h4>Bagages inclus</h4>
-              <p>1 bagage en soute (20kg) + 1 bagage à main</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="confirmation-actions-modern">
-        <button class="btn-modern btn-download" onclick="downloadTicket()">
-          <span class="btn-icon">📥</span>
-          <span class="btn-text">Télécharger le billet</span>
-        </button>
-        
-        <a id="track-bus-link" class="btn-modern btn-track" href="#" style="display: none;">
-    <span class="btn-icon">🛰️</span>
-    <span class="btn-text">Suivre mon bus en temps réel</span>
-</a>
-        
-        <button class="btn-modern btn-home" onclick="showPage('home')">
-          <span class="btn-icon">🏠</span>
-          <span class="btn-text">Retour à l'accueil</span>
-        </button>
-      </div>
-
-      <!-- Footer avec support -->
-      <div class="confirmation-footer">
-        <p>Besoin d'aide ? Contactez-nous :</p>
-        <div class="contact-links">
-          <a href="tel:+242061234567">📞 +242 06 123 4567</a>
-          <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
     
     <div id="reservations-page" class="page">
       <div class="container">
@@ -927,25 +695,17 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
   <script src="app.js"></script>
 
-<!-- ✅ AJOUTER AVANT </body> -->
-
-<!-- Enregistrement Service Worker -->
-<script>
-    // ============================================
-    // ENREGISTREMENT PWA
-    // ============================================
+  <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
                 .then((registration) => {
                     console.log('✅ Service Worker enregistré:', registration.scope);
                     
-                    // Vérifier les mises à jour
                     registration.addEventListener('updatefound', () => {
                         const newWorker = registration.installing;
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // Nouvelle version disponible
                                 if (confirm('Une nouvelle version est disponible ! Voulez-vous mettre à jour ?')) {
                                     newWorker.postMessage({ type: 'SKIP_WAITING' });
                                     window.location.reload();
@@ -959,7 +719,6 @@
                 });
         });
         
-        // Recharger quand le SW prend le contrôle
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (!refreshing) {
@@ -969,16 +728,11 @@
         });
     }
     
-    // ============================================
-    // PROMPT D'INSTALLATION
-    // ============================================
     let deferredPrompt;
     
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        
-        // Afficher un bouton d'installation personnalisé
         showInstallButton();
     });
     
@@ -1006,23 +760,16 @@
         
         document.body.appendChild(installBtn);
         
-        // Afficher avec animation
         setTimeout(() => {
             installBtn.classList.add('show');
         }, 2000);
     }
     
-    // ============================================
-    // DÉTECTION MODE STANDALONE
-    // ============================================
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
         console.log('✅ Application installée et lancée en mode standalone');
         document.body.classList.add('pwa-installed');
     }
     
-    // ============================================
-    // GESTION RÉSEAU OFFLINE
-    // ============================================
     window.addEventListener('online', () => {
         console.log('✅ Connexion rétablie');
         Utils.showToast('Connexion rétablie', 'success');
@@ -1032,7 +779,6 @@
         console.log('⚠️ Mode hors-ligne');
         Utils.showToast('Mode hors-ligne activé', 'warning');
     });
-</script>
-
+  </script>
 </body>
 </html>
