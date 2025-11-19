@@ -1204,5 +1204,29 @@
           Utils.showToast("Mode hors-ligne activé", "warning");
       });
     </script>
+
+
+
+    <!-- DANS index.html, juste avant </body> -->
+
+<!-- ============================================
+     ✅ MODALE DE CONFIRMATION PERSONNALISÉE
+     ============================================ -->
+<div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal-card">
+        <div class="custom-modal-header">
+            <span id="custom-confirm-icon" class="custom-modal-icon"></span>
+            <h3 id="custom-confirm-title"></h3>
+        </div>
+        <div class="custom-modal-body">
+            <p id="custom-confirm-message"></p>
+        </div>
+        <div class="custom-modal-footer">
+            <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
+            <button id="custom-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
+        </div>
+    </div>
+</div>
+
   </body>
 </html>

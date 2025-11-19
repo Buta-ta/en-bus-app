@@ -742,10 +742,26 @@ function addBookingToLocalHistory(bookingNumber) {
 
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 
-function removeBookingFromLocalHistory(bookingNumber) {
-    if (!confirm(`Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?`)) {
+// DANS app.js, REMPLACEZ la fonction removeBookingFromLocalHistory
+
+async function removeBookingFromLocalHistory(bookingNumber) {
+    // Appel à la nouvelle modale personnalisée
+    const confirmed = await showCustomConfirm({
+        title: "Retirer la réservation ?",
+        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n\nLa réservation ne sera pas annulée et restera visible pour l'administrateur.`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, retirer',
+        confirmClass: 'btn-danger'
+    });
+
+    // Si l'utilisateur clique sur "Annuler"
+    if (!confirmed) {
         return;
     }
+    
+    // ✅ CORRECTION : L'accolade en trop a été supprimée ici.
+    // Le bloc try...catch est maintenant correctement placé dans la fonction.
 
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
@@ -767,7 +783,6 @@ function removeBookingFromLocalHistory(bookingNumber) {
         Utils.showToast("Une erreur est survenue.", "error");
     }
 }
-
 // ============================================
 // FONCTIONS PAIEMENT AGENCE
 // ============================================
@@ -831,6 +846,44 @@ function getNearestAgency(cityName) {
     }
     
     return agency;
+}
+
+
+
+// DANS app.js, à ajouter avec vos autres fonctions utilitaires
+
+function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const titleEl = document.getElementById('custom-confirm-title');
+        const messageEl = document.getElementById('custom-confirm-message');
+        const iconEl = document.getElementById('custom-confirm-icon');
+        const okBtn = document.getElementById('custom-confirm-ok-btn');
+        const cancelBtn = document.getElementById('custom-confirm-cancel-btn');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        iconEl.textContent = icon;
+        iconEl.className = `custom-modal-icon ${iconClass}`;
+        okBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
+        
+        // Appliquer la classe de style au bouton de confirmation
+        okBtn.className = `btn ${confirmClass}`;
+
+        modal.style.display = 'flex';
+
+        const close = (result) => {
+            modal.style.display = 'none';
+            // Nettoyer les écouteurs d'événements pour éviter les fuites de mémoire
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            resolve(result);
+        };
+
+        okBtn.onclick = () => close(true);
+        cancelBtn.onclick = () => close(false);
+    });
 }
 
 // ============================================
