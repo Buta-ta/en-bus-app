@@ -1363,11 +1363,21 @@ async function generateTicketPDF(reservation, isReturn = false) {
                         <div class="route-info">
                             <div class="route-point">
                                 <div class="city">${route.from}</div>
+
+                                 <!-- ✅ AJOUT DU LIEU PRÉCIS -->
+                    <div class="location-detail">${route.departureLocation || ''}</div>
+                    <div class="time">${route.departure}</div>
+
                                 <div class="time">${route.departure}</div>
                             </div>
                             <div class="route-arrow">➔</div>
                             <div class="route-point" style="text-align: right;">
                                 <div class="city">${route.to}</div>
+                                 <!-- ✅ AJOUT DU LIEU PRÉCIS -->
+                    <div class="location-detail">${route.arrivalLocation || ''}</div>
+                    <div class="time">${route.arrival}</div>
+                </div>
+
                                 <div class="time">${route.arrival}</div>
                             </div>
                         </div>
@@ -2046,6 +2056,11 @@ function displayResults(results, isReturn = false) {
             `<div class="amenity-item" title="${amenityLabels[amenity]}">${Utils.getAmenityIcon(amenity)}</div>`
         ).join("");
         
+        // ✅ AJOUT D'UNE LIGNE POUR LE LIEU DE DÉPART
+        const departureLocationHTML = route.departureLocation
+            ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>`
+            : '';
+        
         let tripDetailsHTML = "";
         if (route.tripType === "direct") {
             tripDetailsHTML = `<div class="bus-card-trip-details">${Utils.getAmenityIcon("direct")}<span>Trajet direct</span></div>`;
@@ -2109,6 +2124,10 @@ function displayResults(results, isReturn = false) {
                 </div>
                 <span>${route.arrival}</span>
             </div>
+              
+                    <!-- ✅ AFFICHAGE DU LIEU DE DÉPART -->
+                    ${departureLocationHTML}
+
             <div class="bus-card-company">${route.company}</div>
             ${tripDetailsHTML}
             <div class="bus-card-details">
