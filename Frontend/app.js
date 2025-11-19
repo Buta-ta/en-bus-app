@@ -3113,13 +3113,15 @@ async function displayConfirmation(reservation) {
                     </button>
                 `;
             }
-            if (reservation.route.trackerId) {
-                actionsHTML += `
-                    <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.route.trackerId}&booking=${reservation.bookingNumber}">
-                        <span class="btn-icon">🛰️</span>
-                        <span class="btn-text">Suivre mon bus</span>
-                    </a>
-                `;
+             // ✅ ON VÉRIFIE QUE CE BLOC EST BIEN PRÉSENT
+        const trackerIdentifier = reservation.route.busIdentifier || reservation.route.trackerId;
+        if (trackerIdentifier) {
+            actionsHTML += `
+                <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${reservation.bookingNumber}">
+                    <span class="btn-icon">🛰️</span>
+                    <span class="btn-text">Suivre mon bus</span>
+                </a>
+            `;
             }
             actionsHTML += `
                 <button class="btn-modern btn-home" onclick="resetAndGoHome()">
@@ -3133,52 +3135,36 @@ async function displayConfirmation(reservation) {
 }
 // DANS app.js, AJOUTEZ CETTE FONCTION
 
+// DANS app.js, REMPLACEZ la fonction displayReservations
+
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
-    if (!listContainer) {
-        console.error("Élément #reservations-list introuvable !");
-        return;
-    }
+    if (!listContainer) return;
 
     listContainer.innerHTML = '<div class="loading-spinner">Chargement de vos réservations...</div>';
 
-    // 1. Lire l'historique local des numéros de réservation
-    let history = [];
-    try {
-        history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-    } catch (e) {
-        console.error("Erreur lors de la lecture de l'historique local:", e);
-    }
+    let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
 
     if (history.length === 0) {
         listContainer.innerHTML = `
             <div class="no-results" style="padding: 48px; text-align: center;">
                 <h3>Aucune réservation sur cet appareil</h3>
                 <p>Vos nouvelles réservations apparaîtront ici automatiquement.</p>
-                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">
-                    Réserver un voyage
-                </button>
-            </div>
-        `;
+                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">Réserver un voyage</button>
+            </div>`;
         return;
     }
 
     try {
-        // 2. Interroger le backend pour obtenir les détails de toutes les réservations
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
+        if (!response.ok) throw new Error('Erreur réseau lors de la récupération des réservations.');
         
-        if (!response.ok) {
-            throw new Error('Erreur réseau lors de la récupération des réservations.');
-        }
-
         const data = await response.json();
-
         if (!data.success || data.reservations.length === 0) {
             listContainer.innerHTML = `<div class="no-results"><h3>Aucune réservation trouvée.</h3></div>`;
             return;
         }
         
-        // 3. Afficher les cartes de réservation dynamiques
         listContainer.innerHTML = data.reservations.map(res => {
             const isConfirmed = res.status === 'Confirmé';
             const isPending = res.status === 'En attente de paiement';
@@ -3188,21 +3174,15 @@ async function displayReservations() {
             if (isConfirmed) statusHTML = `<span style="color: var(--color-accent-glow);">✓ Confirmé</span>`;
             else if (isPending) statusHTML = `<span style="color: #ff9800;">⏳ En attente de paiement</span>`;
             else if (isCancelled) statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
+            
+            // ✅ On identifie l'ID de suivi du bus
+            const trackerIdentifier = res.route.busIdentifier || res.route.trackerId;
 
             return `
                 <div class="reservation-card-pwa">
                     <div class="res-pwa-header">
                         <span class="res-pwa-booking-number">${res.bookingNumber}</span>
-
-                        
-                    ${!isPending ? `
-                        <button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Supprimer de cet appareil">
-                            🗑️
-                        </button>
-                    ` : ''}
-
-
-
+                        ${!isPending ? `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Supprimer de cet appareil">🗑️</button>` : ''}
                         <span class="res-pwa-status">${statusHTML}</span>
                     </div>
                     <div class="res-pwa-body">
@@ -3213,14 +3193,13 @@ async function displayReservations() {
                     <div class="res-pwa-actions">
                         ${isConfirmed ? `
                             <button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir le Billet</button>
-                            ${res.route.trackerId ? `<a href="Suivi/suivi.html?bus=${res.route.trackerId}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre le bus</a>` : ''}
+                            
+                            <!-- ✅ BOUTON DE SUIVI RÉINTÉGRÉ ICI -->
+                            ${trackerIdentifier ? `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre le bus</a>` : ''}
+
                         ` : ''}
-                        ${isPending ? `
-                            <button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Voir Instructions</button>
-                        ` : ''}
-                         ${isCancelled ? `
-                            <button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>
-                        ` : ''}
+                        ${isPending ? `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Voir Instructions</button>` : ''}
+                        ${isCancelled ? `<button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>` : ''}
                     </div>
                 </div>
             `;
@@ -3231,7 +3210,6 @@ async function displayReservations() {
         listContainer.innerHTML = `<div class="no-results error"><h3>Impossible de charger vos réservations.</h3><p>${error.message}</p></div>`;
     }
 }
-
 
 
 
