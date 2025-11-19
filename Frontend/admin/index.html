@@ -2234,6 +2234,8 @@
       // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
 // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
 
+// DANS Admin/index.html, REMPLACEZ la fonction renderTable par celle-ci
+
 function renderTable(reservations) { 
     const tbody = document.getElementById('reservations-body'); 
     
@@ -2252,10 +2254,15 @@ function renderTable(reservations) {
         };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
-        // ✅ CORRECTION : La variable est maintenant définie ICI, à l'intérieur de la boucle.
         let countdownHTML = '';
         if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"></div>`;
+            // ✅ CORRECTION : Le HTML du minuteur est maintenant complet
+            countdownHTML = `
+                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
+                    <span class="countdown-icon">⏱️</span>
+                    <span class="countdown-time">Calcul...</span>
+                </div>
+            `;
         }
         
         const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
@@ -2285,11 +2292,9 @@ function renderTable(reservations) {
                 <td class="font-bold">${r.totalPrice}</td>
                 <td>
                     <span class="badge ${badgeClass}">${r.status}</span>
-                    <!-- La variable countdownHTML est maintenant correctement affichée -->
                     ${countdownHTML} 
                 </td>
                 <td class="actions-cell">
-                    <!-- Les boutons d'action sont bien présents -->
                     <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
                     ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>` : ''}
                     <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>
@@ -2299,7 +2304,6 @@ function renderTable(reservations) {
         `; 
     }).join('');
     
-    // Cette fonction va trouver les nouveaux éléments de décompte et les démarrer
     startCountdownUpdates();
 }
       // Dans Admin/index.html - Ajouter après renderTable()
@@ -2309,70 +2313,57 @@ function renderTable(reservations) {
       // ============================================
 
       let countdownInterval = null;
+// DANS Admin/index.html, REMPLACEZ la fonction startCountdownUpdates par celle-ci
 
-      function startCountdownUpdates() {
-        // Arrêter l'ancien intervalle s'il existe
-        if (countdownInterval) {
-          clearInterval(countdownInterval);
-        }
-
-        // Mettre à jour toutes les secondes
-        countdownInterval = setInterval(() => {
-          const countdowns = document.querySelectorAll(
-            ".payment-countdown[data-deadline]"
-          );
-
-          countdowns.forEach((countdown) => {
+function startCountdownUpdates() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    countdownInterval = setInterval(() => {
+        const countdowns = document.querySelectorAll('.payment-countdown[data-deadline]');
+        
+        countdowns.forEach(countdown => {
             const deadline = new Date(countdown.dataset.deadline);
             const now = new Date();
             const timeLeft = deadline - now;
+            
+            // ✅ SÉCURITÉ : Cibler les bons sous-éléments
+            const timeElement = countdown.querySelector('.countdown-time');
+            const iconElement = countdown.querySelector('.countdown-icon');
 
+            if (!timeElement || !iconElement) return; // Si les éléments n'existent pas, on arrête
+            
             if (timeLeft > 0) {
-              const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-              const minutesLeft = Math.floor(
-                (timeLeft % (1000 * 60 * 60)) / (1000 * 60)
-              );
-              const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-              // Mettre à jour le texte
-              const timeElement = countdown.querySelector(".countdown-time");
-              if (timeElement) {
-                timeElement.textContent = `${hoursLeft}h ${minutesLeft}min ${secondsLeft}s`;
-              }
-
-              // Changer le style selon le temps restant
-              countdown.classList.remove("normal", "warning", "urgent");
-
-              const iconElement = countdown.querySelector(".countdown-icon");
-
-              if (hoursLeft < 1) {
-                countdown.classList.add("urgent");
-                if (iconElement) iconElement.textContent = "🚨";
-              } else if (hoursLeft < 3) {
-                countdown.classList.add("warning");
-                if (iconElement) iconElement.textContent = "⚠️";
-              } else {
-                countdown.classList.add("normal");
-                if (iconElement) iconElement.textContent = "⏱️";
-              }
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                timeElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                countdown.classList.remove('normal', 'warning', 'urgent');
+                
+                if (hours < 1) {
+                    countdown.classList.add('urgent');
+                    iconElement.textContent = '🚨';
+                } else if (hours < 3) {
+                    countdown.classList.add('warning');
+                    iconElement.textContent = '⚠️';
+                } else {
+                    countdown.classList.add('normal');
+                    iconElement.textContent = '⏱️';
+                }
+                
             } else {
-              // Le délai est dépassé
-              countdown.classList.remove("normal", "warning");
-              countdown.classList.add("urgent");
-
-              const timeElement = countdown.querySelector(".countdown-time");
-              const iconElement = countdown.querySelector(".countdown-icon");
-
-              if (timeElement) timeElement.textContent = "EXPIRÉ";
-              if (iconElement) iconElement.textContent = "❌";
-
-              // Recharger les données pour mettre à jour le statut
-              // (optionnel, pour éviter trop de requêtes)
-              // setTimeout(() => loadAdminData(), 5000);
+                timeElement.textContent = 'EXPIRÉ';
+                iconElement.textContent = '❌';
+                countdown.classList.remove('normal', 'warning');
+                countdown.classList.add('urgent');
             }
-          });
-        }, 1000); // Mise à jour toutes les secondes
-      }
+        });
+        
+    }, 1000);
+}
 
       // Arrêter les mises à jour quand on quitte la page des réservations
       function stopCountdownUpdates() {
