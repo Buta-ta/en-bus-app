@@ -367,6 +367,47 @@ app.get("/api/reservations/:bookingNumber", async (req, res) => {
   }
 });
 
+
+
+// DANS server.js, dans la section des routes de réservation
+
+// ============================================
+// ✅ NOUVELLE ROUTE : AJOUTER UN ID DE TRANSACTION
+// ============================================
+app.patch('/api/reservations/:bookingNumber/transaction-id', strictLimiter, [
+    body('transactionId').notEmpty().isString().trim()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const { bookingNumber } = req.params;
+        const { transactionId } = req.body;
+
+        const result = await reservationsCollection.updateOne(
+            { bookingNumber: bookingNumber },
+            { 
+                $set: { 
+                    'paymentDetails.clientTransactionId': transactionId,
+                    'paymentDetails.submittedAt': new Date()
+                } 
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'Réservation non trouvée.' });
+        }
+
+        console.log(`🧾 ID de transaction ${transactionId} soumis pour la réservation ${bookingNumber}.`);
+        res.json({ success: true, message: 'ID de transaction enregistré avec succès.' });
+
+    } catch (error) {
+        console.error('❌ Erreur enregistrement ID transaction:', error);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
 // ============================================
 // === ROUTES ADMIN (protégées) ===
 // ============================================
