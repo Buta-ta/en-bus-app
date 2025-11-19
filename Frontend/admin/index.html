@@ -1175,6 +1175,17 @@
         opacity: 0.6;
       }
 
+
+      /* DANS Admin/index.html, dans <style> */
+
+.seat.selected {
+    background: #2196F3 !important; /* Bleu vif pour la sélection */
+    color: white !important;
+    border: 3px solid white !important;
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.6);
+}
       /* ============================================
        📱 RESPONSIVE
        ============================================ */
@@ -3589,241 +3600,134 @@ function switchTab(tabName) {
       // 💺 MODIFICATION DES SIÈGES D'UNE RÉSERVATION
       // ============================================
 
-      async function showChangeSeatsModal(reservationId) {
-        console.log(
-          "🔍 Ouverture modal modification sièges pour:",
-          reservationId
-        );
+     // DANS Admin/index.html, REMPLACEZ la fonction showChangeSeatsModal
 
-        const reservation = allReservations.find(
-          (r) => r._id === reservationId
-        );
-        if (!reservation) {
-          showNotification("Erreur : réservation non trouvée.", "error");
-          return;
+async function showChangeSeatsModal(reservationId) {
+    console.log("🔍 Ouverture modal modification sièges pour:", reservationId);
+
+    // 1. Sécurité : Vérifier l'ID et trouver la réservation
+    if (!reservationId || reservationId.length !== 24) {
+        showNotification("ID de réservation invalide.", "error");
+        return;
+    }
+    const reservation = allReservations.find(r => r._id === reservationId);
+    if (!reservation) {
+        showNotification("Erreur : réservation non trouvée.", "error");
+        return;
+    }
+
+    // 2. Récupérer les données des sièges du voyage associé
+    const tripId = reservation.route.id;
+    console.log("📍 ID du voyage associé:", tripId);
+    const tripSeatsData = await apiCall(`/trips/${tripId}/seats`);
+    if (!tripSeatsData || !tripSeatsData.seats) {
+        showNotification("Erreur : impossible de charger les sièges du voyage.", "error");
+        return;
+    }
+    console.log("✅ Données sièges chargées.", tripSeatsData);
+
+    // 3. Préparer les données pour l'affichage
+    document.getElementById('modal-title').textContent = `Modifier les sièges - ${reservation.bookingNumber}`;
+    const currentSeats = reservation.seats.map(s => parseInt(s));
+    console.log("🪑 Sièges actuels de la réservation:", currentSeats);
+
+    // 4. Construire le HTML de la grille des sièges
+    let seatsGridHTML = '';
+    tripSeatsData.seats.forEach((seat, index) => {
+        let seatClass = 'seat';
+        let onClick = '';
+        let title = `Siège ${seat.number}`;
+        const isCurrentSeat = currentSeats.includes(seat.number);
+
+        if (isCurrentSeat) {
+            seatClass += ' selected'; // Pré-sélectionné
+            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
+            title += ' (Siège actuel)';
+        } else if (seat.status === 'available' || seat.status === 'blocked') {
+            seatClass += ` seat-${seat.status}`;
+            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
+            title += ` - ${seat.status}`;
+        } else { // 'occupied' par un autre client
+            seatClass += ' seat-occupied';
+            title += ' - Occupé';
         }
-
-        // Utiliser l'ID du voyage depuis la réservation
-        const tripId = reservation.route.id;
-        console.log("📍 ID du voyage:", tripId);
-
-        const tripSeatsData = await apiCall(`/trips/${tripId}/seats`);
-
-        if (!tripSeatsData || !tripSeatsData.seats) {
-          showNotification(
-            "Erreur : impossible de charger les sièges du voyage.",
-            "error"
-          );
-          return;
+        seatsGridHTML += `<div class="${seatClass}" ${onClick} title="${title}" data-seat-number="${seat.number}">${seat.number}</div>`;
+        if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
+            seatsGridHTML += '<div class="seat-aisle"></div>';
         }
+    });
 
-        console.log("✅ Données sièges chargées:", tripSeatsData);
-
-        document.getElementById(
-          "modal-title"
-        ).textContent = `Modifier les sièges - ${reservation.bookingNumber}`;
-
-        // Convertir les sièges actuels en nombres pour la comparaison
-        const currentSeats = reservation.seats.map((s) =>
-          typeof s === "string" ? parseInt(s) : s
-        );
-        console.log("🪑 Sièges actuels:", currentSeats);
-
-        let seatMapHTML = `
+    // 5. Construire le HTML complet de la modale
+    const modalBodyHTML = `
         <div style="margin-bottom: 20px; padding: 15px; background: var(--dark-elevated); border-radius: 8px; border-left: 4px solid var(--primary);">
             <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">
-                <strong style="color: var(--primary);">Passagers :</strong> ${
-                  reservation.passengers.length
-                }<br>
-                <strong style="color: var(--primary);">Sièges actuels :</strong> ${currentSeats.join(
-                  ", "
-                )}<br>
-                <strong style="color: var(--accent);">Sélectionnez ${
-                  reservation.passengers.length
-                } nouveau(x) siège(s)</strong>
+                <strong style="color: var(--primary);">Passagers :</strong> ${reservation.passengers.length}<br>
+                <strong style="color: var(--accent);">Sélectionnez ${reservation.passengers.length} siège(s) au total.</strong>
             </p>
         </div>
-        
-        <div class="seat-map-container">
-            <div class="seat-map">
-    `;
-
-        tripSeatsData.seats.forEach((seat, index) => {
-          let seatClass = `seat`;
-          let onClick = "";
-          let title = `Siège ${seat.number}`;
-          let isCurrentSeat = currentSeats.includes(seat.number);
-
-          // Logique de disponibilité
-          if (isCurrentSeat) {
-            // C'est un siège actuellement occupé par CETTE réservation
-            seatClass += " seat-available selected"; // Pré-sélectionné
-            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
-            title += " (actuellement occupé par ce client)";
-          } else if (seat.status === "available") {
-            // Siège libre
-            seatClass += " seat-available";
-            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
-            title += " - Disponible";
-          } else if (seat.status === "blocked") {
-            // Siège bloqué mais modifiable par l'admin
-            seatClass += " seat-blocked";
-            onClick = `onclick="toggleAdminSeat(this, ${seat.number})"`;
-            title += " - Bloqué (cliquable)";
-          } else if (seat.status === "occupied") {
-            // Siège occupé par un AUTRE client
-            seatClass += " seat-occupied";
-            title += " - Occupé par un autre client (non modifiable)";
-            // Pas de onclick
-          }
-
-          seatMapHTML += `
-            <div 
-                class="${seatClass}" 
-                ${onClick} 
-                title="${title}" 
-                data-seat-number="${seat.number}"
-                data-original-status="${seat.status}"
-            >
-                ${seat.number}
-            </div>
-        `;
-
-          // Ajouter l'allée après chaque 2 sièges (sauf tous les 4)
-          if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
-            seatMapHTML += '<div class="seat-aisle"></div>';
-          }
-        });
-
-        seatMapHTML += `
-            </div>
-        </div>
-        
+        <div class="seat-map-container"><div class="seat-map">${seatsGridHTML}</div></div>
         <div class="seat-legend">
-            <div class="legend-item">
-                <div class="legend-box" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);"></div>
-                <span>Disponible</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);"></div>
-                <span>Occupé (autre client)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: var(--dark-border); border: 2px dashed var(--text-muted);"></div>
-                <span>Bloqué</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #2196F3; border: 3px solid white;"></div>
-                <span>Sélectionné</span>
-            </div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--primary);"></div><span>Disponible</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--status-cancelled);"></div><span>Occupé</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--dark-border);"></div><span>Bloqué</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #2196F3; border: 2px solid white;"></div><span>Sélectionné</span></div>
         </div>
-        
         <div style="margin: 20px 0; padding: 15px; background: var(--dark-elevated); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <span style="color: var(--text-secondary);">Sièges sélectionnés :</span>
-                <strong id="selected-seats-count" style="color: var(--primary); font-size: 1.25rem; margin-left: 10px;">
-                    ${currentSeats.length}
-                </strong>
-                <span style="color: var(--text-muted);"> / ${
-                  reservation.passengers.length
-                }</span>
+                <strong id="selected-seats-count" style="color: var(--primary); font-size: 1.25rem; margin-left: 10px;">${currentSeats.length}</strong>
+                <span style="color: var(--text-muted);"> / ${reservation.passengers.length}</span>
             </div>
-            <div id="selected-seats-list" style="color: var(--accent); font-weight: 600; font-family: var(--font-mono);">
-                ${currentSeats.sort((a, b) => a - b).join(", ")}
-            </div>
+            <div id="selected-seats-list" style="color: var(--accent); font-weight: 600; font-family: var(--font-mono);">${currentSeats.sort((a, b) => a - b).join(', ')}</div>
         </div>
-        
-        <button id="save-seats-btn" class="btn btn-primary mt-4">
-            💾 Enregistrer les nouveaux sièges
-        </button>
+        <button id="save-seats-btn" class="btn btn-primary mt-4" disabled>💾 Enregistrer les nouveaux sièges</button>
     `;
 
-        document.getElementById("modal-body").innerHTML = seatMapHTML;
-        document.getElementById("details-modal").classList.add("active");
+    document.getElementById('modal-body').innerHTML = modalBodyHTML;
+    document.getElementById('details-modal').classList.add('active');
+    updateSelectedSeatsDisplay(); // Met à jour l'état du bouton initial
 
-        // Événement sur le bouton "Enregistrer"
-        document.getElementById("save-seats-btn").onclick = async () => {
-          const selectedSeatsElements =
-            document.querySelectorAll(".seat.selected");
-          const newSeats = Array.from(selectedSeatsElements)
-            .map((el) => parseInt(el.dataset.seatNumber))
+    // 6. Attacher l'événement au bouton "Enregistrer"
+    document.getElementById('save-seats-btn').onclick = async () => {
+        const selectedSeatsElements = document.querySelectorAll('.seat.selected');
+        const newSeats = Array.from(selectedSeatsElements)
+            .map(el => parseInt(el.dataset.seatNumber))
             .sort((a, b) => a - b);
-
-          console.log("🎯 Nouveaux sièges sélectionnés:", newSeats);
-
-          if (newSeats.length !== reservation.passengers.length) {
-            showNotification(
-              `Veuillez sélectionner exactement ${reservation.passengers.length} siège(s). Actuellement : ${newSeats.length}`,
-              "warning"
-            );
+        
+        console.log("🎯 Nouveaux sièges à envoyer :", newSeats);
+        
+        if (newSeats.length !== reservation.passengers.length) {
+            showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'warning');
             return;
-          }
+        }
 
-          // Vérifier si les sièges ont changé
-          const hasChanged =
-            JSON.stringify(newSeats) !==
-            JSON.stringify(currentSeats.sort((a, b) => a - b));
-          if (!hasChanged) {
-            showNotification("Aucun changement détecté.", "info");
+        const saveBtn = document.getElementById('save-seats-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Enregistrement...';
+        
+        console.log(`📡 Envoi de la requête PATCH à /admin/reservations/${reservationId}/seats`);
+        const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
+        
+        console.log("📦 Réponse du serveur à la modification :", data);
+        if (data && data.success) {
+            showNotification('Sièges modifiés avec succès !', 'success');
             closeModal();
-            return;
-          }
-
-          // Désactiver le bouton pendant l'opération
-          const saveBtn = document.getElementById("save-seats-btn");
-          saveBtn.disabled = true;
-          saveBtn.textContent = "⏳ Enregistrement...";
-
-          // Appel API
-          const data = await apiCall(
-            `/admin/reservations/${reservationId}/seats`,
-            "PATCH",
-            { newSeats }
-          );
-
-          if (data && data.success) {
-            showNotification("✅ Sièges modifiés avec succès !", "success");
-            closeModal();
-            loadAdminData(); // Recharger les données
-          } else {
+            loadAdminData();
+        } else {
+            showNotification(data?.error || 'Erreur lors de la modification.', 'error');
             saveBtn.disabled = false;
-            saveBtn.textContent = "💾 Enregistrer les nouveaux sièges";
-            showNotification(
-              data?.error || "Erreur lors de la modification.",
-              "error"
-            );
-          }
-        };
-      }
-
+            saveBtn.textContent = '💾 Enregistrer les nouveaux sièges';
+        }
+    };
+}
       // ============================================
       // 🎯 TOGGLE SIÈGE (ADMIN)
       // ============================================
-
-      function toggleAdminSeat(element, seatNumber) {
-        const isSelected = element.classList.contains("selected");
-
-        if (isSelected) {
-          // Désélectionner
-          element.classList.remove("selected");
-          element.style.background = "";
-          element.style.color = "";
-          element.style.border = "";
-          element.style.transform = "";
-          element.style.boxShadow = "";
-        } else {
-          // Sélectionner
-          element.classList.add("selected");
-          element.style.background = "#2196F3";
-          element.style.color = "white";
-          element.style.border = "3px solid white";
-          element.style.transform = "scale(1.1)";
-          element.style.boxShadow = "0 0 20px rgba(33, 150, 243, 0.6)";
-        }
-
-        updateSelectedSeatsDisplay();
-      }
-
+        function toggleAdminSeat(element, seatNumber) {
+    // Ajoute ou enlève simplement la classe 'selected'. Le CSS s'occupera du style.
+    element.classList.toggle('selected');
+    updateSelectedSeatsDisplay(); // Met à jour le compteur
+}
       // ============================================
       // 📊 MISE À JOUR DE L'AFFICHAGE DES SIÈGES SÉLECTIONNÉS
       // ============================================
