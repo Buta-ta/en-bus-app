@@ -2232,91 +2232,76 @@
 
       // Dans Admin/index.html - Modifier renderTable
       // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
+// DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
 
-      function renderTable(reservations) {
-        const tbody = document.getElementById("reservations-body");
-
-        if (!reservations || reservations.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`;
-          return;
+function renderTable(reservations) { 
+    const tbody = document.getElementById('reservations-body'); 
+    
+    if (!reservations || reservations.length === 0) { 
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`; 
+        return; 
+    } 
+    
+    tbody.innerHTML = reservations.map(r => { 
+        const p = r.passengers[0] || {}; 
+        const statusMap = {
+            'Confirmé': 'success',
+            'En attente de paiement': 'warning',
+            'Annulé': 'danger',
+            'Expiré': 'gray'
+        };
+        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+        
+        // ✅ CORRECTION : La variable est maintenant définie ICI, à l'intérieur de la boucle.
+        let countdownHTML = '';
+        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"></div>`;
         }
+        
+        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
 
-        tbody.innerHTML = reservations
-          .map((r) => {
-            const p = r.passengers[0] || {};
-            const statusMap = {
-              Confirmé: "success",
-              "En attente de paiement": "warning",
-              Annulé: "danger",
-              Expiré: "gray",
-            };
-            const badgeClass = `badge-${statusMap[r.status] || "gray"}`;
-
-            // ✅ 1. DÉFINITION DU CHRONOMÈTRE
-            let countdownHTML = "";
-            if (r.status === "En attente de paiement" && r.paymentDeadline) {
-              countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"></div>`;
-            }
-
-            const rowClass =
-              r.status === "En attente de paiement"
-                ? "reservation-row pending-payment"
-                : "";
-
-            let paymentPhoneHTML = "";
-            if (r.status === "En attente de paiement" && r.customerPhone) {
-              paymentPhoneHTML = `
+        let paymentPhoneHTML = '';
+        if (r.status === 'En attente de paiement' && r.customerPhone) {
+            paymentPhoneHTML = `
                 <div style="font-size: 11px; color: #ff9800; margin-top: 4px; font-weight: 700;">
                     💳 N° Paiement: ${r.customerPhone}
                 </div>
             `;
-            }
-
-            return `
+        }
+        
+        return `
             <tr class="${rowClass}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
-                <td>${new Date(r.date).toLocaleDateString("fr-FR")}</td>
+                <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
                 <td>
                     <div class="font-bold">${r.route.from} → ${r.route.to}</div>
                     <div class="text-xs text-muted">${r.route.company}</div>
                 </td>
                 <td>
-                    <div class="font-bold">${p.name || "N/A"}</div>
-                    <div class="text-xs text-muted">${p.phone || "N/A"}</div>
+                    <div class="font-bold">${p.name || 'N/A'}</div>
+                    <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
                     ${paymentPhoneHTML}
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
                 <td>
                     <span class="badge ${badgeClass}">${r.status}</span>
-                    <!-- ✅ 2. AFFICHAGE DU CHRONOMÈTRE -->
-                    ${countdownHTML}
+                    <!-- La variable countdownHTML est maintenant correctement affichée -->
+                    ${countdownHTML} 
                 </td>
                 <td class="actions-cell">
-                    <!-- ✅ 3. RÉINTÉGRATION DE TOUS LES BOUTONS D'ACTIONS -->
-                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${
-                      r._id
-                    }')" title="Détails">📋</button>
-                    ${
-                      r.status === "En attente de paiement"
-                        ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>`
-                        : ""
-                    }
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${
-                      r._id
-                    }')" title="Modifier les sièges">💺</button>
-                    ${
-                      r.status !== "Annulé" && r.status !== "Expiré"
-                        ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler">❌</button>`
-                        : ""
-                    }
+                    <!-- Les boutons d'action sont bien présents -->
+                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
+                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>` : ''}
+                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>
+                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler">❌</button>` : ''}
                 </td>
             </tr>
-        `;
-          })
-          .join("");
-
-        startCountdownUpdates();
-      }
+        `; 
+    }).join('');
+    
+    // Cette fonction va trouver les nouveaux éléments de décompte et les démarrer
+    startCountdownUpdates();
+}
       // Dans Admin/index.html - Ajouter après renderTable()
 
       // ============================================
