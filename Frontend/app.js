@@ -1037,6 +1037,8 @@ window.downloadTicket = async function(isReturn = false) {
 // 💳 AFFICHAGE DES INSTRUCTIONS DE PAIEMENT
 // ============================================
 
+// DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
+
 function displayPaymentInstructions(reservation) {
     console.log('📄 Affichage des instructions de paiement pour:', reservation.bookingNumber);
     
@@ -1051,12 +1053,11 @@ function displayPaymentInstructions(reservation) {
     const deadline = new Date(reservation.paymentDeadline);
     const amount = reservation.totalPriceNumeric;
 
-    // ✅ CORRECTION : Le contenu HTML est maintenant construit dans un bloc conditionnel
+    // --- Contenus conditionnels ---
     let paymentDetailsContent = '';
     let paymentStepsContent = '';
 
     if (isAgencyPayment) {
-        // Contenu pour le paiement en agence
         paymentDetailsContent = `
             <div class="detail-row">
                 <span class="detail-label">🏢 Agence de paiement</span>
@@ -1066,20 +1067,7 @@ function displayPaymentInstructions(reservation) {
                 </div>
             </div>
         `;
-        paymentStepsContent = `
-            <div class="instruction-steps">
-                <h3>🏢 Étapes de paiement en agence</h3>
-                <ol>
-                    <li>Rendez-vous à l'agence de départ avant la date limite.</li>
-                    <li>Présentez votre <strong>numéro de réservation : ${reservation.bookingNumber}</strong></li>
-                    <li>Effectuez le paiement de <strong>${Utils.formatPrice(amount)} FCFA</strong>.</li>
-                    <li>Votre billet sera validé et imprimé sur place.</li>
-                </ol>
-            </div>
-        `;
-
-    } else {
-        // Contenu pour le paiement Mobile Money (MTN/Airtel)
+    } else { // Mobile Money
         paymentDetailsContent = `
             <div class="detail-row">
                 <span class="detail-label">📞 Votre numéro ${paymentMethod}</span>
@@ -1100,20 +1088,33 @@ function displayPaymentInstructions(reservation) {
             <div class="instruction-steps">
                 <h3>📱 Étapes de paiement ${paymentMethod}</h3>
                 <ol>
-                    <li>Composez <strong>${ussdCode}</strong> sur votre téléphone ${paymentMethod} (<strong>${reservation.customerPhone}</strong>)</li>
-                    <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
+                    <li>Composez <strong>${ussdCode}</strong> sur votre téléphone.</li>
+                    <li>Sélectionnez <strong>"Transfert d'argent"</strong>.</li>
                     <li>Entrez le numéro marchand : <strong>${merchantNumber}</strong></li>
                     <li>Montant : <strong>${Utils.formatPrice(amount)} FCFA</strong></li>
                     <li>Message/Référence : <strong>${reservation.bookingNumber}</strong></li>
-                    <li>Validez avec votre code PIN</li>
-                    <li>Vous recevrez un SMS de confirmation de ${paymentMethod}</li>
-                    <li><strong>Cliquez sur "Vérifier le paiement" ci-dessous après avoir effectué le transfert</strong></li>
+                    <li>Validez avec votre code PIN.</li>
                 </ol>
             </div>
         `;
     }
-    
-    // Le template principal utilise maintenant les variables construites
+
+    // --- Nouvelle section pour la soumission de l'ID de transaction ---
+    const transactionSubmissionHTML = `
+        <div class="transaction-submission-box">
+            <h3>🚀 Étape Finale : Confirmez votre paiement</h3>
+            <p>Après avoir reçu le SMS de confirmation de ${paymentMethod}, copiez l'ID de la transaction (souvent appelé "Transaction ID" ou "Ref") et collez-le ici pour accélérer la validation.</p>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="transaction-id-input" style="font-weight: 600;">ID de Transaction</label>
+                <input type="text" id="transaction-id-input" class="form-control" placeholder="Collez la référence de la transaction ici">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="submitTransactionId('${reservation.bookingNumber}')">
+                <span style="font-size: 1.2em;">✔</span> J'ai payé, soumettre la référence
+            </button>
+        </div>
+    `;
+
+    // --- Template HTML final ---
     const instructionsHTML = `
         <div class="payment-instructions-card">
             <div class="instruction-header">
@@ -1134,19 +1135,10 @@ function displayPaymentInstructions(reservation) {
                     <span class="detail-label">💰 Montant à payer</span>
                     <span class="detail-value primary">${Utils.formatPrice(amount)} FCFA</span>
                 </div>
-
                 ${paymentDetailsContent}
-                
                 <div class="detail-row">
                     <span class="detail-label">⏰ Date limite de paiement</span>
-                    <span class="detail-value">${deadline.toLocaleString('fr-FR', { 
-                        weekday: 'long', 
-                        day: 'numeric', 
-                        month: 'long', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    })}</span>
-                    
+                    <span class="detail-value">${deadline.toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                     <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}">
                         Temps restant : <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">Calcul...</span>
                     </div>
@@ -1154,6 +1146,8 @@ function displayPaymentInstructions(reservation) {
             </div>
             
             ${paymentStepsContent}
+            
+            ${!isAgencyPayment ? transactionSubmissionHTML : ''}
             
             <div class="deadline-warning">
                 <div class="warning-icon">⚠️</div>
@@ -1164,15 +1158,8 @@ function displayPaymentInstructions(reservation) {
             </div>
             
             <div class="action-buttons">
-                ${!isAgencyPayment ? `
-                <button class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')">
-                    <span>🔄</span>
-                    Vérifier le statut du paiement
-                </button>` : ''}
-                <button class="btn btn-secondary" onclick="showPage('home')">
-                    <span>🏠</span>
-                    Retour à l'accueil
-                </button>
+                ${!isAgencyPayment ? `<button class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')"><span>🔄</span> Vérifier le statut du paiement</button>` : ''}
+                <button class="btn btn-secondary" onclick="showPage('home')"><span>🏠</span> Retour à l'accueil</button>
             </div>
         </div>
     `;
@@ -1190,6 +1177,48 @@ function displayPaymentInstructions(reservation) {
     
     appState.currentReservation = reservation;
 }
+
+
+
+
+// DANS app.js, à ajouter avec vos autres fonctions
+
+async function submitTransactionId(bookingNumber) {
+    const transactionIdInput = document.getElementById('transaction-id-input');
+    const transactionId = transactionIdInput.value.trim();
+
+    if (!transactionId) {
+        Utils.showToast("Veuillez saisir l'ID de la transaction.", "warning");
+        return;
+    }
+
+    Utils.showToast("Envoi de votre référence...", "info");
+
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/transaction-id`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transactionId: transactionId })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Erreur lors de la soumission.');
+        }
+
+        Utils.showToast("Référence reçue ! Notre équipe va vérifier votre paiement.", 'success');
+        // On peut désactiver le champ et le bouton pour éviter une double soumission
+        transactionIdInput.disabled = true;
+        document.querySelector('.transaction-submission-box button').disabled = true;
+
+    } catch (error) {
+        console.error('Erreur soumission ID transaction:', error);
+        Utils.showToast(error.message, 'error');
+    }
+}
+
+
 // ============================================
 // 🔍 VÉRIFICATION DU STATUT DE PAIEMENT
 // ============================================
