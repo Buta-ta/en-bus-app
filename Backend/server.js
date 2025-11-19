@@ -393,15 +393,14 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
-    const stats = {
-      total: reservations.length,
-      confirmed: reservations.filter((r) => r.status === "Confirmé").length,
-      pending: reservations.filter((r) => r.status === "En attente de paiement")
-        .length,
-      cancelled: reservations.filter(
-        (r) => r.status === "Annulé" || r.status === "Expiré"
-      ).length,
-    };
+    // ✅ CORRECTION : Calcul robuste des statistiques
+        const stats = {
+            total: reservations.length,
+            confirmed: reservations.filter(r => r.status === 'Confirmé').length,
+            pending: reservations.filter(r => r.status === 'En attente de paiement').length,
+            // On compte les deux statuts 'Annulé' et 'Expiré' ensemble
+            cancelled: reservations.filter(r => r.status === 'Annulé' || r.status === 'Expiré').length
+        };
     res.json({
       success: true,
       count: reservations.length,

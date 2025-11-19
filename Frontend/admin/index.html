@@ -2254,42 +2254,53 @@
         applyFilters();
       }
 
-      function displayStats(stats) {
-        const statsGrid = document.getElementById("stats-grid");
-        statsGrid.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-label">Total</span>
-                        <div class="stat-icon primary">📊</div>
-                    </div>
-                    <div class="stat-value">${stats.total}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-label">Confirmées</span>
-                        <div class="stat-icon success">✅</div>
-                    </div>
-                    <div class="stat-value">${stats.confirmed}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-label">En attente</span>
-                        <div class="stat-icon warning">⏳</div>
-                    </div>
-                    <div class="stat-value">${stats.pending}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <span class="stat-label">Annulées</span>
-                        <div class="stat-icon danger">❌</div>
-                    </div>
-                    <div class="stat-value">${
-                      stats.cancelled + stats.expired
-                    }</div>
-                </div>
-            `;
-      }
+      // DANS Admin/index.html, REMPLACEZ la fonction displayStats par celle-ci
 
+function displayStats(stats) {
+    const statsGrid = document.getElementById("stats-grid");
+
+    // ✅ CORRECTION : On s'assure que chaque valeur est un nombre avant de l'utiliser.
+    // S'il est undefined, on le remplace par 0.
+    const total = stats.total || 0;
+    const confirmed = stats.confirmed || 0;
+    const pending = stats.pending || 0;
+    
+    // On calcule le total des annulées en s'assurant que les deux valeurs sont des nombres.
+    const totalCancelled = (stats.cancelled || 0) + (stats.expired || 0);
+
+    statsGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Total</span>
+                <div class="stat-icon primary">📊</div>
+            </div>
+            <div class="stat-value">${total}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Confirmées</span>
+                <div class="stat-icon success">✅</div>
+            </div>
+            <div class="stat-value">${confirmed}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">En attente</span>
+                <div class="stat-icon warning">⏳</div>
+            </div>
+            <div class="stat-value">${pending}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <!-- On clarifie le libellé -->
+                <span class="stat-label">Annulées & Expirées</span>
+                <div class="stat-icon danger">❌</div>
+            </div>
+            <!-- On affiche le total calculé de manière sûre -->
+            <div class="stat-value">${totalCancelled}</div>
+        </div>
+    `;
+}
       // ✅ NOUVELLE VERSION (CORRECTE)
       function applyFilters() {
         let filtered = allReservations;
