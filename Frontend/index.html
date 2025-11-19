@@ -697,6 +697,12 @@
             <h3>Récapitulatif</h3>
             <!-- ✅ AJOUTER CE BLOC HTML ICI -->
             <div id="urgency-box" class="urgency-box" style="display: none;">
+
+              <div class="urgency-item">
+        <span class="urgency-label">La réservation expire dans</span>
+        <!-- ✅ CIBLE N°1 -->
+        <span id="payment-countdown-timer-box" class="urgency-value">--:--</span>
+    </div>
               <!-- Contenu généré par JavaScript -->
             </div>
             <div id="booking-summary" class="booking-details"></div>
@@ -756,6 +762,10 @@
                 </div>
               </div>
               <label class="payment-method" id="agency-payment-option">
+
+                <strong>Paiement à l'agence</strong>
+    <!-- ✅ CIBLE N°2 -->
+    <span id="agency-payment-subtitle">⏰ Payez dans les 10h à l'agence</span>
                 <input type="radio" name="payment" value="agency" />
                 <div class="method-content">
                   <div class="method-icon">🏢</div>
@@ -772,6 +782,7 @@
                 </div>
                 <div class="form-group">
                   <label>⏰ Vous devez payer avant :</label>
+                  
                   <input type="text" id="agency-deadline" class="form-control" readonly />
                 </div>
                 <div class="form-group">
