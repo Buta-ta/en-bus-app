@@ -1917,12 +1917,16 @@ function applyFiltersAndSort() {
 // 🎛️ GESTION DES FILTRES UI
 // ============================================
 
+// DANS app.js, REMPLACEZ la fonction updateFilter
+
 window.updateFilter = function(filterType, value) {
     switch (filterType) {
+        // ✅ CORRECTION : Ajout de 'departureLocation' à la liste
         case 'company':
         case 'tripType':
         case 'departureTime':
         case 'sortBy':
+        case 'departureLocation':
             activeFilters[filterType] = value;
             break;
         
@@ -1948,7 +1952,7 @@ window.updateFilter = function(filterType, value) {
             break;
     }
     
-    // Réappliquer les filtres
+    // Réappliquer les filtres et rafraîchir l'affichage
     const filtered = applyFiltersAndSort();
     displayResults(filtered, appState.isSelectingReturn);
     
@@ -1957,7 +1961,6 @@ window.updateFilter = function(filterType, value) {
         Utils.showToast('Aucun trajet ne correspond à vos critères', 'info');
     }
 };
-
 window.resetFilters = function() {
     activeFilters = {
         company: 'all',
