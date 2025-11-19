@@ -137,38 +137,59 @@ app.get("/api/version", (req, res) => {
   });
 });
 
-app.get("/api/search", async (req, res) => {
-  let { from, to, date } = req.query;
-  if (!from || !to || !date)
-    return res.status(400).json({ error: "Paramètres manquants" });
-  try {
-    const trips = await tripsCollection
-      .find({
-        "route.from": { $regex: `^${from.trim()}`, $options: "i" },
-        "route.to": { $regex: `^${to.trim()}`, $options: "i" },
-        date: date,
-      })
-      .toArray();
-    const results = trips.map((trip) => {
-      const routeData = trip.route || {};
-      return {
-        id: trip._id.toString(),
-        ...routeData,
-        availableSeats: trip.seats.filter((s) => s.status === "available")
-          .length,
-        totalSeats: trip.seats.length,
-        date: trip.date,
-        busIdentifier: trip.busIdentifier,
-        baggageOptions: routeData.baggageOptions,
-      };
-    });
-    res.json({ success: true, count: results.length, results });
-  } catch (error) {
-    console.error("❌ Erreur recherche:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
+// DANS server.js, REMPLACEZ la route GET /api/search
 
+app.get("/api/search", async (req, res) => {
+    let { from, to, date } = req.query;
+    if (!from || !to || !date) return res.status(400).json({ error: "Paramètres manquants" });
+
+    try {
+        const trips = await tripsCollection.find({
+            "route.from": { $regex: `^${from.trim()}`, $options: "i" },
+            "route.to": { $regex: `^${to.trim()}`, $options: "i" },
+            date: date
+        }).toArray();
+
+        const results = trips.map(trip => {
+            const routeData = trip.route || {};
+            
+            // ✅ CORRECTION : On s'assure d'extraire toutes les propriétés de routeData
+            // et de les fusionner correctement.
+            return {
+                id: trip._id.toString(),
+                from: routeData.from,
+                to: routeData.to,
+                company: routeData.company,
+                price: routeData.price,
+                duration: routeData.duration || "N/A",
+                departure: routeData.departure,
+                arrival: routeData.arrival,
+                amenities: routeData.amenities || [],
+                tripType: routeData.tripType || "direct",
+                stops: routeData.stops || [],
+                connections: routeData.connections || [],
+                breaks: routeData.breaks || 0,
+                
+                // ✅ VÉRIFICATION CRUCIALE : On s'assure que ces champs sont bien inclus
+                departureLocation: routeData.departureLocation || null,
+                arrivalLocation: routeData.arrivalLocation || null,
+                
+                trackerId: trip.busIdentifier || routeData.trackerId || null,
+                availableSeats: trip.seats.filter(s => s.status === 'available').length,
+                totalSeats: trip.seats.length,
+                date: trip.date,
+                busIdentifier: trip.busIdentifier,
+                baggageOptions: routeData.baggageOptions
+            };
+        });
+        
+        res.json({ success: true, count: results.length, results });
+
+    } catch (error) {
+        console.error("❌ Erreur recherche:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
 app.get("/api/trips/:id/seats", async (req, res) => {
   try {
     const { id } = req.params;
