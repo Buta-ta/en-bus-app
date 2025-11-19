@@ -373,6 +373,9 @@ const routes = [
     },
 ];
 
+
+let frontendCountdownInterval = null; 
+
 let appState = {
     currentSearch: {},
     selectedBus: null,
@@ -623,6 +626,53 @@ async generateQRCodeBase64(text, size = 200) {
 }
 }
 
+
+// DANS app.js, à ajouter avec les autres fonctions utilitaires
+
+function startFrontendCountdown() {
+    // S'assurer qu'aucun autre minuteur ne tourne
+    if (frontendCountdownInterval) {
+        clearInterval(frontendCountdownInterval);
+    }
+
+    const timerElement = document.getElementById('payment-countdown-timer');
+    const containerElement = document.getElementById('payment-countdown-container');
+
+    if (!timerElement || !containerElement?.dataset.deadline) return;
+
+    const deadline = new Date(containerElement.dataset.deadline);
+
+    frontendCountdownInterval = setInterval(() => {
+        const now = new Date();
+        const timeLeft = deadline - now;
+
+        if (timeLeft <= 0) {
+            clearInterval(frontendCountdownInterval);
+            timerElement.textContent = "EXPIRÉ";
+            containerElement.style.color = "#f44336"; // Rouge
+            return;
+        }
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        timerElement.textContent = 
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+    }, 1000);
+}
+
+function stopFrontendCountdown() {
+    if (frontendCountdownInterval) {
+        clearInterval(frontendCountdownInterval);
+        frontendCountdownInterval = null;
+        console.log("⏱️ Décompteur client arrêté.");
+    }
+}
+
+
+
 // ============================================
 // FONCTIONS PAIEMENT AGENCE
 // ============================================
@@ -836,10 +886,14 @@ window.downloadTicket = async function(isReturn = false) {
 // ============================================
 // Dans app.js - REMPLACER la fonction displayPaymentInstructions()
 
+// DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
+
 function displayPaymentInstructions(reservation) {
     console.log('📄 Affichage des instructions de paiement pour:', reservation.bookingNumber);
     
     const paymentMethod = reservation.paymentMethod;
+    const isAgencyPayment = paymentMethod === 'AGENCY';
+
     const merchantNumber = paymentMethod === 'MTN' 
         ? CONFIG.MTN_MERCHANT_NUMBER 
         : CONFIG.AIRTEL_MERCHANT_NUMBER;
@@ -848,15 +902,41 @@ function displayPaymentInstructions(reservation) {
     const deadline = new Date(reservation.paymentDeadline);
     const amount = reservation.totalPriceNumeric;
     
-    const hoursLeft = Math.floor((deadline - new Date()) / (1000 * 60 * 60));
-    const minutesLeft = Math.floor(((deadline - new Date()) % (1000 * 60 * 60)) / (1000 * 60));
+    // Contenu spécifique au paiement Mobile Money
+    const mobileMoneyContent = `
+        <div class="detail-row">
+            <span class="detail-label">📞 Votre numéro ${paymentMethod}</span>
+            <span class="detail-value highlight">${reservation.customerPhone}</span>
+            <div class="detail-warning">⚠️ Utilisez CE numéro pour effectuer le paiement</div>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">📞 Numéro marchand ${paymentMethod}</span>
+            <span class="detail-value highlight">${merchantNumber}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">🔖 Référence (IMPORTANT)</span>
+            <span class="detail-value highlight">${reservation.bookingNumber}</span>
+            <div class="detail-warning">⚠️ Inscrivez cette référence dans le message du transfert</div>
+        </div>
+    `;
+
+    // Contenu spécifique au paiement en agence
+    const agencyPaymentContent = `
+        <div class="detail-row">
+            <span class="detail-label">🏢 Agence de paiement</span>
+            <div style="font-weight: 700; color: var(--color-text-primary);">
+                ${reservation.agency.name}<br>
+                <small style="font-weight: 400; color: var(--color-text-secondary);">${reservation.agency.address}</small>
+            </div>
+        </div>
+    `;
     
     const instructionsHTML = `
         <div class="payment-instructions-card">
             <div class="instruction-header">
-                <div class="instruction-icon">${paymentMethod === 'MTN' ? '📱' : '📲'}</div>
+                <div class="instruction-icon">${isAgencyPayment ? '🏢' : '📱'}</div>
                 <div>
-                    <h2 class="instruction-title">Paiement ${paymentMethod} Mobile Money</h2>
+                    <h2 class="instruction-title">Paiement ${isAgencyPayment ? 'à l\'agence' : `${paymentMethod} Mobile Money`}</h2>
                     <p class="instruction-subtitle">Finalisez votre réservation en effectuant le paiement</p>
                 </div>
             </div>
@@ -871,20 +951,9 @@ function displayPaymentInstructions(reservation) {
                     <span class="detail-label">💰 Montant à payer</span>
                     <span class="detail-value primary">${Utils.formatPrice(amount)} FCFA</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">📞 Votre numéro ${paymentMethod}</span>
-                    <span class="detail-value highlight">${reservation.customerPhone}</span>
-                    <div class="detail-warning">⚠️ Utilisez CE numéro pour effectuer le paiement</div>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">📞 Numéro marchand ${paymentMethod}</span>
-                    <span class="detail-value highlight">${merchantNumber}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">🔖 Référence (IMPORTANT)</span>
-                    <span class="detail-value highlight">${reservation.bookingNumber}</span>
-                    <div class="detail-warning">⚠️ Inscrivez cette référence dans le message du transfert</div>
-                </div>
+
+                ${isAgencyPayment ? agencyPaymentContent : mobileMoneyContent}
+                
                 <div class="detail-row">
                     <span class="detail-label">⏰ Date limite de paiement</span>
                     <span class="detail-value">${deadline.toLocaleString('fr-FR', { 
@@ -894,10 +963,15 @@ function displayPaymentInstructions(reservation) {
                         hour: '2-digit', 
                         minute: '2-digit' 
                     })}</span>
-                    <div class="detail-warning">Temps restant : ${hoursLeft}h ${minutesLeft}min</div>
+                    
+                    <!-- ✅ DÉCOMPTEUR DYNAMIQUE INTÉGRÉ ICI -->
+                    <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}">
+                        Temps restant : <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">Calcul...</span>
+                    </div>
                 </div>
             </div>
             
+            ${!isAgencyPayment ? `
             <div class="instruction-steps">
                 <h3>📱 Étapes de paiement ${paymentMethod}</h3>
                 <ol>
@@ -910,22 +984,26 @@ function displayPaymentInstructions(reservation) {
                     <li>Vous recevrez un SMS de confirmation de ${paymentMethod}</li>
                     <li><strong>Cliquez sur "Vérifier le paiement" ci-dessous après avoir effectué le transfert</strong></li>
                 </ol>
-            </div>
+            </div>` : ''}
             
             <div class="deadline-warning">
                 <div class="warning-icon">⚠️</div>
                 <div>
                     <strong>Important : Délai de paiement</strong>
                     <p>Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué avant le <strong>${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</strong>.</p>
-                    <p>Une fois le paiement effectué, notre équipe validera votre transaction sous quelques minutes. Vous recevrez ensuite un email de confirmation avec votre billet.</p>
+                    ${isAgencyPayment 
+                        ? `<p>Présentez-vous à l'agence avec votre numéro de réservation.</p>`
+                        : `<p>Une fois le paiement effectué, notre équipe validera votre transaction. Vous recevrez ensuite un email de confirmation avec votre billet.</p>`
+                    }
                 </div>
             </div>
             
             <div class="action-buttons">
+                ${!isAgencyPayment ? `
                 <button class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')">
                     <span>🔄</span>
                     Vérifier le statut du paiement
-                </button>
+                </button>` : ''}
                 <button class="btn btn-secondary" onclick="showPage('home')">
                     <span>🏠</span>
                     Retour à l'accueil
@@ -943,8 +1021,16 @@ function displayPaymentInstructions(reservation) {
     instructionsPage.innerHTML = instructionsHTML;
     showPage('payment-instructions');
     
+    // ✅ DÉMARRAGE DU DÉCOMPTEUR
+    startFrontendCountdown();
+
+  
+    
     // Sauvegarder la réservation en cours
     appState.currentReservation = reservation;
+
+
+
 }
 // ============================================
 // 🔍 VÉRIFICATION DU STATUT DE PAIEMENT
@@ -1286,6 +1372,7 @@ function setupMobileMenu() {
 }
 
 function closeMenuAndShowPage(pageName) {
+    
     showPage(pageName);
     const hamburgerBtn = document.getElementById("hamburger-btn");
     const mobileNavMenu = document.getElementById("mobile-nav-menu");
@@ -1297,6 +1384,9 @@ function closeMenuAndShowPage(pageName) {
 }
 
 function showPage(pageName) {
+      if (pageName !== "payment-instructions") {
+        stopFrontendCountdown();
+    }
     document.querySelectorAll(".page").forEach(page => {
         page.classList.remove("active");
     });

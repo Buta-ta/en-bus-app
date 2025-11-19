@@ -2231,54 +2231,58 @@
       // Dans Admin/index.html - Remplacer la fonction renderTable existante
 
       // Dans Admin/index.html - Modifier renderTable
-// DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
+      // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
 
-function renderTable(reservations) { 
-    const tbody = document.getElementById('reservations-body'); 
-    
-    if (!reservations || reservations.length === 0) { 
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`; 
-        return; 
-    } 
-    
-    tbody.innerHTML = reservations.map(r => { 
-        const p = r.passengers[0] || {}; 
-        const statusMap = {
-            'Confirmé': 'success',
-            'En attente de paiement': 'warning',
-            'Annulé': 'danger',
-            'Expiré': 'gray'
-        };
-        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
-        
-        // ✅ 1. DÉFINITION DU CHRONOMÈTRE
-        let countdownHTML = '';
-        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"></div>`;
+      function renderTable(reservations) {
+        const tbody = document.getElementById("reservations-body");
+
+        if (!reservations || reservations.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`;
+          return;
         }
 
-        const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
-        
-        let paymentPhoneHTML = '';
-        if (r.status === 'En attente de paiement' && r.customerPhone) {
-            paymentPhoneHTML = `
+        tbody.innerHTML = reservations
+          .map((r) => {
+            const p = r.passengers[0] || {};
+            const statusMap = {
+              Confirmé: "success",
+              "En attente de paiement": "warning",
+              Annulé: "danger",
+              Expiré: "gray",
+            };
+            const badgeClass = `badge-${statusMap[r.status] || "gray"}`;
+
+            // ✅ 1. DÉFINITION DU CHRONOMÈTRE
+            let countdownHTML = "";
+            if (r.status === "En attente de paiement" && r.paymentDeadline) {
+              countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"></div>`;
+            }
+
+            const rowClass =
+              r.status === "En attente de paiement"
+                ? "reservation-row pending-payment"
+                : "";
+
+            let paymentPhoneHTML = "";
+            if (r.status === "En attente de paiement" && r.customerPhone) {
+              paymentPhoneHTML = `
                 <div style="font-size: 11px; color: #ff9800; margin-top: 4px; font-weight: 700;">
                     💳 N° Paiement: ${r.customerPhone}
                 </div>
             `;
-        }
-        
-        return `
+            }
+
+            return `
             <tr class="${rowClass}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
-                <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
+                <td>${new Date(r.date).toLocaleDateString("fr-FR")}</td>
                 <td>
                     <div class="font-bold">${r.route.from} → ${r.route.to}</div>
                     <div class="text-xs text-muted">${r.route.company}</div>
                 </td>
                 <td>
-                    <div class="font-bold">${p.name || 'N/A'}</div>
-                    <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
+                    <div class="font-bold">${p.name || "N/A"}</div>
+                    <div class="text-xs text-muted">${p.phone || "N/A"}</div>
                     ${paymentPhoneHTML}
                 </td>
                 <td class="font-bold">${r.totalPrice}</td>
@@ -2289,17 +2293,30 @@ function renderTable(reservations) {
                 </td>
                 <td class="actions-cell">
                     <!-- ✅ 3. RÉINTÉGRATION DE TOUS LES BOUTONS D'ACTIONS -->
-                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
-                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>` : ''}
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>
-                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler">❌</button>` : ''}
+                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${
+                      r._id
+                    }')" title="Détails">📋</button>
+                    ${
+                      r.status === "En attente de paiement"
+                        ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>`
+                        : ""
+                    }
+                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${
+                      r._id
+                    }')" title="Modifier les sièges">💺</button>
+                    ${
+                      r.status !== "Annulé" && r.status !== "Expiré"
+                        ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler">❌</button>`
+                        : ""
+                    }
                 </td>
             </tr>
-        `; 
-    }).join('');
-    
-    startCountdownUpdates();
-}
+        `;
+          })
+          .join("");
+
+        startCountdownUpdates();
+      }
       // Dans Admin/index.html - Ajouter après renderTable()
 
       // ============================================
@@ -2894,7 +2911,9 @@ function renderTable(reservations) {
                         </button>
 
                            <!-- ✅ AJOUT DU NOUVEAU BOUTON DE RÉINITIALISATION ICI -->
-                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges (y compris les réservés)">
+                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${
+                          trip._id
+                        }')" title="Réinitialiser tous les sièges (y compris les réservés)">
                             🔄
                         </button>
                         ${
@@ -3284,70 +3303,40 @@ function renderTable(reservations) {
       // ============================================
       // 🎬 NAVIGATION
       // ============================================
-      // DANS Admin/index.html
-      function switchTab(tabName) {
-        // 1. Gérer les classes 'active' pour le contenu et les liens
-        document
-          .querySelectorAll(".tab-content")
-          .forEach((tab) => tab.classList.remove("active"));
-        document.getElementById(`tab-${tabName}`).classList.add("active");
+      // DANS Admin/index.
 
-        document
-          .querySelectorAll(".nav-link")
-          .forEach((link) => link.classList.remove("active"));
-        document
-          .querySelector(`.nav-link[data-tab="${tabName}"]`)
-          .classList.add("active");
+      // DANS Admin/index.html, dans la section <script>
 
-        console.log(`🚀 Changement vers l'onglet : ${tabName}`);
+function switchTab(tabName) {
+    // 1. Gérer les classes 'active' pour le contenu et les liens
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.querySelector(`.nav-link[data-tab="${tabName}"]`).classList.add('active');
+    
+    console.log(`🚀 Changement vers l'onglet : ${tabName}`);
 
-        // 2. Charger les données spécifiques à l'onglet
-        switch (tabName) {
-          case "reservations":
+    // ✅ VÉRIFICATION ET CORRECTION
+    // Arrête les chronomètres si on n'est plus sur l'onglet des réservations
+    if (tabName !== 'reservations') {
+        stopCountdownUpdates();
+    }
+    
+    // 2. Charger les données spécifiques à l'onglet
+    switch (tabName) {
+        case 'reservations':
+            // L'appel à loadAdminData va automatiquement lancer les chronomètres via renderTable
             loadAdminData();
             break;
-          case "trips":
+        case 'trips':
             loadAllTemplates().then(loadAllTrips);
             break;
-          case "templates":
+        case 'templates':
             loadAllTemplates();
             break;
-        }
-
-        // Arrêter les chronomètres si on quitte l'onglet réservations
-        if (tabName !== "reservations") {
-          stopCountdownUpdates();
-        }
-
-        // Gérer les classes 'active'
-        document
-          .querySelectorAll(".tab-content")
-          .forEach((tab) => tab.classList.remove("active"));
-        document.getElementById(`tab-${tabName}`).classList.add("active");
-
-        document
-          .querySelectorAll(".nav-link")
-          .forEach((link) => link.classList.remove("active"));
-        document
-          .querySelector(`.nav-link[data-tab="${tabName}"]`)
-          .classList.add("active");
-
-        console.log(`🚀 Changement vers l'onglet : ${tabName}`);
-
-        // Charger les données spécifiques à l'onglet
-        switch (tabName) {
-          case "reservations":
-            loadAdminData(); // Cela va appeler renderTable() qui démarre les chronomètres
-            break;
-          case "trips":
-            loadAllTemplates().then(loadAllTrips);
-            break;
-          case "templates":
-            loadAllTemplates();
-            break;
-        }
-      }
-
+    }
+}
       // ============================================
       // 🎯 INITIALISATION
       // ============================================
@@ -3889,31 +3878,37 @@ function renderTable(reservations) {
         element.classList.toggle("selected");
       }
 
-
       // DANS Admin/index.html, dans la balise <script>
 
-// ============================================
-// ✅ NOUVELLE FONCTION : RÉINITIALISER LES SIÈGES
-// ============================================
-async function resetTripSeats(tripId) {
-    const trip = allTrips.find(t => t._id === tripId);
-    if (!trip) return;
+      // ============================================
+      // ✅ NOUVELLE FONCTION : RÉINITIALISER LES SIÈGES
+      // ============================================
+      async function resetTripSeats(tripId) {
+        const trip = allTrips.find((t) => t._id === tripId);
+        if (!trip) return;
 
-    // Avertissement TRÈS important car l'action est destructive
-    const confirmMessage = `Êtes-vous absolument certain de vouloir réinitialiser TOUS les sièges pour le voyage :\n\n${trip.route.from} → ${trip.route.to} du ${new Date(trip.date).toLocaleDateString('fr-FR')} ?\n\n⚠️ ATTENTION : Cette action est IRREVERSIBLE et libérera également les sièges déjà réservés par des clients.`;
+        // Avertissement TRÈS important car l'action est destructive
+        const confirmMessage = `Êtes-vous absolument certain de vouloir réinitialiser TOUS les sièges pour le voyage :\n\n${
+          trip.route.from
+        } → ${trip.route.to} du ${new Date(trip.date).toLocaleDateString(
+          "fr-FR"
+        )} ?\n\n⚠️ ATTENTION : Cette action est IRREVERSIBLE et libérera également les sièges déjà réservés par des clients.`;
 
-    if (!confirm(confirmMessage)) {
-        return;
-    }
+        if (!confirm(confirmMessage)) {
+          return;
+        }
 
-    // Appel de la nouvelle route API
-    const data = await apiCall(`/admin/trips/${tripId}/reset-seats`, 'PATCH');
+        // Appel de la nouvelle route API
+        const data = await apiCall(
+          `/admin/trips/${tripId}/reset-seats`,
+          "PATCH"
+        );
 
-    if (data && data.success) {
-        showNotification(data.message, 'success');
-        loadAllTrips(); // Recharger la table pour voir les changements
-    }
-}
+        if (data && data.success) {
+          showNotification(data.message, "success");
+          loadAllTrips(); // Recharger la table pour voir les changements
+        }
+      }
     </script>
   </body>
 </html>
