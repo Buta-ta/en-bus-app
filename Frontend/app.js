@@ -2761,33 +2761,36 @@ window.proceedToPayment = function() {
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary par celle-ci
 
+// DANS app.js, REMPLACEZ la fonction displayBookingSummary
+
 function displayBookingSummary() {
-  const summaryContainer = document.getElementById("booking-summary");
-    if (!summaryContainer) return;
-    
-    // --- Sécurité (inchangée) ---
-    if (!appState.selectedBus || !appState.currentSearch || !appState.passengerInfo) {
-        // ... gestion d'erreur
+    console.log("📊 Affichage du récapitulatif de réservation...");
+
+    const summaryContainer = document.getElementById("booking-summary");
+    if (!summaryContainer) {
+        console.error("❌ Élément #booking-summary introuvable.");
         return;
     }
 
-    // ✅ CORRECTION : Utilisation de la nouvelle fonction de calcul
+    if (!appState.selectedBus || !appState.currentSearch || !appState.passengerInfo) {
+        Utils.showToast("Une erreur critique est survenue. Veuillez recommencer.", "error");
+        showPage('home');
+        return;
+    }
+
+    // --- Calcul du prix (centralisé) ---
     const priceDetails = Utils.calculateTotalPrice(appState);
     const finalTotalPrice = priceDetails.total;
     const totalTicketsPrice = priceDetails.tickets + priceDetails.returnTickets;
 
+    // --- Construction du récapitulatif HTML ---
     let summaryHTML = `
         <div class="detail-row"><span>Itinéraire Aller:</span><strong>${appState.selectedBus.from || 'N/A'} → ${appState.selectedBus.to || 'N/A'}</strong></div>
         <div class="detail-row"><span>Date Aller:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
     `;
-
     if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
-        summaryHTML += `
-            <div class="detail-row"><span>Itinéraire Retour:</span><strong>${appState.selectedReturnBus.from || 'N/A'} → ${appState.selectedReturnBus.to || 'N/A'}</strong></div>
-            <div class="detail-row"><span>Date Retour:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate)}</strong></div>
-        `;
+        summaryHTML += `<div class="detail-row"><span>Itinéraire Retour:</span><strong>${appState.selectedReturnBus.from || 'N/A'} → ${appState.selectedReturnBus.to || 'N/A'}</strong></div>`;
     }
-
     summaryHTML += `
         <hr style="border-color: var(--color-border); margin: 8px 0;">
         <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(totalTicketsPrice)} FCFA</strong></div>
@@ -2795,47 +2798,57 @@ function displayBookingSummary() {
         <hr style="border-color: var(--color-border); margin: 8px 0;">
         <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(finalTotalPrice)} FCFA</strong></div>
     `;
-
     summaryContainer.innerHTML = summaryHTML;
 
-    // --- Mise à jour des champs de paiement (inchangée) ---
+    // --- Mise à jour des champs de paiement ---
     const amountStr = `${Utils.formatPrice(finalTotalPrice)} FCFA`;
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
         if (amountInput) amountInput.value = amountStr;
     });
 
-
-    // --- Gestion du paiement à l'agence (déjà sécurisé, mais on le garde) ---
+    // ============================================
+    // ✅ GESTION DYNAMIQUE DU PAIEMENT À L'AGENCE
+    // ============================================
     const agencyOption = document.getElementById('agency-payment-option');
-    if (agencyOption) {
+    const agencySubtitle = document.getElementById('agency-payment-subtitle');
+    const agencyInfoDiv = document.getElementById('selected-agency-info');
+    const agencyDeadlineInput = document.getElementById('agency-deadline');
+
+    if (agencyOption && agencySubtitle && agencyInfoDiv && agencyDeadlineInput) {
         if (canPayAtAgency()) {
             agencyOption.style.opacity = '1';
             agencyOption.querySelector('input').disabled = false;
-            // ... reste de votre logique pour l'agence
+
+            // Calculer la date limite de paiement pour l'agence (10 heures à partir de maintenant)
+            const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
+            const deadlineString = deadline.toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            
+            // Mettre à jour les textes
+            agencySubtitle.textContent = `Payez avant le ${deadlineString}`;
+            agencyDeadlineInput.value = deadlineString;
+            
+            // Afficher les infos de l'agence
+            const agency = getNearestAgency(appState.selectedBus.from);
+            agencyInfoDiv.innerHTML = `
+                <strong>${agency.name}</strong><br>
+                <span style="font-size: 0.9em; color: var(--color-text-secondary);">
+                    ${agency.address}<br>
+                    Tél : ${agency.phone}
+                </span>
+            `;
+
         } else {
             agencyOption.style.opacity = '0.5';
             agencyOption.querySelector('input').disabled = true;
-            document.getElementById('agency-payment-subtitle').innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
+            agencySubtitle.innerHTML = `<span style="color: #f44336;">⚠️ Non disponible (moins de ${CONFIG.AGENCY_PAYMENT_MIN_HOURS}h avant départ)</span>`;
+            agencyInfoDiv.innerHTML = '';
+            agencyDeadlineInput.value = 'Non applicable';
         }
     }
     
-    console.log("✅ Récapitulatif affiché avec succès.");
+    console.log("✅ Récapitulatif affiché et mis à jour avec succès.");
 }
-// Dans app.js
-// Dans app.js
-// Dans app.js
-
-// Dans app.js
-
-// DANS app.js, REMPLACEZ LA FONCTION confirmBooking
-
-// Dans app.js - REMPLACER la fonction confirmBooking()
-
-// DANS app.js, REMPLACEZ la fonction confirmBooking par celle-ci
-
-// DANS app.js, REMPLACEZ la fonction confirmBooking par celle-ci
-
 // DANS app.js, REMPLACEZ la fonction confirmBooking
 
 window.confirmBooking = async function(buttonElement) {
