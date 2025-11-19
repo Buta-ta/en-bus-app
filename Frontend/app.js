@@ -1241,21 +1241,22 @@ window.checkPaymentStatus = async function(bookingNumber) {
 
 // Dans app.js
 // Dans app.js
+// DANS app.js, REMPLACEZ la fonction generateTicketPDF par celle-ci
+
 async function generateTicketPDF(reservation, isReturn = false) {
     try {
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150);
+        
         // --- 1. SÉLECTION DES BONNES DONNÉES (ALLER OU RETOUR) ---
         const route = isReturn ? reservation.returnRoute : reservation.route;
         const date = isReturn ? reservation.returnDate : reservation.date;
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
         
-        // Lire le numéro de bus depuis l'objet 'route'
-        const busIdentifier = route.busIdentifier || 'N/A';
+        const busIdentifier = route.busIdentifier || route.trackerId || 'N/A';
         const ticketType = isReturn ? 'BILLET RETOUR' : 'BILLET ALLER';
 
         // --- 2. CONSTRUCTION DES SECTIONS DYNAMIQUES ---
-
         let agencyInfoHTML = '';
         if (reservation.status === 'En attente de paiement' && reservation.agency) {
             agencyInfoHTML = `
@@ -1319,22 +1320,20 @@ async function generateTicketPDF(reservation, isReturn = false) {
                     .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
                     .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
                     .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
-                    .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-                    .status-confirmed { color: #2e7d32; }
-                    .status-pending { color: #f57c00; }
+                    .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #2e7d32; }
                     .payment-warning { display: flex; gap: 15px; background-color: #fff3e0; border: 1px solid #ffe0b2; padding: 15px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
                     .warning-icon { font-size: 24px; }
                     .warning-text strong { display: block; font-size: 14px; color: #e65100; margin-bottom: 4px; }
                     .warning-text span { font-size: 12px; color: #ef6c00; }
-                    .route-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+                    .route-info { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 25px; }
                     .route-point { flex: 1; }
                     .route-point .city { font-size: 24px; font-weight: 700; }
-                    .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); }
-                    .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; }
+                    .route-point .location-detail { font-size: 13px; font-weight: 600; color: var(--text-light); margin-top: 4px; }
+                    .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); margin-top: 8px; }
+                    .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; margin-top: 20px; }
                     .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
-                    .detail-item { }
-                    .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
-                    .detail-value { font-size: 15px; font-weight: 600; }
+                    .detail-item .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+                    .detail-item .detail-value { font-size: 15px; font-weight: 600; }
                     .passengers-section { margin-bottom: 25px; }
                     .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
                     .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
@@ -1342,8 +1341,6 @@ async function generateTicketPDF(reservation, isReturn = false) {
                     .passenger-name { font-weight: 600; }
                     .seat-number { background-color: var(--bg-light); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
                     .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
-                    .stub-header { margin-bottom: 20px; }
-                    .stub-logo { font-family: 'Audiowide', sans-serif; font-size: 20px; font-weight: 900; }
                     .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
                     .stub-qr-code img { display: block; }
                     .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
@@ -1357,47 +1354,27 @@ async function generateTicketPDF(reservation, isReturn = false) {
                     <div class="ticket-main">
                         <div class="ticket-header">
                             <div class="logo">EN-BUS</div>
-                            <div class="booking-status status-confirmed">${ticketType}</div>
+                            <div class="booking-status">${ticketType}</div>
                         </div>
                         ${agencyInfoHTML}
                         <div class="route-info">
                             <div class="route-point">
                                 <div class="city">${route.from}</div>
-
-                                 <!-- ✅ AJOUT DU LIEU PRÉCIS -->
-                    <div class="location-detail">${route.departureLocation || ''}</div>
-                    <div class="time">${route.departure}</div>
-
+                                <div class="location-detail">${route.departureLocation || ''}</div>
                                 <div class="time">${route.departure}</div>
                             </div>
                             <div class="route-arrow">➔</div>
                             <div class="route-point" style="text-align: right;">
                                 <div class="city">${route.to}</div>
-                                 <!-- ✅ AJOUT DU LIEU PRÉCIS -->
-                    <div class="location-detail">${route.arrivalLocation || ''}</div>
-                    <div class="time">${route.arrival}</div>
-                </div>
-
+                                <div class="location-detail">${route.arrivalLocation || ''}</div>
                                 <div class="time">${route.arrival}</div>
                             </div>
                         </div>
                         <div class="details-grid">
-                            <div class="detail-item">
-                                <div class="detail-label">Date</div>
-                                <div class="detail-value">${Utils.formatDate(date)}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Durée</div>
-                                <div class="detail-value">${route.duration || 'Non spécifiée'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Compagnie</div>
-                                <div class="detail-value">${route.company}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Bus N°</div>
-                                <div class="detail-value">${busIdentifier}</div>
-                            </div>
+                            <div class="detail-item"><div class="detail-label">Date</div><div class="detail-value">${Utils.formatDate(date)}</div></div>
+                            <div class="detail-item"><div class="detail-label">Durée</div><div class="detail-value">${route.duration || 'N/A'}</div></div>
+                            <div class="detail-item"><div class="detail-label">Compagnie</div><div class="detail-value">${route.company}</div></div>
+                            <div class="detail-item"><div class="detail-label">Bus N°</div><div class="detail-value">${busIdentifier}</div></div>
                         </div>
                         <div class="passengers-section">
                             <div class="passengers-title">Passager(s)</div>
@@ -1449,9 +1426,11 @@ async function generateTicketPDF(reservation, isReturn = false) {
                 if (printWindow) {
                     printWindow.document.write(ticketHTML);
                     printWindow.document.close();
+                    // printWindow.print(); // Décommenter pour lancer l'impression automatiquement
                 }
             }
         } catch (downloadError) {
+            console.error("Erreur de téléchargement du billet:", downloadError);
             Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
         }
 
@@ -1460,7 +1439,6 @@ async function generateTicketPDF(reservation, isReturn = false) {
         Utils.showToast('Erreur critique lors de la génération du billet.', 'error');
     }
 }
-
 // ============================================
 // INITIALISATION DE L'APPLICATION
 // ============================================
