@@ -2562,47 +2562,46 @@ function startCountdownUpdates() {
 
 // DANS Admin/index.html, REMPLACEZ la fonction performAction
 
+// DANS Admin/index.html, REMPLACEZ la fonction performAction
+
 async function performAction(reservationId, action) {
+    // ✅ CORRECTION : Fermer toute modale existante avant de commencer
+    closeAllModals();
+    
+    // Petit délai pour laisser le navigateur rafraîchir l'affichage
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const reservation = allReservations.find(r => r._id === reservationId);
-    if (!reservation) return;
+    if (!reservation) {
+        showNotification("Erreur: Réservation introuvable.", "error");
+        return;
+    }
 
     if (action === 'confirm-payment') {
-        // ✅ Utilisation de la nouvelle modale de saisie
         const transactionProof = await showAdminInputModal({
             title: 'Confirmer le Paiement',
-            message: `Saisissez la preuve de transaction (ID, référence, etc.) pour la réservation ${reservation.bookingNumber} de ${reservation.passengers[0]?.name}.`,
+            message: `Saisissez la preuve de transaction (ID, réf, etc.) pour la réservation ${reservation.bookingNumber}.`,
             icon: '🧾',
             iconClass: 'success',
-            label: 'ID de Transaction ou Référence de Paiement',
-            placeholder: 'Copiez la référence ici',
+            label: 'ID de Transaction ou Référence',
             confirmText: 'Valider le Paiement'
         });
 
-        // Si l'utilisateur a annulé la modale (a cliqué sur Annuler ou Echap)
-        if (transactionProof === null) {
-            showNotification('Opération annulée.', 'info');
-            return;
-        }
+        if (transactionProof === null) return; // L'utilisateur a annulé
 
-        // Si une valeur a été saisie, on continue
-        const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { 
-            transactionProof: transactionProof 
-        });
-        
+        const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { transactionProof });
         if (data && data.success) {
             showNotification('Paiement confirmé avec succès !', 'success');
             loadAdminData();
         }
 
     } else if (action === 'cancel') {
-        // La logique d'annulation avec showAdminConfirm reste la même et est correcte
         const confirmed = await showAdminConfirm({
             title: 'Annuler la Réservation ?',
-            message: `ATTENTION : Annuler la réservation ${reservation.bookingNumber} libérera les sièges ${reservation.seats.join(', ')}.\n\nCette action est irréversible.`,
+            message: `ATTENTION : Annuler la réservation ${reservation.bookingNumber} libérera les sièges.\nCette action est irréversible.`,
             icon: '🗑️',
             iconClass: 'danger',
-            confirmText: 'Oui, annuler',
-            confirmClass: 'btn-danger'
+            confirmText: 'Oui, annuler'
         });
 
         if (confirmed) {
@@ -2757,10 +2756,24 @@ async function performAction(reservationId, action) {
         document.getElementById("details-modal").classList.add("active");
       }
 
-      function closeModal() {
-        document.getElementById("details-modal").classList.remove("active");
-      }
+     // DANS Admin/index.html, REMPLACEZ la fonction closeModal
 
+// Nouvelle fonction "maîtresse" pour tout fermer
+function closeAllModals() {
+    document.getElementById('details-modal').classList.remove('active');
+    document.getElementById('input-modal').style.display = 'none'; // Assurez-vous que les deux sont gérées
+    
+    // Une méthode encore plus générique si vous ajoutez d'autres modales plus tard :
+    // document.querySelectorAll('.custom-modal-overlay').forEach(modal => {
+    //     modal.style.display = 'none';
+    //     modal.classList.remove('active');
+    // });
+}
+
+// L'ancienne fonction closeModal appelle maintenant la nouvelle
+function closeModal() {
+    closeAllModals();
+}
       // ============================================
       // 🗺️ MODÈLES
       // ============================================
