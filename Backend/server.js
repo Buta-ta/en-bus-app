@@ -179,7 +179,9 @@ app.get("/api/search", async (req, res) => {
                 totalSeats: trip.seats.length,
                 date: trip.date,
                 busIdentifier: trip.busIdentifier,
-                baggageOptions: routeData.baggageOptions
+                baggageOptions: routeData.baggageOptions,
+                // ✅ AJOUTER CETTE LIGNE
+        highlightBadge: trip.highlightBadge || null
             };
         });
         
@@ -637,6 +639,8 @@ app.post(
     body("daysOfWeek").isArray({ min: 1 }),
     body("seatCount").isInt({ min: 10, max: 100 }),
     body("busIdentifier").optional().isString().trim().escape(),
+    // ✅ AJOUTER CE NOUVEAU VALIDATEUR
+    body('highlightBadge').optional().isString().trim().escape()
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -680,6 +684,8 @@ app.post(
             route: routeTemplate,
             seats: seats,
             busIdentifier: busIdentifier || null,
+            // ✅ SAUVEGARDER LE BADGE DANS LA BASE DE DONNÉES
+                    highlightBadge: highlightBadge || null,
             createdAt: new Date(),
           });
         }

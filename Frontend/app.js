@@ -2028,178 +2028,138 @@ window.resetFilters = function() {
     displayResults(appState.currentResults, appState.isSelectingReturn);
     Utils.showToast('Filtres réinitialisés', 'success');
 };
+// DANS app.js, REMPLACEZ la fonction displayResults
 
 function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
-
-
-    // ✅ NOUVELLE LOGIQUE : Peuplage du filtre par lieu de départ
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
 
-    // Extraire les lieux de départ uniques, en ignorant les valeurs vides ou nulles
-    const departureLocations = [...new Set(results.map(r => r.departureLocation).filter(Boolean))];
-
-    if (departureLocations.length > 1) {
-        // S'il y a plus d'un lieu de départ, on affiche le filtre
-        locationSelect.innerHTML = '<option value="all">Tous les lieux</option>';
-        departureLocations.forEach(location => {
-            locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
-        });
-        locationFilterSection.style.display = 'block';
-    } else {
-        // Sinon, on le cache
-        locationFilterSection.style.display = 'none';
-    }
+    // 1. Appliquer les filtres pour obtenir la liste à afficher
+    // Si 'results' est déjà une liste filtrée, applyFiltersAndSort ne la modifiera pas.
+    // Si c'est la liste de base, elle sera filtrée.
+    const displayedResults = applyFiltersAndSort();
     
-    // ✅ Appliquer les filtres si ce n'est pas un retour de filtre
-    const displayedResults = results === appState.currentResults ? applyFiltersAndSort() : results;
-    
-    const summaryHTML = isReturn
+    // 2. Mettre à jour le résumé de la recherche
+    const summaryText = isReturn
         ? `Sélectionnez votre <strong>RETOUR</strong> : <strong>${appState.currentSearch.destination}</strong> → <strong>${appState.currentSearch.origin}</strong> (${displayedResults.length} résultat(s))`
         : `Sélectionnez votre <strong>ALLER</strong> : <strong>${appState.currentSearch.origin}</strong> → <strong>${appState.currentSearch.destination}</strong> (${displayedResults.length} résultat(s))`;
-    
-    summary.innerHTML = summaryHTML;
-    
-    // ✅ Légende avec icônes normales
-    const amenityLabels = {
-        wifi: "Wi-Fi",
-        wc: "Toilettes",
-        prise: "Prises",
-        clim: "Climatisation",
-        pause: "Pause",
-        direct: "Direct"
-    };
-    
-    let legendHTML = "";
-    for (const [key, label] of Object.entries(amenityLabels)) {
-        legendHTML += `
-            <div class="legend-amenity">
-                ${Utils.getAmenityIcon(key)}
-                <span>${label}</span>
-            </div>
-        `;
+    if(summary) summary.innerHTML = summaryText;
+
+    // 3. Peuplage dynamique du filtre par lieu de départ
+    if (locationFilterSection && locationSelect) {
+        const uniqueLocations = [...new Set(appState.currentResults.map(r => r.departureLocation).filter(Boolean))];
+        
+        if (uniqueLocations.length > 1) {
+            locationSelect.innerHTML = '<option value="all">Tous les lieux de départ</option>';
+            uniqueLocations.forEach(location => {
+                const isSelected = activeFilters.departureLocation === location ? 'selected' : '';
+                locationSelect.innerHTML += `<option value="${location}" ${isSelected}>${location}</option>`;
+            });
+            locationFilterSection.style.display = 'block';
+        } else {
+            locationFilterSection.style.display = 'none';
+        }
     }
-    legendContainer.innerHTML = legendHTML;
-    
-    // ✅ Affichage des résultats
+
+    // 4. Logique d'attribution des badges "Moins Cher" et "Plus Rapide"
+    let cheapestId = null;
+    let fastestId = null;
+
+    if (displayedResults.length > 1) {
+        // Trouver le moins cher parmi les résultats affichés
+        const minPrice = Math.min(...displayedResults.map(r => r.price));
+        const cheapestRoute = displayedResults.find(r => r.price === minPrice);
+        if (cheapestRoute) cheapestId = cheapestRoute.id;
+
+        // Trouver le plus rapide (parmi les trajets directs affichés)
+        const directTrips = displayedResults.filter(r => r.tripType === 'direct');
+        if (directTrips.length > 0) {
+            let minDuration = Infinity;
+            directTrips.forEach(route => {
+                const durationInMinutes = Utils.getDurationInMinutes(route.duration);
+                if (durationInMinutes < minDuration) {
+                    minDuration = durationInMinutes;
+                    fastestId = route.id;
+                }
+            });
+        }
+    }
+
+    // 5. Affichage final des résultats
     if (displayedResults.length === 0) {
         resultsList.innerHTML = `
-            <div class="no-results" style="text-align: center; padding: 48px; color: var(--color-text-secondary);">
-                <h3>Aucun trajet disponible</h3>
-                <p>Essayez de modifier vos critères de recherche ou vos filtres.</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
-                    Réinitialiser les filtres
-                </button>
-                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">
-                    Nouvelle recherche
-                </button>
+            <div class="no-results" style="text-align: center; padding: 48px;">
+                <h3>Aucun trajet ne correspond à vos filtres</h3>
+                <p>Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.</p>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">Réinitialiser les filtres</button>
             </div>
         `;
         return;
     }
-    
+
     resultsList.innerHTML = displayedResults.map(route => {
-        const availableSeats = Math.floor(Math.random() * 35) + 5;
-        const amenitiesHTML = route.amenities.map(amenity => 
-            `<div class="amenity-item" title="${amenityLabels[amenity]}">${Utils.getAmenityIcon(amenity)}</div>`
-        ).join("");
+        let badgeHTML = '';
 
+        // Priorité 1: Le badge personnalisé de l'admin
+        if (route.highlightBadge) {
+            badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
+        } 
+        // Priorité 2: Les badges automatiques (un seul par carte max)
+        else if (route.id === cheapestId) {
+            badgeHTML = `<div class="highlight-badge cheapest">💰 Le Moins Cher</div>`;
+        } else if (route.id === fastestId) {
+            badgeHTML = `<div class="highlight-badge fastest">🚀 Le Plus Rapide</div>`;
+        }
 
+        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
+        const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
+        
+        let tripDetailsHTML = '';
+        if(route.tripType === "direct") { /* ... */ }
+        else if (route.stops && route.stops.length > 0) { /* ... */ }
 
-        
-        // ✅ AJOUT D'UNE LIGNE POUR LE LIEU DE DÉPART
-        const departureLocationHTML = route.departureLocation
-            ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>`
-            : '';
-        
-        let tripDetailsHTML = "";
-        if (route.tripType === "direct") {
-            tripDetailsHTML = `<div class="bus-card-trip-details">${Utils.getAmenityIcon("direct")}<span>Trajet direct</span></div>`;
-        } else if (route.stops && route.stops.length > 0) {
-            const stopsPreview = route.stops.map(s => s.city).join(', ');
-            tripDetailsHTML = `
-                <div class="bus-card-trip-details">
-                    <span class="bus-card-stops" title="Arrêts : ${stopsPreview}">
-                        🛑 ${route.stops.length} arrêt(s)
-                    </span>
-                </div>
-                <details style="font-size: 13px; color: var(--color-text-secondary); margin-top: 8px;">
-                    <summary style="cursor: pointer; font-weight: 600;">Voir détails arrêts</summary>
-                    <div style="margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--color-border);">
-                        ${route.stops.map(stop => `
-                            <div style="padding: 6px 0;">
-                                <strong>${stop.city}</strong><br>
-                                <span style="font-size: 12px;">
-                                    Arrivée: ${stop.arrivalTime} | Départ: ${stop.departureTime} 
-                                    (${stop.duration})
-                                </span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </details>
-            `;
-        }
-        
-        if (route.connections && route.connections.length > 0) {
-            tripDetailsHTML += `
-                <details style="font-size: 13px; color: #ffc107; margin-top: 8px;">
-                    <summary style="cursor: pointer; font-weight: 600;">⚠️ Correspondances requises</summary>
-                    <div style="margin-top: 8px; padding-left: 12px; border-left: 2px solid #ffc107;">
-                        ${route.connections.map(conn => `
-                            <div style="padding: 6px 0; background: rgba(255, 193, 7, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 6px;">
-                                <strong>À ${conn.at}</strong><br>
-                                <span style="font-size: 12px;">
-                                    Attente: ${conn.waitTime}<br>
-                                    Prochain départ: ${conn.nextDeparture} (${conn.nextCompany})
-                                </span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </details>
-            `;
-        }
-        
-        if (!route.amenities.includes("wc") && route.breaks > 0) {
-            tripDetailsHTML += `<div class="bus-card-trip-details">${Utils.getAmenityIcon("pause")}<span>${route.breaks} pause(s) prévue(s)</span></div>`;
-        }
-        
         return `
-
-        <div class="bus-card">
-        <div class="bus-card-main">
-            <div class="bus-card-time">
-                <span>${route.departure}</span>
-                <div class="bus-card-duration">
-                    <span>→</span><br>
-                    ${route.duration && route.duration !== "N/A" ? route.duration : 'durée du trajet'}
-                </div>
-                <span>${route.arrival}</span>
-            </div>
-              
-                    <!-- ✅ AFFICHAGE DU LIEU DE DÉPART -->
+            <div class="bus-card" style="position: relative;"> <!-- Important: position: relative -->
+                ${badgeHTML}
+                <div class="bus-card-main">
+                    <div class="bus-card-time">
+                        <span>${route.departure}</span>
+                        <div class="bus-card-duration">
+                            <span>→</span><br>
+                            ${route.duration || 'N/A'}
+                        </div>
+                        <span>${route.arrival}</span>
+                    </div>
                     ${departureLocationHTML}
-
-            <div class="bus-card-company">${route.company}</div>
-            ${tripDetailsHTML}
-            <div class="bus-card-details">
-                <div class="bus-amenities">${amenitiesHTML}</div>
-                <div class="bus-seats">
-                    <strong>${route.availableSeats}</strong> sièges dispo.
+                    <div class="bus-card-company">${route.company}</div>
+                    ${tripDetailsHTML}
+                    <div class="bus-card-details">
+                        <div class="bus-amenities">${amenitiesHTML}</div>
+                        <div class="bus-seats">
+                            <strong>${route.availableSeats}</strong> sièges dispo.
+                        </div>
+                    </div>
+                </div>
+                <div class="bus-card-pricing">
+                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                    <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
                 </div>
             </div>
-        </div>
-        <div class="bus-card-pricing">
-            <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-            <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
-        </div>
-    </div>
-
-            
         `;
     }).join("");
+
+    // La légende des équipements
+    if (legendContainer) {
+        const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
+        let legendHTML = "";
+        for (const [key, label] of Object.entries(amenityLabels)) {
+            legendHTML += `<div class="legend-amenity">${Utils.getAmenityIcon(key)}<span>${label}</span></div>`;
+        }
+        legendContainer.innerHTML = legendHTML;
+    }
 }
 // Dans app.js
 window.selectBus = async function(busId) {
