@@ -33,7 +33,9 @@ const CONFIG = {
     
     // ✅ NOUVEAUX DÉLAIS DE PAIEMENT
     MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30, // 30 minutes pour MTN/Airtel
-    AGENCY_PAYMENT_DEADLINE_HOURS: 10,          // 10 heures pour agence
+    AGENCY_PAYMENT_DEADLINE_HOURS: 10, 
+    // ✅ CORRECTION : AJOUTER CETTE LIGNE
+    AGENCY_PAYMENT_MIN_HOURS: 12,               // Délai minimum avant départ pour autoriser le paiement en agence (ex: 12h)         // 10 heures pour agence
     
     // ✅ NUMÉROS MARCHANDS
     MTN_MERCHANT_NUMBER: '+242 06 150 79 47',
