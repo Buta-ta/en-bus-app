@@ -1406,6 +1406,86 @@
         border-left: 4px solid #ef5350;
         opacity: 0.6;
       }
+
+
+
+      /* DANS Admin/index.html, dans <style> */
+
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 14, 39, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.3s ease;
+}
+
+.custom-modal-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl), 0 0 60px rgba(115, 215, 0, 0.15);
+    max-width: 500px;
+    width: 100%;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.custom-modal-header {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.custom-modal-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 0 10px currentColor);
+}
+
+#admin-confirm-icon.warning { color: #ffa726; }
+#admin-confirm-icon.danger { color: #f44336; }
+#admin-confirm-icon.success { color: var(--primary); }
+
+.custom-modal-body {
+    padding: 24px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+#admin-confirm-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+#admin-confirm-message {
+    white-space: pre-line; /* Respecte les sauts de ligne */
+}
+
+.custom-modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    background-color: var(--dark-elevated);
+    justify-content: flex-end;
+}
+
+.custom-modal-footer .btn {
+    min-width: 120px;
+}
+
+
+
     </style>
   </head>
   <body>
@@ -2379,108 +2459,60 @@ function startCountdownUpdates() {
       // 🎯 ACTIONS SUR LES RÉSERVATIONS
       // ============================================
 
-      async function performAction(reservationId, action) {
-        const reservation = allReservations.find(
-          (r) => r._id === reservationId
-        );
-        if (!reservation) {
-          showNotification("Erreur : réservation non trouvée.", "error");
-          return;
-        }
+     // DANS Admin/index.html, REMPLACEZ la fonction performAction
 
-        let confirmMessage = "";
-        let successMessage = "";
+async function performAction(reservationId, action) {
+    const reservation = allReservations.find(r => r._id === reservationId);
+    if (!reservation) return;
 
-        // ✅ CAS 1 : CONFIRMATION DE PAIEMENT (avec preuve de transaction)
-        if (action === "confirm-payment") {
-          // ✅ DEMANDER UNE PREUVE DE TRANSACTION
-          const transactionProof = prompt(
+    if (action === 'confirm-payment') {
+        const transactionProof = prompt(
             `🔍 Confirmer le paiement pour ${reservation.bookingNumber}\n\n` +
-              `Veuillez saisir la preuve de transaction :\n` +
-              `(ID transaction, référence SMS, capture d'écran, etc.)`
-          );
-
-          if (!transactionProof || transactionProof.trim() === "") {
-            showNotification("❌ Preuve de transaction requise", "error");
-            return;
-          }
-
-          confirmMessage = `Confirmer le paiement pour la réservation ${reservation.bookingNumber} ?\n\nPassager : ${reservation.passengers[0]?.name}\nMontant : ${reservation.totalPrice}\nPreuve : ${transactionProof}`;
-          successMessage = "Paiement confirmé avec succès !";
-
-          if (!confirm(confirmMessage)) {
-            return;
-          }
-
-          // ✅ Envoyer la preuve au backend
-          const data = await apiCall(
-            `/admin/reservations/${reservationId}/${action}`,
-            "PATCH",
-            {
-              transactionProof: transactionProof.trim(),
-            }
-          );
-
-          if (data && data.success) {
-            showNotification(successMessage, "success");
-            loadAdminData();
-          } else {
-            showNotification(
-              data?.error || "Erreur lors de l'action.",
-              "error"
-            );
-          }
-          return; // ✅ Sortir ici pour éviter le double appel API
-        }
-
-        // ✅ CAS 2 : ANNULATION
-        if (action === "cancel") {
-          confirmMessage = `⚠️ ATTENTION : Annuler la réservation ${
-            reservation.bookingNumber
-          } ?\n\nCette action va :\n- Libérer les ${
-            reservation.seats.length
-          } siège(s) : ${reservation.seats.join(
-            ", "
-          )}\n- Marquer la réservation comme "Annulé"\n\nCette action est irréversible.`;
-          successMessage = "Réservation annulée et sièges libérés.";
-
-          if (!confirm(confirmMessage)) {
-            return;
-          }
-
-          // Appel à l'API
-          const data = await apiCall(
-            `/admin/reservations/${reservationId}/${action}`,
-            "PATCH"
-          );
-
-          if (data && data.success) {
-            showNotification(successMessage, "success");
-            loadAdminData();
-          } else {
-            showNotification(
-              data?.error || "Erreur lors de l'action.",
-              "error"
-            );
-          }
-          return;
-        }
-
-        // ✅ CAS PAR DÉFAUT : Action non reconnue
-        showNotification("Action non reconnue.", "error");
-      }
-      async function cancelReservation(bookingNumber) {
-        if (!confirm(`Annuler la réservation ${bookingNumber} ?`)) return;
-        const data = await apiCall(
-          `/reservations/${bookingNumber}/cancel`,
-          "PATCH"
+            `Veuillez saisir la preuve de transaction :\n` +
+            `(ID transaction, référence SMS, etc.)`
         );
-        if (data) {
-          showNotification("Réservation annulée", "success");
-          loadAdminData();
+        
+        if (!transactionProof || transactionProof.trim() === '') {
+            showNotification('Preuve de transaction requise', 'warning');
+            return;
         }
-      }
 
+        const confirmed = await showAdminConfirm({
+            title: 'Confirmer le Paiement ?',
+            message: `Réservation: ${reservation.bookingNumber}\nPassager: ${reservation.passengers[0]?.name}\nMontant: ${reservation.totalPrice}\n\nPreuve: ${transactionProof}`,
+            icon: '✅',
+            iconClass: 'success',
+            confirmText: 'Oui, confirmer',
+            confirmClass: 'btn-success'
+        });
+
+        if (confirmed) {
+            const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH', { transactionProof: transactionProof.trim() });
+            if (data && data.success) {
+                showNotification('Paiement confirmé avec succès !', 'success');
+                loadAdminData();
+            }
+        }
+        
+    } else if (action === 'cancel') {
+        const confirmed = await showAdminConfirm({
+            title: 'Annuler la Réservation ?',
+            message: `ATTENTION : Annuler la réservation ${reservation.bookingNumber} libérera les sièges ${reservation.seats.join(', ')}.\n\nCette action est irréversible.`,
+            icon: '🗑️',
+            iconClass: 'danger',
+            confirmText: 'Oui, annuler',
+            confirmClass: 'btn-danger'
+        });
+
+        if (confirmed) {
+            const data = await apiCall(`/admin/reservations/${reservationId}/${action}`, 'PATCH');
+            if (data && data.success) {
+                showNotification('Réservation annulée.', 'success');
+                loadAdminData();
+            }
+        }
+    }
+}
       // Dans Admin/index.html (section <script>)
       // Dans Admin/index.html - Remplacer showDetails existante
 
@@ -2755,19 +2787,36 @@ function startCountdownUpdates() {
           loadAllTemplates();
         }
       }
-      async function handleDeleteTemplate(templateId, templateName) {
-        if (!confirm(`Supprimer le modèle "${templateName}" ?`)) return;
+      // DANS Admin/index.html, REMPLACEZ la fonction handleDeleteTemplate par celle-ci
 
-        const data = await apiCall(
-          `/admin/route-templates/${templateId}`,
-          "DELETE"
-        );
+async function handleDeleteTemplate(templateId, templateName) {
+    // Utilisation de la nouvelle modale personnalisée au lieu de confirm()
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer le Modèle ?",
+        message: `Voulez-vous vraiment supprimer le modèle de trajet "${templateName}" ?\n\nCette action est irréversible et ne peut pas être annulée.`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, supprimer',
+        confirmClass: 'btn-danger'
+    });
+    
+    // Si l'utilisateur clique sur "Annuler" dans la modale, on arrête la fonction ici.
+    if (!confirmed) {
+        return;
+    }
+    
+    // Si la confirmation est donnée, on procède à l'appel API
+    const data = await apiCall(
+      `/admin/route-templates/${templateId}`,
+      "DELETE"
+    );
 
-        if (data) {
-          showNotification("Modèle supprimé", "success");
-          loadAllTemplates();
-        }
-      }
+    if (data && data.success) {
+      showNotification("Modèle supprimé avec succès", "success");
+      loadAllTemplates();
+    }
+    // La gestion d'erreur est déjà gérée à l'intérieur de apiCall()
+}
 
       function populateRouteTemplateSelector() {
         const select = document.getElementById("route-template");
@@ -3885,6 +3934,67 @@ function switchTab(tabName) {
           loadAllTrips(); // Recharger la table pour voir les changements
         }
       }
+
+
+
+      // DANS Admin/index.html, dans <script>
+
+function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('admin-confirm-modal');
+        const titleEl = document.getElementById('admin-confirm-title');
+        const messageEl = document.getElementById('admin-confirm-message');
+        const iconEl = document.getElementById('admin-confirm-icon');
+        const okBtn = document.getElementById('admin-confirm-ok-btn');
+        const cancelBtn = document.getElementById('admin-confirm-cancel-btn');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        iconEl.textContent = icon;
+        iconEl.className = `custom-modal-icon ${iconClass}`;
+        okBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
+        okBtn.className = `btn ${confirmClass}`;
+
+        modal.style.display = 'flex';
+
+        const close = (result) => {
+            modal.style.display = 'none';
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            resolve(result);
+        };
+
+        okBtn.onclick = () => close(true);
+        cancelBtn.onclick = () => close(false);
+    });
+}
+
+
+
+
     </script>
+
+        <!-- DANS Admin/index.html, juste avant </body> -->
+
+<!-- ============================================
+     ✅ MODALE DE CONFIRMATION PERSONNALISÉE ADMIN
+     ============================================ -->
+<div id="admin-confirm-modal" class="custom-modal-overlay" style="display: none;">
+    <div class="custom-modal-card">
+        <div class="custom-modal-header">
+            <span id="admin-confirm-icon" class="custom-modal-icon"></span>
+            <h3 id="admin-confirm-title"></h3>
+        </div>
+        <div class="custom-modal-body">
+            <p id="admin-confirm-message"></p>
+        </div>
+        <div class="custom-modal-footer">
+            <button id="admin-confirm-cancel-btn" class="btn btn-ghost">Annuler</button>
+            <button id="admin-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
+        </div>
+    </div>
+
+
   </body>
 </html>
