@@ -743,7 +743,7 @@ function addBookingToLocalHistory(bookingNumber) {
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 
 function removeBookingFromLocalHistory(bookingNumber) {
-    if (!confirm(`Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n\n(La réservation ne sera pas annulée et restera visible pour l'administrateur).`)) {
+    if (!confirm(`Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n\n().`)) {
         return;
     }
 
