@@ -725,6 +725,8 @@ function stopFrontendCountdown() {
 }
 
 
+
+
 // DANS app.js
 
 function addBookingToLocalHistory(bookingNumber) {
@@ -783,6 +785,72 @@ async function removeBookingFromLocalHistory(bookingNumber) {
     } catch (e) {
         console.error("Erreur lors de la suppression de l'historique local:", e);
         Utils.showToast("Une erreur est survenue.", "error");
+    }
+}
+
+
+
+// DANS app.js
+
+// Variable pour garder une référence au décompteur
+let agencyCountdownInterval = null;
+
+/**
+ * Démarre le décompteur dynamique pour l'option de paiement à l'agence.
+ */
+function startAgencyCountdown() {
+    // On nettoie un éventuel ancien décompteur pour éviter les bugs
+    if (agencyCountdownInterval) {
+        clearInterval(agencyCountdownInterval);
+    }
+
+    // On cible les deux éléments HTML à mettre à jour
+    const subtitleElement = document.getElementById('agency-payment-subtitle');
+    const deadlineInputElement = document.getElementById('agency-deadline');
+
+    // Si les éléments n'existent pas ou s'il n'y a pas de délai, on ne fait rien
+    if (!subtitleElement || !deadlineInputElement || !appState.currentReservation?.paymentDeadline) {
+        return;
+    }
+
+    const deadline = new Date(appState.currentReservation.paymentDeadline);
+
+    // On lance la boucle qui se met à jour toutes les secondes
+    agencyCountdownInterval = setInterval(() => {
+        const now = new Date();
+        const timeLeft = deadline - now;
+
+        // Si le temps est écoulé
+        if (timeLeft <= 0) {
+            clearInterval(agencyCountdownInterval);
+            const expiredText = "Délai expiré";
+            subtitleElement.textContent = expiredText;
+            deadlineInputElement.value = expiredText;
+            return;
+        }
+
+        // Calcul des heures, minutes et secondes
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        
+        // Formatage des textes pour l'affichage
+        const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+
+        // Mise à jour de l'interface
+        subtitleElement.textContent = countdownText;
+        deadlineInputElement.value = fullDeadlineText;
+
+    }, 1000);
+}
+
+/**
+ * Arrête le décompteur lorsque l'on quitte la page de paiement.
+ */
+function stopAgencyCountdown() {
+    if (agencyCountdownInterval) {
+        clearInterval(agencyCountdownInterval);
+        agencyCountdownInterval = null; // Important pour la propreté du code
     }
 }
 // ============================================
@@ -1560,6 +1628,9 @@ function closeMenuAndShowPage(pageName) {
 
 function showPage(pageName) {
       if (pageName !== "payment-instructions") {
+        // ✅ À AJOUTER AU TOUT DÉBUT DE LA FONCTION :
+       stopAgencyCountdown();
+
         stopFrontendCountdown();
     }
     document.querySelectorAll(".page").forEach(page => {
@@ -2919,6 +2990,8 @@ function displayBookingSummary() {
     }
     
     console.log("✅ Récapitulatif affiché et mis à jour avec succès.");
+
+    startAgencyCountdown();
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking
 

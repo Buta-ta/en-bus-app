@@ -1,1377 +1,1098 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <title>En-Bus - Voyagez à travers l'Afrique</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Audiowide&family=Exo+2:wght@300;400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://npmcdn.com/flatpickr/dist/themes/dark.css"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css" />
 
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#73d700" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="En-Bus" />
-    <meta
-      name="description"
-      content="Réservez vos billets de bus en ligne facilement et rapidement à travers l'Afrique"
-    />
-    <meta
-      name="keywords"
-      content="bus, transport, afrique, réservation, billet, voyage"
-    />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png" />
-    <meta name="msapplication-TileColor" content="#73d700" />
-    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>En-Bus - Voyagez à travers l'Afrique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Exo+2:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
 
-    <style>
-      .seat-selected-anim {
-        animation: pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1) 1;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.15);
-        }
-      }
-      /* Ajout des styles pour la PWA - vous pouvez les garder dans style.css aussi */
-      .reservation-card-pwa {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-left: 4px solid var(--color-accent-glow);
-        border-radius: var(--radius-lg);
-        margin-bottom: var(--space-16);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        animation: fadeIn 0.5s ease-out;
-      }
-      .res-pwa-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: rgba(var(--color-background-rgb), 0.5);
-        padding: var(--space-12) var(--space-16);
-        font-weight: 600;
-      }
-      .res-pwa-booking-number {
-        font-family: var(--font-mono, monospace);
-        color: var(--color-text-secondary);
-      }
-      .res-pwa-status {
-        font-weight: 700;
-      }
-      .res-pwa-body {
-        padding: var(--space-16);
-      }
-      .res-pwa-body h4 {
-        font-family: var(--font-logo, sans-serif);
-        font-size: 1.25rem;
-        margin-bottom: var(--space-8);
-        color: var(--color-text-primary);
-      }
-      .res-pwa-body p {
-        color: var(--color-text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: 4px;
-      }
-      .res-pwa-actions {
-        padding: var(--space-16);
-        background-color: rgba(var(--color-background-rgb), 0.7);
-        border-top: 1px solid var(--color-border);
-        display: flex;
-        gap: var(--space-12);
-      }
-      .res-pwa-actions .btn {
-        width: auto;
-        flex-grow: 1;
-      }
-      .loading-spinner {
-        text-align: center;
-        padding: 48px;
-        font-size: 1.2rem;
-        color: var(--color-text-secondary);
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#73d700" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="En-Bus" />
+  <meta name="description"
+    content="Réservez vos billets de bus en ligne facilement et rapidement à travers l'Afrique" />
+  <meta name="keywords" content="bus, transport, afrique, réservation, billet, voyage" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png" />
+  <meta name="msapplication-TileColor" content="#73d700" />
+  <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+
+  <style>
+    .seat-selected-anim {
+      animation: pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1) 1;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
       }
 
-      /* DANS index.html, dans la balise <style> */
+      50% {
+        transform: scale(1.15);
+      }
+    }
 
-.btn-delete-local {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 50%;
-    transition: all 0.2s;
-    margin-left: auto; /* Pousse le bouton vers la droite */
-    margin-right: 10px;
-}
+    /* Ajout des styles pour la PWA - vous pouvez les garder dans style.css aussi */
+    .reservation-card-pwa {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 4px solid var(--color-accent-glow);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-16);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      animation: fadeIn 0.5s ease-out;
+    }
 
-.btn-delete-local:hover {
-    background-color: rgba(244, 67, 54, 0.2);
-    color: #f44336;
-}
+    .res-pwa-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: rgba(var(--color-background-rgb), 0.5);
+      padding: var(--space-12) var(--space-16);
+      font-weight: 600;
+    }
 
+    .res-pwa-booking-number {
+      font-family: var(--font-mono, monospace);
+      color: var(--color-text-secondary);
+    }
 
+    .res-pwa-status {
+      font-weight: 700;
+    }
 
+    .res-pwa-body {
+      padding: var(--space-16);
+    }
 
-/* DANS index.html, dans <style> */
+    .res-pwa-body h4 {
+      font-family: var(--font-logo, sans-serif);
+      font-size: 1.25rem;
+      margin-bottom: var(--space-8);
+      color: var(--color-text-primary);
+    }
 
-.trip-occupancy-info {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    background-color: rgba(var(--color-accent-glow-rgb), 0.1);
-    border: 1px solid var(--color-border);
-    padding: 12px 20px;
-    border-radius: var(--radius-lg);
-    margin: 0 auto 24px;
-    max-width: 500px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-}
-.trip-occupancy-info span strong {
-    color: var(--color-accent-glow);
-    font-size: 16px;
-}
-.trip-occupancy-info .danger {
-    color: #ffa726; /* Orange pour attirer l'attention */
-}
+    .res-pwa-body p {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
 
+    .res-pwa-actions {
+      padding: var(--space-16);
+      background-color: rgba(var(--color-background-rgb), 0.7);
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      gap: var(--space-12);
+    }
 
+    .res-pwa-actions .btn {
+      width: auto;
+      flex-grow: 1;
+    }
 
-/* DANS index.html, dans <style> */
+    .loading-spinner {
+      text-align: center;
+      padding: 48px;
+      font-size: 1.2rem;
+      color: var(--color-text-secondary);
+    }
 
-.urgency-box {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background-color: var(--color-border);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    margin-bottom: 24px;
-}
-.urgency-item {
-    background-color: var(--color-surface);
-    padding: 16px;
-    text-align: center;
-}
-.urgency-label {
-    display: block;
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-}
-.urgency-value {
-    display: block;
-    font-size: 24px;
-    font-weight: 700;
-    font-family: var(--font-mono, monospace);
-    color: var(--color-text-primary);
-}
-.urgency-value.danger {
-    color: #f44336;
-    animation: pulse-danger 1.5s infinite;
-}
-@keyframes pulse-danger {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
 
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
+    /* DANS index.html, dans la balise <style> */
 
-/* DANS index.html, dans <style> */
+    .btn-delete-local {
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 50%;
+      transition: all 0.2s;
+      margin-left: auto;
+      /* Pousse le bouton vers la droite */
+      margin-right: 10px;
+    }
 
-.transaction-submission-box {
-    background-color: rgba(var(--color-accent-glow-rgb), 0.05);
-    border: 1px solid var(--color-border);
-    border-top: 3px solid var(--color-accent-glow);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    margin: 32px 0;
-}
-.transaction-submission-box h3 {
-    font-family: var(--font-logo);
-    color: var(--color-accent-glow);
-    margin-bottom: 12px;
-}
-.transaction-submission-box p {
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-}
-
-
-/* DANS index.html, dans <style> */
-
-.highlight-badge {
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    background: linear-gradient(135deg, #ffab40, #ff6d00); /* Orange pour la promo */
-    color: white;
-    padding: 6px 14px;
-    border-radius: var(--radius-lg) 0 var(--radius-md) 0;
-    font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 10px rgba(255, 109, 0, 0.4);
-}
-
-.highlight-badge.cheapest {
-    background: linear-gradient(135deg, var(--color-accent-glow), var(--color-accent-active)); /* Vert pour le moins cher */
-    color: var(--color-background);
-    box-shadow: 0 4px 10px rgba(var(--color-accent-glow-rgb), 0.4);
-}
-
-.highlight-badge.fastest {
-    background: linear-gradient(135deg, #448aff, #2962ff); /* Bleu pour le plus rapide */
-    box-shadow: 0 4px 10px rgba(41, 98, 255, 0.4);
-}
+    .btn-delete-local:hover {
+      background-color: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+    }
 
 
 
-    </style>
-  </head>
-  <body>
-    <nav class="navbar">
-      <!-- ... (votre navbar est correcte et reste inchangée) ... -->
-      <div class="container">
-        <div class="nav-content">
-          <div class="nav-links desktop-links">
-            <a href="#" onclick="showPage('home')">Accueil</a
-            ><a href="#" onclick="showPage('reservations')">Mes Réservations</a>
-          </div>
-          <div class="logo" onclick="showPage('home')">
-            <svg
-              class="logo-svg animated-logo"
-              width="44"
-              height="44"
-              viewBox="0 0 120 120"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-label="Logo En-Bus"
-            >
-              <defs>
-                <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#FFD86B" />
-                  <stop offset="55%" stop-color="#FF9B39" />
-                  <stop offset="100%" stop-color="#FF4B2B" />
-                </radialGradient>
-                <linearGradient id="winGrad" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stop-color="#CDE8FF" />
-                  <stop offset="100%" stop-color="#A9D2FF" />
-                </linearGradient>
-                <filter
-                  id="softGlow"
-                  x="-50%"
-                  y="-50%"
-                  width="200%"
-                  height="200%"
-                >
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <circle
-                cx="60"
-                cy="60"
-                r="54"
-                fill="url(#sunGrad)"
-                class="sun-pulse"
-              />
-              <rect
-                x="0"
-                y="80"
-                width="120"
-                height="10"
-                fill="#0B0F17"
-                opacity="0.9"
-              />
-              <rect
-                x="0"
-                y="90"
-                width="120"
-                height="10"
-                fill="#0B0F17"
-                opacity="0.95"
-              />
-              <g
-                class="road-lines"
-                stroke="#F0F5F9"
-                stroke-width="2"
-                opacity="0.6"
-                filter="url(#softGlow)"
-              >
-                <line x1="12" y1="70" x2="36" y2="70" class="line-1" />
-                <line x1="10" y1="74" x2="34" y2="74" class="line-2" />
-                <line x1="8" y1="78" x2="32" y2="78" class="line-3" />
+
+    /* DANS index.html, dans <style> */
+
+    .trip-occupancy-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      background-color: rgba(var(--color-accent-glow-rgb), 0.1);
+      border: 1px solid var(--color-border);
+      padding: 12px 20px;
+      border-radius: var(--radius-lg);
+      margin: 0 auto 24px;
+      max-width: 500px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    .trip-occupancy-info span strong {
+      color: var(--color-accent-glow);
+      font-size: 16px;
+    }
+
+    .trip-occupancy-info .danger {
+      color: #ffa726;
+      /* Orange pour attirer l'attention */
+    }
+
+
+
+    /* DANS index.html, dans <style> */
+
+    .urgency-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background-color: var(--color-border);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .urgency-item {
+      background-color: var(--color-surface);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .urgency-label {
+      display: block;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .urgency-value {
+      display: block;
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--font-mono, monospace);
+      color: var(--color-text-primary);
+    }
+
+    .urgency-value.danger {
+      color: #f44336;
+      animation: pulse-danger 1.5s infinite;
+    }
+
+    @keyframes pulse-danger {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+
+
+    /* DANS index.html, dans <style> */
+
+    .transaction-submission-box {
+      background-color: rgba(var(--color-accent-glow-rgb), 0.05);
+      border: 1px solid var(--color-border);
+      border-top: 3px solid var(--color-accent-glow);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 32px 0;
+    }
+
+    .transaction-submission-box h3 {
+      font-family: var(--font-logo);
+      color: var(--color-accent-glow);
+      margin-bottom: 12px;
+    }
+
+    .transaction-submission-box p {
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+
+
+    /* DANS index.html, dans <style> */
+
+    .highlight-badge {
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      background: linear-gradient(135deg, #ffab40, #ff6d00);
+      /* Orange pour la promo */
+      color: white;
+      padding: 6px 14px;
+      border-radius: var(--radius-lg) 0 var(--radius-md) 0;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 10px rgba(255, 109, 0, 0.4);
+    }
+
+    .highlight-badge.cheapest {
+      background: linear-gradient(135deg, var(--color-accent-glow), var(--color-accent-active));
+      /* Vert pour le moins cher */
+      color: var(--color-background);
+      box-shadow: 0 4px 10px rgba(var(--color-accent-glow-rgb), 0.4);
+    }
+
+    .highlight-badge.fastest {
+      background: linear-gradient(135deg, #448aff, #2962ff);
+      /* Bleu pour le plus rapide */
+      box-shadow: 0 4px 10px rgba(41, 98, 255, 0.4);
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <!-- ... (votre navbar est correcte et reste inchangée) ... -->
+    <div class="container">
+      <div class="nav-content">
+        <div class="nav-links desktop-links">
+          <a href="#" onclick="showPage('home')">Accueil</a><a href="#" onclick="showPage('reservations')">Mes
+            Réservations</a>
+        </div>
+        <div class="logo" onclick="showPage('home')">
+          <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
+            xmlns="http://www.w3.org/2000/svg" aria-label="Logo En-Bus">
+            <defs>
+              <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FFD86B" />
+                <stop offset="55%" stop-color="#FF9B39" />
+                <stop offset="100%" stop-color="#FF4B2B" />
+              </radialGradient>
+              <linearGradient id="winGrad" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="#CDE8FF" />
+                <stop offset="100%" stop-color="#A9D2FF" />
+              </linearGradient>
+              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <circle cx="60" cy="60" r="54" fill="url(#sunGrad)" class="sun-pulse" />
+            <rect x="0" y="80" width="120" height="10" fill="#0B0F17" opacity="0.9" />
+            <rect x="0" y="90" width="120" height="10" fill="#0B0F17" opacity="0.95" />
+            <g class="road-lines" stroke="#F0F5F9" stroke-width="2" opacity="0.6" filter="url(#softGlow)">
+              <line x1="12" y1="70" x2="36" y2="70" class="line-1" />
+              <line x1="10" y1="74" x2="34" y2="74" class="line-2" />
+              <line x1="8" y1="78" x2="32" y2="78" class="line-3" />
+            </g>
+            <g class="bus-moving" transform="translate(20,52)">
+              <rect x="0" y="6" width="80" height="26" rx="5" fill="#F0F5F9" stroke="#0A0F15" stroke-width="2" />
+              <path d="M64 6 L78 6 L80 22 L64 22 Z" fill="url(#winGrad)" stroke="#0A0F15" stroke-width="2" />
+              <rect x="6" y="10" width="12" height="10" rx="2" fill="url(#winGrad)" stroke="#0A0F15"
+                stroke-width="1.5" />
+              <rect x="20" y="10" width="12" height="10" rx="2" fill="url(#winGrad)" stroke="#0A0F15"
+                stroke-width="1.5" />
+              <rect x="34" y="10" width="12" height="10" rx="2" fill="url(#winGrad)" stroke="#0A0F15"
+                stroke-width="1.5" />
+              <rect x="48" y="10" width="12" height="10" rx="2" fill="url(#winGrad)" stroke="#0A0F15"
+                stroke-width="1.5" />
+              <rect x="8" y="18" width="10" height="14" rx="1.5" fill="#E7EDF3" stroke="#0A0F15" stroke-width="1.5" />
+              <circle cx="78" cy="24" r="2.8" fill="#FFEAA7" stroke="#0A0F15" stroke-width="1" class="headlight" />
+              <rect x="0" y="28" width="80" height="4" fill="#E1E7EE" stroke="#0A0F15" stroke-width="1" />
+              <g class="wheels">
+                <circle cx="18" cy="36" r="6.8" fill="#0A0F15" class="wheel-outer" />
+                <circle cx="18" cy="36" r="3.2" fill="#9AA5B1" class="wheel-inner" />
+                <circle cx="62" cy="36" r="6.8" fill="#0A0F15" class="wheel-outer" />
+                <circle cx="62" cy="36" r="3.2" fill="#9AA5B1" class="wheel-inner" />
               </g>
-              <g class="bus-moving" transform="translate(20,52)">
-                <rect
-                  x="0"
-                  y="6"
-                  width="80"
-                  height="26"
-                  rx="5"
-                  fill="#F0F5F9"
-                  stroke="#0A0F15"
-                  stroke-width="2"
-                />
-                <path
-                  d="M64 6 L78 6 L80 22 L64 22 Z"
-                  fill="url(#winGrad)"
-                  stroke="#0A0F15"
-                  stroke-width="2"
-                />
-                <rect
-                  x="6"
-                  y="10"
-                  width="12"
-                  height="10"
-                  rx="2"
-                  fill="url(#winGrad)"
-                  stroke="#0A0F15"
-                  stroke-width="1.5"
-                />
-                <rect
-                  x="20"
-                  y="10"
-                  width="12"
-                  height="10"
-                  rx="2"
-                  fill="url(#winGrad)"
-                  stroke="#0A0F15"
-                  stroke-width="1.5"
-                />
-                <rect
-                  x="34"
-                  y="10"
-                  width="12"
-                  height="10"
-                  rx="2"
-                  fill="url(#winGrad)"
-                  stroke="#0A0F15"
-                  stroke-width="1.5"
-                />
-                <rect
-                  x="48"
-                  y="10"
-                  width="12"
-                  height="10"
-                  rx="2"
-                  fill="url(#winGrad)"
-                  stroke="#0A0F15"
-                  stroke-width="1.5"
-                />
-                <rect
-                  x="8"
-                  y="18"
-                  width="10"
-                  height="14"
-                  rx="1.5"
-                  fill="#E7EDF3"
-                  stroke="#0A0F15"
-                  stroke-width="1.5"
-                />
-                <circle
-                  cx="78"
-                  cy="24"
-                  r="2.8"
-                  fill="#FFEAA7"
-                  stroke="#0A0F15"
-                  stroke-width="1"
-                  class="headlight"
-                />
-                <rect
-                  x="0"
-                  y="28"
-                  width="80"
-                  height="4"
-                  fill="#E1E7EE"
-                  stroke="#0A0F15"
-                  stroke-width="1"
-                />
-                <g class="wheels">
-                  <circle
-                    cx="18"
-                    cy="36"
-                    r="6.8"
-                    fill="#0A0F15"
-                    class="wheel-outer"
-                  />
-                  <circle
-                    cx="18"
-                    cy="36"
-                    r="3.2"
-                    fill="#9AA5B1"
-                    class="wheel-inner"
-                  />
-                  <circle
-                    cx="62"
-                    cy="36"
-                    r="6.8"
-                    fill="#0A0F15"
-                    class="wheel-outer"
-                  />
-                  <circle
-                    cx="62"
-                    cy="36"
-                    r="3.2"
-                    fill="#9AA5B1"
-                    class="wheel-inner"
-                  />
-                </g>
-              </g>
-            </svg>
-            <span class="logo-text">En-Bus</span>
-          </div>
-          <div class="nav-links desktop-links">
-            <a href="#" onclick="showPage('about')">À propos</a
-            ><a href="#" onclick="showPage('contact')">Contact</a>
-          </div>
-          <button
-            id="hamburger-btn"
-            class="hamburger"
-            aria-label="Ouvrir le menu"
-            aria-expanded="false"
-          >
-            <span></span><span></span><span></span>
-          </button>
+            </g>
+          </svg>
+          <span class="logo-text">En-Bus</span>
         </div>
-        <div id="mobile-nav-menu" class="mobile-nav">
-          <a href="#" onclick="closeMenuAndShowPage('home')">Accueil</a
-          ><a href="#" onclick="closeMenuAndShowPage('reservations')"
-            >Mes Réservations</a
-          ><a href="#" onclick="closeMenuAndShowPage('about')">À propos</a
-          ><a href="#" onclick="closeMenuAndShowPage('contact')">Contact</a>
+        <div class="nav-links desktop-links">
+          <a href="#" onclick="showPage('about')">À propos</a><a href="#" onclick="showPage('contact')">Contact</a>
         </div>
+        <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
       </div>
-    </nav>
-
-    <main>
-      <!-- Toutes les pages de l'application -->
-      <div id="home-page" class="page active">
-        <!-- ... (Contenu de la page d'accueil, inchangé) ... -->
-        <section class="hero">
-          <div class="container">
-            <div class="hero-content">
-              <h1>Voyagez à travers l'Afrique</h1>
-              <p>
-                Réservez vos billets de bus en ligne facilement et rapidement
-              </p>
-              <div class="search-box">
-                <div class="search-form">
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="origin">Ville de départ</label>
-                      <select id="origin" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                      <label for="destination">Ville d'arrivée</label>
-                      <select id="destination" class="form-control"></select>
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>Type de voyage</label>
-                      <div class="trip-type-toggle" data-mode="one-way">
-                        <label class="toggle-option active" data-value="one-way"
-                          >Aller simple</label
-                        >
-                        <label class="toggle-option" data-value="round-trip"
-                          >Aller-retour</label
-                        >
-                        <div class="toggle-switch"></div>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label for="travel-date">Dates du voyage</label>
-                      <input
-                        type="text"
-                        id="travel-date"
-                        class="form-control date-picker"
-                        placeholder="Sélectionnez vos dates"
-                      />
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>Passagers</label>
-                      <div
-                        id="passenger-input"
-                        class="form-control passenger-selector"
-                      >
-                        <span id="passenger-summary">1 Adulte</span>
-                      </div>
-                      <div
-                        id="passenger-dropdown"
-                        class="passenger-dropdown-menu"
-                      >
-                        <div class="passenger-row">
-                          <label>Adultes</label>
-                          <div class="passenger-counter">
-                            <button
-                              type="button"
-                              class="counter-btn"
-                              data-type="adults"
-                              data-action="decrement"
-                            >
-                              -
-                            </button>
-                            <span id="adults-count">1</span>
-                            <button
-                              type="button"
-                              class="counter-btn"
-                              data-type="adults"
-                              data-action="increment"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                        <div class="passenger-row">
-                          <label>Enfants <small>(0-6 ans)</small></label>
-                          <div class="passenger-counter">
-                            <button
-                              type="button"
-                              class="counter-btn"
-                              data-type="children"
-                              data-action="decrement"
-                            >
-                              -
-                            </button>
-                            <span id="children-count">0</span>
-                            <button
-                              type="button"
-                              class="counter-btn"
-                              data-type="children"
-                              data-action="increment"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    class="btn btn-primary btn-large"
-                    onclick="searchBuses()"
-                  >
-                    Rechercher
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section class="popular-destinations">
-          <div class="container">
-            <h2>Destinations populaires</h2>
-            <div class="destinations-grid" id="popular-destinations-grid"></div>
-          </div>
-        </section>
-        <section class="why-en-bus">
-          <div class="container">
-            <h2>Pourquoi choisir En-Bus ?</h2>
-            <div class="features-grid">
-              <div class="feature-card">
-                <div class="feature-icon">📱</div>
-                <h3>Réservation facile</h3>
-                <p>Réservez vos billets en quelques clics</p>
-              </div>
-              <div class="feature-card">
-                <div class="feature-icon">💰</div>
-                <h3>Meilleurs prix</h3>
-                <p>Trouvez les meilleures offres</p>
-              </div>
-              <div class="feature-card">
-                <div class="feature-icon">🚌</div>
-                <h3>Confort garanti</h3>
-                <p>Voyagez avec les meilleures compagnies</p>
-              </div>
-              <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Sécurité maximale</h3>
-                <p>Vos informations sont sécurisées</p>
-              </div>
-            </div>
-          </div>
-        </section>
+      <div id="mobile-nav-menu" class="mobile-nav">
+        <a href="#" onclick="closeMenuAndShowPage('home')">Accueil</a><a href="#"
+          onclick="closeMenuAndShowPage('reservations')">Mes Réservations</a><a href="#"
+          onclick="closeMenuAndShowPage('about')">À propos</a><a href="#"
+          onclick="closeMenuAndShowPage('contact')">Contact</a>
       </div>
-
-      <div id="results-page" class="page">
-        <!-- ... (Contenu de la page des résultats, inchangé) ... -->
-        <div class="container">
-          <div class="page-header">
-            <button class="btn btn-secondary" onclick="showPage('home')">
-              ← Retour
-            </button>
-            <h2>Résultats de recherche</h2>
-          </div>
-          <div id="search-summary" class="search-summary"></div>
-          <div class="filters-bar-enhanced">
-
-              <!-- ... (filtre "Trier par" et "Compagnie" restent inchangés) ... -->
-
-<!-- ✅ NOUVEAU FILTRE PAR LIEU DE DÉPART -->
-<div id="departure-location-filter-section" class="filter-section" style="display: none;">
-    <label for="filter-departure-location" class="filter-label">
-        <span class="filter-icon">📍</span>
-        Lieu de départ :
-    </label>
-    <select id="filter-departure-location" class="filter-select" onchange="updateFilter('departureLocation', this.value)">
-        <!-- Les options seront générées dynamiquement par JavaScript -->
-    </select>
-</div>
-
-            <div class="filter-section">
-              <label for="sort-by" class="filter-label">
-                <span class="filter-icon">🔽</span> Trier par :
-              </label>
-              <select
-                id="sort-by"
-                class="filter-select"
-                onchange="updateFilter('sortBy', this.value)"
-              >
-                <option value="departure">Heure de départ</option>
-                <option value="price">Prix croissant</option>
-                <option value="duration">Durée du trajet</option>
-                <option value="company">Compagnie (A-Z)</option>
-              </select>
-            </div>
-            <div class="filter-section">
-              <label for="filter-company" class="filter-label">
-                <span class="filter-icon">🚌</span> Compagnie :
-              </label>
-              <select
-                id="filter-company"
-                class="filter-select"
-                onchange="updateFilter('company', this.value)"
-              >
-                <option value="all">Toutes</option>
-                <option value="Océan du Nord">Océan du Nord</option>
-                <option value="Trans Bony">Trans Bony</option>
-                <option value="Stellimac">Stellimac</option>
-                <option value="United Express">United Express</option>
-                <option value="Touristique Express">Touristique Express</option>
-                <option value="Garantie Express">Garantie Express</option>
-                <option value="ABC Transport">ABC Transport</option>
-                <option value="STC">STC</option>
-              </select>
-            </div>
-            <div class="filter-section">
-              <label for="filter-trip-type" class="filter-label">
-                <span class="filter-icon">🛣️</span> Type :
-              </label>
-              <select
-                id="filter-trip-type"
-                class="filter-select"
-                onchange="updateFilter('tripType', this.value)"
-              >
-                <option value="all">Tous</option>
-                <option value="direct">Direct uniquement</option>
-                <option value="stops">Avec arrêts</option>
-                <option value="connections">Avec correspondances</option>
-              </select>
-            </div>
-            <div class="filter-section">
-              <label for="filter-time" class="filter-label">
-                <span class="filter-icon">🕐</span> Départ :
-              </label>
-              <select
-                id="filter-time"
-                class="filter-select"
-                onchange="updateFilter('departureTime', this.value)"
-              >
-                <option value="all">Toute la journée</option>
-                <option value="morning">Matin (5h-12h)</option>
-                <option value="afternoon">Après-midi (12h-17h)</option>
-                <option value="evening">Soirée (17h-21h)</option>
-                <option value="night">Nuit (21h-5h)</option>
-              </select>
-            </div>
-            <div class="filter-section filter-price">
-              <label class="filter-label">
-                <span class="filter-icon">💰</span> Prix :
-              </label>
-              <div class="price-range-container">
-                <div class="price-inputs">
-                  <div class="price-input-group">
-                    <label for="price-min" class="price-label">Min</label>
-                    <input
-                      type="range"
-                      id="price-min"
-                      min="0"
-                      max="100000"
-                      step="1000"
-                      value="0"
-                      oninput="updateFilter('priceMin', this.value)"
-                    />
-                    <span id="price-min-display" class="price-display">0</span>
-                    FCFA
-                  </div>
-                  <div class="price-input-group">
-                    <label for="price-max" class="price-label">Max</label>
-                    <input
-                      type="range"
-                      id="price-max"
-                      min="0"
-                      max="100000"
-                      step="1000"
-                      value="100000"
-                      oninput="updateFilter('priceMax', this.value)"
-                    />
-                    <span id="price-max-display" class="price-display"
-                      >100 000</span
-                    >
-                    FCFA
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="filter-section filter-amenities">
-              <label class="filter-label">
-                <span class="filter-icon">⚙️</span> Équipements :
-              </label>
-              <div
-                class="amenities-checkboxes"
-                id="amenities-filter-container"
-              ></div>
-            </div>
-            <div class="filter-section">
-              <button
-                class="btn btn-secondary btn-reset-filters"
-                onclick="resetFilters()"
-              >
-                🔄 Réinitialiser
-              </button>
-            </div>
-          </div>
-          <div id="amenities-legend" class="amenities-legend"></div>
-          <div id="results-list" class="results-list"></div>
-        </div>
-      </div>
-
-      <div id="seats-page" class="page">
-        <!-- ... (Contenu de la page des sièges, inchangé) ... -->
-        <div class="container">
-          <div class="page-header">
-            <button class="btn btn-secondary" onclick="showPage('results')">
-              ← Retour
-            </button>
-            <h2>Sélection des sièges</h2>
-          </div>
-          <div
-            class="max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700"
-          >
-            <div id="bus-info" class="text-center mb-6"></div>
-
-             <!-- ✅ AJOUTER CE BLOC HTML ICI -->
-    <div id="trip-occupancy-info" class="trip-occupancy-info" style="display: none;">
-        <!-- Le contenu sera généré par JavaScript -->
     </div>
-            <div
-              class="bg-gray-700/60 p-4 rounded-lg border border-gray-600 overflow-x-auto"
-            >
-              <div id="pro-seat-grid" class="min-w-[320px] mx-auto"></div>
-            </div>
-            <div
-              class="mt-6 flex flex-col md:flex-row justify-between items-center gap-6"
-            >
-              <div
-                class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-white text-sm"
-              >
-                <div class="flex items-center gap-2">
-                  <div class="w-4 h-4 rounded-sm bg-green-500"></div>
-                  <span>Disponible</span>
+  </nav>
+
+  <main>
+    <!-- Toutes les pages de l'application -->
+    <div id="home-page" class="page active">
+      <!-- ... (Contenu de la page d'accueil, inchangé) ... -->
+      <section class="hero">
+        <div class="container">
+          <div class="hero-content">
+            <h1>Voyagez à travers l'Afrique</h1>
+            <p>
+              Réservez vos billets de bus en ligne facilement et rapidement
+            </p>
+            <div class="search-box">
+              <div class="search-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="origin">Ville de départ</label>
+                    <select id="origin" class="form-control"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="destination">Ville d'arrivée</label>
+                    <select id="destination" class="form-control"></select>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <div class="w-4 h-4 rounded-sm bg-blue-500"></div>
-                  <span>Sélectionné</span>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Type de voyage</label>
+                    <div class="trip-type-toggle" data-mode="one-way">
+                      <label class="toggle-option active" data-value="one-way">Aller simple</label>
+                      <label class="toggle-option" data-value="round-trip">Aller-retour</label>
+                      <div class="toggle-switch"></div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="travel-date">Dates du voyage</label>
+                    <input type="text" id="travel-date" class="form-control date-picker"
+                      placeholder="Sélectionnez vos dates" />
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <div class="w-4 h-4 rounded-sm bg-gray-500"></div>
-                  <span>Occupé</span>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Passagers</label>
+                    <div id="passenger-input" class="form-control passenger-selector">
+                      <span id="passenger-summary">1 Adulte</span>
+                    </div>
+                    <div id="passenger-dropdown" class="passenger-dropdown-menu">
+                      <div class="passenger-row">
+                        <label>Adultes</label>
+                        <div class="passenger-counter">
+                          <button type="button" class="counter-btn" data-type="adults" data-action="decrement">
+                            -
+                          </button>
+                          <span id="adults-count">1</span>
+                          <button type="button" class="counter-btn" data-type="adults" data-action="increment">
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div class="passenger-row">
+                        <label>Enfants <small>(0-6 ans)</small></label>
+                        <div class="passenger-counter">
+                          <button type="button" class="counter-btn" data-type="children" data-action="decrement">
+                            -
+                          </button>
+                          <span id="children-count">0</span>
+                          <button type="button" class="counter-btn" data-type="children" data-action="increment">
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="w-full md:w-auto flex flex-col items-center gap-4">
-                <div class="text-white text-center">
-                  <span
-                    >Sièges :
-                    <strong id="selected-seats-display" class="text-blue-400"
-                      >Aucun</strong
-                    ></span
-                  >
-                  <span class="mx-2">|</span>
-                  <span
-                    >Prix :
-                    <strong id="total-price-display" class="text-green-400"
-                      >0 FCFA</strong
-                    ></span
-                  >
-                </div>
-                <button
-                  class="btn btn-primary btn-large w-full"
-                  onclick="proceedToPassengerInfo()"
-                >
-                  Continuer
+                <button class="btn btn-primary btn-large" onclick="searchBuses()">
+                  Rechercher
                 </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div id="passengers-page" class="page">
-        <!-- ... (Contenu de la page passagers, inchangé) ... -->
+      </section>
+      <section class="popular-destinations">
         <div class="container">
-          <div class="page-header">
-            <button class="btn btn-secondary" onclick="showPage('seats')">
-              ← Retour
+          <h2>Destinations populaires</h2>
+          <div class="destinations-grid" id="popular-destinations-grid"></div>
+        </div>
+      </section>
+      <section class="why-en-bus">
+        <div class="container">
+          <h2>Pourquoi choisir En-Bus ?</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">📱</div>
+              <h3>Réservation facile</h3>
+              <p>Réservez vos billets en quelques clics</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">💰</div>
+              <h3>Meilleurs prix</h3>
+              <p>Trouvez les meilleures offres</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🚌</div>
+              <h3>Confort garanti</h3>
+              <p>Voyagez avec les meilleures compagnies</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🔒</div>
+              <h3>Sécurité maximale</h3>
+              <p>Vos informations sont sécurisées</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="results-page" class="page">
+      <!-- ... (Contenu de la page des résultats, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <button class="btn btn-secondary" onclick="showPage('home')">
+            ← Retour
+          </button>
+          <h2>Résultats de recherche</h2>
+        </div>
+        <div id="search-summary" class="search-summary"></div>
+        <div class="filters-bar-enhanced">
+
+          <!-- ... (filtre "Trier par" et "Compagnie" restent inchangés) ... -->
+
+          <!-- ✅ NOUVEAU FILTRE PAR LIEU DE DÉPART -->
+          <div id="departure-location-filter-section" class="filter-section" style="display: none;">
+            <label for="filter-departure-location" class="filter-label">
+              <span class="filter-icon">📍</span>
+              Lieu de départ :
+            </label>
+            <select id="filter-departure-location" class="filter-select"
+              onchange="updateFilter('departureLocation', this.value)">
+              <!-- Les options seront générées dynamiquement par JavaScript -->
+            </select>
+          </div>
+
+          <div class="filter-section">
+            <label for="sort-by" class="filter-label">
+              <span class="filter-icon">🔽</span> Trier par :
+            </label>
+            <select id="sort-by" class="filter-select" onchange="updateFilter('sortBy', this.value)">
+              <option value="departure">Heure de départ</option>
+              <option value="price">Prix croissant</option>
+              <option value="duration">Durée du trajet</option>
+              <option value="company">Compagnie (A-Z)</option>
+            </select>
+          </div>
+          <div class="filter-section">
+            <label for="filter-company" class="filter-label">
+              <span class="filter-icon">🚌</span> Compagnie :
+            </label>
+            <select id="filter-company" class="filter-select" onchange="updateFilter('company', this.value)">
+              <option value="all">Toutes</option>
+              <option value="Océan du Nord">Océan du Nord</option>
+              <option value="Trans Bony">Trans Bony</option>
+              <option value="Stellimac">Stellimac</option>
+              <option value="United Express">United Express</option>
+              <option value="Touristique Express">Touristique Express</option>
+              <option value="Garantie Express">Garantie Express</option>
+              <option value="ABC Transport">ABC Transport</option>
+              <option value="STC">STC</option>
+            </select>
+          </div>
+          <div class="filter-section">
+            <label for="filter-trip-type" class="filter-label">
+              <span class="filter-icon">🛣️</span> Type :
+            </label>
+            <select id="filter-trip-type" class="filter-select" onchange="updateFilter('tripType', this.value)">
+              <option value="all">Tous</option>
+              <option value="direct">Direct uniquement</option>
+              <option value="stops">Avec arrêts</option>
+              <option value="connections">Avec correspondances</option>
+            </select>
+          </div>
+          <div class="filter-section">
+            <label for="filter-time" class="filter-label">
+              <span class="filter-icon">🕐</span> Départ :
+            </label>
+            <select id="filter-time" class="filter-select" onchange="updateFilter('departureTime', this.value)">
+              <option value="all">Toute la journée</option>
+              <option value="morning">Matin (5h-12h)</option>
+              <option value="afternoon">Après-midi (12h-17h)</option>
+              <option value="evening">Soirée (17h-21h)</option>
+              <option value="night">Nuit (21h-5h)</option>
+            </select>
+          </div>
+          <div class="filter-section filter-price">
+            <label class="filter-label">
+              <span class="filter-icon">💰</span> Prix :
+            </label>
+            <div class="price-range-container">
+              <div class="price-inputs">
+                <div class="price-input-group">
+                  <label for="price-min" class="price-label">Min</label>
+                  <input type="range" id="price-min" min="0" max="100000" step="1000" value="0"
+                    oninput="updateFilter('priceMin', this.value)" />
+                  <span id="price-min-display" class="price-display">0</span>
+                  FCFA
+                </div>
+                <div class="price-input-group">
+                  <label for="price-max" class="price-label">Max</label>
+                  <input type="range" id="price-max" min="0" max="100000" step="1000" value="100000"
+                    oninput="updateFilter('priceMax', this.value)" />
+                  <span id="price-max-display" class="price-display">100 000</span>
+                  FCFA
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="filter-section filter-amenities">
+            <label class="filter-label">
+              <span class="filter-icon">⚙️</span> Équipements :
+            </label>
+            <div class="amenities-checkboxes" id="amenities-filter-container"></div>
+          </div>
+          <div class="filter-section">
+            <button class="btn btn-secondary btn-reset-filters" onclick="resetFilters()">
+              🔄 Réinitialiser
             </button>
-            <h2>Informations passagers</h2>
           </div>
-          <div id="passengers-forms" class="passengers-forms"></div>
-          <div
-            id="baggage-section"
-            class="content-card"
-            style="margin-top: 32px"
-          >
-            <h3>Bagages Supplémentaires</h3>
-            <p id="baggage-section-info" style="margin-bottom: 1rem"></p>
-            <div id="baggage-options"></div>
+        </div>
+        <div id="amenities-legend" class="amenities-legend"></div>
+        <div id="results-list" class="results-list"></div>
+      </div>
+    </div>
+
+    <div id="seats-page" class="page">
+      <!-- ... (Contenu de la page des sièges, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <button class="btn btn-secondary" onclick="showPage('results')">
+            ← Retour
+          </button>
+          <h2>Sélection des sièges</h2>
+        </div>
+        <div
+          class="max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
+          <div id="bus-info" class="text-center mb-6"></div>
+
+          <!-- ✅ AJOUTER CE BLOC HTML ICI -->
+          <div id="trip-occupancy-info" class="trip-occupancy-info" style="display: none;">
+            <!-- Le contenu sera généré par JavaScript -->
           </div>
-          <div
-            class="page-actions"
-            style="
+          <div class="bg-gray-700/60 p-4 rounded-lg border border-gray-600 overflow-x-auto">
+            <div id="pro-seat-grid" class="min-w-[320px] mx-auto"></div>
+          </div>
+          <div class="mt-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-white text-sm">
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded-sm bg-green-500"></div>
+                <span>Disponible</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded-sm bg-blue-500"></div>
+                <span>Sélectionné</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-4 rounded-sm bg-gray-500"></div>
+                <span>Occupé</span>
+              </div>
+            </div>
+            <div class="w-full md:w-auto flex flex-col items-center gap-4">
+              <div class="text-white text-center">
+                <span>Sièges :
+                  <strong id="selected-seats-display" class="text-blue-400">Aucun</strong></span>
+                <span class="mx-2">|</span>
+                <span>Prix :
+                  <strong id="total-price-display" class="text-green-400">0 FCFA</strong></span>
+              </div>
+              <button class="btn btn-primary btn-large w-full" onclick="proceedToPassengerInfo()">
+                Continuer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="passengers-page" class="page">
+      <!-- ... (Contenu de la page passagers, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <button class="btn btn-secondary" onclick="showPage('seats')">
+            ← Retour
+          </button>
+          <h2>Informations passagers</h2>
+        </div>
+        <div id="passengers-forms" class="passengers-forms"></div>
+        <div id="baggage-section" class="content-card" style="margin-top: 32px">
+          <h3>Bagages Supplémentaires</h3>
+          <p id="baggage-section-info" style="margin-bottom: 1rem"></p>
+          <div id="baggage-options"></div>
+        </div>
+        <div class="page-actions" style="
               display: flex;
               justify-content: space-between;
               margin-top: 32px;
-            "
-          >
-            <button class="btn btn-secondary" onclick="showPage('seats')">
-              Retour
-            </button>
-            <button class="btn btn-primary" onclick="proceedToPayment()">
-              Continuer vers paiement
-            </button>
-          </div>
+            ">
+          <button class="btn btn-secondary" onclick="showPage('seats')">
+            Retour
+          </button>
+          <button class="btn btn-primary" onclick="proceedToPayment()">
+            Continuer vers paiement
+          </button>
         </div>
       </div>
+    </div>
 
-      <div id="payment-page" class="page">
-        <!-- ... (Contenu de la page de paiement, inchangé) ... -->
-        <div class="container">
-          <div class="page-header">
-            <button class="btn btn-secondary" onclick="showPage('passengers')">
-              ← Retour
-            </button>
-            <h2>Paiement</h2>
-          </div>
-          <div class="payment-container">
-            <div class="booking-summary-card">
-              <h3>Récapitulatif</h3>
-              <!-- ✅ AJOUTER CE BLOC HTML ICI -->
-        <div id="urgency-box" class="urgency-box" style="display: none;">
-            <!-- Contenu généré par JavaScript -->
+    <div id="payment-page" class="page">
+      <!-- ... (Contenu de la page de paiement, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <button class="btn btn-secondary" onclick="showPage('passengers')">
+            ← Retour
+          </button>
+          <h2>Paiement</h2>
         </div>
-              <div id="booking-summary" class="booking-details"></div>
+        <div class="payment-container">
+          <div class="booking-summary-card">
+            <h3>Récapitulatif</h3>
+            <!-- ✅ AJOUTER CE BLOC HTML ICI -->
+            <div id="urgency-box" class="urgency-box" style="display: none;">
+              <!-- Contenu généré par JavaScript -->
             </div>
-            <div class="payment-methods-card">
-              <h3>💳 Mode de paiement</h3>
-              <div class="payment-methods">
-                <label class="payment-method">
-                  <input type="radio" name="payment" value="mtn" checked />
-                  <div class="method-content">
-                    <div class="method-icon">📱</div>
-                    <div class="method-info">
-                      <strong>
-                        MTN Mobile Money
-                        <span class="method-badge">Rapide</span>
-                      </strong>
-                      <span>⚡ Paiement instantané via MTN</span>
-                    </div>
-                  </div>
-                </label>
-                <div class="payment-details-form" id="mtn-details">
-                  <div class="form-group">
-                    <label for="mtn-phone">📞 Numéro de téléphone MTN</label>
-                    <input
-                      type="tel"
-                      id="mtn-phone"
-                      class="form-control"
-                      placeholder="Ex: 06 123 4567"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="mtn-amount">💰 Montant à payer</label>
-                    <input
-                      type="text"
-                      id="mtn-amount"
-                      class="form-control"
-                      readonly
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="mtn-booking-ref"
-                      >🎫 Référence de réservation</label
-                    >
-                    <input
-                      type="text"
-                      id="mtn-booking-ref"
-                      class="form-control"
-                      readonly
-                    />
+            <div id="booking-summary" class="booking-details"></div>
+          </div>
+          <div class="payment-methods-card">
+            <h3>💳 Mode de paiement</h3>
+            <div class="payment-methods">
+              <label class="payment-method">
+                <input type="radio" name="payment" value="mtn" checked />
+                <div class="method-content">
+                  <div class="method-icon">📱</div>
+                  <div class="method-info">
+                    <strong>
+                      MTN Mobile Money
+                      <span class="method-badge">Rapide</span>
+                    </strong>
+                    <span>⚡ Paiement instantané via MTN</span>
                   </div>
                 </div>
-                <label class="payment-method">
-                  <input type="radio" name="payment" value="airtel" />
-                  <div class="method-content">
-                    <div class="method-icon">📱</div>
-                    <div class="method-info">
-                      <strong>Airtel Money</strong>
-                      <span>⚡ Paiement instantané via Airtel</span>
-                    </div>
-                  </div>
-                </label>
-                <div
-                  class="payment-details-form"
-                  id="airtel-details"
-                  style="display: none"
-                >
-                  <div class="form-group">
-                    <label for="airtel-phone"
-                      >📞 Numéro de téléphone Airtel</label
-                    >
-                    <input
-                      type="tel"
-                      id="airtel-phone"
-                      class="form-control"
-                      placeholder="Ex: 05 123 4567"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="airtel-amount">💰 Montant à payer</label>
-                    <input
-                      type="text"
-                      id="airtel-amount"
-                      class="form-control"
-                      readonly
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="airtel-booking-ref"
-                      >🎫 Référence de réservation</label
-                    >
-                    <input
-                      type="text"
-                      id="airtel-booking-ref"
-                      class="form-control"
-                      readonly
-                    />
+              </label>
+              <div class="payment-details-form" id="mtn-details">
+                <div class="form-group">
+                  <label for="mtn-phone">📞 Numéro de téléphone MTN</label>
+                  <input type="tel" id="mtn-phone" class="form-control" placeholder="Ex: 06 123 4567" />
+                </div>
+                <div class="form-group">
+                  <label for="mtn-amount">💰 Montant à payer</label>
+                  <input type="text" id="mtn-amount" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <label for="mtn-booking-ref">🎫 Référence de réservation</label>
+                  <input type="text" id="mtn-booking-ref" class="form-control" readonly />
+                </div>
+              </div>
+              <label class="payment-method">
+                <input type="radio" name="payment" value="airtel" />
+                <div class="method-content">
+                  <div class="method-icon">📱</div>
+                  <div class="method-info">
+                    <strong>Airtel Money</strong>
+                    <span>⚡ Paiement instantané via Airtel</span>
                   </div>
                 </div>
-                <label class="payment-method" id="agency-payment-option">
-                  <input type="radio" name="payment" value="agency" />
-                  <div class="method-content">
-                    <div class="method-icon">🏢</div>
-                    <div class="method-info">
-                      <strong>Paiement à l'agence</strong>
-                      <span id="agency-payment-subtitle"
-                        >⏰ Payez dans les 10h à l'agence</span
-                      >
-                    </div>
+              </label>
+              <div class="payment-details-form" id="airtel-details" style="display: none">
+                <div class="form-group">
+                  <label for="airtel-phone">📞 Numéro de téléphone Airtel</label>
+                  <input type="tel" id="airtel-phone" class="form-control" placeholder="Ex: 05 123 4567" />
+                </div>
+                <div class="form-group">
+                  <label for="airtel-amount">💰 Montant à payer</label>
+                  <input type="text" id="airtel-amount" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <label for="airtel-booking-ref">🎫 Référence de réservation</label>
+                  <input type="text" id="airtel-booking-ref" class="form-control" readonly />
+                </div>
+              </div>
+              <label class="payment-method" id="agency-payment-option">
+                <input type="radio" name="payment" value="agency" />
+                <div class="method-content">
+                  <div class="method-icon">🏢</div>
+                  <div class="method-info">
+                    <strong>Paiement à l'agence</strong>
+                    <span id="agency-payment-subtitle">⏰ Payez dans les 10h à l'agence</span>
                   </div>
-                </label>
-                <div
-                  class="payment-details-form"
-                  id="agency-details"
-                  style="display: none"
-                >
-                  <div class="agency-info-box">
-                    <h4>📍 Agence la plus proche</h4>
-                    <div id="selected-agency-info"></div>
-                  </div>
-                  <div class="form-group">
-                    <label>⏰ Vous devez payer avant :</label>
-                    <input
-                      type="text"
-                      id="agency-deadline"
-                      class="form-control"
-                      readonly
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label>📋 Référence de réservation</label>
-                    <input
-                      type="text"
-                      id="agency-booking-ref"
-                      class="form-control"
-                      readonly
-                    />
-                  </div>
-                  <div class="info-note">
-                    <strong>⚠️ Important :</strong>
-                    <ul style="margin: 10px 0 0 20px; font-size: 14px">
-                      <li>
-                        Cette réservation sera
-                        <strong>automatiquement annulée</strong> si le paiement
-                        n'est pas effectué dans les 10h
-                      </li>
-                      <li>
-                        Présentez-vous à l'agence avec une pièce d'identité
-                      </li>
-                      <li>Le numéro de réservation sera requis</li>
-                    </ul>
-                  </div>
+                </div>
+              </label>
+              <div class="payment-details-form" id="agency-details" style="display: none">
+                <div class="agency-info-box">
+                  <h4>📍 Agence la plus proche</h4>
+                  <div id="selected-agency-info"></div>
+                </div>
+                <div class="form-group">
+                  <label>⏰ Vous devez payer avant :</label>
+                  <input type="text" id="agency-deadline" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <label>📋 Référence de réservation</label>
+                  <input type="text" id="agency-booking-ref" class="form-control" readonly />
+                </div>
+                <div class="info-note">
+                  <strong>⚠️ Important :</strong>
+                  <ul style="margin: 10px 0 0 20px; font-size: 14px">
+                    <li>
+                      Cette réservation sera
+                      <strong>automatiquement annulée</strong> si le paiement
+                      n'est pas effectué dans les 10h
+                    </li>
+                    <li>
+                      Présentez-vous à l'agence avec une pièce d'identité
+                    </li>
+                    <li>Le numéro de réservation sera requis</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-          <div class="page-actions">
-            <button class="btn btn-secondary" onclick="showPage('passengers')">
-              Retour
-            </button>
-            <button
-              class="btn btn-primary btn-large"
-              onclick="confirmBooking(this)"
-            >
-              Confirmer la Réservation
-            </button>
-          </div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-secondary" onclick="showPage('passengers')">
+            Retour
+          </button>
+          <button class="btn btn-primary btn-large" onclick="confirmBooking(this)">
+            Confirmer la Réservation
+          </button>
         </div>
       </div>
+    </div>
 
-      <div id="payment-instructions-page" class="page">
-        <!-- Contenu généré par JS -->
-        <div class="container"></div>
-      </div>
+    <div id="payment-instructions-page" class="page">
+      <!-- Contenu généré par JS -->
+      <div class="container"></div>
+    </div>
 
-      <!-- ✅ STRUCTURE CORRIGÉE DE LA PAGE DE CONFIRMATION -->
-      <div id="confirmation-page" class="page">
-        <div class="container">
-          <div class="confirmation-container-modern">
-            <!-- Titres et animation de succès -->
-            <div class="success-animation">
-              <div class="success-checkmark">
-                <div class="check-icon">
-                  <span class="icon-line line-tip"></span
-                  ><span class="icon-line line-long"></span>
-                  <div class="icon-circle"></div>
-                  <div class="icon-fix"></div>
-                </div>
+    <!-- ✅ STRUCTURE CORRIGÉE DE LA PAGE DE CONFIRMATION -->
+    <div id="confirmation-page" class="page">
+      <div class="container">
+        <div class="confirmation-container-modern">
+          <!-- Titres et animation de succès -->
+          <div class="success-animation">
+            <div class="success-checkmark">
+              <div class="check-icon">
+                <span class="icon-line line-tip"></span><span class="icon-line line-long"></span>
+                <div class="icon-circle"></div>
+                <div class="icon-fix"></div>
               </div>
             </div>
-            <h1 class="confirmation-title">Réservation confirmée !</h1>
-            <p class="confirmation-subtitle">
-              Votre billet a été réservé avec succès
-            </p>
+          </div>
+          <h1 class="confirmation-title">Réservation confirmée !</h1>
+          <p class="confirmation-subtitle">
+            Votre billet a été réservé avec succès
+          </p>
 
-            <!-- Carte principale qui contiendra les billets -->
-            <div class="confirmation-card-modern">
-              <!-- En-tête commun avec le numéro de réservation -->
-              <div class="confirmation-header">
-                <div class="booking-badge">
-                  <span class="badge-label">N° de réservation</span>
-                  <span id="booking-number-display" class="badge-number"></span>
-                </div>
-                <div class="status-badge status-confirmed">
-                  <span class="status-icon">✓</span>
-                  <span>Confirmé</span>
-                </div>
+          <!-- Carte principale qui contiendra les billets -->
+          <div class="confirmation-card-modern">
+            <!-- En-tête commun avec le numéro de réservation -->
+            <div class="confirmation-header">
+              <div class="booking-badge">
+                <span class="badge-label">N° de réservation</span>
+                <span id="booking-number-display" class="badge-number"></span>
               </div>
+              <div class="status-badge status-confirmed">
+                <span class="status-icon">✓</span>
+                <span>Confirmé</span>
+              </div>
+            </div>
 
-              <!-- Conteneur pour le billet ALLER (généré par JS) -->
-              <div id="outbound-ticket-section"></div>
+            <!-- Conteneur pour le billet ALLER (généré par JS) -->
+            <div id="outbound-ticket-section"></div>
 
-              <!-- Conteneur pour le billet RETOUR (généré par JS et caché par défaut) -->
-              <div
-                id="return-ticket-section"
-                style="
+            <!-- Conteneur pour le billet RETOUR (généré par JS et caché par défaut) -->
+            <div id="return-ticket-section" style="
                   display: none;
                   margin-top: 40px;
                   padding-top: 30px;
                   border-top: 3px dashed var(--color-border);
-                "
-              ></div>
+                "></div>
 
-              <!-- Informations importantes (déplacé ici) -->
-              <div class="info-cards" style="margin-top: 24px">
-                <div class="info-card info-card-warning">
-                  <div class="info-icon">⏰</div>
-                  <div class="info-content">
-                    <h4>Arrivez à l'avance</h4>
-                    <p>
-                      Présentez-vous
-                      <strong>30 minutes avant le départ</strong> avec une pièce
-                      d'identité valide
-                    </p>
-                  </div>
+            <!-- Informations importantes (déplacé ici) -->
+            <div class="info-cards" style="margin-top: 24px">
+              <div class="info-card info-card-warning">
+                <div class="info-icon">⏰</div>
+                <div class="info-content">
+                  <h4>Arrivez à l'avance</h4>
+                  <p>
+                    Présentez-vous
+                    <strong>30 minutes avant le départ</strong> avec une pièce
+                    d'identité valide
+                  </p>
                 </div>
-                <div class="info-card info-card-info">
-                  <div class="info-icon">🎒</div>
-                  <div class="info-content">
-                    <h4>Bagages inclus</h4>
-                    <p>1 bagage en soute (20kg) + 1 bagage à main</p>
-                  </div>
+              </div>
+              <div class="info-card info-card-info">
+                <div class="info-icon">🎒</div>
+                <div class="info-content">
+                  <h4>Bagages inclus</h4>
+                  <p>1 bagage en soute (20kg) + 1 bagage à main</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Conteneur pour les boutons d'action (généré par JS) -->
-            <div
-              class="confirmation-actions-modern"
-              id="confirmation-actions-container"
-            ></div>
+          <!-- Conteneur pour les boutons d'action (généré par JS) -->
+          <div class="confirmation-actions-modern" id="confirmation-actions-container"></div>
 
-            <!-- Footer de la page de confirmation -->
-            <div class="confirmation-footer">
-              <p>Besoin d'aide ? Contactez-nous :</p>
-              <div class="contact-links">
-                <a href="tel:+242061234567">📞 +242 06 123 4567</a>
-                <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
-              </div>
+          <!-- Footer de la page de confirmation -->
+          <div class="confirmation-footer">
+            <p>Besoin d'aide ? Contactez-nous :</p>
+            <div class="contact-links">
+              <a href="tel:+242061234567">📞 +242 06 123 4567</a>
+              <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div id="reservations-page" class="page">
-        <div class="container">
-          <div class="page-header"><h2>Mes Réservations</h2></div>
-          <div id="reservations-list" class="reservations-list"></div>
-        </div>
-      </div>
-
-      <div id="about-page" class="page">
-        <!-- ... (Contenu de la page À Propos, inchangé) ... -->
-        <div class="container">
-          <div class="page-header"><h2>À propos d'En-Bus</h2></div>
-          <div class="content-card">
-            <p>
-              En-Bus est la plateforme de réservation de billets de bus en ligne
-              pour l'Afrique. Notre mission est de rendre les voyages en bus
-              plus accessibles et plus faciles pour tous.
-            </p>
-            <h3>Notre vision</h3>
-            <p>
-              Connecter les grandes villes d'Afrique et faciliter les
-              déplacements des populations à travers le continent.
-            </p>
-            <h3>Nos partenaires</h3>
-            <ul>
-              <li>Océan du Nord</li>
-              <li>Trans Bony Voyage</li>
-              <li>Stellimac</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div id="contact-page" class="page">
-        <!-- ... (Contenu de la page Contact, inchangé) ... -->
-        <div class="container">
-          <div class="page-header"><h2>Contact</h2></div>
-          <div class="content-card">
-            <h3>Contactez-nous</h3>
-            <p>
-              Pour toute question ou assistance, n'hésitez pas à nous contacter
-              :
-            </p>
-            <div class="contact-info">
-              <div class="contact-item">
-                <strong>📧 Email:</strong> <span>contact@en-bus.com</span>
-              </div>
-              <div class="contact-item">
-                <strong>📱 Téléphone:</strong> <span>+242 06 123 4567</span>
-              </div>
-              <div class="contact-item">
-                <strong>📍 Siège Social:</strong>
-                <span>Brazzaville, République du Congo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <!-- ... (votre footer est correct et reste inchangé) ... -->
+    <div id="reservations-page" class="page">
       <div class="container">
-        <div class="footer-content">
-          <div class="footer-section">
-            <h4>En-Bus</h4>
-            <p>Voyagez à travers l'Afrique en toute simplicité</p>
-          </div>
-          <div class="footer-section">
-            <h4>Liens rapides</h4>
-            <a href="#" onclick="showPage('home')">Accueil</a>
-            <a href="#" onclick="showPage('reservations')">Mes Réservations</a>
-            <a href="#" onclick="showPage('about')">À propos</a>
-          </div>
-          <div class="footer-section">
-            <h4>Contact</h4>
-            <p>Email: contact@en-bus.com</p>
-            <p>Tél: +242 06 123 4567</p>
-          </div>
+        <div class="page-header">
+          <h2>Mes Réservations</h2>
         </div>
-        <div class="footer-bottom">
-          <p>&copy; 2025 En-Bus. Tous droits réservés.</p>
+        <div id="reservations-list" class="reservations-list"></div>
+      </div>
+    </div>
+
+    <div id="about-page" class="page">
+      <!-- ... (Contenu de la page À Propos, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <h2>À propos d'En-Bus</h2>
+        </div>
+        <div class="content-card">
+          <p>
+            En-Bus est la plateforme de réservation de billets de bus en ligne
+            pour l'Afrique. Notre mission est de rendre les voyages en bus
+            plus accessibles et plus faciles pour tous.
+          </p>
+          <h3>Notre vision</h3>
+          <p>
+            Connecter les grandes villes d'Afrique et faciliter les
+            déplacements des populations à travers le continent.
+          </p>
+          <h3>Nos partenaires</h3>
+          <ul>
+            <li>Océan du Nord</li>
+            <li>Trans Bony Voyage</li>
+            <li>Stellimac</li>
+          </ul>
         </div>
       </div>
-    </footer>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
-    <script src="app.js"></script>
+    <div id="contact-page" class="page">
+      <!-- ... (Contenu de la page Contact, inchangé) ... -->
+      <div class="container">
+        <div class="page-header">
+          <h2>Contact</h2>
+        </div>
+        <div class="content-card">
+          <h3>Contactez-nous</h3>
+          <p>
+            Pour toute question ou assistance, n'hésitez pas à nous contacter
+            :
+          </p>
+          <div class="contact-info">
+            <div class="contact-item">
+              <strong>📧 Email:</strong> <span>contact@en-bus.com</span>
+            </div>
+            <div class="contact-item">
+              <strong>📱 Téléphone:</strong> <span>+242 06 123 4567</span>
+            </div>
+            <div class="contact-item">
+              <strong>📍 Siège Social:</strong>
+              <span>Brazzaville, République du Congo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
-    <script>
-      // ... (votre script PWA est correct et reste inchangé) ...
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then((registration) => {
-              console.log("✅ Service Worker enregistré:", registration.scope);
-              registration.addEventListener("updatefound", () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener("statechange", () => {
+  <footer class="footer">
+    <!-- ... (votre footer est correct et reste inchangé) ... -->
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>En-Bus</h4>
+          <p>Voyagez à travers l'Afrique en toute simplicité</p>
+        </div>
+        <div class="footer-section">
+          <h4>Liens rapides</h4>
+          <a href="#" onclick="showPage('home')">Accueil</a>
+          <a href="#" onclick="showPage('reservations')">Mes Réservations</a>
+          <a href="#" onclick="showPage('about')">À propos</a>
+        </div>
+        <div class="footer-section">
+          <h4>Contact</h4>
+          <p>Email: contact@en-bus.com</p>
+          <p>Tél: +242 06 123 4567</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 En-Bus. Tous droits réservés.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    // ... (votre script PWA est correct et reste inchangé) ...
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("✅ Service Worker enregistré:", registration.scope);
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
                   if (
-                    newWorker.state === "installed" &&
-                    navigator.serviceWorker.controller
+                    confirm(
+                      "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
+                    )
                   ) {
-                    if (
-                      confirm(
-                        "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
-                      )
-                    ) {
-                      newWorker.postMessage({ type: "SKIP_WAITING" });
-                      window.location.reload();
-                    }
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                    window.location.reload();
                   }
-                });
+                }
               });
-            })
-            .catch((error) => {
-              console.error("❌ Erreur Service Worker:", error);
             });
-        });
-        let refreshing;
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
-      }
-      let deferredPrompt;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        showInstallButton();
+          })
+          .catch((error) => {
+            console.error("❌ Erreur Service Worker:", error);
+          });
       });
-      function showInstallButton() {
-        const installBtn = document.createElement("button");
-        installBtn.className = "install-pwa-btn";
-        installBtn.innerHTML = `<span style="font-size: 20px;">📱</span><span>Installer l'application</span>`;
-        installBtn.onclick = async () => {
-          if (!deferredPrompt) return;
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log(`Installation: ${outcome}`);
-          if (outcome === "accepted") {
-            installBtn.style.display = "none";
-          }
-          deferredPrompt = null;
-        };
-        document.body.appendChild(installBtn);
-        setTimeout(() => {
-          installBtn.classList.add("show");
-        }, 2000);
-      }
-      if (
-        window.matchMedia("(display-mode: standalone)").matches ||
-        window.navigator.standalone
-      ) {
-        console.log("✅ Application installée et lancée en mode standalone");
-        document.body.classList.add("pwa-installed");
-      }
-      window.addEventListener("online", () => {
-        if (typeof Utils !== "undefined")
-          Utils.showToast("Connexion rétablie", "success");
+      let refreshing;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
-      window.addEventListener("offline", () => {
-        if (typeof Utils !== "undefined")
-          Utils.showToast("Mode hors-ligne activé", "warning");
-      });
-    </script>
+    }
+    let deferredPrompt;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      showInstallButton();
+    });
+    function showInstallButton() {
+      const installBtn = document.createElement("button");
+      installBtn.className = "install-pwa-btn";
+      installBtn.innerHTML = `<span style="font-size: 20px;">📱</span><span>Installer l'application</span>`;
+      installBtn.onclick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Installation: ${outcome}`);
+        if (outcome === "accepted") {
+          installBtn.style.display = "none";
+        }
+        deferredPrompt = null;
+      };
+      document.body.appendChild(installBtn);
+      setTimeout(() => {
+        installBtn.classList.add("show");
+      }, 2000);
+    }
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone
+    ) {
+      console.log("✅ Application installée et lancée en mode standalone");
+      document.body.classList.add("pwa-installed");
+    }
+    window.addEventListener("online", () => {
+      if (typeof Utils !== "undefined")
+        Utils.showToast("Connexion rétablie", "success");
+    });
+    window.addEventListener("offline", () => {
+      if (typeof Utils !== "undefined")
+        Utils.showToast("Mode hors-ligne activé", "warning");
+    });
+  </script>
 
 
 
-    <!-- DANS index.html, juste avant </body> -->
+  <!-- DANS index.html, juste avant </body> -->
 
-<!-- ============================================
+  <!-- ============================================
      ✅ MODALE DE CONFIRMATION PERSONNALISÉE
      ============================================ -->
-<div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
+  <div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
     <div class="custom-modal-card">
-        <div class="custom-modal-header">
-            <span id="custom-confirm-icon" class="custom-modal-icon"></span>
-            <h3 id="custom-confirm-title"></h3>
-        </div>
-        <div class="custom-modal-body">
-            <p id="custom-confirm-message"></p>
-        </div>
-        <div class="custom-modal-footer">
-            <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
-            <button id="custom-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
-        </div>
+      <div class="custom-modal-header">
+        <span id="custom-confirm-icon" class="custom-modal-icon"></span>
+        <h3 id="custom-confirm-title"></h3>
+      </div>
+      <div class="custom-modal-body">
+        <p id="custom-confirm-message"></p>
+      </div>
+      <div class="custom-modal-footer">
+        <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
+        <button id="custom-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
+      </div>
     </div>
-</div>
+  </div>
 
-  </body>
+</body>
+
 </html>
