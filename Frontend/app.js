@@ -748,7 +748,7 @@ async function removeBookingFromLocalHistory(bookingNumber) {
     // Appel à la nouvelle modale personnalisée
     const confirmed = await showCustomConfirm({
         title: "Retirer la réservation ?",
-        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n\nLa réservation ne sera pas annulée et restera visible pour l'administrateur.`,
+        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n`,
         icon: '🗑️',
         iconClass: 'danger',
         confirmText: 'Oui, retirer',
