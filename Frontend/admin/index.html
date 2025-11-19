@@ -3685,6 +3685,8 @@ async function showChangeSeatsModal(reservationId) {
 
     document.getElementById('modal-body').innerHTML = modalBodyHTML;
     document.getElementById('details-modal').classList.add('active');
+    
+    updateAdminSeatSelection();
     updateSelectedSeatsDisplay(); // Met à jour l'état du bouton initial
 
     // 6. Attacher l'événement au bouton "Enregistrer"
@@ -3794,9 +3796,49 @@ async function showChangeSeatsModal(reservationId) {
           }
         }
       }
-      function toggleAdminSeat(element, seatNumber) {
-        element.classList.toggle("selected");
-      }
+      // DANS Admin/index.html, REMPLACEZ la fonction toggleAdminSeat par celle-ci
+
+function toggleAdminSeat(element, seatNumber) {
+    // Ajoute ou enlève simplement la classe 'selected'. Le CSS s'occupera du style.
+    element.classList.toggle('selected');
+    
+    // ✅ APPEL CRUCIAL : Mettre à jour le compteur et l'état du bouton
+    updateAdminSeatSelection();
+}
+      // DANS Admin/index.html, AJOUTEZ cette nouvelle fonction
+
+function updateAdminSeatSelection() {
+    const selectedSeatsElements = document.querySelectorAll('.seat.selected');
+    const selectedSeats = Array.from(selectedSeatsElements)
+        .map(el => parseInt(el.dataset.seatNumber))
+        .sort((a, b) => a - b);
+    
+    const countElement = document.getElementById('selected-seats-count');
+    const listElement = document.getElementById('selected-seats-list');
+    const saveBtn = document.getElementById('save-seats-btn');
+
+    // Mettre à jour le texte du compteur et de la liste
+    if (countElement) {
+        countElement.textContent = selectedSeats.length;
+    }
+    if (listElement) {
+        listElement.textContent = selectedSeats.length > 0 ? selectedSeats.join(', ') : 'Aucun';
+    }
+
+    // Activer ou désactiver le bouton "Enregistrer"
+    if (saveBtn) {
+        const passengerCountText = document.querySelector('#selected-seats-count + span')?.textContent;
+        if (passengerCountText) {
+            const requiredCount = parseInt(passengerCountText.replace('/', '').trim());
+            
+            // Le bouton est activé SEULEMENT si le compte est bon
+            saveBtn.disabled = selectedSeats.length !== requiredCount;
+        } else {
+            // Sécurité : si on ne peut pas trouver le nombre requis, on désactive
+            saveBtn.disabled = true;
+        }
+    }
+}
 
       // DANS Admin/index.html, dans la balise <script>
 
