@@ -149,6 +149,75 @@
 }
 
 
+
+
+/* DANS index.html, dans <style> */
+
+.trip-occupancy-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    background-color: rgba(var(--color-accent-glow-rgb), 0.1);
+    border: 1px solid var(--color-border);
+    padding: 12px 20px;
+    border-radius: var(--radius-lg);
+    margin: 0 auto 24px;
+    max-width: 500px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+.trip-occupancy-info span strong {
+    color: var(--color-accent-glow);
+    font-size: 16px;
+}
+.trip-occupancy-info .danger {
+    color: #ffa726; /* Orange pour attirer l'attention */
+}
+
+
+
+/* DANS index.html, dans <style> */
+
+.urgency-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background-color: var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+.urgency-item {
+    background-color: var(--color-surface);
+    padding: 16px;
+    text-align: center;
+}
+.urgency-label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+.urgency-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono, monospace);
+    color: var(--color-text-primary);
+}
+.urgency-value.danger {
+    color: #f44336;
+    animation: pulse-danger 1.5s infinite;
+}
+@keyframes pulse-danger {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
     </style>
   </head>
   <body>
@@ -687,6 +756,11 @@
             class="max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700"
           >
             <div id="bus-info" class="text-center mb-6"></div>
+
+             <!-- ✅ AJOUTER CE BLOC HTML ICI -->
+    <div id="trip-occupancy-info" class="trip-occupancy-info" style="display: none;">
+        <!-- Le contenu sera généré par JavaScript -->
+    </div>
             <div
               class="bg-gray-700/60 p-4 rounded-lg border border-gray-600 overflow-x-auto"
             >
@@ -788,6 +862,10 @@
           <div class="payment-container">
             <div class="booking-summary-card">
               <h3>Récapitulatif</h3>
+              <!-- ✅ AJOUTER CE BLOC HTML ICI -->
+        <div id="urgency-box" class="urgency-box" style="display: none;">
+            <!-- Contenu généré par JavaScript -->
+        </div>
               <div id="booking-summary" class="booking-details"></div>
             </div>
             <div class="payment-methods-card">
