@@ -2535,22 +2535,14 @@ function updateBookingSummary() {
         if (refInput) refInput.value = bookingRef;
     });
 }
+// DANS app.js, REMPLACEZ la fonction proceedToPayment par celle-ci
 
-// Dans app.js
-// Dans app.js
 window.proceedToPayment = function() {
-
-    console.log('🟢 proceedToPayment() appelée');
+    console.log('🟢 proceedToPayment() appelée. Vérification des données...');
     
-    appState.passengerInfo = [];
-    
-    // ✅ SÉCURITÉ AJOUTÉE
-    // Vérifie si un voyage a bien été sélectionné avant de continuer.
-    // C'est la cause la plus probable de vos erreurs.
     if (!appState.selectedBus) {
         Utils.showToast("Erreur critique : Aucun voyage sélectionné.", "error");
-        console.error("❌ Tentative de continuer vers le paiement sans 'appState.selectedBus' défini.");
-        // Redirige l'utilisateur vers l'accueil pour éviter qu'il soit bloqué.
+        console.error("❌ Tentative de continuer sans 'appState.selectedBus'.");
         showPage('home'); 
         return;
     }
@@ -2558,47 +2550,69 @@ window.proceedToPayment = function() {
     appState.passengerInfo = [];
     let allFieldsValid = true;
 
+    // ✅ CORRECTION : S'assurer que baggageCounts est bien un objet avant la boucle
+    if (!appState.baggageCounts) {
+        appState.baggageCounts = {};
+        console.warn("⚠️ appState.baggageCounts était manquant, réinitialisé à {}.");
+    }
+
     for (let i = 0; i < appState.currentSearch.passengers; i++) {
-        const name = document.getElementById(`name-${i}`).value.trim();
-        const phone = document.getElementById(`phone-${i}`).value.trim();
-        const email = document.getElementById(`email-${i}`).value.trim();
+        const nameInput = document.getElementById(`name-${i}`);
+        const phoneInput = document.getElementById(`phone-${i}`);
+        const emailInput = document.getElementById(`email-${i}`);
+
+        // Sécurité : vérifier que les champs existent dans le DOM
+        if (!nameInput || !phoneInput || !emailInput) {
+            Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
         
         if (!name || !phone) {
-            Utils.showToast(`Veuillez remplir tous les champs obligatoires pour le passager ${i + 1}`, 'error');
+            Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
-            break; // Arrêter à la première erreur
+            break;
         }
         
         if (!Utils.validatePhone(phone)) {
-            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}`, 'error');
+            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
             break;
         }
         
         if (email && !Utils.validateEmail(email)) {
-            Utils.showToast(`Email invalide pour le passager ${i + 1}`, 'error');
+            Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
             break;
         }
         
-        // Ajouter les infos du passager et ses bagages
+        // ✅ CORRECTION : Récupération plus sûre des données de bagages
+        const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
+        
         appState.passengerInfo.push({
             seat: appState.selectedSeats[i],
             name: name,
             phone: phone,
             email: email,
-            baggage: appState.baggageCounts[i] || { standard: 0, oversized: 0 }
+            baggage: passengerBaggage
         });
     }
 
-    // Si tous les formulaires sont valides, on continue vers la page de paiement
-    if (allFieldsValid) {
-        // Appelle la fonction qui met à jour le récapitulatif AVANT d'afficher la page
-        displayBookingSummary(); 
-        showPage("payment");
+    // Si la boucle s'est terminée prématurément, on s'arrête ici.
+    if (!allFieldsValid) {
+        console.log("❌ Validation échouée. Navigation annulée.");
+        return;
     }
+
+    // Si tout est valide, on continue vers la page de paiement
+    console.log("✅ Validation réussie. Affichage de la page de paiement.");
+    displayBookingSummary(); 
+    showPage("payment");
 }
-// Dans app.js
 // Dans app.js
 
 // Dans Frontend/app.js
