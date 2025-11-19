@@ -3098,63 +3098,54 @@ async function handleDeleteTemplate(templateId, templateName) {
 
       // Dans Admin/index.html (section <script>)
       // Dans Admin/index.html (section <script>)
-      async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
-        alert(
-          `Fonction appelée ! Siège: ${seatNumber}, Statut: ${currentStatus}`
-        );
+      // DANS Admin/index.html, REMPLACEZ la fonction toggleSeatStatus
 
-        let newStatus;
-        let actionMessage = "";
+async function toggleSeatStatus(tripId, seatNumber, currentStatus) {
+    // Le "alert()" de débogage est supprimé.
+    
+    let newStatus;
+    
+    // Logique de changement de statut
+    if (currentStatus === 'available') {
+        newStatus = 'blocked';
+    } else if (currentStatus === 'blocked') {
+        newStatus = 'available';
+    } else if (currentStatus === 'occupied') {
+        // ✅ Utilisation de la modale personnalisée pour l'avertissement
+        const confirmed = await showAdminConfirm({
+            title: "Libérer un siège réservé ?",
+            message: `ATTENTION : Le siège ${seatNumber} est déjà réservé par un client.\n\nForcer sa libération annulera sa place sur ce trajet. Êtes-vous sûr de vouloir continuer ?`,
+            icon: '⚠️',
+            iconClass: 'warning',
+            confirmText: 'Oui, libérer',
+            confirmClass: 'btn-danger'
+        });
 
-        // ✅ NOUVELLE LOGIQUE DE CONTRÔLE ADMIN
-
-        // Si le siège est DISPONIBLE, on le BLOQUE.
-        if (currentStatus === "available") {
-          newStatus = "blocked";
-          actionMessage = `Le siège ${seatNumber} a été bloqué.`;
+        if (!confirmed) {
+            return; // L'admin annule l'opération
         }
-        // Si le siège est BLOQUÉ ou OCCUPÉ, on le LIBÈRE.
-        else if (currentStatus === "blocked" || currentStatus === "occupied") {
-          // Avertissement si on libère un siège occupé par un client
-          if (currentStatus === "occupied") {
-            if (
-              !confirm(
-                `⚠️ ATTENTION : Le siège ${seatNumber} est déjà réservé par un client. Forcer sa libération annulera sa place sur ce trajet. Voulez-vous continuer ?`
-              )
-            ) {
-              return; // L'admin annule l'opération
-            }
-          }
+        newStatus = 'available';
+    } else {
+        return; // Ne rien faire pour les statuts inconnus
+    }
 
-          newStatus = "available";
-          actionMessage = `Le siège ${seatNumber} a été libéré.`;
-        } else {
-          // Cas imprévu, on ne fait rien
-          return;
-        }
-
-        // Appel à l'API pour mettre à jour le statut en base de données
-        const data = await apiCall(
-          `/admin/trips/${tripId}/seats/${seatNumber}`,
-          "PATCH",
-          { status: newStatus }
-        );
-
-        if (data) {
-          // Mettre à jour l'état local pour un rafraîchissement immédiat de l'interface
-          const trip = allTrips.find((t) => t._id === tripId);
-          if (trip) {
-            const seat = trip.seats.find((s) => s.number === seatNumber);
+    // Appel à l'API pour mettre à jour le statut en base de données
+    const data = await apiCall(`/admin/trips/${tripId}/seats/${seatNumber}`, 'PATCH', { status: newStatus });
+    
+    if (data && data.success) {
+        // Mettre à jour l'état local pour un rafraîchissement immédiat
+        const trip = allTrips.find(t => t._id === tripId);
+        if (trip) {
+            const seat = trip.seats.find(s => s.number === seatNumber);
             if (seat) {
-              seat.status = newStatus;
+                seat.status = newStatus;
             }
-          }
-
-          showNotification(actionMessage, "success");
-          manageSeats(tripId); // Rafraîchit la modale pour afficher le nouvel état
         }
-      }
-
+        
+        showNotification(data.message || `Siège ${seatNumber} mis à jour.`, 'success');
+        manageSeats(tripId); // Rafraîchit la modale pour afficher le nouvel état
+    }
+}
       // ============================================
       // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE
       // ============================================
@@ -3908,33 +3899,34 @@ function switchTab(tabName) {
       // ============================================
       // ✅ NOUVELLE FONCTION : RÉINITIALISER LES SIÈGES
       // ============================================
-      async function resetTripSeats(tripId) {
-        const trip = allTrips.find((t) => t._id === tripId);
-        if (!trip) return;
+      // DANS Admin/index.html, REMPLACEZ la fonction resetTripSeats
 
-        // Avertissement TRÈS important car l'action est destructive
-        const confirmMessage = `Êtes-vous absolument certain de vouloir réinitialiser TOUS les sièges pour le voyage :\n\n${
-          trip.route.from
-        } → ${trip.route.to} du ${new Date(trip.date).toLocaleDateString(
-          "fr-FR"
-        )} ?\n\n⚠️ ATTENTION : Cette action est IRREVERSIBLE et libérera également les sièges déjà réservés par des clients.`;
+async function resetTripSeats(tripId) {
+    const trip = allTrips.find(t => t._id === tripId);
+    if (!trip) return;
+    
+    // ✅ Utilisation de la modale personnalisée pour l'avertissement
+    const confirmed = await showAdminConfirm({
+        title: "Réinitialiser tous les sièges ?",
+        message: `Êtes-vous absolument certain de vouloir réinitialiser TOUS les sièges pour le voyage :\n\n${trip.route.from} → ${trip.route.to} du ${new Date(trip.date).toLocaleDateString('fr-FR')} ?\n\n⚠️ Cette action est IRREVERSIBLE et libérera également les sièges déjà réservés par des clients.`,
+        icon: '🔄',
+        iconClass: 'danger',
+        confirmText: 'Oui, réinitialiser',
+        confirmClass: 'btn-danger'
+    });
 
-        if (!confirm(confirmMessage)) {
-          return;
-        }
+    if (!confirmed) {
+        return;
+    }
 
-        // Appel de la nouvelle route API
-        const data = await apiCall(
-          `/admin/trips/${tripId}/reset-seats`,
-          "PATCH"
-        );
+    // Appel de la route API
+    const data = await apiCall(`/admin/trips/${tripId}/reset-seats`, 'PATCH');
 
-        if (data && data.success) {
-          showNotification(data.message, "success");
-          loadAllTrips(); // Recharger la table pour voir les changements
-        }
-      }
-
+    if (data && data.success) {
+        showNotification(data.message, 'success');
+        loadAllTrips(); // Recharger la table pour voir les changements
+    }
+}
 
 
       // DANS Admin/index.html, dans <script>
