@@ -740,6 +740,33 @@ function addBookingToLocalHistory(bookingNumber) {
 }
 
 
+// DANS app.js, à ajouter avec les autres fonctions utilitaires
+
+function removeBookingFromLocalHistory(bookingNumber) {
+    if (!confirm(`Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n\n(La réservation ne sera pas annulée et restera visible pour l'administrateur).`)) {
+        return;
+    }
+
+    try {
+        let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        
+        // Filtre la liste pour enlever le numéro de réservation spécifié
+        const newHistory = history.filter(bn => bn !== bookingNumber);
+        
+        // Sauvegarde la nouvelle liste
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
+        
+        console.log(`🗑️ Réservation ${bookingNumber} retirée de l'historique local.`);
+        Utils.showToast("Réservation retirée de l'historique.", "success");
+        
+        // Rafraîchit l'affichage pour que la carte disparaisse
+        displayReservations();
+
+    } catch (e) {
+        console.error("Erreur lors de la suppression de l'historique local:", e);
+        Utils.showToast("Une erreur est survenue.", "error");
+    }
+}
 
 // ============================================
 // FONCTIONS PAIEMENT AGENCE
@@ -3103,6 +3130,16 @@ async function displayReservations() {
                 <div class="reservation-card-pwa">
                     <div class="res-pwa-header">
                         <span class="res-pwa-booking-number">${res.bookingNumber}</span>
+
+                        !-- ✅ AJOUT DU BOUTON DE SUPPRESSION ICI -->
+                    ${!isPending ? `
+                        <button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Supprimer de cet appareil">
+                            🗑️
+                        </button>
+                    ` : ''}
+
+
+
                         <span class="res-pwa-status">${statusHTML}</span>
                     </div>
                     <div class="res-pwa-body">
