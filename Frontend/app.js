@@ -886,6 +886,10 @@ window.downloadTicket = async function(isReturn = false) {
 // ============================================
 // Dans app.js - REMPLACER la fonction displayPaymentInstructions()
 
+// DANS app.
+
+// DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
+
 // DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
 
 function displayPaymentInstructions(reservation) {
@@ -901,36 +905,70 @@ function displayPaymentInstructions(reservation) {
     const ussdCode = paymentMethod === 'MTN' ? '*555#' : '*130#';
     const deadline = new Date(reservation.paymentDeadline);
     const amount = reservation.totalPriceNumeric;
-    
-    // Contenu spécifique au paiement Mobile Money
-    const mobileMoneyContent = `
-        <div class="detail-row">
-            <span class="detail-label">📞 Votre numéro ${paymentMethod}</span>
-            <span class="detail-value highlight">${reservation.customerPhone}</span>
-            <div class="detail-warning">⚠️ Utilisez CE numéro pour effectuer le paiement</div>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">📞 Numéro marchand ${paymentMethod}</span>
-            <span class="detail-value highlight">${merchantNumber}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">🔖 Référence (IMPORTANT)</span>
-            <span class="detail-value highlight">${reservation.bookingNumber}</span>
-            <div class="detail-warning">⚠️ Inscrivez cette référence dans le message du transfert</div>
-        </div>
-    `;
 
-    // Contenu spécifique au paiement en agence
-    const agencyPaymentContent = `
-        <div class="detail-row">
-            <span class="detail-label">🏢 Agence de paiement</span>
-            <div style="font-weight: 700; color: var(--color-text-primary);">
-                ${reservation.agency.name}<br>
-                <small style="font-weight: 400; color: var(--color-text-secondary);">${reservation.agency.address}</small>
+    // ✅ CORRECTION : Le contenu HTML est maintenant construit dans un bloc conditionnel
+    let paymentDetailsContent = '';
+    let paymentStepsContent = '';
+
+    if (isAgencyPayment) {
+        // Contenu pour le paiement en agence
+        paymentDetailsContent = `
+            <div class="detail-row">
+                <span class="detail-label">🏢 Agence de paiement</span>
+                <div style="font-weight: 700; color: var(--color-text-primary);">
+                    ${reservation.agency.name}<br>
+                    <small style="font-weight: 400; color: var(--color-text-secondary);">${reservation.agency.address}</small>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+        paymentStepsContent = `
+            <div class="instruction-steps">
+                <h3>🏢 Étapes de paiement en agence</h3>
+                <ol>
+                    <li>Rendez-vous à l'agence de départ avant la date limite.</li>
+                    <li>Présentez votre <strong>numéro de réservation : ${reservation.bookingNumber}</strong></li>
+                    <li>Effectuez le paiement de <strong>${Utils.formatPrice(amount)} FCFA</strong>.</li>
+                    <li>Votre billet sera validé et imprimé sur place.</li>
+                </ol>
+            </div>
+        `;
+
+    } else {
+        // Contenu pour le paiement Mobile Money (MTN/Airtel)
+        paymentDetailsContent = `
+            <div class="detail-row">
+                <span class="detail-label">📞 Votre numéro ${paymentMethod}</span>
+                <span class="detail-value highlight">${reservation.customerPhone}</span>
+                <div class="detail-warning">⚠️ Utilisez CE numéro pour effectuer le paiement</div>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📞 Numéro marchand ${paymentMethod}</span>
+                <span class="detail-value highlight">${merchantNumber}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">🔖 Référence (IMPORTANT)</span>
+                <span class="detail-value highlight">${reservation.bookingNumber}</span>
+                <div class="detail-warning">⚠️ Inscrivez cette référence dans le message du transfert</div>
+            </div>
+        `;
+        paymentStepsContent = `
+            <div class="instruction-steps">
+                <h3>📱 Étapes de paiement ${paymentMethod}</h3>
+                <ol>
+                    <li>Composez <strong>${ussdCode}</strong> sur votre téléphone ${paymentMethod} (<strong>${reservation.customerPhone}</strong>)</li>
+                    <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
+                    <li>Entrez le numéro marchand : <strong>${merchantNumber}</strong></li>
+                    <li>Montant : <strong>${Utils.formatPrice(amount)} FCFA</strong></li>
+                    <li>Message/Référence : <strong>${reservation.bookingNumber}</strong></li>
+                    <li>Validez avec votre code PIN</li>
+                    <li>Vous recevrez un SMS de confirmation de ${paymentMethod}</li>
+                    <li><strong>Cliquez sur "Vérifier le paiement" ci-dessous après avoir effectué le transfert</strong></li>
+                </ol>
+            </div>
+        `;
+    }
     
+    // Le template principal utilise maintenant les variables construites
     const instructionsHTML = `
         <div class="payment-instructions-card">
             <div class="instruction-header">
@@ -952,7 +990,7 @@ function displayPaymentInstructions(reservation) {
                     <span class="detail-value primary">${Utils.formatPrice(amount)} FCFA</span>
                 </div>
 
-                ${isAgencyPayment ? agencyPaymentContent : mobileMoneyContent}
+                ${paymentDetailsContent}
                 
                 <div class="detail-row">
                     <span class="detail-label">⏰ Date limite de paiement</span>
@@ -964,37 +1002,19 @@ function displayPaymentInstructions(reservation) {
                         minute: '2-digit' 
                     })}</span>
                     
-                    <!-- ✅ DÉCOMPTEUR DYNAMIQUE INTÉGRÉ ICI -->
                     <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}">
                         Temps restant : <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">Calcul...</span>
                     </div>
                 </div>
             </div>
             
-            ${!isAgencyPayment ? `
-            <div class="instruction-steps">
-                <h3>📱 Étapes de paiement ${paymentMethod}</h3>
-                <ol>
-                    <li>Composez <strong>${ussdCode}</strong> sur votre téléphone ${paymentMethod} (<strong>${reservation.customerPhone}</strong>)</li>
-                    <li>Sélectionnez <strong>"Transfert d'argent"</strong></li>
-                    <li>Entrez le numéro marchand : <strong>${merchantNumber}</strong></li>
-                    <li>Montant : <strong>${Utils.formatPrice(amount)} FCFA</strong></li>
-                    <li>Message/Référence : <strong>${reservation.bookingNumber}</strong></li>
-                    <li>Validez avec votre code PIN</li>
-                    <li>Vous recevrez un SMS de confirmation de ${paymentMethod}</li>
-                    <li><strong>Cliquez sur "Vérifier le paiement" ci-dessous après avoir effectué le transfert</strong></li>
-                </ol>
-            </div>` : ''}
+            ${paymentStepsContent}
             
             <div class="deadline-warning">
                 <div class="warning-icon">⚠️</div>
                 <div>
                     <strong>Important : Délai de paiement</strong>
                     <p>Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué avant le <strong>${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</strong>.</p>
-                    ${isAgencyPayment 
-                        ? `<p>Présentez-vous à l'agence avec votre numéro de réservation.</p>`
-                        : `<p>Une fois le paiement effectué, notre équipe validera votre transaction. Vous recevrez ensuite un email de confirmation avec votre billet.</p>`
-                    }
                 </div>
             </div>
             
@@ -1021,16 +1041,9 @@ function displayPaymentInstructions(reservation) {
     instructionsPage.innerHTML = instructionsHTML;
     showPage('payment-instructions');
     
-    // ✅ DÉMARRAGE DU DÉCOMPTEUR
     startFrontendCountdown();
-
-  
     
-    // Sauvegarder la réservation en cours
     appState.currentReservation = reservation;
-
-
-
 }
 // ============================================
 // 🔍 VÉRIFICATION DU STATUT DE PAIEMENT
@@ -1372,7 +1385,7 @@ function setupMobileMenu() {
 }
 
 function closeMenuAndShowPage(pageName) {
-    
+
     showPage(pageName);
     const hamburgerBtn = document.getElementById("hamburger-btn");
     const mobileNavMenu = document.getElementById("mobile-nav-menu");
