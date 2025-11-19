@@ -1,196 +1,107 @@
 // ============================================
-// SERVICE WORKER EN-BUS
+// SERVICE WORKER EN-BUS - VERSION AMÉLIORÉE
 // ============================================
 
-const CACHE_NAME = 'en-bus-v1.0.0';
-const CACHE_URLS = [
+// ✅ Changez cette version à chaque mise à jour (ex: 'en-bus-v1.0.1')
+const CACHE_VERSION = 'en-bus-v1.0.0'; 
+
+// Fichiers essentiels à mettre en cache immédiatement
+const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/app.js',
     '/style.css',
-    '/suivi.html',
     '/manifest.json',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
-
-    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-    'https://cdn.socket.io/4.7.5/socket.io.min.js',
-    
-
-    'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
-    'https://npmcdn.com/flatpickr/dist/themes/dark.css',
-    'https://cdn.tailwindcss.com',
-    'https://cdn.jsdelivr.net/npm/flatpickr',
-    'https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js',
-    'https://fonts.googleapis.com/css2?family=Audiowide&family=Exo+2:wght@300;400;600;700&display=swap'
-
+    // Assurez-vous que le chemin est correct depuis la racine de votre site
+    '/Suivi/suivi.html' 
 ];
 
-// ============================================
-// INSTALLATION DU SERVICE WORKER
-// ============================================
+// --- INSTALLATION ---
 self.addEventListener('install', (event) => {
-    console.log('🔧 [SW] Installation...');
-    
+    console.log(`🔧 [SW] Installation de la version ${CACHE_VERSION}...`);
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('✅ [SW] Cache ouvert');
-                return cache.addAll(CACHE_URLS);
-            })
-            .then(() => {
-                console.log('✅ [SW] Fichiers mis en cache');
-                return self.skipWaiting(); // Active immédiatement
-            })
-            .catch((error) => {
-                console.error('❌ [SW] Erreur installation:', error);
-            })
+        caches.open(CACHE_VERSION).then((cache) => {
+            console.log('✅ [SW] Mise en cache des ressources de base.');
+            return cache.addAll(STATIC_ASSETS);
+        }).then(() => {
+            // Force le nouveau Service Worker à s'activer dès qu'il est installé
+            return self.skipWaiting();
+        })
     );
 });
 
-// ============================================
-// ACTIVATION DU SERVICE WORKER
-// ============================================
+// --- ACTIVATION ---
 self.addEventListener('activate', (event) => {
-    console.log('🚀 [SW] Activation...');
-    
+    console.log(`🚀 [SW] Activation de la version ${CACHE_VERSION}...`);
     event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('🗑️ [SW] Suppression ancien cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            })
-            .then(() => {
-                console.log('✅ [SW] Service Worker activé');
-                return self.clients.claim(); // Prend le contrôle immédiatement
-            })
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    // Supprime tous les anciens caches qui ne correspondent pas à la version actuelle
+                    if (cacheName !== CACHE_VERSION) {
+                        console.log('🗑️ [SW] Suppression de l\'ancien cache :', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => {
+            // Prend le contrôle de toutes les pages ouvertes immédiatement
+            return self.clients.claim();
+        })
     );
 });
 
-// ============================================
-// STRATÉGIE DE CACHE : Network First
-// ============================================
+// --- FETCH (INTERCEPTION DES REQUÊTES) ---
 self.addEventListener('fetch', (event) => {
-    // Ignorer les requêtes non-GET
-    if (event.request.method !== 'GET') {
+    const { request } = event;
+
+    // Ignorer les requêtes qui ne sont pas des GET
+    if (request.method !== 'GET') return;
+
+    // Ignorer les requêtes vers l'API pour toujours utiliser le réseau
+    if (request.url.includes('/api/')) return;
+    
+    // Ignorer les requêtes des extensions Chrome, etc.
+    if (!request.url.startsWith('http')) return;
+
+    // Stratégie "Network falling back to cache" pour les ressources importantes (HTML, JS, CSS)
+    // On veut toujours la version la plus fraîche si possible.
+    if (request.destination === 'document' || request.destination === 'script' || request.destination === 'style') {
+        event.respondWith(
+            fetch(request)
+                .then(networkResponse => {
+                    // Si la réponse réseau est bonne, on la met en cache
+                    if(networkResponse.ok) {
+                         const responseClone = networkResponse.clone();
+                         caches.open(CACHE_VERSION).then(cache => cache.put(request, responseClone));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    // Si le réseau échoue, on se rabat sur le cache
+                    return caches.match(request);
+                })
+        );
         return;
     }
 
-     // ✅ NOUVEAU : Ignorer les WebSocket et Socket.IO
-    if (event.request.url.includes('socket.io') || 
-        event.request.url.includes('ws://') || 
-        event.request.url.includes('wss://')) {
-        return; // Ne pas intercepter les connexions temps réel
-    }
-    
-    // Ignorer les requêtes vers l'API
-    if (event.request.url.includes('/api/')) {
-        return;
-    }
-    
+    // Stratégie "Cache first" pour les autres ressources (images, polices)
     event.respondWith(
-        // Essayer d'abord le réseau
-        fetch(event.request)
-            .then((response) => {
-                // Si succès, mettre en cache et retourner
-                if (response.status === 200) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
-                }
-                return response;
-            })
-            .catch(() => {
-                // Si échec réseau, utiliser le cache
-                return caches.match(event.request)
-                    .then((response) => {
-                        if (response) {
-                            console.log('📦 [SW] Depuis cache:', event.request.url);
-                            return response;
-                        }
-                        
-                        // Si pas en cache, page offline
-                        if (event.request.destination === 'document') {
-                            return caches.match('/index.html');
-                        }
-                    });
-            })
+        caches.match(request).then((cachedResponse) => {
+            return cachedResponse || fetch(request).then(networkResponse => {
+                const responseClone = networkResponse.clone();
+                caches.open(CACHE_VERSION).then(cache => cache.put(request, responseClone));
+                return networkResponse;
+            });
+        })
     );
 });
 
-// ============================================
-// GESTION DES MESSAGES
-// ============================================
+// --- GESTION DES MESSAGES ---
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
-    
-    if (event.data && event.data.type === 'CACHE_URLS') {
-        event.waitUntil(
-            caches.open(CACHE_NAME).then((cache) => {
-                return cache.addAll(event.data.urls);
-            })
-        );
-    }
 });
-
-// ============================================
-// NOTIFICATIONS PUSH (optionnel)
-// ============================================
-self.addEventListener('push', (event) => {
-    const data = event.data ? event.data.json() : {};
-    
-    const options = {
-        body: data.body || 'Nouvelle notification En-Bus',
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-72.png',
-        vibrate: [200, 100, 200],
-        data: {
-            url: data.url || '/'
-        }
-    };
-    
-    event.waitUntil(
-        self.registration.showNotification(data.title || 'En-Bus', options)
-    );
-});
-
-// ============================================
-// CLICK SUR NOTIFICATION
-// ============================================
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    
-    event.waitUntil(
-        clients.openWindow(event.notification.data.url || '/')
-    );
-});
-
-// ============================================
-// SYNC EN ARRIÈRE-PLAN (optionnel)
-// ============================================
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'sync-reservations') {
-        event.waitUntil(syncReservations());
-    }
-});
-
-async function syncReservations() {
-    try {
-        console.log('🔄 [SW] Synchronisation des réservations...');
-        // Code de synchronisation ici
-    } catch (error) {
-        console.error('❌ [SW] Erreur sync:', error);
-    }
-}
-
-console.log('✅ Service Worker En-Bus chargé');
