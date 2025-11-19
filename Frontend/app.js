@@ -413,7 +413,9 @@ let activeFilters = {
     priceRange: { min: 0, max: 100000 },
     departureTime: 'all',
     amenities: [],
-    sortBy: 'departure'
+    sortBy: 'departure',
+    // ✅ AJOUTER CETTE LIGNE
+    departureLocation: 'all'
 };
 
 // ============================================
@@ -1883,6 +1885,15 @@ function applyFiltersAndSort() {
             )
         );
     }
+
+
+    // ✅ AJOUTER CE BLOC DE FILTRAGE
+    // Filtre par lieu de départ
+    if (activeFilters.departureLocation !== 'all') {
+        filteredResults = filteredResults.filter(route => 
+            route.departureLocation === activeFilters.departureLocation
+        );
+    }
     
     // ✅ Tri
     filteredResults.sort((a, b) => {
@@ -1954,8 +1965,18 @@ window.resetFilters = function() {
         priceRange: { min: 0, max: 100000 },
         departureTime: 'all',
         amenities: [],
-        sortBy: 'departure'
+        sortBy: 'departure',
+                // ✅ AJOUTER CETTE LIGNE
+        departureLocation: 'all'
+    
+    
+
     };
+
+     // ✅ AJOUTER CETTE LIGNE
+    const locationSelect = document.getElementById('filter-departure-location');
+    if (locationSelect) locationSelect.value = 'all';
+
     
     // Réinitialiser l'UI
     document.getElementById('filter-company').value = 'all';
@@ -1980,6 +2001,26 @@ function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
+
+
+    // ✅ NOUVELLE LOGIQUE : Peuplage du filtre par lieu de départ
+    const locationFilterSection = document.getElementById('departure-location-filter-section');
+    const locationSelect = document.getElementById('filter-departure-location');
+
+    // Extraire les lieux de départ uniques, en ignorant les valeurs vides ou nulles
+    const departureLocations = [...new Set(results.map(r => r.departureLocation).filter(Boolean))];
+
+    if (departureLocations.length > 1) {
+        // S'il y a plus d'un lieu de départ, on affiche le filtre
+        locationSelect.innerHTML = '<option value="all">Tous les lieux</option>';
+        departureLocations.forEach(location => {
+            locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+        });
+        locationFilterSection.style.display = 'block';
+    } else {
+        // Sinon, on le cache
+        locationFilterSection.style.display = 'none';
+    }
     
     // ✅ Appliquer les filtres si ce n'est pas un retour de filtre
     const displayedResults = results === appState.currentResults ? applyFiltersAndSort() : results;
@@ -2033,6 +2074,9 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => 
             `<div class="amenity-item" title="${amenityLabels[amenity]}">${Utils.getAmenityIcon(amenity)}</div>`
         ).join("");
+
+
+
         
         // ✅ AJOUT D'UNE LIGNE POUR LE LIEU DE DÉPART
         const departureLocationHTML = route.departureLocation

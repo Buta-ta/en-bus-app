@@ -532,6 +532,20 @@
           </div>
           <div id="search-summary" class="search-summary"></div>
           <div class="filters-bar-enhanced">
+
+              <!-- ... (filtre "Trier par" et "Compagnie" restent inchangés) ... -->
+
+<!-- ✅ NOUVEAU FILTRE PAR LIEU DE DÉPART -->
+<div id="departure-location-filter-section" class="filter-section" style="display: none;">
+    <label for="filter-departure-location" class="filter-label">
+        <span class="filter-icon">📍</span>
+        Lieu de départ :
+    </label>
+    <select id="filter-departure-location" class="filter-select" onchange="updateFilter('departureLocation', this.value)">
+        <!-- Les options seront générées dynamiquement par JavaScript -->
+    </select>
+</div>
+
             <div class="filter-section">
               <label for="sort-by" class="filter-label">
                 <span class="filter-icon">🔽</span> Trier par :
