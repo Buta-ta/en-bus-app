@@ -3131,7 +3131,7 @@ async function displayReservations() {
                     <div class="res-pwa-header">
                         <span class="res-pwa-booking-number">${res.bookingNumber}</span>
 
-                        !-- ✅ AJOUT DU BOUTON DE SUPPRESSION ICI -->
+                        
                     ${!isPending ? `
                         <button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Supprimer de cet appareil">
                             🗑️
