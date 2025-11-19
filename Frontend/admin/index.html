@@ -2105,20 +2105,19 @@
 
           const data = await res.json();
 
-          if (data.success && data.token) {
-            localStorage.setItem("admin_token", data.token);
-            showNotification("Connexion réussie !", "success");
-            setTimeout(() => {
-              showDashboard();
-              loadAdminData();
-              startInactivityDetection();
-            }, 500);
-          } else {
-            const errorDiv = document.getElementById("login-error");
-            errorDiv.textContent = data.error || "Identifiants incorrects";
-            errorDiv.classList.add("show");
-            showNotification(data.error || "Échec de connexion", "error");
-          }
+         if (res.ok && data.success && data.token) { // ✅ Vérifier aussi res.ok
+            localStorage.setItem('admin_token', data.token);
+            errorDiv.classList.remove('show');
+            showNotification('Connexion réussie !', 'success');
+            // ... reste de la logique de succès
+            setTimeout(() => { showDashboard(); loadAdminData(); startInactivityDetection(); }, 500);
+        } else {
+            // ✅ AFFICHER LE MESSAGE D'ERREUR DU SERVEUR
+            const errorMessage = data.error || 'Identifiants incorrects ou erreur inconnue.';
+            errorDiv.textContent = errorMessage;
+            errorDiv.classList.add('show');
+            showNotification(errorMessage, 'error');
+        }
         } catch (error) {
           showNotification("Erreur réseau : " + error.message, "error");
         }
@@ -3685,7 +3684,7 @@ async function showChangeSeatsModal(reservationId) {
 
     document.getElementById('modal-body').innerHTML = modalBodyHTML;
     document.getElementById('details-modal').classList.add('active');
-    
+
     updateAdminSeatSelection();
     updateSelectedSeatsDisplay(); // Met à jour l'état du bouton initial
 

@@ -55,7 +55,11 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 const strictLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, // ✅ AJOUTER CE MESSAGE PERSONNALISÉ
+    message: {
+        error: 'Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.'
+    },standardHeaders: true,
+    legacyHeaders: false });
 app.use("/api/", generalLimiter);
 const resend = new Resend(process.env.RESEND_API_KEY);
 console.log("✅ Service email prêt.");
