@@ -241,7 +241,33 @@
 }
 
 
+/* DANS index.html, dans <style> */
 
+.highlight-badge {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    background: linear-gradient(135deg, #ffab40, #ff6d00); /* Orange pour la promo */
+    color: white;
+    padding: 6px 14px;
+    border-radius: var(--radius-lg) 0 var(--radius-md) 0;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 10px rgba(255, 109, 0, 0.4);
+}
+
+.highlight-badge.cheapest {
+    background: linear-gradient(135deg, var(--color-accent-glow), var(--color-accent-active)); /* Vert pour le moins cher */
+    color: var(--color-background);
+    box-shadow: 0 4px 10px rgba(var(--color-accent-glow-rgb), 0.4);
+}
+
+.highlight-badge.fastest {
+    background: linear-gradient(135deg, #448aff, #2962ff); /* Bleu pour le plus rapide */
+    box-shadow: 0 4px 10px rgba(41, 98, 255, 0.4);
+}
 
 
 

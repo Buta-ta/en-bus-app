@@ -1708,70 +1708,75 @@
             <div class="card-header">
               <h2 class="card-title">Nouveau Voyage</h2>
             </div>
+            <!-- DANS Admin/index.html -->
 
-            <form id="trip-creation-form">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="route-template" class="form-label"
-                    >Modèle de trajet</label
-                  >
-                  <select id="route-template" class="form-control" required>
-                    <option value="">Sélectionnez un modèle</option>
-                  </select>
-                </div>
+<form id="trip-creation-form">
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="route-template" class="form-label">Modèle de trajet</label>
+            <select id="route-template" class="form-control" required>
+                <option value="">Sélectionnez un modèle</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="trip-dates" class="form-label">Période</label>
+            <input 
+                type="text" 
+                id="trip-dates" 
+                class="form-control" 
+                placeholder="Sélectionnez une date ou plage"
+                required
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="seat-count" class="form-label">Nombre de sièges</label>
+            <input 
+                type="number" 
+                id="seat-count" 
+                class="form-control" 
+                value="61" 
+                min="10" 
+                max="100"
+                required
+            >
+        </div>
+        
+        <div class="form-group form-group-full">
+            <label class="form-label">Jours de la semaine</label>
+            <div id="days-selector" class="days-selector">
+                <!-- Généré dynamiquement -->
+            </div>
+        </div>
 
-                <div class="form-group">
-                  <label for="trip-dates" class="form-label">Période</label>
-                  <input
-                    type="text"
-                    id="trip-dates"
-                    class="form-control"
-                    placeholder="Sélectionnez une date ou plage"
-                    required
-                  />
-                </div>
+        <div class="form-group">
+            <label for="bus-identifier" class="form-label">Numéro du Bus (ex: B01)</label>
+            <input
+                type="text"
+                id="bus-identifier"
+                class="form-control"
+                placeholder="Identifiant unique"
+            />
+        </div>
 
-                <div class="form-group">
-                  <label for="seat-count" class="form-label"
-                    >Nombre de sièges</label
-                  >
-                  <input
-                    type="number"
-                    id="seat-count"
-                    class="form-control"
-                    value="61"
-                    min="10"
-                    max="100"
-                    required
-                  />
-                </div>
+        <div class="form-group">
+            <label for="highlight-badge" class="form-label">Badge de Mise en Avant (Optionnel)</label>
+            <input 
+                type="text" 
+                id="highlight-badge" 
+                class="form-control" 
+                placeholder="Ex: ⭐ Recommandé, 🎉 Promo"
+            >
+        </div>
+    
+    </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
-                <div class="form-group form-group-full">
-                  <label class="form-label">Jours de la semaine</label>
-                  <div id="days-selector" class="days-selector">
-                    <!-- Généré dynamiquement -->
-                  </div>
-                </div>
-
-                <!-- ✅ AJOUTER CE CHAMP -->
-                <div class="form-group">
-                  <label for="bus-identifier" class="form-label"
-                    >Numéro du Bus (ex: B01)</label
-                  >
-                  <input
-                    type="text"
-                    id="bus-identifier"
-                    class="form-control"
-                    placeholder="Identifiant unique"
-                  />
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary">
-                <span>➕</span>
-                Programmer les voyages
-              </button>
-            </form>
+    <button type="submit" class="btn btn-primary mt-4">
+        <span>➕</span>
+        Programmer les voyages
+    </button>
+</form>
           </div>
 
           <div class="content-card">
@@ -3064,84 +3069,78 @@ async function handleDeleteTemplate(templateId, templateName) {
       }
 
       // Dans Admin/index.html (section <script>)
-      async function handleCreateTrips(e) {
-        e.preventDefault();
+      // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
 
-        // Récupération des valeurs du formulaire
-        const routeId = document.getElementById("route-template").value;
-        const dateValue = document.getElementById("trip-dates").value;
-        const seatCount = parseInt(document.getElementById("seat-count").value);
-        const busIdentifier = document
-          .getElementById("bus-identifier")
-          .value.trim(); // ✅ NOUVEAU
+async function handleCreateTrips(e) {
+    e.preventDefault();
 
-        // --- Validations ---
-        if (!routeId) {
-          showNotification("Sélectionnez un modèle de trajet", "warning");
-          return;
-        }
+    // 1. Récupération des valeurs du formulaire
+    const routeId = document.getElementById("route-template").value;
+    const dateValue = document.getElementById("trip-dates").value;
+    const seatCount = parseInt(document.getElementById("seat-count").value);
+    const busIdentifier = document.getElementById("bus-identifier").value.trim();
+    const highlightBadge = document.getElementById('highlight-badge').value.trim();
 
-        if (!dateValue) {
-          showNotification("Sélectionnez une date", "warning");
-          return;
-        }
+    // 2. Validations
+    if (!routeId) {
+        showNotification("Veuillez sélectionner un modèle de trajet.", "warning");
+        return;
+    }
+    if (!dateValue) {
+        showNotification("Veuillez sélectionner une ou plusieurs dates.", "warning");
+        return;
+    }
+    if (!seatCount || seatCount < 10 || seatCount > 100) {
+        showNotification("Le nombre de sièges doit être entre 10 et 100.", "warning");
+        return;
+    }
 
-        if (!seatCount || seatCount < 10 || seatCount > 100) {
-          showNotification("Nombre de sièges invalide (10-100)", "warning");
-          return;
-        }
+    // 3. Logique des dates et jours
+    let startDate, endDate;
+    if (dateValue.includes(" au ")) {
+        [startDate, endDate] = dateValue.split(" au ");
+    } else {
+        startDate = endDate = dateValue;
+    }
 
-        // --- Logique des dates et jours ---
-        let startDate, endDate;
-        if (dateValue.includes(" au ")) {
-          [startDate, endDate] = dateValue.split(" au ");
-        } else {
-          startDate = endDate = dateValue;
-        }
+    const selectedDays = Array.from(
+        document.querySelectorAll("#days-selector input:checked")
+    ).map((cb) => cb.value);
 
-        const selectedDays = Array.from(
-          document.querySelectorAll("#days-selector input:checked")
-        ).map((cb) => cb.value);
+    if (selectedDays.length === 0 && startDate !== endDate) {
+        showNotification("Veuillez sélectionner au moins un jour pour une plage de dates.", "warning");
+        return;
+    }
 
-        if (selectedDays.length === 0 && startDate !== endDate) {
-          showNotification(
-            "Sélectionnez au moins un jour pour une plage de dates",
-            "warning"
-          );
-          return;
-        }
+    // Si une seule date est choisie, on considère que tous les jours sont valides pour ce jour unique.
+    const daysToSend = (startDate === endDate)
+        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+        : selectedDays;
 
-        const daysToSend =
-          startDate === endDate
-            ? [
-                "sunday",
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-              ]
-            : selectedDays;
+    // 4. Construction de l'objet de données pour l'API
+    const tripData = {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek: daysToSend,
+        seatCount,
+        busIdentifier: busIdentifier || null,
+        highlightBadge: highlightBadge || null // Envoie null si le champ est vide
+    };
 
-        // --- Appel API ---
-        const data = await apiCall("/admin/trips", "POST", {
-          routeId,
-          startDate,
-          endDate,
-          daysOfWeek: daysToSend,
-          seatCount,
-          busIdentifier: busIdentifier || null, // ✅ On envoie le numéro du bus (ou null s'il est vide)
-        });
+    console.log("📤 Envoi des données de création de voyage :", tripData);
 
-        // --- Résultat ---
-        if (data) {
-          showNotification(data.message, "success");
-          e.target.reset(); // Réinitialise le formulaire
-          loadAllTrips(); // Met à jour le tableau des voyages
-        }
-      }
+    // 5. Appel API
+    const data = await apiCall("/admin/trips", "POST", tripData);
 
+    // 6. Gestion du résultat
+    if (data && data.success) {
+        showNotification(data.message || "Voyages programmés avec succès !", "success");
+        e.target.reset(); // Réinitialise le formulaire
+        loadAllTrips();   // Met à jour le tableau des voyages
+    }
+    // La gestion d'erreur est déjà dans apiCall()
+}
       // Dans Admin/index.html (section <script>)
       function manageSeats(tripId) {
         const trip = allTrips.find((t) => t._id === tripId);
