@@ -421,51 +421,75 @@ app.get("/api/admin/route-templates", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
-  try {
-    const template = req.body;
-    if (template.from) template.from = template.from.trim();
-    if (template.to) template.to = template.to.trim();
-    if (template.company) template.company = template.company.trim();
-    template.baggageOptions = {
-      standard: {
-        included: parseInt(template.standardBaggageIncluded) || 1,
-        max: parseInt(template.standardBaggageMax) || 5,
-        price: parseInt(template.standardBaggagePrice) || 2000,
-      },
-      oversized: {
-        max: parseInt(template.oversizedBaggageMax) || 2,
-        price: parseInt(template.oversizedBaggagePrice) || 5000,
-      },
-    };
-    delete template.standardBaggageIncluded;
-    delete template.standardBaggageMax;
-    delete template.standardBaggagePrice;
-    delete template.oversizedBaggageMax;
-    delete template.oversizedBaggagePrice;
-    if (!template.duration) {
-      try {
-        const start = new Date(`1970-01-01T${template.departure}:00`);
-        const end = new Date(`1970-01-01T${template.arrival}:00`);
-        if (end < start) end.setDate(end.getDate() + 1);
-        const diffMs = end - start;
-        const hours = Math.floor(diffMs / 3600000);
-        const minutes = Math.floor((diffMs % 3600000) / 60000);
-        template.duration = `${hours}h ${minutes}m`;
-      } catch (e) {
-        template.duration = "N/A";
-      }
-    }
-    await routeTemplatesCollection.insertOne(template);
-    res
-      .status(201)
-      .json({ success: true, message: "Modèle créé avec succès." });
-  } catch (error) {
-    console.error("❌ Erreur création modèle:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
+// DANS server.js, REMPLACEZ la route POST /api/admin/route-templates
 
+app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
+    try {
+        let template = req.body; // Utilisez 'let' pour pouvoir modifier l'objet
+        
+        if (template.from) template.from = template.from.trim();
+        if (template.to) template.to = template.to.trim();
+        if (template.company) template.company = template.company.trim();
+        
+        const baggageOptions = {
+            standard: {
+                included: parseInt(template.standardBaggageIncluded) || 1,
+                max: parseInt(template.standardBaggageMax) || 5,
+                price: parseInt(template.standardBaggagePrice) || 2000
+            },
+            oversized: {
+                max: parseInt(template.oversizedBaggageMax) || 2,
+                price: parseInt(template.oversizedBaggagePrice) || 5000
+            }
+        };
+
+        delete template.standardBaggageIncluded;
+        delete template.standardBaggageMax;
+        delete template.standardBaggagePrice;
+        delete template.oversizedBaggageMax;
+        delete template.oversizedBaggagePrice;
+
+        template.baggageOptions = baggageOptions;
+
+        // ✅ CORRECTION : Calcul systématique et correct de la durée
+        try {
+            // Vérifier que les heures de départ et d'arrivée sont valides
+            if (template.departure && template.arrival && /^\d{2}:\d{2}$/.test(template.departure) && /^\d{2}:\d{2}$/.test(template.arrival)) {
+                
+                const start = new Date(`1970-01-01T${template.departure}:00Z`); // Utiliser Z pour UTC
+                const end = new Date(`1970-01-01T${template.arrival}:00Z`);
+                
+                // Si l'heure d'arrivée est antérieure à l'heure de départ, on suppose que c'est le jour suivant
+                if (end < start) {
+                    end.setDate(end.getDate() + 1);
+                }
+
+                const diffMs = end - start;
+                const hours = Math.floor(diffMs / 3600000);
+                const minutes = Math.floor((diffMs % 3600000) / 60000);
+
+                // Sauvegarder la durée dans le template
+                template.duration = `${hours}h ${minutes}m`;
+                console.log(`✅ Durée calculée : ${template.duration}`);
+
+            } else {
+                template.duration = "N/A";
+                console.warn("⚠️ Heures de départ/arrivée invalides, durée non calculée.");
+            }
+        } catch (e) {
+            console.error("❌ Erreur lors du calcul de la durée :", e);
+            template.duration = "N/A";
+        }
+        
+        // La sauvegarde se fait avec l'objet 'template' mis à jour
+        await routeTemplatesCollection.insertOne(template);
+        res.status(201).json({ success: true, message: 'Modèle créé avec succès.' });
+
+    } catch (error) {
+        console.error('❌ Erreur création modèle:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 app.patch(
   "/api/admin/route-templates/:id",
   authenticateToken,
