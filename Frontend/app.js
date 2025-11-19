@@ -772,9 +772,12 @@ function calculateMobileMoneyDeadline() {
 
     // Dans Frontend/app.js
 
+
+
+    // DANS app.js, ASSUREZ-VOUS d'avoir cette version de saveReservationToBackend
+
 async function saveReservationToBackend(reservation) {
-    const API_URL = API_CONFIG.baseUrl; // Utilise la config centrale
-    
+    const API_URL = API_CONFIG.baseUrl;
     console.log(`📤 Tentative d'envoi vers : ${API_URL}/api/reservations`);
     
     try {
@@ -784,39 +787,41 @@ async function saveReservationToBackend(reservation) {
             body: JSON.stringify(reservation)
         });
 
-        const responseBody = await response.text(); // Lire la réponse comme texte d'abord
+        const responseBody = await response.text();
 
         if (!response.ok) {
-            console.error(`❌ Réponse non-OK reçue. Status: ${response.status}`);
-            console.error('Corps de la réponse :', responseBody);
-            
-            // Essayer de parser le JSON, mais se préparer à un échec
+            console.error(`❌ Réponse non-OK reçue. Status: ${response.status}`, responseBody);
             let errorData;
             try {
                 errorData = JSON.parse(responseBody);
             } catch (e) {
-                // Si la réponse n'est pas du JSON (ex: une page d'erreur HTML de Render)
                 throw new Error(`Erreur ${response.status}: Le serveur a répondu de manière inattendue.`);
             }
-            
-            // Construire un message d'erreur clair
-            const errorMessage = errorData.error || (errorData.errors ? errorData.errors[0].msg : 'Erreur inconnue du serveur.');
-            throw new Error(errorMessage);
+            // On retourne un objet d'erreur clair, au lieu de planter
+            return { success: false, error: errorData.error || `Erreur serveur ${response.status}` };
         }
         
-        // Si la réponse est OK, parser le JSON
         console.log('✅ Réponse OK du serveur.');
-        return JSON.parse(responseBody);
+        const savedData = JSON.parse(responseBody);
+
+        // ✅ IMPORTANT : La sauvegarde locale se fait ICI, après confirmation du serveur
+        if (savedData.success && reservation.bookingNumber) {
+            addBookingToLocalHistory(reservation.bookingNumber);
+        } else {
+            // Si le serveur dit success:false, on propage l'erreur
+            return { success: false, error: savedData.error || "Le serveur a refusé la réservation." };
+        }
+        
+        return savedData; // Retourne { success: true, ... }
 
     } catch (error) {
         console.error('❌ Erreur FONDAMENTALE dans la requête fetch :', error);
         
-        if (error.name === 'TypeError') { // 'Failed to fetch' est un TypeError
-            throw new Error('Impossible de joindre le serveur. Vérifiez votre connexion et l\'état du backend.');
+        if (error.name === 'TypeError') {
+            return { success: false, error: 'Impossible de joindre le serveur. Vérifiez votre connexion.' };
         }
         
-        // Propage l'erreur avec un message plus clair
-        throw error;
+        return { success: false, error: error.message };
     }
 }
 
@@ -2855,6 +2860,10 @@ window.confirmBooking = async function(buttonElement) {
         showLoading('Enregistrement...');
 
         const savedReservation = await saveReservationToBackend(reservation);
+
+        // ✅ AJOUT DE DÉBOGAGE
+        console.log("🕵️‍♂️ Réponse du backend après tentative de sauvegarde :", savedReservation);
+
         
         // ✅ CORRECTION : Vérifier si la sauvegarde a réussi avant de continuer
         if (savedReservation && savedReservation.success) {
