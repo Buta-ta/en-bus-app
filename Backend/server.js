@@ -801,21 +801,35 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
     }
 });
 
+// DANS server.js, REMPLACEZ la route app.patch('/api/admin/reservations/:id/seats', ...)
+
 app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
-    body('newSeats').isArray({ min: 1 })
+    // ✅ VALIDATEURS AMÉLIORÉS
+    body('newSeats').isArray({ min: 1 }).withMessage('Le champ newSeats doit être un tableau.'),
+    // Vérifie que chaque élément du tableau est bien un entier
+    body('newSeats.*').isInt({ min: 1 }).withMessage('Chaque siège doit être un nombre entier positif.')
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+        // Renvoie le premier message d'erreur pour un débogage plus facile
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
 
     try {
         const { id } = req.params;
-        const { newSeats } = req.body;
+        // ✅ ASSAINISSEMENT DES DONNÉES : S'assurer que tous les sièges sont des nombres
+        const newSeats = req.body.newSeats.map(s => parseInt(s));
 
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
         if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
 
+        // ✅ VÉRIFICATION COHÉRENCE : Le nombre de nouveaux sièges doit correspondre au nombre de passagers
+        if (newSeats.length !== reservation.passengers.length) {
+            return res.status(400).json({ error: `Le nombre de sièges (${newSeats.length}) ne correspond pas au nombre de passagers (${reservation.passengers.length}).` });
+        }
+
         const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
-        if (!trip) return res.status(404).json({ error: 'Voyage introuvable.' });
+        if (!trip) return res.status(404).json({ error: 'Voyage associé introuvable.' });
 
         const oldSeats = reservation.seats.map(s => parseInt(s));
 
@@ -826,21 +840,25 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
         );
         
         if (unavailable.length > 0) {
-            return res.status(409).json({ error: `Sièges ${unavailable.map(s => s.number).join(', ')} déjà pris.` });
+            return res.status(409).json({ error: `Conflit : Le(s) siège(s) ${unavailable.map(s => s.number).join(', ')} est/sont déjà pris.` });
         }
 
+        // --- Exécution des mises à jour ---
+        // Libérer les anciens sièges
         await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "available" } },
             { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
         );
 
+        // Occuper les nouveaux sièges
         await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "occupied" } },
             { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
         );
 
+        // Mettre à jour la réservation avec les nouveaux sièges
         const passengerUpdates = {};
         reservation.passengers.forEach((passenger, index) => {
             passengerUpdates[`passengers.${index}.seat`] = newSeats[index];
@@ -851,14 +869,13 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
             { $set: { seats: newSeats, ...passengerUpdates } }
         );
 
-        res.json({ success: true, message: 'Sièges modifiés.' });
+        res.json({ success: true, message: 'Les sièges ont été modifiés avec succès.' });
 
     } catch (error) {
         console.error('❌ Erreur modification sièges:', error);
-        res.status(500).json({ error: 'Erreur serveur.' });
+        res.status(500).json({ error: 'Erreur serveur lors de la modification des sièges.' });
     }
 });
-
 
 // ============================================
 // 💳 PAIEMENT MTN MOBILE MONEY
