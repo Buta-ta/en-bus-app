@@ -803,27 +803,25 @@ app.patch('/api/admin/reservations/:id/:action', authenticateToken, async (req, 
 
 // DANS server.js, REMPLACEZ la route app.patch('/api/admin/reservations/:id/seats', ...)
 
+// DANS server.js, REMPLACEZ la route de modification des sièges par celle-ci
+
 app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
-    // ✅ VALIDATEURS AMÉLIORÉS
     body('newSeats').isArray({ min: 1 }).withMessage('Le champ newSeats doit être un tableau.'),
-    // Vérifie que chaque élément du tableau est bien un entier
     body('newSeats.*').isInt({ min: 1 }).withMessage('Chaque siège doit être un nombre entier positif.')
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        // Renvoie le premier message d'erreur pour un débogage plus facile
         return res.status(400).json({ error: errors.array()[0].msg });
     }
 
     try {
         const { id } = req.params;
-        // ✅ ASSAINISSEMENT DES DONNÉES : S'assurer que tous les sièges sont des nombres
         const newSeats = req.body.newSeats.map(s => parseInt(s));
 
+        // 1. Récupérer la réservation
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
         if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
 
-        // ✅ VÉRIFICATION COHÉRENCE : Le nombre de nouveaux sièges doit correspondre au nombre de passagers
         if (newSeats.length !== reservation.passengers.length) {
             return res.status(400).json({ error: `Le nombre de sièges (${newSeats.length}) ne correspond pas au nombre de passagers (${reservation.passengers.length}).` });
         }
@@ -843,32 +841,35 @@ app.patch('/api/admin/reservations/:id/seats', authenticateToken, [
             return res.status(409).json({ error: `Conflit : Le(s) siège(s) ${unavailable.map(s => s.number).join(', ')} est/sont déjà pris.` });
         }
 
-        // --- Exécution des mises à jour ---
-        // Libérer les anciens sièges
+        // --- Libérer les anciens sièges et occuper les nouveaux (inchangé) ---
         await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "available" } },
             { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
         );
-
-        // Occuper les nouveaux sièges
         await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "occupied" } },
             { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
         );
 
-        // Mettre à jour la réservation avec les nouveaux sièges
-        const passengerUpdates = {};
+        // ✅ CORRECTION : Mettre à jour l'objet réservation en mémoire
+        reservation.seats = newSeats;
         reservation.passengers.forEach((passenger, index) => {
-            passengerUpdates[`passengers.${index}.seat`] = newSeats[index];
+            passenger.seat = newSeats[index];
         });
-        
-        await reservationsCollection.updateOne(
-            { _id: reservation._id },
-            { $set: { seats: newSeats, ...passengerUpdates } }
+        reservation.updatedAt = new Date(); // Ajouter une trace de la modification
+
+        // ✅ CORRECTION : Remplacer le document entier au lieu d'utiliser un $set complexe
+        const result = await reservationsCollection.replaceOne(
+            { _id: new ObjectId(id) },
+            reservation
         );
 
+        if (result.modifiedCount === 0) {
+            return res.status(200).json({ success: true, message: 'Aucune modification nécessaire.' });
+        }
+        
         res.json({ success: true, message: 'Les sièges ont été modifiés avec succès.' });
 
     } catch (error) {
