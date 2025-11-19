@@ -1741,6 +1741,43 @@ app.get('/api/reservations/:bookingNumber', async (req, res) => {
     }
 });
 
+
+
+// DANS server.js, à la fin de la section des routes de réservation
+
+// ============================================
+// ✅ NOUVELLE ROUTE : RÉCUPÉRER LES DÉTAILS DE PLUSIEURS RÉSERVATIONS
+// ============================================
+app.get('/api/reservations/details', async (req, res) => {
+    try {
+        const { ids } = req.query;
+        if (!ids) {
+            return res.status(400).json({ success: false, error: 'Aucun ID de réservation fourni.' });
+        }
+
+        const bookingNumbers = ids.split(',').filter(id => id.trim() !== '');
+        console.log(`📦 Récupération des détails pour ${bookingNumbers.length} réservations:`, bookingNumbers);
+
+        const reservations = await reservationsCollection.find({
+            bookingNumber: { $in: bookingNumbers }
+        }).toArray();
+        
+        // Trier les résultats pour qu'ils correspondent à l'ordre demandé par le client
+        const sortedReservations = bookingNumbers.map(id => 
+            reservations.find(res => res.bookingNumber === id)
+        ).filter(Boolean); // .filter(Boolean) pour enlever les 'undefined' si une réservation n'est plus en BDD
+
+        res.json({
+            success: true,
+            reservations: sortedReservations
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur récupération multi-réservations:', error);
+        res.status(500).json({ success: false, error: 'Erreur serveur.' });
+    }
+});
+
 // ============================================
 // DÉMARRAGE
 // ============================================
