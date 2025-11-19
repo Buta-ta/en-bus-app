@@ -679,62 +679,97 @@ async generateQRCodeBase64(text, size = 200) {
 }
 }
 
+// DANS app.js
 
-// DANS app.js, à ajouter avec les autres fonctions utilitaires
+// ============================================
+// DÉCOMPTEUR DE PAIEMENT (VERSION CORRIGÉE ET UNIQUE)
+// ============================================
 
-function startFrontendCountdown() {
-    // S'assurer qu'aucun autre minuteur ne tourne
+
+// Variable globale pour gérer le décompteur
+
+
+/**
+ * Démarre le décompteur visuel sur la page de paiement.
+ * Met à jour TOUS les éléments d'interface concernés.
+ */
+function startPaymentCountdown() {
+    // Nettoyage de tout décompteur précédent pour éviter les bugs
     if (frontendCountdownInterval) {
         clearInterval(frontendCountdownInterval);
     }
 
-    const timerElement = document.getElementById('payment-countdown-timer');
-    const containerElement = document.getElementById('payment-countdown-container');
+    // ✅ CIBLE LES 3 ÉLÉMENTS HTML à mettre à jour
+    const deadlineSubtitle = document.getElementById('agency-payment-subtitle');
+    const deadlineInput = document.getElementById('agency-deadline');
+    const urgencyTimer = document.getElementById('payment-countdown-timer-box');
 
-    if (!timerElement || !containerElement?.dataset.deadline) return;
+    // ✅ LIT LA DATE LIMITE depuis la source de vérité : appState
+    if (!appState.currentReservation?.paymentDeadline) {
+        console.warn("Aucun délai de paiement à afficher, le décompteur ne démarre pas.");
+        return;
+    }
 
-    const deadline = new Date(containerElement.dataset.deadline);
+    const deadline = new Date(appState.currentReservation.paymentDeadline);
 
+    // Démarrage de la boucle de mise à jour (toutes les secondes)
     frontendCountdownInterval = setInterval(() => {
         const now = new Date();
         const timeLeft = deadline - now;
 
+        // Si le temps est écoulé
         if (timeLeft <= 0) {
             clearInterval(frontendCountdownInterval);
-            timerElement.textContent = "EXPIRÉ";
-            containerElement.style.color = "#f44336"; // Rouge
+            const expiredText = "Délai expiré";
+            if (deadlineSubtitle) deadlineSubtitle.textContent = expiredText;
+            if (deadlineInput) deadlineInput.value = expiredText;
+            if (urgencyTimer) urgencyTimer.textContent = "EXPIRÉ";
             return;
         }
 
+        // Calcul du temps restant
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-        timerElement.textContent = 
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+        // Formatage pour un affichage clair
+        const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        const timerBoxText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // ✅ MISE À JOUR DE TOUTE L'INTERFACE
+        if (deadlineSubtitle) deadlineSubtitle.textContent = countdownText;
+        if (deadlineInput) deadlineInput.value = fullDeadlineText;
+        if (urgencyTimer) {
+             urgencyTimer.textContent = timerBoxText;
+             if (hours < 1) urgencyTimer.classList.add('danger');
+             else urgencyTimer.classList.remove('danger');
+        }
+
     }, 1000);
 }
 
-function stopFrontendCountdown() {
+/**
+ * Arrête proprement le décompteur pour éviter les problèmes de performance.
+ */
+function stopPaymentCountdown() {
     if (frontendCountdownInterval) {
         clearInterval(frontendCountdownInterval);
-        frontendCountdownInterval = null;
+        frontendCountdownInterval = null; // Réinitialise la variable
         console.log("⏱️ Décompteur client arrêté.");
     }
 }
 
 
-
-
-// DANS app.js
+// ============================================
+// GESTION DE L'HISTORIQUE LOCAL (CODE CORRECT)
+// ============================================
 
 function addBookingToLocalHistory(bookingNumber) {
     try {
-        // Utilise la clé de stockage définie dans CONFIG pour la cohérence
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         if (!history.includes(bookingNumber)) {
-            history.unshift(bookingNumber); // Ajoute au début pour voir les plus récents en premier
+            history.unshift(bookingNumber);
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
             console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
         }
@@ -743,114 +778,30 @@ function addBookingToLocalHistory(bookingNumber) {
     }
 }
 
-
-// DANS app.js, à ajouter avec les autres fonctions utilitaires
-
-// DANS app.js, REMPLACEZ la fonction removeBookingFromLocalHistory
-
 async function removeBookingFromLocalHistory(bookingNumber) {
-    // Appel à la nouvelle modale personnalisée
     const confirmed = await showCustomConfirm({
         title: "Retirer la réservation ?",
-        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n`,
+        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?`,
         icon: '🗑️',
         iconClass: 'danger',
         confirmText: 'Oui, retirer',
         confirmClass: 'btn-danger'
     });
 
-    // Si l'utilisateur clique sur "Annuler"
     if (!confirmed) {
         return;
     }
     
-    // ✅ CORRECTION : L'accolade en trop a été supprimée ici.
-    // Le bloc try...catch est maintenant correctement placé dans la fonction.
-
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        
-        // Filtre la liste pour enlever le numéro de réservation spécifié
         const newHistory = history.filter(bn => bn !== bookingNumber);
-        
-        // Sauvegarde la nouvelle liste
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
         
-        console.log(`🗑️ Réservation ${bookingNumber} retirée de l'historique local.`);
         Utils.showToast("Réservation retirée de l'historique.", "success");
-        
-        // Rafraîchit l'affichage pour que la carte disparaisse
         displayReservations();
-
     } catch (e) {
         console.error("Erreur lors de la suppression de l'historique local:", e);
         Utils.showToast("Une erreur est survenue.", "error");
-    }
-}
-
-
-
-// DANS app.js
-
-// Variable pour garder une référence au décompteur
-let agencyCountdownInterval = null;
-
-/**
- * Démarre le décompteur dynamique pour l'option de paiement à l'agence.
- */
-function startAgencyCountdown() {
-    // On nettoie un éventuel ancien décompteur pour éviter les bugs
-    if (agencyCountdownInterval) {
-        clearInterval(agencyCountdownInterval);
-    }
-
-    // On cible les deux éléments HTML à mettre à jour
-    const subtitleElement = document.getElementById('agency-payment-subtitle');
-    const deadlineInputElement = document.getElementById('agency-deadline');
-
-    // Si les éléments n'existent pas ou s'il n'y a pas de délai, on ne fait rien
-    if (!subtitleElement || !deadlineInputElement || !appState.currentReservation?.paymentDeadline) {
-        return;
-    }
-
-    const deadline = new Date(appState.currentReservation.paymentDeadline);
-
-    // On lance la boucle qui se met à jour toutes les secondes
-    agencyCountdownInterval = setInterval(() => {
-        const now = new Date();
-        const timeLeft = deadline - now;
-
-        // Si le temps est écoulé
-        if (timeLeft <= 0) {
-            clearInterval(agencyCountdownInterval);
-            const expiredText = "Délai expiré";
-            subtitleElement.textContent = expiredText;
-            deadlineInputElement.value = expiredText;
-            return;
-        }
-
-        // Calcul des heures, minutes et secondes
-        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        
-        // Formatage des textes pour l'affichage
-        const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
-        const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-
-        // Mise à jour de l'interface
-        subtitleElement.textContent = countdownText;
-        deadlineInputElement.value = fullDeadlineText;
-
-    }, 1000);
-}
-
-/**
- * Arrête le décompteur lorsque l'on quitte la page de paiement.
- */
-function stopAgencyCountdown() {
-    if (agencyCountdownInterval) {
-        clearInterval(agencyCountdownInterval);
-        agencyCountdownInterval = null; // Important pour la propreté du code
     }
 }
 // ============================================
