@@ -674,6 +674,23 @@ function stopFrontendCountdown() {
 }
 
 
+// DANS app.js
+
+function addBookingToLocalHistory(bookingNumber) {
+    try {
+        // Utilise la clé de stockage définie dans CONFIG pour la cohérence
+        let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        if (!history.includes(bookingNumber)) {
+            history.unshift(bookingNumber); // Ajoute au début pour voir les plus récents en premier
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
+            console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
+        }
+    } catch (e) {
+        console.error("Erreur lors de la sauvegarde de l'historique local:", e);
+    }
+}
+
+
 
 // ============================================
 // FONCTIONS PAIEMENT AGENCE
@@ -2745,6 +2762,8 @@ function displayBookingSummary() {
 
 // DANS app.js, REMPLACEZ la fonction confirmBooking par celle-ci
 
+// DANS app.js, REMPLACEZ la fonction confirmBooking par celle-ci
+
 window.confirmBooking = async function(buttonElement) {
     console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION');
     
@@ -2762,8 +2781,6 @@ window.confirmBooking = async function(buttonElement) {
 
     try {
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
-        console.log('1. Mode de paiement sélectionné:', paymentMethod);
-        
         if (!paymentMethod) {
             throw new Error('Veuillez sélectionner un mode de paiement.');
         }
@@ -2782,40 +2799,30 @@ window.confirmBooking = async function(buttonElement) {
             throw new Error(`Numéro de téléphone ${paymentMethod.toUpperCase()} invalide ou manquant.`);
         }
 
-        const baggageOptions = appState.selectedBus.baggageOptions || { 
-            standard: { price: 2000 }, 
-            oversized: { price: 5000 } 
-        };
-        
+        // --- Calcul du prix (inchangé) ---
+        const baggageOptions = appState.selectedBus.baggageOptions || { standard: { price: 2000 }, oversized: { price: 5000 } };
         const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
         const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
         const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
-        
         let totalStandardBaggage = 0, totalOversizedBaggage = 0;
         Object.values(appState.baggageCounts).forEach(pax => {
             totalStandardBaggage += pax.standard || 0;
             totalOversizedBaggage += pax.oversized || 0;
         });
-        
         const baggagePrice = (totalStandardBaggage * baggageOptions.standard.price) + (totalOversizedBaggage * baggageOptions.oversized.price);
         const finalTotalPriceNumeric = ticketsPrice + baggagePrice;
 
         const bookingNumber = Utils.generateBookingNumber();
-        console.log('2. Numéro de réservation généré:', bookingNumber);
 
-        // ✅ CORRECTION : Le délai de paiement est maintenant conditionnel
         let paymentDeadline;
         if (paymentMethod === 'agency') {
             if (!canPayAtAgency()) {
                 throw new Error("Le paiement en agence n'est plus disponible pour ce trajet (délai insuffisant).");
             }
-            // Délai long pour l'agence
             paymentDeadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
         } else {
-            // Délai court pour le mobile money
             paymentDeadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000).toISOString();
         }
-        console.log('3. Délai de paiement calculé:', paymentDeadline);
 
         const reservation = {
             bookingNumber,
@@ -2830,7 +2837,7 @@ window.confirmBooking = async function(buttonElement) {
             createdAt: new Date().toISOString(),
             status: 'En attente de paiement',
             customerPhone: customerPhone,
-            paymentDeadline: paymentDeadline // ✅ Utilisation du délai correct
+            paymentDeadline: paymentDeadline
         };
 
         if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
@@ -2840,7 +2847,6 @@ window.confirmBooking = async function(buttonElement) {
             reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
         }
         
-        // ✅ CORRECTION : Ajout des informations de l'agence uniquement si nécessaire
         if (paymentMethod === 'agency') {
             reservation.agency = getNearestAgency(appState.selectedBus.from);
         }
@@ -2849,14 +2855,22 @@ window.confirmBooking = async function(buttonElement) {
         showLoading('Enregistrement...');
 
         const savedReservation = await saveReservationToBackend(reservation);
-        console.log('5. Réservation enregistrée dans la BDD :', savedReservation);
         
-        appState.currentReservation = reservation;
+        // ✅ CORRECTION : Vérifier si la sauvegarde a réussi avant de continuer
+        if (savedReservation && savedReservation.success) {
+            console.log('5. Réservation enregistrée dans la BDD et en local.');
+            
+            // Le numéro de réservation est maintenant sauvegardé en local via saveReservationToBackend
+            // On peut continuer le processus en toute sécurité
+            appState.currentReservation = reservation;
+            displayPaymentInstructions(reservation); // Cette fonction appellera showPage
 
-        displayPaymentInstructions(reservation);
-        showPage("payment-instructions");
+            Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions.', 'success');
 
-        Utils.showToast('✅ Réservation enregistrée ! Suivez les instructions.', 'success');
+        } else {
+            // Si la sauvegarde a échoué, on lève une erreur pour l'afficher à l'utilisateur
+            throw new Error(savedReservation?.error || "La sauvegarde de la réservation a échoué. Veuillez réessayer.");
+        }
 
     } catch (error) {
         console.error('❌ ERREUR GLOBALE:', error);
@@ -3006,6 +3020,153 @@ function displayConfirmation(reservation) {
         if (oldInstructions) oldInstructions.remove();
     }
 }
+
+
+// DANS app.js, AJOUTEZ CETTE FONCTION
+
+async function displayReservations() {
+    const listContainer = document.getElementById("reservations-list");
+    if (!listContainer) {
+        console.error("Élément #reservations-list introuvable !");
+        return;
+    }
+
+    listContainer.innerHTML = '<div class="loading-spinner">Chargement de vos réservations...</div>';
+
+    // 1. Lire l'historique local des numéros de réservation
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+    } catch (e) {
+        console.error("Erreur lors de la lecture de l'historique local:", e);
+    }
+
+    if (history.length === 0) {
+        listContainer.innerHTML = `
+            <div class="no-results" style="padding: 48px; text-align: center;">
+                <h3>Aucune réservation sur cet appareil</h3>
+                <p>Vos nouvelles réservations apparaîtront ici automatiquement.</p>
+                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">
+                    Réserver un voyage
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        // 2. Interroger le backend pour obtenir les détails de toutes les réservations
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
+        
+        if (!response.ok) {
+            throw new Error('Erreur réseau lors de la récupération des réservations.');
+        }
+
+        const data = await response.json();
+
+        if (!data.success || data.reservations.length === 0) {
+            listContainer.innerHTML = `<div class="no-results"><h3>Aucune réservation trouvée.</h3></div>`;
+            return;
+        }
+        
+        // 3. Afficher les cartes de réservation dynamiques
+        listContainer.innerHTML = data.reservations.map(res => {
+            const isConfirmed = res.status === 'Confirmé';
+            const isPending = res.status === 'En attente de paiement';
+            const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
+            
+            let statusHTML = '';
+            if (isConfirmed) statusHTML = `<span style="color: var(--color-accent-glow);">✓ Confirmé</span>`;
+            else if (isPending) statusHTML = `<span style="color: #ff9800;">⏳ En attente de paiement</span>`;
+            else if (isCancelled) statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
+
+            return `
+                <div class="reservation-card-pwa">
+                    <div class="res-pwa-header">
+                        <span class="res-pwa-booking-number">${res.bookingNumber}</span>
+                        <span class="res-pwa-status">${statusHTML}</span>
+                    </div>
+                    <div class="res-pwa-body">
+                        <h4>${res.route.from} → ${res.route.to}</h4>
+                        <p>Le ${Utils.formatDate(res.date)} à ${res.route.departure}</p>
+                        <p>${res.passengers.length} passager(s) - Total: ${res.totalPrice}</p>
+                    </div>
+                    <div class="res-pwa-actions">
+                        ${isConfirmed ? `
+                            <button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir le Billet</button>
+                            ${res.route.trackerId ? `<a href="Suivi/suivi.html?bus=${res.route.trackerId}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre le bus</a>` : ''}
+                        ` : ''}
+                        ${isPending ? `
+                            <button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Voir Instructions</button>
+                        ` : ''}
+                         ${isCancelled ? `
+                            <button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error("Erreur affichage réservations:", error);
+        listContainer.innerHTML = `<div class="no-results error"><h3>Impossible de charger vos réservations.</h3><p>${error.message}</p></div>`;
+    }
+}
+
+
+
+
+// DANS app.js, AJOUTEZ CES DEUX FONCTIONS
+
+async function viewTicket(bookingNumber) {
+    Utils.showToast("Chargement du billet...", "info");
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
+        const data = await response.json();
+        if (data.success && data.reservation) {
+            appState.currentReservation = data.reservation;
+            displayConfirmation(data.reservation);
+            showPage('confirmation');
+        } else {
+            throw new Error(data.error || "Impossible de récupérer les détails du billet.");
+        }
+    } catch(err) {
+        Utils.showToast(err.message, "error");
+    }
+}
+
+async function viewPaymentInstructions(bookingNumber) {
+    Utils.showToast("Chargement des instructions...", "info");
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
+        const data = await response.json();
+        if (data.success && data.reservation) {
+            appState.currentReservation = data.reservation;
+            displayPaymentInstructions(data.reservation); // Affiche la page des instructions
+        } else {
+            throw new Error(data.error || "Impossible de récupérer les instructions.");
+        }
+    } catch(err) {
+        Utils.showToast(err.message, "error");
+    }
+}
+
+
+// DANS app.js, AJOUTEZ CETTE FONCTION
+
+function addBookingToLocalHistory(bookingNumber) {
+    try {
+        let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        if (!history.includes(bookingNumber)) {
+            history.unshift(bookingNumber); 
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
+            console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
+        }
+    } catch (e) {
+        console.error("Erreur lors de la sauvegarde de l'historique local:", e);
+    }
+}
+
 
 window.addEventListener("DOMContentLoaded", initApp);
 
