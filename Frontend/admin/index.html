@@ -3888,6 +3888,32 @@ function renderTable(reservations) {
       function toggleAdminSeat(element, seatNumber) {
         element.classList.toggle("selected");
       }
+
+
+      // DANS Admin/index.html, dans la balise <script>
+
+// ============================================
+// ✅ NOUVELLE FONCTION : RÉINITIALISER LES SIÈGES
+// ============================================
+async function resetTripSeats(tripId) {
+    const trip = allTrips.find(t => t._id === tripId);
+    if (!trip) return;
+
+    // Avertissement TRÈS important car l'action est destructive
+    const confirmMessage = `Êtes-vous absolument certain de vouloir réinitialiser TOUS les sièges pour le voyage :\n\n${trip.route.from} → ${trip.route.to} du ${new Date(trip.date).toLocaleDateString('fr-FR')} ?\n\n⚠️ ATTENTION : Cette action est IRREVERSIBLE et libérera également les sièges déjà réservés par des clients.`;
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    // Appel de la nouvelle route API
+    const data = await apiCall(`/admin/trips/${tripId}/reset-seats`, 'PATCH');
+
+    if (data && data.success) {
+        showNotification(data.message, 'success');
+        loadAllTrips(); // Recharger la table pour voir les changements
+    }
+}
     </script>
   </body>
 </html>
