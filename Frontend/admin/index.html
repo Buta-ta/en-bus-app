@@ -2162,7 +2162,9 @@
             try {
                 const options = {
                     method,
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { Authorization: `Bearer ${token}`, 
+                        'Content-Type': 'application/json' 
+                     },
                 };
 
                 if (body) {
@@ -3695,34 +3697,44 @@ function setupEventListeners() {
             // 6. Attacher l'événement au bouton "Enregistrer"
             document.getElementById('save-seats-btn').onclick = async () => {
                 const selectedSeatsElements = document.querySelectorAll('.seat.selected');
-                const newSeats = Array.from(selectedSeatsElements)
-                    .map(el => parseInt(el.dataset.seatNumber))
-                    .sort((a, b) => a - b);
+               // ✅ CORRECTION : Conversion explicite en entiers avec validation
+    const newSeats = Array.from(selectedSeatsElements)
+        .map(el => {
+            const seatNumber = el.dataset.seatNumber;
+            return parseInt(seatNumber, 10); // Toujours spécifier la base 10
+        })
+        .filter(num => !isNaN(num) && Number.isInteger(num)) // Filtrer les valeurs invalides
+        .sort((a, b) => a - b);
 
-                console.log("🎯 Nouveaux sièges à envoyer :", newSeats);
+    console.log("🎯 Nouveaux sièges à envoyer (vérifiés) :", newSeats);
+    console.log("Type du premier élément :", typeof newSeats[0], newSeats[0]);
 
-                if (newSeats.length !== reservation.passengers.length) {
-                    showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'warning');
-                    return;
-                }
+    if (newSeats.length !== reservation.passengers.length) {
+        showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'warning');
+        return;
+    }
 
-                const saveBtn = document.getElementById('save-seats-btn');
-                saveBtn.disabled = true;
-                saveBtn.textContent = '⏳ Enregistrement...';
+    const saveBtn = document.getElementById('save-seats-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Enregistrement...';
 
-                console.log(`📡 Envoi de la requête PATCH à /admin/reservations/${reservationId}/seats`);
-                const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
+    console.log(`📡 Envoi de la requête PATCH à /admin/reservations/${reservationId}/seats`);
+    console.log("📦 Corps de la requête :", JSON.stringify({ newSeats }, null, 2));
+    
+    const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
 
-                console.log("📦 Réponse du serveur à la modification :", data);
-                if (data && data.success) {
-                    showNotification('Sièges modifiés avec succès !', 'success');
-                    closeModal();
-                    loadAdminData();
-                } else {
-                    showNotification(data?.error || 'Erreur lors de la modification.', 'error');
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = '💾 Enregistrer les nouveaux sièges';
-                }
+    console.log("📦 Réponse du serveur à la modification :", data);
+    
+    if (data && data.success) {
+        showNotification('Sièges modifiés avec succès !', 'success');
+        closeModal();
+        loadAdminData();
+    } else {
+        showNotification(data?.error || 'Erreur lors de la modification.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Enregistrer les nouveaux sièges';
+    }
+
             };
         }
         // ============================================
