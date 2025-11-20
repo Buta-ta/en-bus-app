@@ -1116,6 +1116,28 @@ app.post(
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const errors = validationResult(req);
+
+
+    // ✅ FORCER L'AFFICHAGE DES ERREURS
+    console.log("🔍 Résultat de validation:", errors.isEmpty() ? "✅ OK" : "❌ ERREURS");
+    
+    if (!errors.isEmpty()) {
+      console.log("❌ ERREURS DE VALIDATION DÉTAILLÉES:");
+      errors.array().forEach((err, i) => {
+        console.log(`  ${i + 1}. Champ: ${err.param || err.path}`);
+        console.log(`     Valeur: ${JSON.stringify(err.value)}`);
+        console.log(`     Message: ${err.msg}`);
+      });
+      return res.status(400).json({ 
+        success: false,
+        errors: errors.array() 
+      });
+    }
+    
+    console.log("✅ Validation réussie !");
+    
+
+
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
