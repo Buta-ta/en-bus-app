@@ -3794,7 +3794,11 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
         
         <div class="report-actions">
             <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
-            <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired})">
+            <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired}, ${calculation.totalCost})">
+    ${calculation.isPaymentRequired ? '💳 Soumettre la demande' : '✅ Confirmer le report'}
+</button>
+    ${calculation.isPaymentRequired ? '💳 Soumettre la demande' : '✅ Confirmer le report'}
+</button>
                 ${calculation.isPaymentRequired ? '💳 Payer et Confirmer' : '✅ Confirmer le report'}
             </button>
         </div>
@@ -3818,25 +3822,36 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
 // ✅ CONFIRMATION DU REPORT
 // ============================================
 
-window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired) {
+window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, totalCost) {
     console.log('✅ Confirmation du report...');
     
-    // Si paiement requis, rediriger vers la page de paiement
+    // ✅ SI PAIEMENT REQUIS → Demande de validation admin
     if (isPaymentRequired) {
-        // TODO: Implémenter la page de paiement pour la différence
-        Utils.showToast('Fonctionnalité de paiement en cours de développement...', 'info');
-        return;
+        const confirmed = await showCustomConfirm({
+            title: "Paiement requis pour le report",
+            message: `Ce report nécessite un paiement de ${Utils.formatPrice(totalCost)} FCFA.\n\nVoulez-vous soumettre une demande de report ?\n\nUn administrateur la validera après réception du paiement.`,
+            icon: '💳',
+            iconClass: 'warning',
+            confirmText: 'Soumettre la demande',
+            confirmClass: 'btn-primary'
+        });
+        
+        if (!confirmed) return;
+        
+        Utils.showToast('Envoi de la demande...', 'info');
     }
     
     try {
-        Utils.showToast('Confirmation en cours...', 'info');
-        
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/confirm-report`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newTripId: tripId })
+                body: JSON.stringify({ 
+                    newTripId: tripId,
+                    paymentMethod: 'MTN', // Par défaut, peut être changé
+                    customerPhone: '' // Sera récupéré depuis la réservation
+                })
             }
         );
         
@@ -3846,17 +3861,42 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired) 
             throw new Error(data.error || 'Erreur lors de la confirmation');
         }
         
-        console.log('✅ Report confirmé:', data);
+        console.log('✅ Réponse serveur:', data);
         
-        // Ajouter le nouveau numéro de réservation à l'historique local
-        addBookingToLocalHistory(data.newBookingNumber);
+        // ✅ SI C'EST UNE DEMANDE (paiement requis)
+        if (data.requiresPayment) {
+            Utils.showToast('✅ Demande de report enregistrée !', 'success');
+            
+            closeReportModal();
+            
+            // Afficher un message d'information détaillé
+            await showCustomConfirm({
+                title: "Demande enregistrée",
+                message: `Votre demande de report a été enregistrée.\n\nMontant à payer : ${Utils.formatPrice(data.paymentAmount)} FCFA\n\nVeuillez effectuer le paiement via Mobile Money et contacter notre service client avec la référence de transaction.\n\nUn administrateur validera votre report dans les plus brefs délais.`,
+                icon: '✅',
+                iconClass: 'success',
+                confirmText: 'J\'ai compris',
+                cancelText: '' // Pas de bouton annuler
+            });
+            
+            // Rafraîchir la liste des réservations
+            displayReservations();
+            
+            return;
+        }
         
-        Utils.showToast('✅ Voyage reporté avec succès !', 'success');
-        
-        closeReportModal();
-        
-        // Rafraîchir la liste des réservations
-        displayReservations();
+        // ✅ SI C'EST UN REPORT IMMÉDIAT (gratuit/crédit)
+        if (data.newBookingNumber) {
+            // Ajouter le nouveau numéro de réservation à l'historique local
+            addBookingToLocalHistory(data.newBookingNumber);
+            
+            Utils.showToast('✅ Voyage reporté avec succès !', 'success');
+            
+            closeReportModal();
+            
+            // Rafraîchir la liste des réservations
+            displayReservations();
+        }
         
     } catch (error) {
         console.error('❌ Erreur confirmation report:', error);
