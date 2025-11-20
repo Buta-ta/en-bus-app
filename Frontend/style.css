@@ -407,6 +407,7 @@ h3 {
   align-items: stretch; 
   gap: var(--space-20); 
    position: relative; /* ✅ LA CORRECTION EST ICI */
+   overflow: visible; 
 }
 
 .bus-card-main { 
