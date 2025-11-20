@@ -629,75 +629,83 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
   }
 });
 
-// DANS server.js, REMPLACEZ la route POST /api/admin/trips
-
-app.post('/api/admin/trips', authenticateToken, [
-    body('routeId').notEmpty(),
-    body('startDate').isISO8601(),
-    body('endDate').isISO8601(),
-    body('daysOfWeek').isArray({ min: 1 }),
-    body('seatCount').isInt({ min: 10, max: 100 }),
-    body('busIdentifier').optional().isString().trim().escape(),
+app.post(
+  "/api/admin/trips",
+  authenticateToken,
+  [
+    body("routeId").notEmpty(),
+    body("startDate").isISO8601(),
+    body("endDate").isISO8601(),
+    body("daysOfWeek").isArray({ min: 1 }),
+    body("seatCount").isInt({ min: 10, max: 100 }),
+    body("busIdentifier").optional().isString().trim().escape(),
+    // ✅ AJOUTER CE NOUVEAU VALIDATEUR
     body('highlightBadge').optional().isString().trim().escape()
-], async (req, res) => {
+  ],
+  async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
     try {
-        // ✅ CORRECTION : On récupère toutes les variables depuis req.body
-        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier, highlightBadge } = req.body;
-        
-        const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
-        if (!routeTemplate) {
-            return res.status(404).json({ error: 'Modèle de trajet non trouvé.' });
-        }
-
-        let newTrips = [];
-        let currentDate = new Date(startDate);
-        const lastDate = new Date(endDate);
-        // Le jour 0 est Dimanche en JS, ce qui correspond bien à l'index du tableau
-        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-        while (currentDate <= lastDate) {
-            // Utiliser getUTCDay() pour éviter les problèmes de fuseau horaire
-            const dayName = dayMap[currentDate.getUTCDay()];
-            
-            if (daysOfWeek.includes(dayName)) {
-                const seats = Array.from({ length: seatCount }, (_, i) => ({ 
-                    number: i + 1, 
-                    status: 'available' 
-                }));
-                
-                newTrips.push({
-                    date: currentDate.toISOString().split('T')[0],
-                    route: routeTemplate,
-                    seats: seats,
-                    busIdentifier: busIdentifier || null,
+      const {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek,
+        seatCount,
+        busIdentifier,
+      } = req.body;
+      const routeTemplate = await routeTemplatesCollection.findOne({
+        _id: new ObjectId(routeId),
+      });
+      if (!routeTemplate)
+        return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+      let newTrips = [];
+      let currentDate = new Date(startDate);
+      const lastDate = new Date(endDate);
+      const dayMap = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      while (currentDate <= lastDate) {
+        const dayName = dayMap[currentDate.getUTCDay()];
+        if (daysOfWeek.includes(dayName)) {
+          const seats = Array.from({ length: seatCount }, (_, i) => ({
+            number: i + 1,
+            status: "available",
+          }));
+          newTrips.push({
+            date: currentDate.toISOString().split("T")[0],
+            route: routeTemplate,
+            seats: seats,
+            busIdentifier: busIdentifier || null,
+            // ✅ SAUVEGARDER LE BADGE DANS LA BASE DE DONNÉES
                     highlightBadge: highlightBadge || null,
-                    createdAt: new Date()
-                });
-            }
-            // Utiliser setUTCDate pour rester cohérent avec getUTCDay
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            createdAt: new Date(),
+          });
         }
-
-        if (newTrips.length > 0) {
-            await tripsCollection.insertMany(newTrips);
-            console.log(`✅ ${newTrips.length} voyage(s) créé(s).`);
-        }
-        
-        res.status(201).json({ 
-            success: true, 
-            message: `${newTrips.length} voyage(s) programmé(s) avec succès.` 
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      if (newTrips.length > 0) {
+        await tripsCollection.insertMany(newTrips);
+      }
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: `${newTrips.length} voyage(s) créé(s).`,
         });
-
     } catch (error) {
-        console.error("❌ Erreur critique lors de la création des voyages:", error);
-        res.status(500).json({ error: 'Erreur interne du serveur.' });
+      console.error("❌ Erreur création voyages:", error);
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 app.patch(
   "/api/admin/trips/:id",

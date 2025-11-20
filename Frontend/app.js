@@ -813,7 +813,10 @@ function startAgencyCountdown() {
         return;
     }
 
-    const deadline = new Date(appState.currentReservation.paymentDeadline);
+    // ✅ CORRECTION MAJEURE : On calcule la date limite ICI, sans dépendre de appState
+    const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
+    console.log(`⏱️ Décompteur AGENCE démarré. Cible : ${deadline.toISOString()}`);
+    
 
     // On lance la boucle qui se met à jour toutes les secondes
     agencyCountdownInterval = setInterval(() => {
@@ -1631,7 +1634,6 @@ function showPage(pageName) {
         // ✅ À AJOUTER AU TOUT DÉBUT DE LA FONCTION :
        stopAgencyCountdown();
 
-        stopFrontendCountdown();
     }
     document.querySelectorAll(".page").forEach(page => {
         page.classList.remove("active");
@@ -1814,6 +1816,17 @@ function setupPaymentMethodToggle() {
                 airtelDetails.style.display = "flex";
             } else if (radio.value === "agency" && radio.checked && agencyDetails) {
                 agencyDetails.style.display = "flex";
+
+                 // --- ✅ CORRECTION : AJOUT DE LA LOGIQUE DU DÉCOMPTEUR ---
+            
+            // Si l'utilisateur sélectionne "Paiement à l'agence", on démarre le décompteur.
+            if (radio.value === 'agency' && radio.checked) {
+                startAgencyCountdown();
+            } 
+            // Sinon (s'il choisit MTN ou Airtel), on arrête le décompteur.
+            else {
+                stopAgencyCountdown();
+            }
             }
         });
     });
