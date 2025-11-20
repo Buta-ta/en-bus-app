@@ -3254,40 +3254,49 @@ function renderTripsTable() {
         }
         // DANS admin/index.html, dans la balise <script>
 
-        async function deleteTrip(tripId) {
-            console.log("🔴 deleteTrip appelée avec tripId:", tripId); // ✅ 
-            const trip = allTrips.find((t) => t._id === tripId);
-            if (!trip) {
-                showNotification("Erreur : Le voyage est introuvable.", "error");
-                return;
-            }
+        // DANS admin/index.html, dans la balise <script>
 
-            // ✅ ÉTAPE 1 : On ferme toute autre modale potentiellement ouverte
-            closeAllAdminModals();
+async function deleteTrip(tripId) {
+    console.log(`🔍 Vérification du statut pour : ${tripId}`);
+    
+    const trip = allTrips.find((t) => t._id === tripId);
+    if (!trip) {
+        showNotification("Erreur : Le voyage est introuvable.", "error");
+        return;
+    }
 
-            // ✅ ÉTAPE 2 : On appelle notre modale personnalisée au lieu de confirm()
-            const confirmed = await showAdminConfirm({
-                title: "Supprimer ce Voyage ?",
-                message: `Voulez-vous vraiment supprimer le voyage du ${new Date(trip.date).toLocaleDateString("fr-FR")} pour le trajet : \n\n"${trip.route.from} → ${trip.route.to}" ?\n\nCette action est irréversible.`,
-                icon: '🗑️',
-                iconClass: 'danger',
-                confirmText: 'Oui, supprimer',
-                confirmClass: 'btn-danger'
-            });
+    // ✅ CORRECTION : On utilise closeModal() au lieu de closeAllAdminModals()
+    const detailsModal = document.getElementById('details-modal');
+    if (detailsModal && detailsModal.classList.contains('active')) {
+        detailsModal.classList.remove('active');
+    }
 
-            // Si l'utilisateur n'a pas confirmé, on arrête la fonction ici.
-            if (!confirmed) {
-                return;
-            }
+    // ✅ Petit délai pour laisser le navigateur rafraîchir l'affichage
+    await new Promise(resolve => setTimeout(resolve, 50));
 
-            // ✅ ÉTAPE 3 : Si confirmé, on procède à l'appel API
-            const data = await apiCall(`/admin/trips/${tripId}`, "DELETE");
+    // ✅ Afficher la modale de confirmation personnalisée
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer ce Voyage ?",
+        message: `Voulez-vous vraiment supprimer le voyage du ${new Date(trip.date).toLocaleDateString("fr-FR")} pour le trajet : \n\n"${trip.route.from} → ${trip.route.to}" ?\n\nCette action est irréversible.`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, supprimer',
+        confirmClass: 'btn-danger'
+    });
 
-            if (data && data.success) {
-                showNotification(data.message, "success");
-                loadAllTrips(); // Recharger la liste pour voir le voyage disparaître
-            }
-        }
+    // Si l'utilisateur n'a pas confirmé, on arrête la fonction ici
+    if (!confirmed) {
+        return;
+    }
+
+    // ✅ Si confirmé, on procède à l'appel API
+    const data = await apiCall(`/admin/trips/${tripId}`, "DELETE");
+
+    if (data && data.success) {
+        showNotification(data.message, "success");
+        loadAllTrips(); // Recharger la liste pour voir le voyage disparaître
+    }
+}
 
         // ============================================
         // 🎬 NAVIGATION
