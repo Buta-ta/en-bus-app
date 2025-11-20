@@ -2970,118 +2970,76 @@ async function handleDeleteTemplate(templateId, templateName) {
       }
 
       // Dans Admin/index.html (section <script>)
-      function renderTripsTable() {
-        const tbody = document.getElementById("trips-body");
+     // DANS admin/index.html, dans <script>
 
-        if (allTrips.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center" style="padding:3rem;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">🚌</div>
-                    <div style="color:var(--text-muted);font-weight:600;">Aucun voyage programmé</div>
-                </td>
-            </tr>
-        `;
-          return;
-        }
+function renderTripsTable() {
+    const tbody = document.getElementById("trips-body");
 
-        tbody.innerHTML = allTrips
-          .map((trip) => {
-            const availableSeats = trip.seats.filter(
-              (s) => s.status === "available"
-            ).length;
-            const occupiedSeats = trip.seats.filter(
-              (s) => s.status === "occupied"
-            ).length;
-            const percentage = (availableSeats / trip.seats.length) * 100;
-            const canBeDeleted = occupiedSeats === 0;
+    if (allTrips.length === 0) {
+        tbody.innerHTML = `<tr>...</tr>`; // Votre code pour "aucun voyage" est bon
+        return;
+    }
 
-            return `
-            <tr>
-                <td class="font-bold">${new Date(trip.date).toLocaleDateString(
-                  "fr-FR",
-                  {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  }
-                )}</td>
+    // 1. On génère le HTML sans les 'onclick' directs pour les actions complexes
+    tbody.innerHTML = allTrips.map((trip) => {
+        const availableSeats = trip.seats.filter(s => s.status === "available").length;
+        const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
+        const percentage = (availableSeats / trip.seats.length) * 100;
+        const canBeDeleted = occupiedSeats === 0;
+
+        // On garde les 'onclick' pour les fonctions simples
+        let deleteButtonHTML = canBeDeleted
+            ? `<button class="btn btn-icon btn-danger" data-action="delete" data-trip-id="${trip._id}" title="Supprimer le voyage">🗑️</button>`
+            : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
+
+        return `
+            <tr data-trip-id-row="${trip._id}">
+                <td class="font-bold">${new Date(trip.date).toLocaleDateString(/*...options...*/)}</td>
                 <td>
-                    <div class="font-bold">${trip.route.from} → ${
-              trip.route.to
-            }</div>
-                    <div class="text-xs" style="color:var(--text-muted);">🕐 ${
-                      trip.route.departure
-                    } • ${trip.route.price} FCFA</div>
+                    <div class="font-bold">${trip.route.from} → ${trip.route.to}</div>
+                    <div class="text-xs" style="color:var(--text-muted);">...</div>
                 </td>
                 <td>${trip.route.company}</td>
-                
-                <!-- ✅ AFFICHER LE NUMÉRO DE BUS -->
-                <td class="font-bold font-mono" style="color: var(--primary);">${
-                  trip.busIdentifier || "N/A"
-                }</td>
-                
+                <td class="font-bold font-mono" style="color: var(--primary);">${trip.busIdentifier || "N/A"}</td>
                 <td>
-                    <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
-                        <div style="flex:1;background:var(--dark-elevated);height:8px;border-radius:9999px;overflow:hidden;">
-                            <div style="width:${percentage}%;height:100%;background:${
-              percentage > 50
-                ? "var(--primary)"
-                : percentage > 20
-                ? "var(--status-pending)"
-                : "var(--status-cancelled)"
-            };transition:width 0.3s;"></div>
-                        </div>
-                        <span class="font-bold text-sm">${availableSeats}/${
-              trip.seats.length
-            }</span>
-                    </div>
-                    ${
-                      occupiedSeats > 0
-                        ? `<div class="text-xs" style="color:var(--status-confirmed);margin-top:4px;">✅ ${occupiedSeats} réservé(s)</div>`
-                        : ""
-                    }
+                    <!-- ... Barre de progression ... -->
                 </td>
                 <td>
                     <div class="actions-cell">
-                        <button class="btn btn-icon btn-ghost" onclick="manageSeats('${
-                          trip._id
-                        }')" title="Gérer sièges">
-                            💺
-                        </button>
-                        <button class="btn btn-icon btn-ghost" onclick="showEditTripModal('${
-                          trip._id
-                        }')" title="Modifier le voyage">
-                            ✏️
-                        </button>
-
-                           <!-- ✅ AJOUT DU NOUVEAU BOUTON DE RÉINITIALISATION ICI -->
-                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${
-                          trip._id
-                        }')" title="Réinitialiser tous les sièges (y compris les réservés)">
-                            🔄
-                        </button>
-                        ${
-                          canBeDeleted
-                            ? `
-                            <button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">
-                                🗑️
-                            </button>
-                        `
-                            : `
-                            <button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">
-                                🔒
-                            </button>
-                        `
-                        }
+                        <button class="btn btn-icon btn-ghost" data-action="manage-seats" data-trip-id="${trip._id}" title="Gérer sièges">💺</button>
+                        <button class="btn btn-icon btn-ghost" data-action="edit-trip" data-trip-id="${trip._id}" title="Modifier le voyage">✏️</button>
+                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" data-action="reset-seats" data-trip-id="${trip._id}" title="Réinitialiser tous les sièges">🔄</button>
+                        ${deleteButtonHTML}
                     </div>
                 </td>
             </tr>
         `;
-          })
-          .join("");
-      }
+    }).join("");
+
+    // 2. ✅ CORRECTION DÉFINITIVE : On attache les écouteurs d'événements MAINTENANT
+    tbody.querySelectorAll('button[data-action]').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const action = event.currentTarget.dataset.action;
+            const tripId = event.currentTarget.dataset.tripId;
+
+            // On appelle la bonne fonction en fonction de l'action
+            switch (action) {
+                case 'delete':
+                    deleteTrip(tripId);
+                    break;
+                case 'manage-seats':
+                    manageSeats(tripId);
+                    break;
+                case 'edit-trip':
+                    showEditTripModal(tripId);
+                    break;
+                case 'reset-seats':
+                    resetTripSeats(tripId);
+                    break;
+            }
+        });
+    });
+}
 
       // Dans Admin/index.html (section <script>)
       // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
