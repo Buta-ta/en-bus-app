@@ -1562,6 +1562,43 @@
             border-color: rgba(255, 167, 38, 0.3);
             font-style: italic;
         }
+
+
+
+        /* ============================================
+   📱 RESPONSIVE - TABLEAU DEMANDES DE REPORT
+   ============================================ */
+
+@media (max-width: 1200px) {
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 1000px; /* Force le tableau à garder sa largeur */
+    }
+}
+
+@media (max-width: 768px) {
+    #tab-report-requests .stats-grid {
+        grid-template-columns: 1fr; /* Une seule colonne sur mobile */
+    }
+    
+    #tab-report-requests .card-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    #tab-report-requests .card-header .btn {
+        width: 100%;
+    }
+    
+    .actions-cell {
+        white-space: nowrap; /* Empêche les boutons de se casser */
+    }
+}
     </style>
 </head>
 
