@@ -1101,8 +1101,17 @@ app.post(
     body("endDate").isISO8601(),
     body("daysOfWeek").isArray({ min: 1 }),
     body("seatCount").isInt({ min: 10, max: 100 }),
-    body("busIdentifier").optional().isString().trim().escape(),
-    body('highlightBadge').optional().isString().trim().escape()
+    // ✅ CORRECTION : Accepter les chaînes vides ET null
+    body("busIdentifier")
+      .optional({ nullable: true, checkFalsy: true })
+      .isString()
+      .trim(),
+    
+    body('highlightBadge')
+      .optional({ nullable: true, checkFalsy: true })  // ✅ checkFalsy accepte ""
+      .isString()
+      .trim()
+
   ],
 
 
