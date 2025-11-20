@@ -579,6 +579,34 @@ h3 {
   flex-shrink: 0; 
 }
 
+
+
+/* DANS style.css */
+
+.bus-card-trip-details { 
+  font-size: 14px; 
+  color: var(--color-text-secondary); 
+  display: flex; 
+  align-items: center; 
+  gap: var(--space-8); 
+  margin-top: var(--space-4); 
+}
+
+.bus-card-trip-details svg { 
+  width: 18px; 
+  height: 18px; 
+  fill: currentColor; 
+  flex-shrink: 0; 
+}
+
+.bus-card-stops { 
+  font-weight: 600; 
+  color: var(--color-text-primary); 
+  cursor: help; 
+  text-decoration: underline dotted;
+  text-decoration-color: var(--color-accent-glow);
+}
+
 .bus-card-stops { 
   font-weight: 600; 
   color: var(--color-text-primary); 
