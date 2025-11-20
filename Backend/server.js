@@ -927,97 +927,165 @@ app.patch(
     try {
       const { id } = req.params;
       const { newSeats } = req.body;
-      if (!ObjectId.isValid(id))
+
+      // ✅ AJOUT DE LOGS DE DEBUG DÉTAILLÉS
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔍 MODIFICATION SIÈGES - DEBUG");
+      console.log("ID reçu:", id);
+      console.log("Type de ID:", typeof id);
+      console.log("ID valide ?", ObjectId.isValid(id));
+      console.log("Body complet reçu:", JSON.stringify(req.body, null, 2));
+      console.log("newSeats:", newSeats);
+      console.log("Type de newSeats:", typeof newSeats);
+      console.log("Est un tableau ?", Array.isArray(newSeats));
+      if (Array.isArray(newSeats)) {
+        console.log("Longueur:", newSeats.length);
+        console.log("Éléments:", newSeats);
+        console.log("Types des éléments:", newSeats.map(s => typeof s));
+        console.log("Sont des entiers ?", newSeats.map(s => Number.isInteger(s)));
+      }
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      // Validation de l'ID
+      if (!ObjectId.isValid(id)) {
+        console.error("❌ ID de réservation invalide:", id);
         return res.status(400).json({ error: "ID de réservation invalide." });
-      if (
-        !Array.isArray(newSeats) ||
-        newSeats.length === 0 ||
-        newSeats.some((s) => !Number.isInteger(s))
-      )
-        return res
-          .status(400)
-          .json({
-            error:
-              "Le champ 'newSeats' doit être un tableau d'entiers non vide.",
-          });
+      }
+
+      // Validation de newSeats
+      if (!Array.isArray(newSeats)) {
+        console.error("❌ newSeats n'est pas un tableau:", newSeats);
+        return res.status(400).json({ 
+          error: "Le champ 'newSeats' doit être un tableau.",
+          received: typeof newSeats
+        });
+      }
+
+      if (newSeats.length === 0) {
+        console.error("❌ newSeats est vide");
+        return res.status(400).json({ error: "Le tableau 'newSeats' ne peut pas être vide." });
+      }
+
+      const invalidSeats = newSeats.filter(s => !Number.isInteger(s));
+      if (invalidSeats.length > 0) {
+        console.error("❌ newSeats contient des valeurs non-entières:", invalidSeats);
+        return res.status(400).json({ 
+          error: "Le champ 'newSeats' doit contenir uniquement des entiers.",
+          invalidValues: invalidSeats
+        });
+      }
+
+      console.log("✅ Validation réussie, recherche de la réservation...");
+
+      // Récupération de la réservation
       const reservation = await reservationsCollection.findOne({
         _id: new ObjectId(id),
       });
-      if (!reservation)
+
+      if (!reservation) {
+        console.error("❌ Réservation introuvable pour ID:", id);
         return res.status(404).json({ error: "Réservation introuvable." });
-      if (newSeats.length !== reservation.passengers.length)
-        return res
-          .status(400)
-          .json({
-            error: `Le nombre de sièges (${newSeats.length}) ne correspond pas au nombre de passagers (${reservation.passengers.length}).`,
-          });
-      if (
-        !reservation.route ||
-        !reservation.route.id ||
-        !ObjectId.isValid(reservation.route.id)
-      )
-        return res
-          .status(400)
-          .json({
-            error:
-              "Données de réservation corrompues : ID du voyage manquant ou invalide.",
-          });
+      }
+
+      console.log("✅ Réservation trouvée:", reservation.bookingNumber);
+      console.log("Nombre de passagers:", reservation.passengers.length);
+      console.log("Nombre de sièges demandés:", newSeats.length);
+
+      // Vérification du nombre de sièges
+      if (newSeats.length !== reservation.passengers.length) {
+        console.error(`❌ Nombre de sièges incorrect: ${newSeats.length} vs ${reservation.passengers.length} passagers`);
+        return res.status(400).json({
+          error: `Le nombre de sièges (${newSeats.length}) ne correspond pas au nombre de passagers (${reservation.passengers.length}).`,
+        });
+      }
+
+      // Vérification de l'ID du voyage
+      if (!reservation.route || !reservation.route.id || !ObjectId.isValid(reservation.route.id)) {
+        console.error("❌ ID du voyage manquant ou invalide dans la réservation");
+        return res.status(400).json({
+          error: "Données de réservation corrompues : ID du voyage manquant ou invalide.",
+        });
+      }
+
+      console.log("ID du voyage:", reservation.route.id);
+
+      // Récupération du voyage
       const trip = await tripsCollection.findOne({
         _id: new ObjectId(reservation.route.id),
       });
-      if (!trip)
-        return res
-          .status(404)
-          .json({ error: "Le voyage associé est introuvable." });
+
+      if (!trip) {
+        console.error("❌ Voyage introuvable pour ID:", reservation.route.id);
+        return res.status(404).json({ error: "Le voyage associé est introuvable." });
+      }
+
+      console.log("✅ Voyage trouvé");
+
       const oldSeats = reservation.seats.map((s) => parseInt(s));
+      console.log("Anciens sièges:", oldSeats);
+      console.log("Nouveaux sièges:", newSeats);
+
+      // Vérification de la disponibilité
       const unavailable = trip.seats.filter(
         (s) =>
           newSeats.includes(s.number) &&
           s.status !== "available" &&
           !oldSeats.includes(s.number)
       );
-      if (unavailable.length > 0)
-        return res
-          .status(409)
-          .json({
-            error: `Conflit : Le(s) siège(s) ${unavailable
-              .map((s) => s.number)
-              .join(", ")} est/sont déjà pris.`,
-          });
-      if (oldSeats.length > 0)
+
+      if (unavailable.length > 0) {
+        console.error("❌ Sièges indisponibles:", unavailable.map(s => s.number));
+        return res.status(409).json({
+          error: `Conflit : Le(s) siège(s) ${unavailable.map((s) => s.number).join(", ")} est/sont déjà pris.`,
+        });
+      }
+
+      console.log("✅ Tous les sièges sont disponibles, libération des anciens...");
+
+      // Libération des anciens sièges
+      if (oldSeats.length > 0) {
         await tripsCollection.updateOne(
           { _id: trip._id },
           { $set: { "seats.$[elem].status": "available" } },
           { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
         );
+        console.log("✅ Anciens sièges libérés");
+      }
+
+      // Occupation des nouveaux sièges
       await tripsCollection.updateOne(
         { _id: trip._id },
         { $set: { "seats.$[elem].status": "occupied" } },
         { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
       );
+      console.log("✅ Nouveaux sièges occupés");
+
+      // Mise à jour de la réservation
       reservation.seats = newSeats;
       reservation.passengers.forEach((passenger, index) => {
         passenger.seat = newSeats[index];
       });
       reservation.updatedAt = new Date();
+
       await reservationsCollection.replaceOne(
         { _id: new ObjectId(id) },
         reservation
       );
+
+      console.log("✅ Réservation mise à jour avec succès");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
       res.json({
         success: true,
         message: "Les sièges ont été modifiés avec succès.",
       });
+
     } catch (error) {
-      console.error(
-        "❌ Erreur critique lors de la modification des sièges:",
-        error
-      );
+      console.error("❌ Erreur critique lors de la modification des sièges:", error);
       res.status(500).json({ error: "Erreur serveur inattendue." });
     }
   }
 );
-
 // ============================================
 // --- PAIEMENT MTN, EMAILS, CRON, WEBSOCKET, DÉMARRAGE ---
 // ============================================
