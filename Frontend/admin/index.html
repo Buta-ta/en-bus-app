@@ -1702,13 +1702,49 @@
                 </div>
 
                 <!-- TAB: Demandes de report -->
-                <div id="tab-report-requests" class="tab-content">
-                    <div class="page-header">
-                        <h1 class="page-title">Demandes de report</h1>
-                        <!-- ... -->
-                    </div>
-                </div>
+                <!-- TAB: Demandes de report -->
+<div id="tab-report-requests" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Demandes de report</h1>
+        <p class="page-subtitle">
+            Validez les demandes de report après vérification du paiement
+        </p>
+    </div>
 
+    <!-- ✅ CETTE SECTION DOIT ÊTRE LÀ -->
+    <div id="report-stats-grid" class="stats-grid">
+        <!-- Généré dynamiquement -->
+    </div>
+
+    <!-- Table -->
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Demandes en attente</h2>
+            <button class="btn btn-secondary" onclick="loadReportRequests()">
+                🔄 Actualiser
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° Réservation</th>
+                        <th>Passager</th>
+                        <th>Trajet actuel</th>
+                        <th>Nouveau trajet</th>
+                        <th>Montant à payer</th>
+                        <th>Demandé le</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="report-requests-body">
+                    <!-- Généré dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
                 <!-- Stats -->
                 <div id="stats-grid" class="stats-grid">
