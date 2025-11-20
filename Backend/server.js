@@ -82,6 +82,20 @@ const loginLimiter = rateLimit({
 });
 app.use("/api/", generalLimiter);
 
+
+
+
+
+// ============================================
+// 🛠️ FONCTIONS UTILITAIRES
+// ============================================
+
+function generateBookingNumber() {
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `EB-${timestamp.slice(-6)}${random}`;
+}
+
 // ============================================
 // 📧 CONFIGURATION SERVICES (Email, DB)
 // ============================================
@@ -92,6 +106,7 @@ let reservationsCollection,
   positionsCollection,
   tripsCollection,
   routeTemplatesCollection;
+  systemSettingsCollection;
 
 async function connectToDb() {
   try {
@@ -101,11 +116,34 @@ async function connectToDb() {
     positionsCollection = database.collection("positions");
     tripsCollection = database.collection("trips");
     routeTemplatesCollection = database.collection("route_templates");
+    systemSettingsCollection = database.collection("system_settings"); // ✅ AJOUT
+
+
     await tripsCollection.createIndex({
       date: 1,
       "route.from": 1,
       "route.to": 1,
     });
+
+    // ✅ INITIALISER LES PARAMÈTRES PAR DÉFAUT SI NON EXISTANTS
+    const existingSettings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+    if (!existingSettings) {
+      await systemSettingsCollection.insertOne({
+        key: "reportSettings",
+        value: {
+          firstReportFree: true,
+          secondReportFee: 2000,
+          thirdReportFee: 5000,
+          maxReportsAllowed: 3,
+          minHoursBeforeDeparture: 48,
+          maxDaysInFuture: 30
+        },
+        createdAt: new Date(),
+        updatedBy: "system"
+      });
+      console.log("✅ Paramètres de report initialisés par défaut.");
+    }
+
     console.log("✅ Connecté à MongoDB et index créés.");
   } catch (error) {
     console.error("❌ Erreur connexion DB:", error.message);
@@ -410,6 +448,428 @@ app.patch('/api/reservations/:bookingNumber/transaction-id', strictLimiter, [
         res.status(500).json({ error: 'Erreur serveur.' });
     }
 });
+
+
+// ============================================
+// 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
+// ============================================
+
+// 1️⃣ Vérifier si un report est autorisé
+app.get("/api/reservations/:bookingNumber/can-report", async (req, res) => {
+  try {
+    const { bookingNumber } = req.params;
+    
+    const reservation = await reservationsCollection.findOne({ bookingNumber });
+    if (!reservation) {
+      return res.status(404).json({ error: "Réservation introuvable." });
+    }
+    
+    // Récupérer les paramètres
+    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+    const config = settings?.value || {
+      maxReportsAllowed: 3,
+      minHoursBeforeDeparture: 48
+    };
+    
+    // Vérifications
+    const canReport = {
+      allowed: true,
+      reasons: []
+    };
+    
+    // Vérif 1 : Statut
+    if (reservation.status !== "Confirmé") {
+      canReport.allowed = false;
+      canReport.reasons.push(`Statut "${reservation.status}" ne permet pas le report.`);
+    }
+    
+    // Vérif 2 : Délai avant départ
+    const departureDate = new Date(reservation.date);
+    const now = new Date();
+    const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
+    
+    if (hoursUntilDeparture < config.minHoursBeforeDeparture) {
+      canReport.allowed = false;
+      canReport.reasons.push(`Report impossible moins de ${config.minHoursBeforeDeparture}h avant le départ.`);
+    }
+    
+    // Vérif 3 : Nombre de reports
+    const reportCount = reservation.reportCount || 0;
+    if (reportCount >= config.maxReportsAllowed) {
+      canReport.allowed = false;
+      canReport.reasons.push(`Nombre maximum de reports atteint (${config.maxReportsAllowed}).`);
+    }
+    
+    res.json({
+      success: true,
+      canReport: canReport.allowed,
+      reasons: canReport.reasons,
+      currentReportCount: reportCount,
+      maxReportsAllowed: config.maxReportsAllowed
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur vérification report:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// 2️⃣ Obtenir les voyages disponibles pour le report
+app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => {
+  try {
+    const { bookingNumber } = req.params;
+    
+    const reservation = await reservationsCollection.findOne({ bookingNumber });
+    if (!reservation) {
+      return res.status(404).json({ error: "Réservation introuvable." });
+    }
+    
+    // Récupérer les paramètres
+    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+    const config = settings?.value || { maxDaysInFuture: 30 };
+    
+    // Calculer la plage de dates autorisée
+    const currentDate = new Date(reservation.date);
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 2); // Au moins 2 jours dans le futur
+    
+    const maxDate = new Date(currentDate);
+    maxDate.setDate(maxDate.getDate() + config.maxDaysInFuture);
+    
+    // Rechercher les voyages disponibles (même trajet)
+    const availableTrips = await tripsCollection.find({
+      "route.from": reservation.route.from,
+      "route.to": reservation.route.to,
+      date: {
+        $gte: minDate.toISOString().split('T')[0],
+        $lte: maxDate.toISOString().split('T')[0],
+        $ne: reservation.date // Exclure la date actuelle
+      }
+    }).sort({ date: 1 }).toArray();
+    
+    // Formater les résultats
+    const formattedTrips = availableTrips.map(trip => ({
+      id: trip._id.toString(),
+      date: trip.date,
+      route: {
+        from: trip.route.from,
+        to: trip.route.to,
+        company: trip.route.company,
+        price: trip.route.price,
+        departure: trip.route.departure,
+        arrival: trip.route.arrival
+      },
+      availableSeats: trip.seats.filter(s => s.status === 'available').length,
+      totalSeats: trip.seats.length
+    }));
+    
+    res.json({
+      success: true,
+      currentTrip: {
+        date: reservation.date,
+        price: reservation.route.price
+      },
+      availableTrips: formattedTrips,
+      count: formattedTrips.length
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur récupération voyages disponibles:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// 3️⃣ Calculer le coût du report
+app.post("/api/reservations/:bookingNumber/calculate-report-cost", 
+  strictLimiter,
+  [body('newTripId').notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const { bookingNumber } = req.params;
+      const { newTripId } = req.body;
+      
+      // Récupérer la réservation
+      const reservation = await reservationsCollection.findOne({ bookingNumber });
+      if (!reservation) {
+        return res.status(404).json({ error: "Réservation introuvable." });
+      }
+      
+      // Récupérer le nouveau voyage
+      if (!ObjectId.isValid(newTripId)) {
+        return res.status(400).json({ error: "ID de voyage invalide." });
+      }
+      
+      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
+      if (!newTrip) {
+        return res.status(404).json({ error: "Voyage cible introuvable." });
+      }
+      
+      // Récupérer les paramètres
+      const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+      const config = settings?.value || {
+        firstReportFree: true,
+        secondReportFee: 2000,
+        thirdReportFee: 5000
+      };
+      
+      // Calculer les frais de report
+      const reportCount = reservation.reportCount || 0;
+      let reportFee = 0;
+      
+      if (reportCount === 0 && config.firstReportFree) {
+        reportFee = 0;
+      } else if (reportCount === 1) {
+        reportFee = config.secondReportFee;
+      } else {
+        reportFee = config.thirdReportFee;
+      }
+      
+      // Calculer la différence de prix
+      const currentPrice = reservation.totalPriceNumeric || reservation.route.price * reservation.passengers.length;
+      const newPrice = newTrip.route.price * reservation.passengers.length;
+      const priceDifference = newPrice - currentPrice;
+      
+      // Total à payer (ou crédit)
+      const totalCost = reportFee + priceDifference;
+      
+      res.json({
+        success: true,
+        calculation: {
+          reportFee: reportFee,
+          currentPrice: currentPrice,
+          newPrice: newPrice,
+          priceDifference: priceDifference,
+          totalCost: totalCost,
+          isPaymentRequired: totalCost > 0,
+          isCreditGenerated: totalCost < 0,
+          creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0
+        },
+        reportNumber: reportCount + 1
+      });
+      
+    } catch (error) {
+      console.error("❌ Erreur calcul coût report:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
+// 4️⃣ Confirmer le report
+app.post("/api/reservations/:bookingNumber/confirm-report",
+  strictLimiter,
+  [
+    body('newTripId').notEmpty(),
+    body('paymentMethod').optional().isString(),
+    body('customerPhone').optional().isString()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const { bookingNumber } = req.params;
+      const { newTripId, paymentMethod, customerPhone } = req.body;
+      
+      console.log(`🔄 Début du report pour ${bookingNumber} vers voyage ${newTripId}`);
+      
+      // 1. Récupérer la réservation actuelle
+      const reservation = await reservationsCollection.findOne({ bookingNumber });
+      if (!reservation) {
+        return res.status(404).json({ error: "Réservation introuvable." });
+      }
+      
+      // 2. Récupérer le nouveau voyage
+      if (!ObjectId.isValid(newTripId)) {
+        return res.status(400).json({ error: "ID de voyage invalide." });
+      }
+      
+      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
+      if (!newTrip) {
+        return res.status(404).json({ error: "Voyage cible introuvable." });
+      }
+      
+      // 3. Vérifier la disponibilité des sièges
+      const requiredSeats = reservation.passengers.length;
+      const availableSeatsCount = newTrip.seats.filter(s => s.status === 'available').length;
+      
+      if (availableSeatsCount < requiredSeats) {
+        return res.status(409).json({ 
+          error: `Pas assez de sièges disponibles. Requis: ${requiredSeats}, Disponibles: ${availableSeatsCount}` 
+        });
+      }
+      
+      // 4. Récupérer les paramètres et calculer le coût
+      const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+      const config = settings?.value || {
+        firstReportFree: true,
+        secondReportFee: 2000,
+        thirdReportFee: 5000
+      };
+      
+      const reportCount = reservation.reportCount || 0;
+      let reportFee = 0;
+      
+      if (reportCount === 0 && config.firstReportFree) {
+        reportFee = 0;
+      } else if (reportCount === 1) {
+        reportFee = config.secondReportFee;
+      } else {
+        reportFee = config.thirdReportFee;
+      }
+      
+      const currentPrice = reservation.totalPriceNumeric || reservation.route.price * reservation.passengers.length;
+      const newPrice = newTrip.route.price * reservation.passengers.length;
+      const priceDifference = newPrice - currentPrice;
+      const totalCost = reportFee + priceDifference;
+      
+      // 5. Si paiement requis et pas de méthode fournie
+      if (totalCost > 0 && !paymentMethod) {
+        return res.status(400).json({ 
+          error: "Paiement requis mais méthode non fournie.",
+          totalCost: totalCost
+        });
+      }
+      
+      // 6. Attribuer automatiquement de nouveaux sièges
+      const availableSeats = newTrip.seats
+        .filter(s => s.status === 'available')
+        .slice(0, requiredSeats)
+        .map(s => s.number);
+      
+      // 7. Libérer les sièges de l'ancien voyage
+      const oldTripId = reservation.route.id;
+      const oldSeats = reservation.seats.map(s => parseInt(s));
+      
+      await tripsCollection.updateOne(
+        { _id: new ObjectId(oldTripId) },
+        { $set: { "seats.$[elem].status": "available" } },
+        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+      );
+      
+      console.log(`✅ Sièges libérés sur ancien voyage: ${oldSeats.join(', ')}`);
+      
+      // 8. Réserver les sièges du nouveau voyage
+      await tripsCollection.updateOne(
+        { _id: newTrip._id },
+        { $set: { "seats.$[elem].status": "occupied" } },
+        { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
+      );
+      
+      console.log(`✅ Sièges réservés sur nouveau voyage: ${availableSeats.join(', ')}`);
+      
+      // 9. Marquer l'ancienne réservation comme "Reporté"
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        { 
+          $set: { 
+            status: "Reporté",
+            reportedAt: new Date()
+          }
+        }
+      );
+      
+      // 10. Créer la nouvelle réservation
+      const newBookingNumber = generateBookingNumber(); // ⚠️ À implémenter côté serveur
+      
+      const newReservation = {
+        ...reservation,
+        _id: new ObjectId(),
+        bookingNumber: newBookingNumber,
+        route: {
+          ...newTrip.route,
+          id: newTrip._id.toString()
+        },
+        date: newTrip.date,
+        seats: availableSeats,
+        passengers: reservation.passengers.map((p, i) => ({
+          ...p,
+          seat: availableSeats[i]
+        })),
+        totalPriceNumeric: newPrice,
+        totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+        status: totalCost > 0 ? "En attente de paiement" : "Confirmé",
+        paymentMethod: totalCost > 0 ? paymentMethod?.toUpperCase() : reservation.paymentMethod,
+        customerPhone: customerPhone || reservation.customerPhone,
+        reportCount: reportCount + 1,
+        originalReservation: reservation._id.toString(),
+        reportHistory: [
+          ...(reservation.reportHistory || []),
+          {
+            from: {
+              date: reservation.date,
+              tripId: oldTripId,
+              seats: oldSeats
+            },
+            to: {
+              date: newTrip.date,
+              tripId: newTrip._id.toString(),
+              seats: availableSeats
+            },
+            reportedAt: new Date(),
+            reportFee: reportFee,
+            priceDifference: priceDifference,
+            totalCost: totalCost,
+            initiatedBy: "client"
+          }
+        ],
+        clientCredit: totalCost < 0 ? Math.abs(totalCost) : 0,
+        createdAt: new Date(),
+        paymentDeadline: totalCost > 0 
+          ? new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 min pour payer
+          : null
+      };
+      
+      // Supprimer les champs obsolètes
+      delete newReservation.reportedAt;
+      delete newReservation.replacementReservation;
+      
+      await reservationsCollection.insertOne(newReservation);
+      
+      console.log(`✅ Nouvelle réservation créée: ${newBookingNumber}`);
+      
+      // 11. Lier les deux réservations
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        { $set: { replacementReservation: newReservation._id.toString() } }
+      );
+      
+      // 12. Envoyer l'email de confirmation
+      // TODO: sendReportConfirmationEmail(reservation, newReservation);
+      
+      res.status(201).json({
+        success: true,
+        message: "Voyage reporté avec succès !",
+        oldBookingNumber: bookingNumber,
+        newBookingNumber: newBookingNumber,
+        newReservation: {
+          bookingNumber: newBookingNumber,
+          date: newTrip.date,
+          seats: availableSeats,
+          totalCost: newReservation.totalPrice,
+          status: newReservation.status,
+          creditGenerated: newReservation.clientCredit
+        }
+      });
+      
+    } catch (error) {
+      console.error("❌ Erreur confirmation report:", error);
+      res.status(500).json({ error: "Erreur serveur lors du report." });
+    }
+  }
+);
+
+
+
+
+
+
 // ============================================
 // === ROUTES ADMIN (protégées) ===
 // ============================================
@@ -1089,6 +1549,105 @@ app.patch(
     }
   }
 );
+
+
+
+
+// ============================================
+// ⚙️ ROUTES ADMIN - PARAMÈTRES DE REPORT
+// ============================================
+
+// Obtenir les paramètres actuels
+app.get("/api/admin/settings/report", authenticateToken, async (req, res) => {
+  try {
+    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+    
+    if (!settings) {
+      return res.status(404).json({ error: "Paramètres introuvables." });
+    }
+    
+    res.json({
+      success: true,
+      settings: settings.value,
+      lastUpdated: settings.updatedAt,
+      updatedBy: settings.updatedBy
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur récupération paramètres:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Mettre à jour les frais de report
+app.patch("/api/admin/settings/report",
+  authenticateToken,
+  [
+    body('secondReportFee').optional().isInt({ min: 0 }),
+    body('thirdReportFee').optional().isInt({ min: 0 }),
+    body('maxReportsAllowed').optional().isInt({ min: 1, max: 10 }),
+    body('minHoursBeforeDeparture').optional().isInt({ min: 1 }),
+    body('maxDaysInFuture').optional().isInt({ min: 1 })
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const updates = {};
+      
+      if (req.body.secondReportFee !== undefined) updates['value.secondReportFee'] = req.body.secondReportFee;
+      if (req.body.thirdReportFee !== undefined) updates['value.thirdReportFee'] = req.body.thirdReportFee;
+      if (req.body.maxReportsAllowed !== undefined) updates['value.maxReportsAllowed'] = req.body.maxReportsAllowed;
+      if (req.body.minHoursBeforeDeparture !== undefined) updates['value.minHoursBeforeDeparture'] = req.body.minHoursBeforeDeparture;
+      if (req.body.maxDaysInFuture !== undefined) updates['value.maxDaysInFuture'] = req.body.maxDaysInFuture;
+      
+      updates.updatedAt = new Date();
+      updates.updatedBy = req.user.username;
+      
+      await systemSettingsCollection.updateOne(
+        { key: "reportSettings" },
+        { $set: updates }
+      );
+      
+      console.log(`✅ Paramètres de report mis à jour par ${req.user.username}`);
+      
+      res.json({
+        success: true,
+        message: "Paramètres mis à jour avec succès."
+      });
+      
+    } catch (error) {
+      console.error("❌ Erreur mise à jour paramètres:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
+// Obtenir l'historique des reports
+app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
+  try {
+    const reportedReservations = await reservationsCollection.find({
+      status: "Reporté"
+    }).sort({ reportedAt: -1 }).toArray();
+    
+    res.json({
+      success: true,
+      count: reportedReservations.length,
+      reports: reportedReservations
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur récupération historique:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+
+
+
 
 // ============================================
 // --- PAIEMENT MTN, EMAILS, CRON, WEBSOCKET, DÉMARRAGE ---
