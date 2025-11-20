@@ -2262,7 +2262,8 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-        // ✅ CORRECTION FINALE : On utilise des classes CSS, pas de style en ligne.
+        // ✅ CORRECTION DÉFINITIVE DE LA STRUCTURE HTML
+       // ✅ CORRECTION FINALE : On utilise des classes CSS, pas de style en ligne.
         return `
             <div class="bus-card">
                 <!-- Le badge s'ancre à .bus-card -->
@@ -2298,7 +2299,6 @@ function displayResults(results, isReturn = false) {
             </div>
         `;
     }).join("");
-
 
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
