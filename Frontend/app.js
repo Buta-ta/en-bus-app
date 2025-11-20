@@ -2194,6 +2194,7 @@ window.resetFilters = function() {
 // DANS app.js, REMPLACEZ la fonction displayResults
 
 // DANS app.js (remplacez votre fonction displayResults)
+// DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
 function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
@@ -2211,7 +2212,6 @@ function displayResults(results, isReturn = false) {
 
     if (locationFilterSection && locationSelect) {
         const uniqueLocations = [...new Set(appState.currentResults.map(r => r.departureLocation).filter(Boolean))];
-        
         if (uniqueLocations.length > 1) {
             locationSelect.innerHTML = '<option value="all">Tous les lieux de départ</option>';
             uniqueLocations.forEach(location => {
@@ -2226,12 +2226,10 @@ function displayResults(results, isReturn = false) {
 
     let cheapestId = null;
     let fastestId = null;
-
     if (displayedResults.length > 1) {
         const minPrice = Math.min(...displayedResults.map(r => r.price));
         const cheapestRoute = displayedResults.find(r => r.price === minPrice);
         if (cheapestRoute) cheapestId = cheapestRoute.id;
-
         const directTrips = displayedResults.filter(r => r.tripType === 'direct');
         if (directTrips.length > 0) {
             let minDuration = Infinity;
@@ -2246,13 +2244,7 @@ function displayResults(results, isReturn = false) {
     }
 
     if (displayedResults.length === 0) {
-        resultsList.innerHTML = `
-            <div class="no-results" style="text-align: center; padding: 48px;">
-                <h3>Aucun trajet ne correspond à vos filtres</h3>
-                <p>Essayez de modifier vos critères de recherche ou de réinitialiser les filtres.</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">Réinitialiser les filtres</button>
-            </div>
-        `;
+        resultsList.innerHTML = `<div class="no-results" style="text-align: center; padding: 48px;"><h3>Aucun trajet ne correspond à vos filtres</h3><p>Essayez de modifier vos critères de recherche.</p><button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">Réinitialiser les filtres</button></div>`;
         return;
     }
 
@@ -2269,41 +2261,42 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-        let tripDetailsHTML = '';
-
-        // ✅ CORRECTION DÉFINITIVE CI-DESSOUS
+        // ✅ CORRECTION DÉFINITIVE DE LA STRUCTURE HTML
         return `
-            <div class="bus-card">
-                <!-- Le conteneur principal reste un "flex-container" sans position relative -->
+            <div class="bus-card" style="position: relative;">
+                <!-- ÉTAPE 1: Le conteneur principal .bus-card a maintenant la position relative -->
+                <!-- Il n'est plus un conteneur flex direct pour le contenu -->
 
-                <!-- Le badge est placé en premier -->
+                <!-- ÉTAPE 2: Le badge est un enfant direct et va s'ancrer à .bus-card -->
                 ${badgeHTML}
 
-                <!-- Le premier enfant flex, qui devient le point d'ancrage -->
-                <div class="bus-card-main" style="position: relative;">
-                    <div class="bus-card-time">
-                        <span>${route.departure}</span>
-                        <div class="bus-card-duration">
-                            <span>→</span><br>
-                            ${route.duration || 'N/A'}
+                <!-- ÉTAPE 3: On crée un conteneur INTÉRIEUR pour le layout flex -->
+                <div style="display: flex; width: 100%; justify-content: space-between; align-items: stretch; gap: var(--space-20);">
+                    
+                    <!-- Le contenu est maintenant à l'intérieur de ce conteneur flex -->
+                    <div class="bus-card-main">
+                        <div class="bus-card-time">
+                            <span>${route.departure}</span>
+                            <div class="bus-card-duration">
+                                <span>→</span><br>
+                                ${route.duration || 'N/A'}
+                            </div>
+                            <span>${route.arrival}</span>
                         </div>
-                        <span>${route.arrival}</span>
-                    </div>
-                    ${departureLocationHTML}
-                    <div class="bus-card-company">${route.company}</div>
-                    ${tripDetailsHTML}
-                    <div class="bus-card-details">
-                        <div class="bus-amenities">${amenitiesHTML}</div>
-                        <div class="bus-seats">
-                            <strong>${route.availableSeats}</strong> sièges dispo.
+                        ${departureLocationHTML}
+                        <div class="bus-card-company">${route.company}</div>
+                        <div class="bus-card-details">
+                            <div class="bus-amenities">${amenitiesHTML}</div>
+                            <div class="bus-seats">
+                                <strong>${route.availableSeats}</strong> sièges dispo.
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <div class="bus-card-pricing">
+                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                        <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
+                    </div>
 
-                <!-- Le deuxième enfant flex -->
-                <div class="bus-card-pricing">
-                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                    <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
                 </div>
             </div>
         `;
