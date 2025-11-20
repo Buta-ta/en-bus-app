@@ -2262,39 +2262,31 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-       // ✅ CORRECTION FINALE : On utilise la nouvelle structure avec la classe CSS
-        return `
-            <div class="bus-card">
-                <!-- Le badge s'ancre à .bus-card -->
+       return `
+            <div class="bus-card" style="position: relative;"> <!-- Important: position: relative -->
                 ${badgeHTML}
-
-                <!-- Le wrapper intérieur gère le layout flex -->
-                <div class="bus-card-wrapper">
-                    
-                    <div class="bus-card-main">
-                        <div class="bus-card-time">
-                            <span>${route.departure}</span>
-                            <div class="bus-card-duration">
-                                <span>→</span><br>
-                                ${route.duration || 'N/A'}
-                            </div>
-                            <span>${route.arrival}</span>
+                <div class="bus-card-main">
+                    <div class="bus-card-time">
+                        <span>${route.departure}</span>
+                        <div class="bus-card-duration">
+                            <span>→</span><br>
+                            ${route.duration || 'N/A'}
                         </div>
-                        ${departureLocationHTML}
-                        <div class="bus-card-company">${route.company}</div>
-                        <div class="bus-card-details">
-                            <div class="bus-amenities">${amenitiesHTML}</div>
-                            <div class="bus-seats">
-                                <strong>${route.availableSeats}</strong> sièges dispo.
-                            </div>
+                        <span>${route.arrival}</span>
+                    </div>
+                    ${departureLocationHTML}
+                    <div class="bus-card-company">${route.company}</div>
+                    ${tripDetailsHTML}
+                    <div class="bus-card-details">
+                        <div class="bus-amenities">${amenitiesHTML}</div>
+                        <div class="bus-seats">
+                            <strong>${route.availableSeats}</strong> sièges dispo.
                         </div>
                     </div>
-
-                    <div class="bus-card-pricing">
-                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                        <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
-                    </div>
-
+                </div>
+                <div class="bus-card-pricing">
+                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                    <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
                 </div>
             </div>
         `;
