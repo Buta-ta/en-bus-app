@@ -629,6 +629,8 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
   }
 });
 
+// DANS server.js (remplacez votre route par celle-ci)
+
 app.post(
   "/api/admin/trips",
   authenticateToken,
@@ -639,14 +641,16 @@ app.post(
     body("daysOfWeek").isArray({ min: 1 }),
     body("seatCount").isInt({ min: 10, max: 100 }),
     body("busIdentifier").optional().isString().trim().escape(),
-    // ✅ AJOUTER CE NOUVEAU VALIDATEUR
     body('highlightBadge').optional().isString().trim().escape()
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty())
+    if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+    
     try {
+      // ✅ CORRECTION FINALE : 'highlightBadge' est maintenant extrait de req.body
       const {
         routeId,
         startDate,
@@ -654,24 +658,21 @@ app.post(
         daysOfWeek,
         seatCount,
         busIdentifier,
+        highlightBadge 
       } = req.body;
+
       const routeTemplate = await routeTemplatesCollection.findOne({
         _id: new ObjectId(routeId),
       });
-      if (!routeTemplate)
+      if (!routeTemplate) {
         return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+      }
+
       let newTrips = [];
       let currentDate = new Date(startDate);
       const lastDate = new Date(endDate);
-      const dayMap = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
+      const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      
       while (currentDate <= lastDate) {
         const dayName = dayMap[currentDate.getUTCDay()];
         if (daysOfWeek.includes(dayName)) {
@@ -684,29 +685,28 @@ app.post(
             route: routeTemplate,
             seats: seats,
             busIdentifier: busIdentifier || null,
-            // ✅ SAUVEGARDER LE BADGE DANS LA BASE DE DONNÉES
-                    highlightBadge: highlightBadge || null,
+            // La variable 'highlightBadge' existe maintenant et peut être utilisée
+            highlightBadge: highlightBadge || null,
             createdAt: new Date(),
           });
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1); // Utiliser setUTCDate pour éviter les problèmes de fuseau horaire
       }
+
       if (newTrips.length > 0) {
         await tripsCollection.insertMany(newTrips);
       }
-      res
-        .status(201)
-        .json({
+
+      res.status(201).json({
           success: true,
           message: `${newTrips.length} voyage(s) créé(s).`,
-        });
+      });
     } catch (error) {
       console.error("❌ Erreur création voyages:", error);
       res.status(500).json({ error: "Erreur serveur." });
     }
   }
 );
-
 app.patch(
   "/api/admin/trips/:id",
   authenticateToken,
