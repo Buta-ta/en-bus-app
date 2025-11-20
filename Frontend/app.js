@@ -3418,7 +3418,7 @@ async function displayConfirmation(reservation) {
                 `;
             }
              // ✅ ON VÉRIFIE QUE CE BLOC EST BIEN PRÉSENT
-        const trackerIdentifier = reservation.route.busIdentifier || reservation.route.trackerId;
+       
         if (trackerIdentifier) {
             actionsHTML += `
                 <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${reservation.bookingNumber}">
