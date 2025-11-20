@@ -1569,36 +1569,39 @@
    📱 RESPONSIVE - TABLEAU DEMANDES DE REPORT
    ============================================ */
 
-@media (max-width: 1200px) {
-    .table-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    table {
-        min-width: 1000px; /* Force le tableau à garder sa largeur */
-    }
-}
+        @media (max-width: 1200px) {
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
 
-@media (max-width: 768px) {
-    #tab-report-requests .stats-grid {
-        grid-template-columns: 1fr; /* Une seule colonne sur mobile */
-    }
-    
-    #tab-report-requests .card-header {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
-    }
-    
-    #tab-report-requests .card-header .btn {
-        width: 100%;
-    }
-    
-    .actions-cell {
-        white-space: nowrap; /* Empêche les boutons de se casser */
-    }
-}
+            table {
+                min-width: 1000px;
+                /* Force le tableau à garder sa largeur */
+            }
+        }
+
+        @media (max-width: 768px) {
+            #tab-report-requests .stats-grid {
+                grid-template-columns: 1fr;
+                /* Une seule colonne sur mobile */
+            }
+
+            #tab-report-requests .card-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            #tab-report-requests .card-header .btn {
+                width: 100%;
+            }
+
+            .actions-cell {
+                white-space: nowrap;
+                /* Empêche les boutons de se casser */
+            }
+        }
     </style>
 </head>
 
@@ -1643,95 +1646,49 @@
     <div id="dashboard" class="dashboard">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-logo">En-Bus</div>
-            </div>
-
-            <nav>
-                <ul class="sidebar-nav">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link active" data-tab="reservations">
-                            <span class="nav-icon">📋</span>
-                            <span>Réservations</span>
-                        </a>
-                    </li>
-
-
-                    <!-- TAB: Demandes de report -->
-<div id="tab-report-requests" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title">Demandes de report</h1>
-        <p class="page-subtitle">
-            Validez les demandes de report après vérification du paiement
-        </p>
+    <div class="sidebar-header">
+        <div class="sidebar-logo">En-Bus</div>
     </div>
 
-    <!-- Stats -->
-    <div id="report-stats-grid" class="stats-grid">
-        <!-- Généré dynamiquement -->
+    <nav>
+        <ul class="sidebar-nav">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-tab="reservations">
+                    <span class="nav-icon">📋</span>
+                    <span>Réservations</span>
+                </a>
+            </li>
+            
+            <!-- ✅ AJOUTER SEULEMENT LE LIEN ICI -->
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="report-requests">
+                    <span class="nav-icon">🔄</span>
+                    <span>Demandes de report</span>
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="trips">
+                    <span class="nav-icon">🗓️</span>
+                    <span>Programmation</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="templates">
+                    <span class="nav-icon">🛣️</span>
+                    <span>Modèles de trajets</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    
+    <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-logout">
+            <span>🚪</span>
+            Déconnexion
+        </button>
     </div>
-
-    <!-- Table -->
-    <div class="content-card">
-        <div class="card-header">
-            <h2 class="card-title">Demandes en attente</h2>
-            <button class="btn btn-secondary" onclick="loadReportRequests()">
-                🔄 Actualiser
-            </button>
-        </div>
-
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>N° Réservation</th>
-                        <th>Passager</th>
-                        <th>Trajet actuel</th>
-                        <th>Nouveau trajet</th>
-                        <th>Montant à payer</th>
-                        <th>Demandé le</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="report-requests-body">
-                    <!-- Généré dynamiquement -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-                      <!-- ✅ NOUVEL ONGLET DEMANDES DE REPORT -->
-        <li class="nav-item">
-            <a href="#" class="nav-link" data-tab="report-requests">
-                <span class="nav-icon">🔄</span>
-                <span>Demandes de report</span>
-            </a>
-        </li>
-
-
-
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" data-tab="trips">
-                            <span class="nav-icon">🗓️</span>
-                            <span>Programmation</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link" data-tab="templates">
-                            <span class="nav-icon">🛣️</span>
-                            <span>Modèles de trajets</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="logout-btn" class="btn btn-logout">
-                    <span>🚪</span>
-                    Déconnexion
-                </button>
-            </div>
-        </aside>
+</aside>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -2255,9 +2212,10 @@
             try {
                 const options = {
                     method,
-                    headers: { Authorization: `Bearer ${token}`, 
-                        'Content-Type': 'application/json' 
-                     },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
                 };
 
                 if (body) {
@@ -2948,13 +2906,13 @@
 
         // DANS admin/index.html, dans <script>
         // DANS admin/index.html, dans <script>
-// DANS admin/index.html, REMPLACEZ votre fonction renderTripsTable par celle-ci
+        // DANS admin/index.html, REMPLACEZ votre fonction renderTripsTable par celle-ci
 
-function renderTripsTable() {
-    const tbody = document.getElementById("trips-body");
+        function renderTripsTable() {
+            const tbody = document.getElementById("trips-body");
 
-    if (allTrips.length === 0) {
-        tbody.innerHTML = `
+            if (allTrips.length === 0) {
+                tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center" style="padding:3rem;">
                     <div style="font-size:3rem;margin-bottom:1rem;">🚌</div>
@@ -2962,23 +2920,23 @@ function renderTripsTable() {
                 </td>
             </tr>
         `;
-        return;
-    }
+                return;
+            }
 
-    // On génère le HTML en utilisant des attributs `data-*` pour stocker les informations
-    tbody.innerHTML = allTrips.map((trip) => {
-        const availableSeats = trip.seats.filter(s => s.status === "available").length;
-        const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
-        const percentage = (availableSeats / trip.seats.length) * 100;
-        const canBeDeleted = occupiedSeats === 0;
+            // On génère le HTML en utilisant des attributs `data-*` pour stocker les informations
+            tbody.innerHTML = allTrips.map((trip) => {
+                const availableSeats = trip.seats.filter(s => s.status === "available").length;
+                const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
+                const percentage = (availableSeats / trip.seats.length) * 100;
+                const canBeDeleted = occupiedSeats === 0;
 
-        // On prépare le bouton de suppression
-        const deleteButtonHTML = canBeDeleted
-    ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
-    : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
+                // On prépare le bouton de suppression
+                const deleteButtonHTML = canBeDeleted
+                    ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
+                    : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
 
-        // On retourne la ligne complète du tableau
-        return `
+                // On retourne la ligne complète du tableau
+                return `
             <tr>
                 <td class="font-bold">${new Date(trip.date).toLocaleDateString("fr-FR", {
                     weekday: "short",
@@ -2995,11 +2953,10 @@ function renderTripsTable() {
                 <td>
                     <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
                         <div style="flex:1;background:var(--dark-elevated);height:8px;border-radius:9999px;overflow:hidden;">
-                            <div style="width:${percentage}%;height:100%;background:${
-                                percentage > 50 ? "var(--primary)" :
-                                percentage > 20 ? "var(--status-pending)" :
-                                "var(--status-cancelled)"
-                            };transition:width 0.3s;"></div>
+                            <div style="width:${percentage}%;height:100%;background:${percentage > 50 ? "var(--primary)" :
+                        percentage > 20 ? "var(--status-pending)" :
+                            "var(--status-cancelled)"
+                    };transition:width 0.3s;"></div>
                         </div>
                         <span class="font-bold text-sm">${availableSeats}/${trip.seats.length}</span>
                     </div>
@@ -3018,11 +2975,11 @@ function renderTripsTable() {
 </td>
             </tr>
         `;
-    }).join("");
+            }).join("");
 
-    // NOTE : La partie qui attache les `addEventListener` a été déplacée 
-    // dans la fonction setupEventListeners pour être appelée une seule fois.
-}
+            // NOTE : La partie qui attache les `addEventListener` a été déplacée 
+            // dans la fonction setupEventListeners pour être appelée une seule fois.
+        }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
 
@@ -3351,47 +3308,47 @@ function renderTripsTable() {
 
         // DANS admin/index.html, dans la balise <script>
 
-async function deleteTrip(tripId) {
-    console.log(`🔍 Vérification du statut pour : ${tripId}`);
-    
-    const trip = allTrips.find((t) => t._id === tripId);
-    if (!trip) {
-        showNotification("Erreur : Le voyage est introuvable.", "error");
-        return;
-    }
+        async function deleteTrip(tripId) {
+            console.log(`🔍 Vérification du statut pour : ${tripId}`);
 
-    // ✅ CORRECTION : On utilise closeModal() au lieu de closeAllAdminModals()
-    const detailsModal = document.getElementById('details-modal');
-    if (detailsModal && detailsModal.classList.contains('active')) {
-        detailsModal.classList.remove('active');
-    }
+            const trip = allTrips.find((t) => t._id === tripId);
+            if (!trip) {
+                showNotification("Erreur : Le voyage est introuvable.", "error");
+                return;
+            }
 
-    // ✅ Petit délai pour laisser le navigateur rafraîchir l'affichage
-    await new Promise(resolve => setTimeout(resolve, 50));
+            // ✅ CORRECTION : On utilise closeModal() au lieu de closeAllAdminModals()
+            const detailsModal = document.getElementById('details-modal');
+            if (detailsModal && detailsModal.classList.contains('active')) {
+                detailsModal.classList.remove('active');
+            }
 
-    // ✅ Afficher la modale de confirmation personnalisée
-    const confirmed = await showAdminConfirm({
-        title: "Supprimer ce Voyage ?",
-        message: `Voulez-vous vraiment supprimer le voyage du ${new Date(trip.date).toLocaleDateString("fr-FR")} pour le trajet : \n\n"${trip.route.from} → ${trip.route.to}" ?\n\nCette action est irréversible.`,
-        icon: '🗑️',
-        iconClass: 'danger',
-        confirmText: 'Oui, supprimer',
-        confirmClass: 'btn-danger'
-    });
+            // ✅ Petit délai pour laisser le navigateur rafraîchir l'affichage
+            await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Si l'utilisateur n'a pas confirmé, on arrête la fonction ici
-    if (!confirmed) {
-        return;
-    }
+            // ✅ Afficher la modale de confirmation personnalisée
+            const confirmed = await showAdminConfirm({
+                title: "Supprimer ce Voyage ?",
+                message: `Voulez-vous vraiment supprimer le voyage du ${new Date(trip.date).toLocaleDateString("fr-FR")} pour le trajet : \n\n"${trip.route.from} → ${trip.route.to}" ?\n\nCette action est irréversible.`,
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Oui, supprimer',
+                confirmClass: 'btn-danger'
+            });
 
-    // ✅ Si confirmé, on procède à l'appel API
-    const data = await apiCall(`/admin/trips/${tripId}`, "DELETE");
+            // Si l'utilisateur n'a pas confirmé, on arrête la fonction ici
+            if (!confirmed) {
+                return;
+            }
 
-    if (data && data.success) {
-        showNotification(data.message, "success");
-        loadAllTrips(); // Recharger la liste pour voir le voyage disparaître
-    }
-}
+            // ✅ Si confirmé, on procède à l'appel API
+            const data = await apiCall(`/admin/trips/${tripId}`, "DELETE");
+
+            if (data && data.success) {
+                showNotification(data.message, "success");
+                loadAllTrips(); // Recharger la liste pour voir le voyage disparaître
+            }
+        }
 
         // ============================================
         // 🎬 NAVIGATION
@@ -3422,9 +3379,9 @@ async function deleteTrip(tripId) {
                     // L'appel à loadAdminData va automatiquement lancer les chronomètres via renderTable
                     loadAdminData();
                     break;
-                            case 'report-requests':  // ✅ NOUVEAU
-            loadReportRequests();
-                        break;
+                case 'report-requests':  // ✅ NOUVEAU
+                    loadReportRequests();
+                    break;
 
                 case 'trips':
                     loadAllTemplates().then(loadAllTrips);
@@ -3466,87 +3423,87 @@ async function deleteTrip(tripId) {
         // 🎯 INITIALISATION & ÉVÉNEMENTS
         // ============================================
 
-       // DANS admin/index.html, dans <script>
+        // DANS admin/index.html, dans <script>
 
-function setupEventListeners() {
-    // --- Login & Logout (INCHANGÉ) ---
-    document.getElementById("login-form").addEventListener("submit", handleLogin);
-    document.getElementById("logout-btn").addEventListener("click", handleLogout);
+        function setupEventListeners() {
+            // --- Login & Logout (INCHANGÉ) ---
+            document.getElementById("login-form").addEventListener("submit", handleLogin);
+            document.getElementById("logout-btn").addEventListener("click", handleLogout);
 
-    // --- Gestion de la navigation par onglets (INCHANGÉ) ---
-    document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            const tabName = link.getAttribute("data-tab");
-            switchTab(tabName);
-        });
-    });
+            // --- Gestion de la navigation par onglets (INCHANGÉ) ---
+            document.querySelectorAll(".nav-link").forEach((link) => {
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const tabName = link.getAttribute("data-tab");
+                    switchTab(tabName);
+                });
+            });
 
-    // --- Filtres (INCHANGÉ) ---
-    document.getElementById("search-input").addEventListener("input", applyFilters);
-    document.querySelectorAll(".filter-pill").forEach((pill) => {
-        pill.addEventListener("click", () => {
-            document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-            pill.classList.add("active");
-            applyFilters();
-        });
-    });
+            // --- Filtres (INCHANGÉ) ---
+            document.getElementById("search-input").addEventListener("input", applyFilters);
+            document.querySelectorAll(".filter-pill").forEach((pill) => {
+                pill.addEventListener("click", () => {
+                    document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+                    pill.classList.add("active");
+                    applyFilters();
+                });
+            });
 
-    // --- Forms (INCHANGÉ) ---
-    document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
-    document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
+            // --- Forms (INCHANGÉ) ---
+            document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
+            document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
 
-    // --- Modal (INCHANGÉ) ---
-    window.addEventListener("click", (e) => {
-        if (e.target === document.getElementById("details-modal")) {
-            closeModal();
+            // --- Modal (INCHANGÉ) ---
+            window.addEventListener("click", (e) => {
+                if (e.target === document.getElementById("details-modal")) {
+                    closeModal();
+                }
+            });
+
+
+            // =======================================================================
+            // ✅ CORRECTION FINALE : DÉLÉGATION D'ÉVÉNEMENTS POUR LE TABLEAU DES VOYAGES
+            // =======================================================================
+            const tripsTbody = document.getElementById('trips-body');
+
+            // On vérifie que l'élément parent existe pour éviter toute erreur
+            if (tripsTbody) {
+                // On attache UN SEUL écouteur sur le <tbody> qui contient tout
+                tripsTbody.addEventListener('click', (event) => {
+
+                    // On cherche le bouton le plus proche de l'endroit où on a cliqué
+                    // qui possède un attribut [data-action]
+                    const button = event.target.closest('button[data-action]');
+
+                    // Si l'utilisateur n'a pas cliqué sur un bouton d'action, on ne fait rien
+                    if (!button) {
+                        return;
+                    }
+
+                    // On récupère l'action et l'ID du voyage depuis les attributs du bouton
+                    const action = button.dataset.action;
+                    const tripId = button.dataset.tripId;
+
+                    console.log(`✅ Action détectée par délégation : ${action} sur le voyage ${tripId}`);
+
+                    // On appelle la bonne fonction en fonction de l'action
+                    switch (action) {
+                        case 'delete':
+                            deleteTrip(tripId);
+                            break;
+                        case 'manage-seats':
+                            manageSeats(tripId);
+                            break;
+                        case 'edit-trip':
+                            showEditTripModal(tripId);
+                            break;
+                        case 'reset-seats':
+                            resetTripSeats(tripId);
+                            break;
+                    }
+                });
+            }
         }
-    });
-
-
-    // =======================================================================
-    // ✅ CORRECTION FINALE : DÉLÉGATION D'ÉVÉNEMENTS POUR LE TABLEAU DES VOYAGES
-    // =======================================================================
-    const tripsTbody = document.getElementById('trips-body');
-    
-    // On vérifie que l'élément parent existe pour éviter toute erreur
-    if (tripsTbody) {
-        // On attache UN SEUL écouteur sur le <tbody> qui contient tout
-        tripsTbody.addEventListener('click', (event) => {
-            
-            // On cherche le bouton le plus proche de l'endroit où on a cliqué
-            // qui possède un attribut [data-action]
-            const button = event.target.closest('button[data-action]');
-            
-            // Si l'utilisateur n'a pas cliqué sur un bouton d'action, on ne fait rien
-            if (!button) {
-                return;
-            }
-
-            // On récupère l'action et l'ID du voyage depuis les attributs du bouton
-            const action = button.dataset.action;
-            const tripId = button.dataset.tripId;
-            
-            console.log(`✅ Action détectée par délégation : ${action} sur le voyage ${tripId}`);
-
-            // On appelle la bonne fonction en fonction de l'action
-            switch (action) {
-                case 'delete':
-                    deleteTrip(tripId);
-                    break;
-                case 'manage-seats':
-                    manageSeats(tripId);
-                    break;
-                case 'edit-trip':
-                    showEditTripModal(tripId);
-                    break;
-                case 'reset-seats':
-                    resetTripSeats(tripId);
-                    break;
-            }
-        });
-    }
-}
         // ============================================
         // 🚀 DÉMARRAGE
         // ============================================
@@ -3794,43 +3751,43 @@ function setupEventListeners() {
             // 6. Attacher l'événement au bouton "Enregistrer"
             document.getElementById('save-seats-btn').onclick = async () => {
                 const selectedSeatsElements = document.querySelectorAll('.seat.selected');
-               // ✅ CORRECTION : Conversion explicite en entiers avec validation
-    const newSeats = Array.from(selectedSeatsElements)
-        .map(el => {
-            const seatNumber = el.dataset.seatNumber;
-            return parseInt(seatNumber, 10); // Toujours spécifier la base 10
-        })
-        .filter(num => !isNaN(num) && Number.isInteger(num)) // Filtrer les valeurs invalides
-        .sort((a, b) => a - b);
+                // ✅ CORRECTION : Conversion explicite en entiers avec validation
+                const newSeats = Array.from(selectedSeatsElements)
+                    .map(el => {
+                        const seatNumber = el.dataset.seatNumber;
+                        return parseInt(seatNumber, 10); // Toujours spécifier la base 10
+                    })
+                    .filter(num => !isNaN(num) && Number.isInteger(num)) // Filtrer les valeurs invalides
+                    .sort((a, b) => a - b);
 
-    console.log("🎯 Nouveaux sièges à envoyer (vérifiés) :", newSeats);
-    console.log("Type du premier élément :", typeof newSeats[0], newSeats[0]);
+                console.log("🎯 Nouveaux sièges à envoyer (vérifiés) :", newSeats);
+                console.log("Type du premier élément :", typeof newSeats[0], newSeats[0]);
 
-    if (newSeats.length !== reservation.passengers.length) {
-        showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'warning');
-        return;
-    }
+                if (newSeats.length !== reservation.passengers.length) {
+                    showNotification(`Veuillez sélectionner exactement ${reservation.passengers.length} siège(s).`, 'warning');
+                    return;
+                }
 
-    const saveBtn = document.getElementById('save-seats-btn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = '⏳ Enregistrement...';
+                const saveBtn = document.getElementById('save-seats-btn');
+                saveBtn.disabled = true;
+                saveBtn.textContent = '⏳ Enregistrement...';
 
-    console.log(`📡 Envoi de la requête PATCH à /admin/reservations/${reservationId}/seats`);
-    console.log("📦 Corps de la requête :", JSON.stringify({ newSeats }, null, 2));
-    
-    const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
+                console.log(`📡 Envoi de la requête PATCH à /admin/reservations/${reservationId}/seats`);
+                console.log("📦 Corps de la requête :", JSON.stringify({ newSeats }, null, 2));
 
-    console.log("📦 Réponse du serveur à la modification :", data);
-    
-    if (data && data.success) {
-        showNotification('Sièges modifiés avec succès !', 'success');
-        closeModal();
-        loadAdminData();
-    } else {
-        showNotification(data?.error || 'Erreur lors de la modification.', 'error');
-        saveBtn.disabled = false;
-        saveBtn.textContent = '💾 Enregistrer les nouveaux sièges';
-    }
+                const data = await apiCall(`/admin/reservations/${reservationId}/seats`, 'PATCH', { newSeats });
+
+                console.log("📦 Réponse du serveur à la modification :", data);
+
+                if (data && data.success) {
+                    showNotification('Sièges modifiés avec succès !', 'success');
+                    closeModal();
+                    loadAdminData();
+                } else {
+                    showNotification(data?.error || 'Erreur lors de la modification.', 'error');
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '💾 Enregistrer les nouveaux sièges';
+                }
 
             };
         }
@@ -4087,32 +4044,32 @@ function setupEventListeners() {
 
 
         // ============================================
-// 🔄 GESTION DES DEMANDES DE REPORT
-// ============================================
+        // 🔄 GESTION DES DEMANDES DE REPORT
+        // ============================================
 
-async function loadReportRequests() {
-    try {
-        const data = await apiCall('/admin/report-requests');
-        if (!data) return;
+        async function loadReportRequests() {
+            try {
+                const data = await apiCall('/admin/report-requests');
+                if (!data) return;
 
-        console.log(`📋 ${data.count} demande(s) de report chargée(s)`);
+                console.log(`📋 ${data.count} demande(s) de report chargée(s)`);
 
-        displayReportRequestsStats(data.requests);
-        renderReportRequestsTable(data.requests);
+                displayReportRequestsStats(data.requests);
+                renderReportRequestsTable(data.requests);
 
-    } catch (error) {
-        console.error('❌ Erreur chargement demandes report:', error);
-        showNotification('Erreur lors du chargement des demandes', 'error');
-    }
-}
+            } catch (error) {
+                console.error('❌ Erreur chargement demandes report:', error);
+                showNotification('Erreur lors du chargement des demandes', 'error');
+            }
+        }
 
-function displayReportRequestsStats(requests) {
-    const statsGrid = document.getElementById('report-stats-grid');
-    
-    const pending = requests.filter(r => r.status === 'En attente de report').length;
-    const totalAmount = requests.reduce((sum, r) => sum + (r.reportRequest?.cost?.totalCost || 0), 0);
+        function displayReportRequestsStats(requests) {
+            const statsGrid = document.getElementById('report-stats-grid');
 
-    statsGrid.innerHTML = `
+            const pending = requests.filter(r => r.status === 'En attente de report').length;
+            const totalAmount = requests.reduce((sum, r) => sum + (r.reportRequest?.cost?.totalCost || 0), 0);
+
+            statsGrid.innerHTML = `
         <div class="stat-card">
             <div class="stat-header">
                 <span class="stat-label">En attente</span>
@@ -4128,13 +4085,13 @@ function displayReportRequestsStats(requests) {
             <div class="stat-value">${formatPrice(totalAmount)} FCFA</div>
         </div>
     `;
-}
+        }
 
-function renderReportRequestsTable(requests) {
-    const tbody = document.getElementById('report-requests-body');
+        function renderReportRequestsTable(requests) {
+            const tbody = document.getElementById('report-requests-body');
 
-    if (requests.length === 0) {
-        tbody.innerHTML = `
+            if (requests.length === 0) {
+                tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center" style="padding:3rem;">
                     <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
@@ -4142,14 +4099,14 @@ function renderReportRequestsTable(requests) {
                 </td>
             </tr>
         `;
-        return;
-    }
+                return;
+            }
 
-    tbody.innerHTML = requests.map(req => {
-        const request = req.reportRequest;
-        const passenger = req.passengers[0];
-        
-        return `
+            tbody.innerHTML = requests.map(req => {
+                const request = req.reportRequest;
+                const passenger = req.passengers[0];
+
+                return `
             <tr>
                 <td><strong class="font-mono">${req.bookingNumber}</strong></td>
                 <td>
@@ -4191,83 +4148,83 @@ function renderReportRequestsTable(requests) {
                 </td>
             </tr>
         `;
-    }).join('');
-}
-
-// Valider une demande de report
-async function approveReportRequest(bookingNumber) {
-    const confirmed = await showAdminConfirm({
-        title: "Valider cette demande de report ?",
-        message: `Avez-vous bien reçu le paiement pour la réservation ${bookingNumber} ?\n\nCette action va créer une nouvelle réservation et libérer les anciens sièges.`,
-        icon: '✅',
-        iconClass: 'success',
-        confirmText: 'Oui, valider'
-    });
-
-    if (!confirmed) return;
-
-    // Demander la preuve de transaction
-    const transactionProof = prompt('Entrez la référence de la transaction (ID Mobile Money ou autre) :');
-    if (!transactionProof || transactionProof.trim() === '') {
-        showNotification('Preuve de transaction requise', 'warning');
-        return;
-    }
-
-    try {
-        const data = await apiCall(
-            `/admin/report-requests/${bookingNumber}/approve`,
-            'POST',
-            { transactionProof: transactionProof.trim() }
-        );
-
-        if (data && data.success) {
-            showNotification(`✅ Report validé ! Nouveau billet : ${data.newBookingNumber}`, 'success');
-            loadReportRequests(); // Recharger la liste
+            }).join('');
         }
 
-    } catch (error) {
-        console.error('❌ Erreur validation report:', error);
-        showNotification('Erreur lors de la validation', 'error');
-    }
-}
+        // Valider une demande de report
+        async function approveReportRequest(bookingNumber) {
+            const confirmed = await showAdminConfirm({
+                title: "Valider cette demande de report ?",
+                message: `Avez-vous bien reçu le paiement pour la réservation ${bookingNumber} ?\n\nCette action va créer une nouvelle réservation et libérer les anciens sièges.`,
+                icon: '✅',
+                iconClass: 'success',
+                confirmText: 'Oui, valider'
+            });
 
-// Rejeter une demande de report
-async function rejectReportRequest(bookingNumber) {
-    const confirmed = await showAdminConfirm({
-        title: "Rejeter cette demande ?",
-        message: `Voulez-vous vraiment rejeter la demande de report pour ${bookingNumber} ?\n\nLa réservation reviendra à son état initial.`,
-        icon: '❌',
-        iconClass: 'danger',
-        confirmText: 'Oui, rejeter',
-        confirmClass: 'btn-danger'
-    });
+            if (!confirmed) return;
 
-    if (!confirmed) return;
+            // Demander la preuve de transaction
+            const transactionProof = prompt('Entrez la référence de la transaction (ID Mobile Money ou autre) :');
+            if (!transactionProof || transactionProof.trim() === '') {
+                showNotification('Preuve de transaction requise', 'warning');
+                return;
+            }
 
-    try {
-        const data = await apiCall(`/admin/report-requests/${bookingNumber}`, 'DELETE');
+            try {
+                const data = await apiCall(
+                    `/admin/report-requests/${bookingNumber}/approve`,
+                    'POST',
+                    { transactionProof: transactionProof.trim() }
+                );
 
-        if (data && data.success) {
-            showNotification('Demande rejetée', 'success');
-            loadReportRequests();
+                if (data && data.success) {
+                    showNotification(`✅ Report validé ! Nouveau billet : ${data.newBookingNumber}`, 'success');
+                    loadReportRequests(); // Recharger la liste
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur validation report:', error);
+                showNotification('Erreur lors de la validation', 'error');
+            }
         }
 
-    } catch (error) {
-        console.error('❌ Erreur rejet demande:', error);
-        showNotification('Erreur lors du rejet', 'error');
-    }
-}
+        // Rejeter une demande de report
+        async function rejectReportRequest(bookingNumber) {
+            const confirmed = await showAdminConfirm({
+                title: "Rejeter cette demande ?",
+                message: `Voulez-vous vraiment rejeter la demande de report pour ${bookingNumber} ?\n\nLa réservation reviendra à son état initial.`,
+                icon: '❌',
+                iconClass: 'danger',
+                confirmText: 'Oui, rejeter',
+                confirmClass: 'btn-danger'
+            });
 
-// Afficher les détails d'une demande
-function showReportRequestDetails(bookingNumber) {
-    // TODO: Afficher une modale avec tous les détails
-    showNotification('Fonctionnalité en cours de développement', 'info');
-}
+            if (!confirmed) return;
 
-// Fonction helper pour formater les prix
-function formatPrice(amount) {
-    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
+            try {
+                const data = await apiCall(`/admin/report-requests/${bookingNumber}`, 'DELETE');
+
+                if (data && data.success) {
+                    showNotification('Demande rejetée', 'success');
+                    loadReportRequests();
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur rejet demande:', error);
+                showNotification('Erreur lors du rejet', 'error');
+            }
+        }
+
+        // Afficher les détails d'une demande
+        function showReportRequestDetails(bookingNumber) {
+            // TODO: Afficher une modale avec tous les détails
+            showNotification('Fonctionnalité en cours de développement', 'info');
+        }
+
+        // Fonction helper pour formater les prix
+        function formatPrice(amount) {
+            return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
 
 
     </script>
