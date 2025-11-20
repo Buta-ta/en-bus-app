@@ -868,6 +868,94 @@ h3 {
     border-bottom: none;
 }
 
+
+
+
+
+/* DANS style.css ou index.html <style> */
+
+/* ======================================================= */
+/* == BADGE PROMOTIONNEL "RUBAN" (DESIGN CAPTIVANT)       == */
+/* ======================================================= */
+
+.highlight-badge {
+    position: absolute;
+    top: -4px; /* Positionnement vertical initial */
+    left: -4px; /* Positionnement horizontal initial */
+    z-index: 10;
+    
+    padding: 10px; /* Espace intérieur */
+    width: 140px; /* Largeur fixe pour un meilleur contrôle */
+    
+    background: #e53935; /* Couleur de base pour les promos personnalisées */
+    color: white;
+    
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    
+    /* Effets visuels */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    
+    /* On s'assure que les enfants (pseudo-éléments) se positionnent par rapport au badge */
+    position: relative; 
+    
+    /* On utilise `clip-path` pour créer la forme de flèche/ruban */
+    clip-path: polygon(0% 0%, 100% 0%, 85% 50%, 100% 100%, 0% 100%);
+    
+    transition: transform 0.2s ease-out;
+}
+
+.highlight-badge:hover {
+    transform: scale(1.05); /* Effet de grossissement au survol */
+}
+
+/* Pseudo-élément pour créer l'effet d'épaisseur ou de "pli" en dessous */
+.highlight-badge::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -8px; /* Décale le triangle vers le bas */
+    z-index: -1; /* Se place en dessous du badge principal */
+    
+    /* Création du triangle avec les bordures */
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent; /* Bordure transparente */
+    border-left: 8px solid; /* La couleur sera héritée */
+    border-bottom: 0 solid transparent;
+}
+
+
+/* --- Styles spécifiques pour chaque type de badge --- */
+
+/* Badge par défaut (Promo) */
+.highlight-badge:not(.cheapest):not(.fastest) {
+    background: linear-gradient(45deg, #ff6f00, #ffca28);
+}
+.highlight-badge:not(.cheapest):not(.fastest)::after {
+    border-left-color: #c77000; /* Ombre plus foncée pour le pli */
+}
+
+/* Badge "Le Moins Cher" */
+.highlight-badge.cheapest {
+    background: linear-gradient(45deg, #00c853, #64dd17);
+}
+.highlight-badge.cheapest::after {
+    border-left-color: #008731; /* Ombre plus foncée pour le pli */
+}
+
+/* Badge "Le Plus Rapide" */
+.highlight-badge.fastest {
+    background: linear-gradient(45deg, #2962ff, #448aff);
+}
+.highlight-badge.fastest::after {
+    border-left-color: #0d47a1; /* Ombre plus foncée pour le pli */
+}
+
 /* ============================================
    🚌 SÉLECTION DE SIÈGES - DESIGN MODERNE IMMERSIF
    ============================================ */
