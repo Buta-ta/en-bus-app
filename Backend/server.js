@@ -1104,7 +1104,17 @@ app.post(
     body("busIdentifier").optional().isString().trim().escape(),
     body('highlightBadge').optional().isString().trim().escape()
   ],
+
+
+
   async (req, res) => {
+
+    // ✅ LOGS DE DEBUG AU TOUT DÉBUT
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🚌 REQUÊTE REÇUE : POST /api/admin/trips");
+    console.log("📦 Body complet:", JSON.stringify(req.body, null, 2));
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
