@@ -401,22 +401,6 @@ h3 {
   gap: var(--space-16); 
 }
 
-.bus-card { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: stretch; 
-  gap: var(--space-20); 
-   position: relative; /* ✅ LA CORRECTION EST ICI */
-   overflow: visible; 
-
-
-   background-color: rgba(var(--color-surface-rgb), 0.82);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.35);
-  margin-bottom: var(--space-16); 
-}
 
 
 /* ✅ NOUVELLE CLASSE POUR LE LAYOUT FLEX */
@@ -2814,6 +2798,99 @@ body.pwa-installed textarea {
 }
 
 
+
+/* DANS style.css */
+
+/* ================================================== */
+/* == CORRECTION CARTE DE BUS (BADGE + RESPONSIVE) == */
+/* ================================================== */
+
+/* 1. La carte parente ne gère que le fond, la bordure et le positionnement */
+.bus-card {
+  position: relative; /* CONTEXTE pour le badge */
+  overflow: visible;  /* PERMET au badge de déborder */
+
+  /* Styles de la carte (fond, bordure, etc.) */
+  background-color: rgba(var(--color-surface-rgb), 0.82);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.35);
+  transition: all var(--duration-normal);
+}
+
+.bus-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-glow-hover);
+}
+
+/* 2. Le conteneur intérieur gère la mise en page FLEX */
+.bus-card-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: var(--space-20);
+  width: 100%;
+}
+
+/* 3. Les styles pour les sections internes (main et pricing) */
+.bus-card-main { 
+  flex-grow: 1; 
+  display: flex; 
+  flex-direction: column; 
+  gap: var(--space-12); 
+}
+
+.bus-card-pricing { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-end; 
+  justify-content: center; 
+  flex-shrink: 0; 
+  padding-left: var(--space-20); 
+  border-left: 1px solid var(--color-border); 
+}
+
+/* --- RÈGLES RESPONSIVES (dans votre @media) --- */
+
+@media (max-width: 768px) {
+  
+  /* On ajuste le padding de la carte parente */
+  .bus-card {
+    padding: 16px;
+  }
+
+  /* ✅ C'EST ICI QUE LE BUG RESPONSIVE EST CORRIGÉ */
+  /* Sur mobile, on dit au conteneur flex de passer en colonne */
+  .bus-card-wrapper {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* On adapte les sections internes pour l'affichage en colonne */
+  .bus-card-main,
+  .bus-card-pricing {
+    width: 100%;
+    padding: 0;
+    border: none;
+  }
+  
+  .bus-card-pricing {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+  
+  .bus-price {
+    margin-bottom: 0;
+  }
+
+  /* ... vos autres règles mobiles ... */
+}
+
+
 /* ============================================
    📱 RESPONSIVE MOBILE - CORRECTIONS
    ============================================ */
@@ -2951,12 +3028,7 @@ body.pwa-installed textarea {
         padding: 20px;
     }
     
-    /* Résultats de recherche mobile */
-    .bus-card {
-        flex-direction: column;
-        gap: 16px;
-        padding: 16px;
-    }
+    
     
     .bus-card-main,
     .bus-card-pricing {
@@ -3265,10 +3337,7 @@ body.pwa-installed textarea {
 
 
 
-    .bus-card {
-        /* On ne change plus la direction de la carte elle-même */
-        padding: 16px;
-    }
+    
     
     /* ✅ C'EST CETTE RÈGLE QUI CORRIGE LE BUG RESPONSIVE */
     .bus-card-content-wrapper {
@@ -3328,9 +3397,6 @@ body.pwa-installed textarea {
         font-size: 14px;
     }
     
-    .bus-card {
-        padding: 12px;
-    }
     
     .bus-card-time {
         font-size: 16px;
@@ -3352,6 +3418,11 @@ body.pwa-installed textarea {
         gap: 4px;
     }
 }
+
+
+
+
+
 
 
 

@@ -2262,14 +2262,13 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-        // ✅ CORRECTION DÉFINITIVE DE LA STRUCTURE HTML
-       // ✅ CORRECTION FINALE : On utilise des classes CSS, pas de style en ligne.
+       // ✅ CORRECTION FINALE : On utilise la nouvelle structure avec la classe CSS
         return `
             <div class="bus-card">
                 <!-- Le badge s'ancre à .bus-card -->
                 ${badgeHTML}
 
-                <!-- On utilise notre nouvelle classe CSS pour gérer le layout flex -->
+                <!-- Le wrapper intérieur gère le layout flex -->
                 <div class="bus-card-wrapper">
                     
                     <div class="bus-card-main">
@@ -2290,6 +2289,7 @@ function displayResults(results, isReturn = false) {
                             </div>
                         </div>
                     </div>
+
                     <div class="bus-card-pricing">
                         <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
                         <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
@@ -2299,6 +2299,7 @@ function displayResults(results, isReturn = false) {
             </div>
         `;
     }).join("");
+
 
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
