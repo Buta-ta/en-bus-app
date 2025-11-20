@@ -1618,6 +1618,62 @@
                             <span>Réservations</span>
                         </a>
                     </li>
+
+
+                    <!-- TAB: Demandes de report -->
+<div id="tab-report-requests" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Demandes de report</h1>
+        <p class="page-subtitle">
+            Validez les demandes de report après vérification du paiement
+        </p>
+    </div>
+
+    <!-- Stats -->
+    <div id="report-stats-grid" class="stats-grid">
+        <!-- Généré dynamiquement -->
+    </div>
+
+    <!-- Table -->
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Demandes en attente</h2>
+            <button class="btn btn-secondary" onclick="loadReportRequests()">
+                🔄 Actualiser
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° Réservation</th>
+                        <th>Passager</th>
+                        <th>Trajet actuel</th>
+                        <th>Nouveau trajet</th>
+                        <th>Montant à payer</th>
+                        <th>Demandé le</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="report-requests-body">
+                    <!-- Généré dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+                      <!-- ✅ NOUVEL ONGLET DEMANDES DE REPORT -->
+        <li class="nav-item">
+            <a href="#" class="nav-link" data-tab="report-requests">
+                <span class="nav-icon">🔄</span>
+                <span>Demandes de report</span>
+            </a>
+        </li>
+
+
+
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-tab="trips">
                             <span class="nav-icon">🗓️</span>
@@ -3329,6 +3385,10 @@ async function deleteTrip(tripId) {
                     // L'appel à loadAdminData va automatiquement lancer les chronomètres via renderTable
                     loadAdminData();
                     break;
+                            case 'report-requests':  // ✅ NOUVEAU
+            loadReportRequests();
+                        break;
+
                 case 'trips':
                     loadAllTemplates().then(loadAllTrips);
                     break;
@@ -3986,6 +4046,191 @@ function setupEventListeners() {
                 document.addEventListener('keydown', keydownHandler);
             });
         }
+
+
+
+        // ============================================
+// 🔄 GESTION DES DEMANDES DE REPORT
+// ============================================
+
+async function loadReportRequests() {
+    try {
+        const data = await apiCall('/admin/report-requests');
+        if (!data) return;
+
+        console.log(`📋 ${data.count} demande(s) de report chargée(s)`);
+
+        displayReportRequestsStats(data.requests);
+        renderReportRequestsTable(data.requests);
+
+    } catch (error) {
+        console.error('❌ Erreur chargement demandes report:', error);
+        showNotification('Erreur lors du chargement des demandes', 'error');
+    }
+}
+
+function displayReportRequestsStats(requests) {
+    const statsGrid = document.getElementById('report-stats-grid');
+    
+    const pending = requests.filter(r => r.status === 'En attente de report').length;
+    const totalAmount = requests.reduce((sum, r) => sum + (r.reportRequest?.cost?.totalCost || 0), 0);
+
+    statsGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">En attente</span>
+                <div class="stat-icon warning">⏳</div>
+            </div>
+            <div class="stat-value">${pending}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Total à encaisser</span>
+                <div class="stat-icon primary">💰</div>
+            </div>
+            <div class="stat-value">${formatPrice(totalAmount)} FCFA</div>
+        </div>
+    `;
+}
+
+function renderReportRequestsTable(requests) {
+    const tbody = document.getElementById('report-requests-body');
+
+    if (requests.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center" style="padding:3rem;">
+                    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+                    <div style="color:var(--text-muted);font-weight:600;">Aucune demande en attente</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = requests.map(req => {
+        const request = req.reportRequest;
+        const passenger = req.passengers[0];
+        
+        return `
+            <tr>
+                <td><strong class="font-mono">${req.bookingNumber}</strong></td>
+                <td>
+                    <div class="font-bold">${passenger.name}</div>
+                    <div class="text-xs text-muted">${passenger.phone}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${req.route.from} → ${req.route.to}</div>
+                    <div class="text-xs text-muted">📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${request.targetTrip.route.from} → ${request.targetTrip.route.to}</div>
+                    <div class="text-xs text-muted">📅 ${new Date(request.targetTrip.date).toLocaleDateString('fr-FR')}</div>
+                </td>
+                <td>
+                    <div class="font-bold" style="color: var(--primary);">${formatPrice(request.cost.totalCost)} FCFA</div>
+                    <div class="text-xs text-muted">
+                        Frais: ${formatPrice(request.cost.reportFee)} | 
+                        Diff: ${formatPrice(request.cost.priceDifference)}
+                    </div>
+                </td>
+                <td class="text-xs">${new Date(request.requestedAt).toLocaleString('fr-FR')}</td>
+                <td class="actions-cell">
+                    <button class="btn btn-icon btn-success" 
+                            onclick="approveReportRequest('${req.bookingNumber}')" 
+                            title="Valider le report">
+                        ✅
+                    </button>
+                    <button class="btn btn-icon btn-danger" 
+                            onclick="rejectReportRequest('${req.bookingNumber}')" 
+                            title="Rejeter la demande">
+                        ❌
+                    </button>
+                    <button class="btn btn-icon btn-ghost" 
+                            onclick="showReportRequestDetails('${req.bookingNumber}')" 
+                            title="Détails">
+                        📋
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Valider une demande de report
+async function approveReportRequest(bookingNumber) {
+    const confirmed = await showAdminConfirm({
+        title: "Valider cette demande de report ?",
+        message: `Avez-vous bien reçu le paiement pour la réservation ${bookingNumber} ?\n\nCette action va créer une nouvelle réservation et libérer les anciens sièges.`,
+        icon: '✅',
+        iconClass: 'success',
+        confirmText: 'Oui, valider'
+    });
+
+    if (!confirmed) return;
+
+    // Demander la preuve de transaction
+    const transactionProof = prompt('Entrez la référence de la transaction (ID Mobile Money ou autre) :');
+    if (!transactionProof || transactionProof.trim() === '') {
+        showNotification('Preuve de transaction requise', 'warning');
+        return;
+    }
+
+    try {
+        const data = await apiCall(
+            `/admin/report-requests/${bookingNumber}/approve`,
+            'POST',
+            { transactionProof: transactionProof.trim() }
+        );
+
+        if (data && data.success) {
+            showNotification(`✅ Report validé ! Nouveau billet : ${data.newBookingNumber}`, 'success');
+            loadReportRequests(); // Recharger la liste
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur validation report:', error);
+        showNotification('Erreur lors de la validation', 'error');
+    }
+}
+
+// Rejeter une demande de report
+async function rejectReportRequest(bookingNumber) {
+    const confirmed = await showAdminConfirm({
+        title: "Rejeter cette demande ?",
+        message: `Voulez-vous vraiment rejeter la demande de report pour ${bookingNumber} ?\n\nLa réservation reviendra à son état initial.`,
+        icon: '❌',
+        iconClass: 'danger',
+        confirmText: 'Oui, rejeter',
+        confirmClass: 'btn-danger'
+    });
+
+    if (!confirmed) return;
+
+    try {
+        const data = await apiCall(`/admin/report-requests/${bookingNumber}`, 'DELETE');
+
+        if (data && data.success) {
+            showNotification('Demande rejetée', 'success');
+            loadReportRequests();
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur rejet demande:', error);
+        showNotification('Erreur lors du rejet', 'error');
+    }
+}
+
+// Afficher les détails d'une demande
+function showReportRequestDetails(bookingNumber) {
+    // TODO: Afficher une modale avec tous les détails
+    showNotification('Fonctionnalité en cours de développement', 'info');
+}
+
+// Fonction helper pour formater les prix
+function formatPrice(amount) {
+    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
 
 
     </script>
