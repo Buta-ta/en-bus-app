@@ -2264,9 +2264,49 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-        // ✅ CORRECTION DÉFINITIVE : LA LIGNE MANQUANTE EST RÉINSÉRÉE ICI
-        const tripDetailsHTML = ''; 
+          // ✅ CORRECTION DÉFINITIVE : ON CONSTRUIT tripDetailsHTML
+        // =============================================================
+        let tripDetailsHTML = '';
+
+        // Si le trajet a des arrêts
+        if (route.stops && route.stops.length > 0) {
+            tripDetailsHTML += `
+                <div class="bus-card-trip-details">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg>
+                    <span>Arrêts prévus : </span>
+                    <strong class="bus-card-stops" title="${route.stops.map(s => `${s.city} (${s.duration})`).join(', ')}">
+                        ${route.stops.length} arrêt(s)
+                    </strong>
+                </div>
+            `;
+        }
         
+        // Si le trajet a des correspondances
+        if (route.connections && route.connections.length > 0) {
+            tripDetailsHTML += `
+                <div class="bus-card-trip-details">
+                    <svg viewBox="0 0 24 24"><path d="m20.5 10 .5-2-3-3-2 .5-3.5-3.5-3.53 3.53L7 5l-2-.5-3 3 .5 2L5 10l-2 2.5 2 2.5-2.5 2.5 3 3 2.5-2.5L10 19l2.5 2.5 2.5-2.5 2.5 2.5 3-3-2.5-2.5L19 14l2.5-2.5L19 9l1.5-1.5z"></path></svg>
+                    <span>Correspondance : </span>
+                    <strong class="bus-card-stops" title="Changement de bus à ${route.connections[0].at}">
+                        1 changement
+                    </strong>
+                </div>
+            `;
+        }
+
+        // Si c'est un trajet direct et sans détails
+        if (tripDetailsHTML === '') {
+             tripDetailsHTML = `
+                <div class="bus-card-trip-details">
+                    <svg viewBox="0 0 24 24"><path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"></path></svg>
+                    <span>Trajet direct</span>
+                </div>
+             `;
+        }
+        // =============================================================
+        // FIN DE LA CORRECTION
+        // =============================================================
+
         return `
             <div class="bus-card">
                 ${badgeHTML}
@@ -2282,7 +2322,10 @@ function displayResults(results, isReturn = false) {
                         </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
+                        
+                        <!-- La variable contient maintenant le bon HTML -->
                         ${tripDetailsHTML}
+
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
                             <div class="bus-seats">
