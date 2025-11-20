@@ -1693,103 +1693,102 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- TAB: Réservations -->
-            <div id="tab-reservations" class="tab-content active">
-                <div class="page-header">
-                    <h1 class="page-title">Réservations</h1>
-                    <p class="page-subtitle">
-                        Gérez toutes les réservations en temps réel
-                    </p>
-                </div>
-
-                <!-- TAB: Demandes de report -->
-                <!-- TAB: Demandes de report -->
-<div id="tab-report-requests" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title">Demandes de report</h1>
-        <p class="page-subtitle">
-            Validez les demandes de report après vérification du paiement
-        </p>
-    </div>
-
-    <!-- ✅ CETTE SECTION DOIT ÊTRE LÀ -->
-    <div id="report-stats-grid" class="stats-grid">
-        <!-- Généré dynamiquement -->
-    </div>
-
-    <!-- Table -->
-    <div class="content-card">
-        <div class="card-header">
-            <h2 class="card-title">Demandes en attente</h2>
-            <button class="btn btn-secondary" onclick="loadReportRequests()">
-                🔄 Actualiser
-            </button>
+            <!-- ============================================
+         1. ONGLET: Réservations
+         ============================================ -->
+    <div id="tab-reservations" class="tab-content active">
+        <div class="page-header">
+            <h1 class="page-title">Réservations</h1>
+            <p class="page-subtitle">
+                Gérez toutes les réservations en temps réel
+            </p>
         </div>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>N° Réservation</th>
-                        <th>Passager</th>
-                        <th>Trajet actuel</th>
-                        <th>Nouveau trajet</th>
-                        <th>Montant à payer</th>
-                        <th>Demandé le</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="report-requests-body">
-                    <!-- Généré dynamiquement -->
-                </tbody>
-            </table>
+        <!-- Stats -->
+        <div id="stats-grid" class="stats-grid">
+            <!-- Généré dynamiquement par JavaScript -->
         </div>
-    </div>
-</div>
 
-                <!-- Stats -->
-                <div id="stats-grid" class="stats-grid">
-                    <!-- Généré dynamiquement -->
-                </div>
-
-                <!-- Filters & Table -->
-                <div class="content-card">
-                    <div class="filters">
-                        <input type="text" id="search-input" class="form-control search-input"
-                            placeholder="🔍 Rechercher par N°, nom ou téléphone..." />
-                        <div class="filter-pills">
-                            <button class="filter-pill active" data-status="all">
-                                Tous
-                            </button>
-                            <button class="filter-pill" data-status="Confirmé">
-                                Confirmé
-                            </button>
-                            <button class="filter-pill" data-status="En attente de paiement">
-                                En attente
-                            </button>
-                            <button class="filter-pill" data-status="Annulé">Annulé</button>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>N° Réservation</th>
-                                    <th>Date Voyage</th>
-                                    <th>Trajet</th>
-                                    <th>Passager</th>
-                                    <th>Prix</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reservations-body">
-                                <!-- Généré dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Filters & Table -->
+        <div class="content-card">
+            <div class="filters">
+                <input type="text" id="search-input" class="form-control search-input"
+                    placeholder="🔍 Rechercher par N°, nom ou téléphone..." />
+                <div class="filter-pills">
+                    <button class="filter-pill active" data-status="all">Tous</button>
+                    <button class="filter-pill" data-status="Confirmé">Confirmé</button>
+                    <button class="filter-pill" data-status="En attente de paiement">En attente</button>
+                    <button class="filter-pill" data-status="Annulé">Annulé</button>
                 </div>
             </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Réservation</th>
+                            <th>Date Voyage</th>
+                            <th>Trajet</th>
+                            <th>Passager</th>
+                            <th>Prix</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservations-body">
+                        <!-- Généré dynamiquement par JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> <!-- Fin de l'onglet Réservations -->
+
+
+    <!-- ============================================
+         2. ONGLET: Demandes de report
+         ============================================ -->
+    <div id="tab-report-requests" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Demandes de report</h1>
+            <p class="page-subtitle">
+                Validez les demandes de report après vérification du paiement
+            </p>
+        </div>
+
+        <!-- Stats pour les reports -->
+        <div id="report-stats-grid" class="stats-grid">
+            <!-- Généré dynamiquement par JavaScript -->
+        </div>
+
+        <!-- Table des demandes -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Demandes en attente</h2>
+                <button class="btn btn-secondary" onclick="loadReportRequests()">
+                    🔄 Actualiser
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Réservation</th>
+                            <th>Passager</th>
+                            <th>Trajet actuel</th>
+                            <th>Nouveau trajet</th>
+                            <th>Montant à payer</th>
+                            <th>Demandé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-requests-body">
+                        <!-- Généré dynamiquement par JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> <!-- Fin de l'onglet Demandes de report -->
 
             <!-- TAB: Programmation -->
             <div id="tab-trips" class="tab-content">
