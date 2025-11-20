@@ -406,6 +406,7 @@ h3 {
   justify-content: space-between; 
   align-items: stretch; 
   gap: var(--space-20); 
+   position: relative; /* ✅ LA CORRECTION EST ICI */
 }
 
 .bus-card-main { 
