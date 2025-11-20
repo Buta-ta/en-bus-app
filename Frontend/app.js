@@ -2193,6 +2193,8 @@ window.resetFilters = function() {
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
+// DANS app.js (remplacez votre fonction displayResults)
+
 function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
@@ -2200,18 +2202,13 @@ function displayResults(results, isReturn = false) {
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
 
-    // 1. Appliquer les filtres pour obtenir la liste à afficher
-    // Si 'results' est déjà une liste filtrée, applyFiltersAndSort ne la modifiera pas.
-    // Si c'est la liste de base, elle sera filtrée.
     const displayedResults = applyFiltersAndSort();
     
-    // 2. Mettre à jour le résumé de la recherche
     const summaryText = isReturn
         ? `Sélectionnez votre <strong>RETOUR</strong> : <strong>${appState.currentSearch.destination}</strong> → <strong>${appState.currentSearch.origin}</strong> (${displayedResults.length} résultat(s))`
         : `Sélectionnez votre <strong>ALLER</strong> : <strong>${appState.currentSearch.origin}</strong> → <strong>${appState.currentSearch.destination}</strong> (${displayedResults.length} résultat(s))`;
     if(summary) summary.innerHTML = summaryText;
 
-    // 3. Peuplage dynamique du filtre par lieu de départ
     if (locationFilterSection && locationSelect) {
         const uniqueLocations = [...new Set(appState.currentResults.map(r => r.departureLocation).filter(Boolean))];
         
@@ -2227,17 +2224,14 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // 4. Logique d'attribution des badges "Moins Cher" et "Plus Rapide"
     let cheapestId = null;
     let fastestId = null;
 
     if (displayedResults.length > 1) {
-        // Trouver le moins cher parmi les résultats affichés
         const minPrice = Math.min(...displayedResults.map(r => r.price));
         const cheapestRoute = displayedResults.find(r => r.price === minPrice);
         if (cheapestRoute) cheapestId = cheapestRoute.id;
 
-        // Trouver le plus rapide (parmi les trajets directs affichés)
         const directTrips = displayedResults.filter(r => r.tripType === 'direct');
         if (directTrips.length > 0) {
             let minDuration = Infinity;
@@ -2251,7 +2245,6 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // 5. Affichage final des résultats
     if (displayedResults.length === 0) {
         resultsList.innerHTML = `
             <div class="no-results" style="text-align: center; padding: 48px;">
@@ -2265,13 +2258,9 @@ function displayResults(results, isReturn = false) {
 
     resultsList.innerHTML = displayedResults.map(route => {
         let badgeHTML = '';
-
-        // Priorité 1: Le badge personnalisé de l'admin
         if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        } 
-        // Priorité 2: Les badges automatiques (un seul par carte max)
-        else if (route.id === cheapestId) {
+        } else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">💰 Le Moins Cher</div>`;
         } else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">🚀 Le Plus Rapide</div>`;
@@ -2281,13 +2270,17 @@ function displayResults(results, isReturn = false) {
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
         let tripDetailsHTML = '';
-        if(route.tripType === "direct") { /* ... */ }
-        else if (route.stops && route.stops.length > 0) { /* ... */ }
 
+        // ✅ CORRECTION DÉFINITIVE CI-DESSOUS
         return `
-            <div class="bus-card" style="position: relative;"> <!-- Important: position: relative -->
+            <div class="bus-card">
+                <!-- Le conteneur principal reste un "flex-container" sans position relative -->
+
+                <!-- Le badge est placé en premier -->
                 ${badgeHTML}
-                <div class="bus-card-main">
+
+                <!-- Le premier enfant flex, qui devient le point d'ancrage -->
+                <div class="bus-card-main" style="position: relative;">
                     <div class="bus-card-time">
                         <span>${route.departure}</span>
                         <div class="bus-card-duration">
@@ -2306,6 +2299,8 @@ function displayResults(results, isReturn = false) {
                         </div>
                     </div>
                 </div>
+
+                <!-- Le deuxième enfant flex -->
                 <div class="bus-card-pricing">
                     <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
                     <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
@@ -2314,7 +2309,6 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 
-    // La légende des équipements
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
         let legendHTML = "";
