@@ -2195,6 +2195,7 @@ window.resetFilters = function() {
 
 // DANS app.js (remplacez votre fonction displayResults)
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
+// DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
 function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
