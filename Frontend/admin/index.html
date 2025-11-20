@@ -2879,8 +2879,8 @@ function renderTripsTable() {
 
         // On prépare le bouton de suppression
         const deleteButtonHTML = canBeDeleted
-            ? `<button class="btn btn-icon btn-danger" data-action="delete" data-trip-id="${trip._id}" title="Supprimer le voyage">🗑️</button>`
-            : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
+    ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
+    : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
 
         // On retourne la ligne complète du tableau
         return `
@@ -2910,28 +2910,17 @@ function renderTripsTable() {
                     </div>
                     ${occupiedSeats > 0 ? `<div class="text-xs" style="color:var(--status-confirmed);margin-top:4px;">✅ ${occupiedSeats} réservé(s)</div>` : ""}
                 </td>
-                <td>
-                    <div class="actions-cell">
-                        <!-- ======================================================= -->
-                        <!-- == LA CORRECTION EST ICI : on remplace 'onclick' par 'data-action' == -->
-                        <!-- ======================================================= -->
+                // Autour de la ligne 1256-1262
 
-                        <!-- AVANT (ce que vous aviez) : <button onclick="manageSeats(...)"> -->
-                        <!-- MAINTENANT : -->
-                        <button class="btn btn-icon btn-ghost" data-action="manage-seats" data-trip-id="${trip._id}" title="Gérer sièges">💺</button>
-
-                        <!-- AVANT : <button onclick="showEditTripModal(...)"> -->
-                        <!-- MAINTENANT : -->
-                        <button class="btn btn-icon btn-ghost" data-action="edit-trip" data-trip-id="${trip._id}" title="Modifier le voyage">✏️</button>
-
-                        <!-- AVANT : <button onclick="resetTripSeats(...)"> -->
-                        <!-- MAINTENANT : -->
-                        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" data-action="reset-seats" data-trip-id="${trip._id}" title="Réinitialiser tous les sièges">🔄</button>
-                        
-                        <!-- Le bouton de suppression utilise maintenant aussi data-action -->
-                        ${deleteButtonHTML}
-                    </div>
-                </td>
+<td>
+    <div class="actions-cell">
+        <!-- ✅ CORRECTION : Retour aux onclick directs pour plus de fiabilité -->
+        <button class="btn btn-icon btn-ghost" onclick="manageSeats('${trip._id}')" title="Gérer sièges">💺</button>
+        <button class="btn btn-icon btn-ghost" onclick="showEditTripModal('${trip._id}')" title="Modifier le voyage">✏️</button>
+        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges">🔄</button>
+        ${deleteButtonHTML}
+    </div>
+</td>
             </tr>
         `;
     }).join("");
