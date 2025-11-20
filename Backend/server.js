@@ -833,92 +833,6 @@ app.patch(
   }
 );
 
-app.patch(
-  "/api/admin/reservations/:id/:action",
-  authenticateToken,
-  async (req, res) => {
-    const { id, action } = req.params;
-    if (!ObjectId.isValid(id))
-      return res.status(400).json({ error: "ID invalide" });
-    try {
-      const reservation = await reservationsCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      if (!reservation)
-        return res.status(404).json({ error: "Réservation introuvable." });
-      if (action === "confirm-payment") {
-        if (reservation.status !== "En attente de paiement")
-          return res.status(400).json({ error: "Pas en attente de paiement." });
-        const { transactionProof } = req.body;
-        if (!transactionProof || transactionProof.trim() === "")
-          return res
-            .status(400)
-            .json({ error: "Preuve de transaction requise" });
-        await reservationsCollection.updateOne(
-          { _id: reservation._id },
-          {
-            $set: {
-              status: "Confirmé",
-              confirmedAt: new Date(),
-              paymentDetails: {
-                method: reservation.paymentMethod,
-                customerPhone: reservation.customerPhone,
-                transactionProof: transactionProof.trim(),
-                confirmedByAdmin: req.user.username,
-                confirmedAt: new Date(),
-              },
-            },
-          }
-        );
-        const updatedReservation = await reservationsCollection.findOne({
-          _id: reservation._id,
-        });
-        sendConfirmationEmail(updatedReservation);
-        return res.json({ success: true, message: "Paiement confirmé !" });
-      }
-      if (action === "cancel") {
-        if (reservation.status === "Annulé" || reservation.status === "Expiré")
-          return res.status(400).json({ error: "Déjà annulée ou expirée." });
-        await tripsCollection.updateOne(
-          { _id: new ObjectId(reservation.route.id) },
-          { $set: { "seats.$[elem].status": "available" } },
-          {
-            arrayFilters: [
-              {
-                "elem.number": {
-                  $in: reservation.seats.map((s) => parseInt(s)),
-                },
-              },
-            ],
-          }
-        );
-        if (reservation.returnRoute)
-          await tripsCollection.updateOne(
-            { _id: new ObjectId(reservation.returnRoute.id) },
-            { $set: { "seats.$[elem].status": "available" } },
-            {
-              arrayFilters: [
-                {
-                  "elem.number": {
-                    $in: reservation.returnSeats.map((s) => parseInt(s)),
-                  },
-                },
-              ],
-            }
-          );
-        await reservationsCollection.updateOne(
-          { _id: reservation._id },
-          { $set: { status: "Annulé", cancelledAt: new Date() } }
-        );
-        return res.json({ success: true, message: "Réservation annulée." });
-      }
-      return res.status(400).json({ error: "Action invalide." });
-    } catch (error) {
-      console.error(`❌ Erreur action ${action}:`, error);
-      res.status(500).json({ error: "Erreur serveur." });
-    }
-  }
-);
 
 app.patch(
   "/api/admin/reservations/:id/seats",
@@ -1086,6 +1000,96 @@ app.patch(
     }
   }
 );
+
+
+
+app.patch(
+  "/api/admin/reservations/:id/:action",
+  authenticateToken,
+  async (req, res) => {
+    const { id, action } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).json({ error: "ID invalide" });
+    try {
+      const reservation = await reservationsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!reservation)
+        return res.status(404).json({ error: "Réservation introuvable." });
+      if (action === "confirm-payment") {
+        if (reservation.status !== "En attente de paiement")
+          return res.status(400).json({ error: "Pas en attente de paiement." });
+        const { transactionProof } = req.body;
+        if (!transactionProof || transactionProof.trim() === "")
+          return res
+            .status(400)
+            .json({ error: "Preuve de transaction requise" });
+        await reservationsCollection.updateOne(
+          { _id: reservation._id },
+          {
+            $set: {
+              status: "Confirmé",
+              confirmedAt: new Date(),
+              paymentDetails: {
+                method: reservation.paymentMethod,
+                customerPhone: reservation.customerPhone,
+                transactionProof: transactionProof.trim(),
+                confirmedByAdmin: req.user.username,
+                confirmedAt: new Date(),
+              },
+            },
+          }
+        );
+        const updatedReservation = await reservationsCollection.findOne({
+          _id: reservation._id,
+        });
+        sendConfirmationEmail(updatedReservation);
+        return res.json({ success: true, message: "Paiement confirmé !" });
+      }
+      if (action === "cancel") {
+        if (reservation.status === "Annulé" || reservation.status === "Expiré")
+          return res.status(400).json({ error: "Déjà annulée ou expirée." });
+        await tripsCollection.updateOne(
+          { _id: new ObjectId(reservation.route.id) },
+          { $set: { "seats.$[elem].status": "available" } },
+          {
+            arrayFilters: [
+              {
+                "elem.number": {
+                  $in: reservation.seats.map((s) => parseInt(s)),
+                },
+              },
+            ],
+          }
+        );
+        if (reservation.returnRoute)
+          await tripsCollection.updateOne(
+            { _id: new ObjectId(reservation.returnRoute.id) },
+            { $set: { "seats.$[elem].status": "available" } },
+            {
+              arrayFilters: [
+                {
+                  "elem.number": {
+                    $in: reservation.returnSeats.map((s) => parseInt(s)),
+                  },
+                },
+              ],
+            }
+          );
+        await reservationsCollection.updateOne(
+          { _id: reservation._id },
+          { $set: { status: "Annulé", cancelledAt: new Date() } }
+        );
+        return res.json({ success: true, message: "Réservation annulée." });
+      }
+      return res.status(400).json({ error: "Action invalide." });
+    } catch (error) {
+      console.error(`❌ Erreur action ${action}:`, error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
 // ============================================
 // --- PAIEMENT MTN, EMAILS, CRON, WEBSOCKET, DÉMARRAGE ---
 // ============================================
