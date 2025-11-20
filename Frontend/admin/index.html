@@ -1646,49 +1646,49 @@
     <div id="dashboard" class="dashboard">
         <!-- Sidebar -->
         <aside class="sidebar">
-    <div class="sidebar-header">
-        <div class="sidebar-logo">En-Bus</div>
-    </div>
+            <div class="sidebar-header">
+                <div class="sidebar-logo">En-Bus</div>
+            </div>
 
-    <nav>
-        <ul class="sidebar-nav">
-            <li class="nav-item">
-                <a href="#" class="nav-link active" data-tab="reservations">
-                    <span class="nav-icon">📋</span>
-                    <span>Réservations</span>
-                </a>
-            </li>
-            
-            <!-- ✅ AJOUTER SEULEMENT LE LIEN ICI -->
-            <li class="nav-item">
-                <a href="#" class="nav-link" data-tab="report-requests">
-                    <span class="nav-icon">🔄</span>
-                    <span>Demandes de report</span>
-                </a>
-            </li>
-            
-            <li class="nav-item">
-                <a href="#" class="nav-link" data-tab="trips">
-                    <span class="nav-icon">🗓️</span>
-                    <span>Programmation</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link" data-tab="templates">
-                    <span class="nav-icon">🛣️</span>
-                    <span>Modèles de trajets</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
-    
-    <div class="sidebar-footer">
-        <button id="logout-btn" class="btn btn-logout">
-            <span>🚪</span>
-            Déconnexion
-        </button>
-    </div>
-</aside>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-tab="reservations">
+                            <span class="nav-icon">📋</span>
+                            <span>Réservations</span>
+                        </a>
+                    </li>
+
+                    <!-- ✅ AJOUTER SEULEMENT LE LIEN ICI -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="report-requests">
+                            <span class="nav-icon">🔄</span>
+                            <span>Demandes de report</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="trips">
+                            <span class="nav-icon">🗓️</span>
+                            <span>Programmation</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="templates">
+                            <span class="nav-icon">🛣️</span>
+                            <span>Modèles de trajets</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn btn-logout">
+                    <span>🚪</span>
+                    Déconnexion
+                </button>
+            </div>
+        </aside>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -1700,6 +1700,15 @@
                         Gérez toutes les réservations en temps réel
                     </p>
                 </div>
+
+                <!-- TAB: Demandes de report -->
+                <div id="tab-report-requests" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">Demandes de report</h1>
+                        <!-- ... -->
+                    </div>
+                </div>
+
 
                 <!-- Stats -->
                 <div id="stats-grid" class="stats-grid">
