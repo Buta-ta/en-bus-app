@@ -862,9 +862,6 @@ function stopAgencyCountdown() {
 
 // Dans app.js
 // Dans app.js
-// Dans app.js
-// Dans app.js
-// Dans app.js
 
 function canPayAtAgency() {
     console.group("🔍 DEBUG : canPayAtAgency - NOUVELLE VERSION");
@@ -919,6 +916,80 @@ function getNearestAgency(cityName) {
     }
     
     return agency;
+}
+
+
+
+
+// DANS app.js (AJOUTEZ ce bloc, ne remplacez rien pour l'instant)
+
+// ===================================================================
+// == DÉCOMPTEUR SPÉCIFIQUE AU PAIEMENT EN AGENCE (ISOLÉ ET SÛR)
+// ===================================================================
+
+// Variable dédiée uniquement au décompteur de l'agence
+let agencySpecificCountdown = null;
+
+/**
+ * Démarre le décompteur de 10h pour l'option agence.
+ */
+function startAgencySpecificCountdown() {
+    // Nettoyage de sécurité
+    if (agencySpecificCountdown) {
+        clearInterval(agencySpecificCountdown);
+    }
+
+    // Cibles HTML
+    const subtitleElement = document.getElementById('agency-payment-subtitle');
+    const deadlineInputElement = document.getElementById('agency-deadline');
+
+    if (!subtitleElement || !deadlineInputElement) return;
+
+    // Calcul du délai de 10 heures
+    const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
+    
+    // Démarrage de la boucle de mise à jour
+    agencySpecificCountdown = setInterval(() => {
+        const now = new Date();
+        const timeLeft = deadline - now;
+
+        if (timeLeft <= 0) {
+            clearInterval(agencySpecificCountdown);
+            const expiredText = "Délai expiré";
+            subtitleElement.textContent = expiredText;
+            deadlineInputElement.value = expiredText;
+            return;
+        }
+
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        
+        const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+
+        subtitleElement.textContent = countdownText;
+        deadlineInputElement.value = fullDeadlineText;
+
+    }, 1000);
+}
+
+/**
+ * Arrête le décompteur de l'agence et réinitialise le texte.
+ */
+function stopAgencySpecificCountdown() {
+    if (agencySpecificCountdown) {
+        clearInterval(agencySpecificCountdown);
+        agencySpecificCountdown = null;
+    }
+    // On réinitialise le texte par défaut
+    const subtitleElement = document.getElementById('agency-payment-subtitle');
+    if (subtitleElement) {
+        subtitleElement.textContent = `⏰ Payez dans les ${CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS}h à l'agence`;
+    }
+    const deadlineInputElement = document.getElementById('agency-deadline');
+    if (deadlineInputElement) {
+        deadlineInputElement.value = "";
+    }
 }
 
 
@@ -1648,6 +1719,13 @@ function showPage(pageName) {
     if (pageName === "reservations") {
         displayReservations();
     }
+
+    // ✅ AJOUTEZ CETTE LIGNE - elle arrête le décompteur de l'agence
+    // si l'on quitte la page de paiement.
+    if (pageName !== "payment") {
+        stopAgencySpecificCountdown();
+    }
+
 }
 
 function populateCitySelects() {
@@ -1796,6 +1874,8 @@ function setupPassengerSelector() {
     updateDisplay();
 }
 
+// DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
+
 function setupPaymentMethodToggle() {
     const radios = document.querySelectorAll('input[name="payment"]');
     const mtnDetails = document.getElementById("mtn-details");
@@ -1806,6 +1886,7 @@ function setupPaymentMethodToggle() {
     
     radios.forEach(radio => {
         radio.addEventListener("change", () => {
+            // --- Votre code existant (INCHANGÉ) ---
             if (mtnDetails) mtnDetails.style.display = "none";
             if (airtelDetails) airtelDetails.style.display = "none";
             if (agencyDetails) agencyDetails.style.display = "none";
@@ -1816,17 +1897,15 @@ function setupPaymentMethodToggle() {
                 airtelDetails.style.display = "flex";
             } else if (radio.value === "agency" && radio.checked && agencyDetails) {
                 agencyDetails.style.display = "flex";
-
-                 // --- ✅ CORRECTION : AJOUT DE LA LOGIQUE DU DÉCOMPTEUR ---
-            
-            // Si l'utilisateur sélectionne "Paiement à l'agence", on démarre le décompteur.
-            if (radio.value === 'agency' && radio.checked) {
-                startAgencyCountdown();
-            } 
-            // Sinon (s'il choisit MTN ou Airtel), on arrête le décompteur.
-            else {
-                stopAgencyCountdown();
             }
+
+            // --- ✅ AJOUT DE LA LOGIQUE CIBLÉE ---
+            if (radio.value === 'agency' && radio.checked) {
+                // Si on sélectionne "Agence", on démarre SON décompteur.
+                startAgencySpecificCountdown();
+            } else {
+                // Si on sélectionne n'importe quelle autre option, on arrête le décompteur de l'agence.
+                stopAgencySpecificCountdown();
             }
         });
     });
