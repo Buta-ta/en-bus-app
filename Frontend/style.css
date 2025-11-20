@@ -821,6 +821,53 @@ h3 {
   font-weight: 600; 
 }
 
+
+
+/* DANS style.css ou dans la balise <style> de index.html */
+
+/* ======================================================= */
+/* == ACCORDÉON POUR DÉTAILS DU TRAJET                  == */
+/* ======================================================= */
+
+.trip-details-accordion {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+    border-radius: var(--radius-base);
+    padding: 4px 8px; /* Ajoute une petite zone cliquable */
+    margin: 4px -8px; /* Compense le padding pour l'alignement */
+}
+
+.trip-details-accordion:hover {
+    background-color: rgba(var(--color-accent-glow-rgb), 0.05);
+}
+
+.accordion-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+/* Quand l'accordéon est ouvert, on fait tourner l'icône */
+.accordion-header.open .accordion-icon {
+    transform: rotate(90deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding-top 0.4s ease-out;
+    padding-left: 26px; /* Pour aligner sous le texte, après l'icône */
+    font-size: 13px;
+}
+
+.accordion-content-item {
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--color-border);
+}
+.accordion-content-item:last-child {
+    border-bottom: none;
+}
+
 /* ============================================
    🚌 SÉLECTION DE SIÈGES - DESIGN MODERNE IMMERSIF
    ============================================ */

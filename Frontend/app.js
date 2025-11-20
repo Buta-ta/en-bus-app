@@ -2264,44 +2264,59 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-          // ✅ CORRECTION DÉFINITIVE : ON CONSTRUIT tripDetailsHTML
+        // =============================================================
+        // ✅ CORRECTION FINALE : ON CONSTRUIT tripDetailsHTML AVEC UN ACCORDÉON
         // =============================================================
         let tripDetailsHTML = '';
 
-        // Si le trajet a des arrêts
         if (route.stops && route.stops.length > 0) {
-            tripDetailsHTML += `
-                <div class="bus-card-trip-details">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg>
-                    <span>Arrêts prévus : </span>
-                    <strong class="bus-card-stops" title="${route.stops.map(s => `${s.city} (${s.duration})`).join(', ')}">
-                        ${route.stops.length} arrêt(s)
-                    </strong>
+            tripDetailsHTML = `
+                <div class="trip-details-accordion">
+                    <!-- 1. L'en-tête cliquable -->
+                    <div class="accordion-header" onclick="toggleTripDetails(this)">
+                        <span class="bus-card-trip-details">
+                            <span class="accordion-icon">▶</span>
+                            <span>Arrêts prévus : </span>
+                            <strong class="bus-card-stops">${route.stops.length} arrêt(s)</strong>
+                        </span>
+                    </div>
+                    <!-- 2. Le contenu dépliable (caché par défaut) -->
+                    <div class="accordion-content">
+                        ${route.stops.map(stop => `
+                            <div class="accordion-content-item">
+                                <strong>${stop.city}</strong> - Arrivée: ${stop.arrivalTime}, Départ: ${stop.departureTime} (${stop.duration})
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `;
-        }
-        
-        // Si le trajet a des correspondances
-        if (route.connections && route.connections.length > 0) {
-            tripDetailsHTML += `
-                <div class="bus-card-trip-details">
-                    <svg viewBox="0 0 24 24"><path d="m20.5 10 .5-2-3-3-2 .5-3.5-3.5-3.53 3.53L7 5l-2-.5-3 3 .5 2L5 10l-2 2.5 2 2.5-2.5 2.5 3 3 2.5-2.5L10 19l2.5 2.5 2.5-2.5 2.5 2.5 3-3-2.5-2.5L19 14l2.5-2.5L19 9l1.5-1.5z"></path></svg>
-                    <span>Correspondance : </span>
-                    <strong class="bus-card-stops" title="Changement de bus à ${route.connections[0].at}">
-                        1 changement
-                    </strong>
-                </div>
-            `;
-        }
-
-        // Si c'est un trajet direct et sans détails
-        if (tripDetailsHTML === '') {
+        } else if (route.connections && route.connections.length > 0) {
              tripDetailsHTML = `
+                <div class="trip-details-accordion">
+                    <div class="accordion-header" onclick="toggleTripDetails(this)">
+                         <span class="bus-card-trip-details">
+                            <span class="accordion-icon">▶</span>
+                            <span>Correspondance : </span>
+                            <strong class="bus-card-stops">1 changement</strong>
+                        </span>
+                    </div>
+                    <div class="accordion-content">
+                         ${route.connections.map(conn => `
+                            <div class="accordion-content-item">
+                                Changement à <strong>${conn.at}</strong> (Attente: ${conn.waitTime})<br>
+                                <small>Prochain bus: ${conn.nextCompany} (N°${conn.nextBusNumber || '?'}) à ${conn.nextDeparture}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            tripDetailsHTML = `
                 <div class="bus-card-trip-details">
-                    <svg viewBox="0 0 24 24"><path d="m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"></path></svg>
+                    ${Utils.getAmenityIcon('direct')}
                     <span>Trajet direct</span>
                 </div>
-             `;
+            `;
         }
         // =============================================================
         // FIN DE LA CORRECTION
@@ -2314,23 +2329,18 @@ function displayResults(results, isReturn = false) {
                     <div class="bus-card-main">
                         <div class="bus-card-time">
                             <span>${route.departure}</span>
-                            <div class="bus-card-duration">
-                                <span>→</span><br>
-                                ${route.duration || 'N/A'}
-                            </div>
+                            <div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div>
                             <span>${route.arrival}</span>
                         </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
                         
-                        <!-- La variable contient maintenant le bon HTML -->
+                        <!-- La variable contient maintenant l'accordéon -->
                         ${tripDetailsHTML}
 
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
-                            <div class="bus-seats">
-                                <strong>${route.availableSeats}</strong> sièges dispo.
-                            </div>
+                            <div class="bus-seats"><strong>${route.availableSeats}</strong> sièges dispo.</div>
                         </div>
                     </div>
                     <div class="bus-card-pricing">
@@ -2342,6 +2352,7 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 
+
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
         let legendHTML = "";
@@ -2352,6 +2363,31 @@ function displayResults(results, isReturn = false) {
     }
 }
 
+
+
+// DANS app.js (à ajouter avec vos autres fonctions)
+
+/**
+ * Gère l'ouverture et la fermeture d'un accordéon pour les détails de trajet.
+ * @param {HTMLElement} element - L'élément sur lequel on a cliqué.
+ */
+window.toggleTripDetails = function(element) {
+    // On trouve le panneau de contenu qui est juste après l'en-tête cliqué
+    const content = element.nextElementSibling;
+    
+    // On ajoute ou on enlève la classe 'open' sur l'en-tête
+    element.classList.toggle('open');
+    
+    if (content.style.maxHeight) {
+        // Si le panneau est ouvert (a un maxHeight), on le ferme
+        content.style.maxHeight = null;
+        content.style.paddingTop = null;
+    } else {
+        // Si le panneau est fermé, on l'ouvre en lui donnant la hauteur de son contenu
+        content.style.paddingTop = "10px";
+        content.style.maxHeight = content.scrollHeight + "px";
+    }
+}
     
 // Dans app.js
 window.selectBus = async function(busId) {
