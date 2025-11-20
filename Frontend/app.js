@@ -2262,35 +2262,46 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-       return `
-            <div class="bus-card" style="position: relative;"> <!-- Important: position: relative -->
+               // ✅ CORRECTION FINALE DE LA STRUCTURE HTML
+        return `
+            <div class="bus-card">
+                <!-- 1. Le badge est un enfant direct de .bus-card, qui a "position: relative" -->
                 ${badgeHTML}
-                <div class="bus-card-main">
-                    <div class="bus-card-time">
-                        <span>${route.departure}</span>
-                        <div class="bus-card-duration">
-                            <span>→</span><br>
-                            ${route.duration || 'N/A'}
+
+                <!-- 2. On crée un wrapper intérieur qui, lui, gère le layout flex -->
+                <div class="bus-card-wrapper">
+                    
+                    <!-- 3. Le contenu est à l'intérieur du wrapper flex -->
+                    <div class="bus-card-main">
+                        <div class="bus-card-time">
+                            <span>${route.departure}</span>
+                            <div class="bus-card-duration">
+                                <span>→</span><br>
+                                ${route.duration || 'N/A'}
+                            </div>
+                            <span>${route.arrival}</span>
                         </div>
-                        <span>${route.arrival}</span>
-                    </div>
-                    ${departureLocationHTML}
-                    <div class="bus-card-company">${route.company}</div>
-                    ${tripDetailsHTML}
-                    <div class="bus-card-details">
-                        <div class="bus-amenities">${amenitiesHTML}</div>
-                        <div class="bus-seats">
-                            <strong>${route.availableSeats}</strong> sièges dispo.
+                        ${departureLocationHTML}
+                        <div class="bus-card-company">${route.company}</div>
+                        ${tripDetailsHTML}
+                        <div class="bus-card-details">
+                            <div class="bus-amenities">${amenitiesHTML}</div>
+                            <div class="bus-seats">
+                                <strong>${route.availableSeats}</strong> sièges dispo.
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="bus-card-pricing">
-                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                    <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
+
+                    <div class="bus-card-pricing">
+                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                        <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
+                    </div>
+
                 </div>
             </div>
         `;
     }).join("");
+
 
 
     if (legendContainer) {
