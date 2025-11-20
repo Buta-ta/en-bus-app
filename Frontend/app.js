@@ -3501,6 +3501,11 @@ async function displayReservations() {
                             <!-- ✅ BOUTON DE SUIVI RÉINTÉGRÉ ICI -->
                             ${trackerIdentifier ? `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre le bus</a>` : ''}
 
+                            <!-- ✅ NOUVEAU BOUTON REPORTER -->
+        <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); border: none;">
+            🔄 Reporter ce voyage
+        </button>
+
                         ` : ''}
                         ${isPending ? `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Voir Instructions</button>` : ''}
                         ${isCancelled ? `<button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>` : ''}
@@ -3551,6 +3556,322 @@ async function viewPaymentInstructions(bookingNumber) {
         Utils.showToast(err.message, "error");
     }
 }
+
+
+
+
+
+// ============================================
+// 🔄 FONCTIONNALITÉ DE REPORT DE VOYAGE
+// ============================================
+
+window.initiateReport = async function(bookingNumber) {
+    console.log('🔄 Initiation du report pour:', bookingNumber);
+    
+    try {
+        // 1️⃣ Vérifier si le report est autorisé
+        Utils.showToast('Vérification des conditions de report...', 'info');
+        
+        const canReportResponse = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/can-report`
+        );
+        const canReportData = await canReportResponse.json();
+        
+        if (!canReportData.success || !canReportData.canReport) {
+            const reasons = canReportData.reasons?.join('\n') || 'Report non autorisé.';
+            Utils.showToast(reasons, 'error');
+            return;
+        }
+        
+        console.log('✅ Report autorisé. Nombre de reports:', canReportData.currentReportCount);
+        
+        // 2️⃣ Récupérer les voyages disponibles
+        Utils.showToast('Recherche des voyages disponibles...', 'info');
+        
+        const tripsResponse = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/available-trips`
+        );
+        const tripsData = await tripsResponse.json();
+        
+        if (!tripsData.success || tripsData.count === 0) {
+            Utils.showToast('Aucun voyage disponible pour le report pour le moment.', 'warning');
+            return;
+        }
+        
+        console.log(`✅ ${tripsData.count} voyage(s) disponible(s)`);
+        
+        // 3️⃣ Afficher la modale de sélection
+        displayReportModal(bookingNumber, tripsData.currentTrip, tripsData.availableTrips, canReportData.currentReportCount);
+        
+    } catch (error) {
+        console.error('❌ Erreur initiation report:', error);
+        Utils.showToast('Erreur lors de la vérification du report.', 'error');
+    }
+};
+
+// ============================================
+// 📋 AFFICHAGE DE LA MODALE DE REPORT
+// ============================================
+
+function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCount) {
+    const modalBody = document.getElementById('report-modal-body');
+    
+    // Construire le HTML
+    let html = `
+        <!-- Voyage actuel -->
+        <div class="report-current-trip">
+            <h3>📍 Votre voyage actuel</h3>
+            <div class="report-trip-info">
+                <div class="info-row">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">${Utils.formatDate(currentTrip.date)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Prix payé</span>
+                    <span class="info-value">${Utils.formatPrice(currentTrip.price)} FCFA</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Information sur le nombre de reports -->
+        <div class="report-warning">
+            ${reportCount === 0 
+                ? '✅ Premier report : <strong>GRATUIT</strong>' 
+                : `⚠️ Ceci sera votre report n°${reportCount + 1}. Des frais peuvent s'appliquer.`
+            }
+        </div>
+        
+        <!-- Liste des voyages disponibles -->
+        <h3 style="margin-top: var(--space-24); margin-bottom: var(--space-12); color: var(--color-accent-glow);">
+            Sélectionnez une nouvelle date
+        </h3>
+        
+        <div class="report-trips-list">
+    `;
+    
+    availableTrips.forEach(trip => {
+        const availabilityClass = trip.availableSeats < 10 ? 'low' : '';
+        const priceDiff = trip.route.price - currentTrip.price;
+        let priceDiffHTML = '';
+        let priceDiffClass = 'neutral';
+        
+        if (priceDiff > 0) {
+            priceDiffHTML = `+${Utils.formatPrice(priceDiff)} FCFA à payer`;
+            priceDiffClass = 'positive';
+        } else if (priceDiff < 0) {
+            priceDiffHTML = `${Utils.formatPrice(Math.abs(priceDiff))} FCFA de crédit`;
+            priceDiffClass = 'negative';
+        } else {
+            priceDiffHTML = 'Même prix';
+            priceDiffClass = 'neutral';
+        }
+        
+        html += `
+            <div class="report-trip-card" onclick="selectReportTrip('${trip.id}', '${bookingNumber}', ${reportCount})">
+                <div class="report-trip-header">
+                    <div class="report-trip-date">
+                        📅 ${Utils.formatDate(trip.date)}
+                    </div>
+                    <div class="report-trip-availability ${availabilityClass}">
+                        ${trip.availableSeats} place(s) restante(s)
+                    </div>
+                </div>
+                
+                <div class="report-trip-details">
+                    <div>🚌 ${trip.route.company}</div>
+                    <div>🕐 ${trip.route.departure} → ${trip.route.arrival}</div>
+                    <div>💰 ${Utils.formatPrice(trip.route.price)} FCFA</div>
+                </div>
+                
+                <div class="report-price-difference ${priceDiffClass}">
+                    ${priceDiffHTML}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        </div>
+        
+        <div class="report-actions">
+            <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
+        </div>
+    `;
+    
+    modalBody.innerHTML = html;
+    
+    // Afficher la modale
+    document.getElementById('report-modal').classList.add('active');
+}
+
+// ============================================
+// ✅ SÉLECTION D'UN VOYAGE POUR LE REPORT
+// ============================================
+
+window.selectReportTrip = async function(tripId, bookingNumber, currentReportCount) {
+    console.log('🎯 Voyage sélectionné:', tripId);
+    
+    // Marquer visuellement la sélection
+    document.querySelectorAll('.report-trip-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+    
+    try {
+        // Calculer le coût total du report
+        Utils.showToast('Calcul du coût...', 'info');
+        
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/calculate-report-cost`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newTripId: tripId })
+            }
+        );
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur lors du calcul');
+        }
+        
+        console.log('💰 Calcul du coût:', data.calculation);
+        
+        // Afficher le récapitulatif
+        displayReportSummary(bookingNumber, tripId, data.calculation, currentReportCount);
+        
+    } catch (error) {
+        console.error('❌ Erreur calcul coût:', error);
+        Utils.showToast(error.message, 'error');
+    }
+};
+
+// ============================================
+// 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT
+// ============================================
+
+function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
+    const modalBody = document.getElementById('report-modal-body');
+    
+    let summaryHTML = `
+        <div class="report-summary">
+            <h3>📊 Récapitulatif du report</h3>
+            
+            <div class="report-summary-line">
+                <span>Prix actuel</span>
+                <strong>${Utils.formatPrice(calculation.currentPrice)} FCFA</strong>
+            </div>
+            
+            <div class="report-summary-line">
+                <span>Prix nouveau voyage</span>
+                <strong>${Utils.formatPrice(calculation.newPrice)} FCFA</strong>
+            </div>
+            
+            <div class="report-summary-line">
+                <span>Différence de prix</span>
+                <strong style="color: ${calculation.priceDifference >= 0 ? '#ff9800' : 'var(--color-accent-glow)'}">
+                    ${calculation.priceDifference >= 0 ? '+' : ''}${Utils.formatPrice(calculation.priceDifference)} FCFA
+                </strong>
+            </div>
+            
+            <div class="report-summary-line">
+                <span>Frais de report (${reportCount + 1}${reportCount === 0 ? 'er' : 'ème'})</span>
+                <strong>${calculation.reportFee === 0 ? 'GRATUIT' : Utils.formatPrice(calculation.reportFee) + ' FCFA'}</strong>
+            </div>
+            
+            <div class="report-summary-line total">
+                <span>TOTAL ${calculation.isPaymentRequired ? 'À PAYER' : calculation.isCreditGenerated ? 'CRÉDIT GÉNÉRÉ' : ''}</span>
+                <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong>
+            </div>
+            
+            ${calculation.isCreditGenerated ? `
+                <div class="report-warning" style="margin-top: var(--space-16); background: rgba(115, 215, 0, 0.1); border-color: var(--color-accent-glow); color: var(--color-accent-glow);">
+                    💰 Un crédit de ${Utils.formatPrice(calculation.creditAmount)} FCFA sera ajouté à votre compte.
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="report-actions">
+            <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired})">
+                ${calculation.isPaymentRequired ? '💳 Payer et Confirmer' : '✅ Confirmer le report'}
+            </button>
+        </div>
+    `;
+    
+    // Ajouter le récapitulatif en bas de la modale
+    const existingSummary = modalBody.querySelector('.report-summary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+    
+    const existingActions = modalBody.querySelector('.report-actions');
+    if (existingActions) {
+        existingActions.remove();
+    }
+    
+    modalBody.insertAdjacentHTML('beforeend', summaryHTML);
+}
+
+// ============================================
+// ✅ CONFIRMATION DU REPORT
+// ============================================
+
+window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired) {
+    console.log('✅ Confirmation du report...');
+    
+    // Si paiement requis, rediriger vers la page de paiement
+    if (isPaymentRequired) {
+        // TODO: Implémenter la page de paiement pour la différence
+        Utils.showToast('Fonctionnalité de paiement en cours de développement...', 'info');
+        return;
+    }
+    
+    try {
+        Utils.showToast('Confirmation en cours...', 'info');
+        
+        const response = await fetch(
+            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/confirm-report`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newTripId: tripId })
+            }
+        );
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur lors de la confirmation');
+        }
+        
+        console.log('✅ Report confirmé:', data);
+        
+        // Ajouter le nouveau numéro de réservation à l'historique local
+        addBookingToLocalHistory(data.newBookingNumber);
+        
+        Utils.showToast('✅ Voyage reporté avec succès !', 'success');
+        
+        closeReportModal();
+        
+        // Rafraîchir la liste des réservations
+        displayReservations();
+        
+    } catch (error) {
+        console.error('❌ Erreur confirmation report:', error);
+        Utils.showToast(error.message, 'error');
+    }
+};
+
+// ============================================
+// 🚪 FERMETURE DE LA MODALE
+// ============================================
+
+window.closeReportModal = function() {
+    document.getElementById('report-modal').classList.remove('active');
+};
+
 
 
 // DANS app.js, AJOUTEZ CETTE FONCTION
