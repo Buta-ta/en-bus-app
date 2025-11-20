@@ -904,6 +904,226 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
   }
 );
 
+
+
+// ============================================
+// 👨‍💼 ROUTES ADMIN - GESTION DES DEMANDES DE REPORT
+// ============================================
+
+// Obtenir toutes les demandes de report en attente
+app.get("/api/admin/report-requests", authenticateToken, async (req, res) => {
+  try {
+    const requests = await reservationsCollection.find({
+      status: "En attente de report"
+    }).sort({ 'reportRequest.requestedAt': -1 }).toArray();
+    
+    console.log(`📋 ${requests.length} demande(s) de report trouvée(s)`);
+    
+    res.json({
+      success: true,
+      count: requests.length,
+      requests: requests
+    });
+    
+  } catch (error) {
+    console.error("❌ Erreur récupération demandes report:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+});
+
+// Valider une demande de report (après paiement vérifié)
+app.post("/api/admin/report-requests/:bookingNumber/approve",
+  authenticateToken,
+  [body('transactionProof').notEmpty().withMessage("Preuve de paiement requise")],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    try {
+      const { bookingNumber } = req.params;
+      const { transactionProof } = req.body;
+      
+      console.log(`✅ Validation de la demande de report pour ${bookingNumber}`);
+      
+      // 1. Récupérer la réservation avec demande
+      const reservation = await reservationsCollection.findOne({ 
+        bookingNumber,
+        status: "En attente de report"
+      });
+      
+      if (!reservation || !reservation.reportRequest) {
+        return res.status(404).json({ error: "Demande de report introuvable." });
+      }
+      
+      const request = reservation.reportRequest;
+      const newTripId = request.targetTrip.id;
+      const newSeats = request.targetTrip.seats;
+      
+      // 2. Vérifier que le voyage cible existe toujours
+      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
+      if (!newTrip) {
+        return res.status(404).json({ error: "Le voyage cible n'existe plus." });
+      }
+      
+      // 3. Vérifier que les sièges sont toujours disponibles
+      const unavailable = newTrip.seats.filter(
+        s => newSeats.includes(s.number) && s.status !== 'available'
+      );
+      
+      if (unavailable.length > 0) {
+        return res.status(409).json({ 
+          error: `Les sièges ${unavailable.map(s => s.number).join(', ')} ne sont plus disponibles. Veuillez annuler cette demande.` 
+        });
+      }
+      
+      // 4. Libérer les sièges de l'ancien voyage
+      const oldTripId = reservation.route.id;
+      const oldSeats = reservation.seats.map(s => parseInt(s));
+      
+      await tripsCollection.updateOne(
+        { _id: new ObjectId(oldTripId) },
+        { $set: { "seats.$[elem].status": "available" } },
+        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+      );
+      
+      // 5. Réserver les sièges du nouveau voyage
+      await tripsCollection.updateOne(
+        { _id: newTrip._id },
+        { $set: { "seats.$[elem].status": "occupied" } },
+        { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+      );
+      
+      // 6. Marquer l'ancienne réservation comme "Reporté"
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        { 
+          $set: { 
+            status: "Reporté",
+            reportedAt: new Date(),
+            'reportRequest.approvedAt': new Date(),
+            'reportRequest.approvedBy': req.user.username,
+            'reportRequest.transactionProof': transactionProof
+          }
+        }
+      );
+      
+      // 7. Créer la nouvelle réservation
+      const newBookingNumber = generateBookingNumber();
+      const reportCount = reservation.reportCount || 0;
+      
+      const newReservation = {
+        ...reservation,
+        _id: new ObjectId(),
+        bookingNumber: newBookingNumber,
+        route: {
+          ...newTrip.route,
+          id: newTrip._id.toString()
+        },
+        date: newTrip.date,
+        seats: newSeats,
+        passengers: reservation.passengers.map((p, i) => ({
+          ...p,
+          seat: newSeats[i]
+        })),
+        totalPriceNumeric: request.targetTrip.route.price * reservation.passengers.length,
+        totalPrice: `${(request.targetTrip.route.price * reservation.passengers.length).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+        status: "Confirmé",
+        reportCount: reportCount + 1,
+        originalReservation: reservation._id.toString(),
+        reportHistory: [
+          ...(reservation.reportHistory || []),
+          {
+            from: {
+              date: reservation.date,
+              tripId: oldTripId,
+              seats: oldSeats
+            },
+            to: {
+              date: newTrip.date,
+              tripId: newTrip._id.toString(),
+              seats: newSeats
+            },
+            reportedAt: new Date(),
+            reportFee: request.cost.reportFee,
+            priceDifference: request.cost.priceDifference,
+            totalCost: request.cost.totalCost,
+            initiatedBy: "client",
+            approvedBy: req.user.username,
+            transactionProof: transactionProof
+          }
+        ],
+        createdAt: new Date()
+      };
+      
+      delete newReservation.reportedAt;
+      delete newReservation.replacementReservation;
+      delete newReservation.reportRequest;
+      
+      await reservationsCollection.insertOne(newReservation);
+      
+      // 8. Lier les deux réservations
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        { $set: { replacementReservation: newReservation._id.toString() } }
+      );
+      
+      console.log(`✅✅ Report validé par admin: ${newBookingNumber}`);
+      
+      // TODO: Envoyer un email au client avec le nouveau billet
+      
+      res.json({
+        success: true,
+        message: "Demande de report validée avec succès.",
+        oldBookingNumber: bookingNumber,
+        newBookingNumber: newBookingNumber
+      });
+      
+    } catch (error) {
+      console.error("❌ Erreur validation report:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
+// Rejeter une demande de report
+app.delete("/api/admin/report-requests/:bookingNumber",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { bookingNumber } = req.params;
+      
+      const result = await reservationsCollection.updateOne(
+        { bookingNumber, status: "En attente de report" },
+        { 
+          $set: { 
+            status: "Confirmé", // Retour à l'état initial
+            'reportRequest.rejectedAt': new Date(),
+            'reportRequest.rejectedBy': req.user.username
+          }
+        }
+      );
+      
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ error: "Demande introuvable." });
+      }
+      
+      console.log(`❌ Demande de report rejetée pour ${bookingNumber}`);
+      
+      res.json({
+        success: true,
+        message: "Demande de report rejetée."
+      });
+      
+    } catch (error) {
+      console.error("❌ Erreur rejet demande:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
+
 // === ROUTES ADMIN (protégées) ===
 // ============================================
 app.post(
