@@ -2197,6 +2197,8 @@ window.resetFilters = function() {
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
+// DANS app.js (remplacez votre fonction displayResults)
+
 function displayResults(results, isReturn = false) {
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
@@ -2262,16 +2264,13 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-               // ✅ CORRECTION FINALE DE LA STRUCTURE HTML
+        // ✅ CORRECTION DÉFINITIVE : LA LIGNE MANQUANTE EST RÉINSÉRÉE ICI
+        const tripDetailsHTML = ''; 
+        
         return `
             <div class="bus-card">
-                <!-- 1. Le badge est un enfant direct de .bus-card, qui a "position: relative" -->
                 ${badgeHTML}
-
-                <!-- 2. On crée un wrapper intérieur qui, lui, gère le layout flex -->
                 <div class="bus-card-wrapper">
-                    
-                    <!-- 3. Le contenu est à l'intérieur du wrapper flex -->
                     <div class="bus-card-main">
                         <div class="bus-card-time">
                             <span>${route.departure}</span>
@@ -2291,18 +2290,14 @@ function displayResults(results, isReturn = false) {
                             </div>
                         </div>
                     </div>
-
                     <div class="bus-card-pricing">
                         <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
                         <button class="btn btn-primary" onclick="selectBus('${route.id}')">Sélectionner</button>
                     </div>
-
                 </div>
             </div>
         `;
     }).join("");
-
-
 
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
@@ -2313,6 +2308,8 @@ function displayResults(results, isReturn = false) {
         legendContainer.innerHTML = legendHTML;
     }
 }
+
+    
 // Dans app.js
 window.selectBus = async function(busId) {
     console.log('🚌 Sélection du bus ID :', busId);
