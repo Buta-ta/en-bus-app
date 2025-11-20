@@ -4155,6 +4155,99 @@ body.pwa-installed textarea {
 }
 
 
+/* ============================================
+   🪟 STYLES MODALES (GLOBAL)
+   ============================================ */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 14, 39, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-dialog {
+    background: var(--color-surface, #1a1f36);
+    border: 1px solid var(--color-border, #2a3256);
+    border-radius: 16px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--color-border, #2a3256);
+    background: rgba(115, 215, 0, 0.05);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-accent-glow, #73d700);
+    margin: 0;
+}
+
+.modal-close {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--color-surface, #1a1f36);
+    border-radius: 8px;
+    color: var(--color-text-secondary, #b0bac9);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid var(--color-border, #2a3256);
+}
+
+.modal-close:hover {
+    background: rgba(239, 83, 80, 0.1);
+    color: #ef5350;
+    transform: rotate(90deg);
+    border-color: #ef5350;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+}
+
+
+
 /* Correction orientation flèche mobile */
 @media (max-width: 768px) {
     
