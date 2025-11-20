@@ -2758,7 +2758,22 @@ async function performAction(reservationId, action) {
 
      // DANS Admin/index.html, REMPLACEZ la fonction closeModal
 
+// Nouvelle fonction "maîtresse" pour tout fermer
+function closeAllModals() {
+    document.getElementById('details-modal').classList.remove('active');
+    document.getElementById('input-modal').style.display = 'none'; // Assurez-vous que les deux sont gérées
+    
+    // Une méthode encore plus générique si vous ajoutez d'autres modales plus tard :
+    // document.querySelectorAll('.custom-modal-overlay').forEach(modal => {
+    //     modal.style.display = 'none';
+    //     modal.classList.remove('active');
+    // });
+}
 
+// L'ancienne fonction closeModal appelle maintenant la nouvelle
+function closeModal() {
+    closeAllModals();
+}
       // ============================================
       // 🗺️ MODÈLES
       // ============================================
@@ -3938,38 +3953,9 @@ async function resetTripSeats(tripId) {
 }
 
 
-    // DANS admin/index.html (à l'intérieur de la balise <script>)
+      // DANS Admin/index.html, dans <script>
 
-// ========================================================
-// == SYSTÈME DE GESTION DES MODALES (VERSION FINALE ET CORRIGÉE)
-// ========================================================
-
-/**
- * Fonction "maîtresse" qui ferme TOUTES les modales de l'admin.
- * C'est la seule fonction qui doit modifier la visibilité des modales.
- */
-function closeAllAdminModals() {
-    document.getElementById('details-modal').classList.remove('active');
-    document.getElementById('admin-confirm-modal').classList.remove('active');
-    document.getElementById('input-modal').classList.remove('active');
-}
-
-/**
- * Fonction simple appelée par les boutons "X" ou les overlays pour fermer les modales.
- * Elle délègue simplement à la fonction maîtresse.
- */
-function closeModal() {
-    closeAllAdminModals();
-}
-
-/**
- * Affiche la modale de CONFIRMATION de manière sécurisée.
- * @returns {Promise<boolean>} Une promesse qui se résout à `true` si confirmé, `false` si annulé.
- */
-function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', confirmClass = 'btn-danger' }) {
-    // 1. On s'assure que la page est "propre" en fermant tout avant d'ouvrir.
-    closeAllAdminModals();
-    
+function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
     return new Promise((resolve) => {
         const modal = document.getElementById('admin-confirm-modal');
         const titleEl = document.getElementById('admin-confirm-title');
@@ -3978,40 +3964,33 @@ function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warnin
         const okBtn = document.getElementById('admin-confirm-ok-btn');
         const cancelBtn = document.getElementById('admin-confirm-cancel-btn');
 
-        // 2. On remplit la modale avec les informations fournies.
         titleEl.textContent = title;
         messageEl.textContent = message;
         iconEl.textContent = icon;
         iconEl.className = `custom-modal-icon ${iconClass}`;
         okBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
         okBtn.className = `btn ${confirmClass}`;
-        
-        // 3. On affiche la modale en ajoutant la classe .active.
-        modal.classList.add('active');
 
-        // 4. On prépare les fonctions de fermeture qui résoudront la promesse.
-        const handleResult = (result) => {
-            closeAllAdminModals(); // On ferme la modale quel que soit le choix.
-            // On nettoie les écouteurs pour éviter les clics fantômes futurs.
+        modal.style.display = 'flex';
+
+        const close = (result) => {
+            modal.style.display = 'none';
             okBtn.onclick = null;
             cancelBtn.onclick = null;
-            resolve(result); // On renvoie 'true' ou 'false'.
+            resolve(result);
         };
 
-        // 5. On attache les événements aux boutons.
-        okBtn.onclick = () => handleResult(true);
-        cancelBtn.onclick = () => handleResult(false);
+        okBtn.onclick = () => close(true);
+        cancelBtn.onclick = () => close(false);
     });
 }
 
-/**
- * Affiche la modale de SAISIE de manière sécurisée.
- * @returns {Promise<string|null>} Une promesse qui se résout avec le texte saisi, ou `null` si annulé.
- */
-function showAdminInputModal({ title, message, icon = '📝', iconClass = 'info', label, placeholder = '', confirmText = 'Valider' }) {
-    // 1. On ferme tout avant d'ouvrir.
-    closeAllAdminModals();
 
+
+// DANS Admin/index.html, dans <script>
+
+function showAdminInputModal({ title, message, icon = '📝', iconClass = 'info', label, placeholder, confirmText = 'Valider' }) {
     return new Promise((resolve) => {
         const modal = document.getElementById('input-modal');
         const titleEl = document.getElementById('input-modal-title');
@@ -4022,31 +4001,39 @@ function showAdminInputModal({ title, message, icon = '📝', iconClass = 'info'
         const errorEl = document.getElementById('input-modal-error');
         const okBtn = document.getElementById('input-modal-ok-btn');
         const cancelBtn = document.getElementById('input-modal-cancel-btn');
-        
-        // 2. On remplit et réinitialise la modale.
+
+        // Remplir les éléments de la modale
         titleEl.textContent = title;
         messageEl.textContent = message;
         iconEl.textContent = icon;
         iconEl.className = `custom-modal-icon ${iconClass}`;
         labelEl.textContent = label;
-        inputEl.placeholder = placeholder;
+        inputEl.placeholder = placeholder || '';
         okBtn.textContent = confirmText;
+        
+        // Réinitialiser les champs
         inputEl.value = '';
         errorEl.style.display = 'none';
-
-        // 3. On affiche la modale et on met le focus sur le champ de saisie.
-        modal.classList.add('active');
+        
+        modal.style.display = 'flex';
         inputEl.focus();
 
-        // 4. On prépare les fonctions de fermeture.
-        const handleResult = (value) => {
-            closeAllAdminModals();
+        const close = (value) => {
+            modal.style.display = 'none';
             okBtn.onclick = null;
             cancelBtn.onclick = null;
-            resolve(value); // Renvoie le texte ou null.
+            document.removeEventListener('keydown', keydownHandler);
+            resolve(value); // Renvoie la valeur saisie ou null
+        };
+        
+        const keydownHandler = (e) => {
+            if (e.key === 'Enter') {
+                okBtn.click();
+            } else if (e.key === 'Escape') {
+                cancelBtn.click();
+            }
         };
 
-        // 5. On attache les événements.
         okBtn.onclick = () => {
             const value = inputEl.value.trim();
             if (!value) {
@@ -4054,12 +4041,14 @@ function showAdminInputModal({ title, message, icon = '📝', iconClass = 'info'
                 errorEl.style.display = 'block';
                 return;
             }
-            handleResult(value);
+            close(value);
         };
-        cancelBtn.onclick = () => handleResult(null);
+
+        cancelBtn.onclick = () => close(null); // Renvoie null si annulé
+        
+        document.addEventListener('keydown', keydownHandler);
     });
 }
-
 
 
     </script>
