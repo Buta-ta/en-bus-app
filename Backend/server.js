@@ -101,11 +101,14 @@ function generateBookingNumber() {
 // ============================================
 const resend = new Resend(process.env.RESEND_API_KEY);
 console.log("✅ Service email prêt.");
+
 const dbClient = new MongoClient(process.env.MONGODB_URI);
+
+// ✅ DÉCLARATION CORRECTE (virgules entre chaque variable, point-virgule à la fin)
 let reservationsCollection,
   positionsCollection,
   tripsCollection,
-  routeTemplatesCollection;
+  routeTemplatesCollection,
   systemSettingsCollection;
 
 async function connectToDb() {
@@ -116,8 +119,7 @@ async function connectToDb() {
     positionsCollection = database.collection("positions");
     tripsCollection = database.collection("trips");
     routeTemplatesCollection = database.collection("route_templates");
-    systemSettingsCollection = database.collection("system_settings"); // ✅ AJOUT
-
+    systemSettingsCollection = database.collection("system_settings");
 
     await tripsCollection.createIndex({
       date: 1,
@@ -150,7 +152,6 @@ async function connectToDb() {
     process.exit(1);
   }
 }
-
 // ============================================
 // 🔐 MIDDLEWARE
 // ============================================
