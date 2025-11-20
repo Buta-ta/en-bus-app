@@ -3255,6 +3255,7 @@ function renderTripsTable() {
         // DANS admin/index.html, dans la balise <script>
 
         async function deleteTrip(tripId) {
+            console.log("🔴 deleteTrip appelée avec tripId:", tripId); // ✅ 
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
                 showNotification("Erreur : Le voyage est introuvable.", "error");
