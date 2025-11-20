@@ -408,6 +408,24 @@ h3 {
   gap: var(--space-20); 
    position: relative; /* ✅ LA CORRECTION EST ICI */
    overflow: visible; 
+
+
+   background-color: rgba(var(--color-surface-rgb), 0.82);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.35);
+  margin-bottom: var(--space-16); 
+}
+
+
+/* ✅ NOUVELLE CLASSE POUR LE LAYOUT FLEX */
+.bus-card-content-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: var(--space-20);
+  width: 100%;
 }
 
 .bus-card-main { 
@@ -444,6 +462,15 @@ h3 {
   margin-top: auto; 
   padding-top: var(--space-12); 
   border-top: 1px solid var(--color-border); 
+}
+
+
+
+.bus-card-wrapper {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: stretch; 
+  gap: var(--space-20);
 }
 
 /* ============================================
@@ -3235,6 +3262,41 @@ body.pwa-installed textarea {
     .modal-footer .btn {
         width: 100%;
     }
+
+
+
+    .bus-card {
+        /* On ne change plus la direction de la carte elle-même */
+        padding: 16px;
+    }
+    
+    /* ✅ C'EST CETTE RÈGLE QUI CORRIGE LE BUG RESPONSIVE */
+    .bus-card-content-wrapper {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ✅ C'EST CETTE RÈGLE QUI CORRIGE LE RESPONSIVE */
+    .bus-card-wrapper {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .bus-card-pricing {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border);
+        width: 100%;
+        border-left: none; /* Annule la bordure verticale sur mobile */
+        padding-left: 0;
+    }
+
+    .bus-price {
+        margin-bottom: 0;
+    }
+
 }
 
 /* Très petits écrans (< 480px) */
@@ -3650,6 +3712,11 @@ body.pwa-installed textarea {
     box-shadow: 0 0 15px rgba(244, 67, 54, 0.4);
 }
 
+
+/* --- DANS VOS MEDIA QUERIES --- */
+
+
+    
 
 
 /* Amélioration du touch sur mobile */

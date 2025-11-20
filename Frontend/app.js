@@ -2262,19 +2262,15 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">📍 Départ : ${route.departureLocation}</div>` : '';
         
-        // ✅ CORRECTION DÉFINITIVE DE LA STRUCTURE HTML
+        // ✅ CORRECTION FINALE : On utilise des classes CSS, pas de style en ligne.
         return `
-            <div class="bus-card" style="position: relative;">
-                <!-- ÉTAPE 1: Le conteneur principal .bus-card a maintenant la position relative -->
-                <!-- Il n'est plus un conteneur flex direct pour le contenu -->
-
-                <!-- ÉTAPE 2: Le badge est un enfant direct et va s'ancrer à .bus-card -->
+            <div class="bus-card">
+                <!-- Le badge s'ancre à .bus-card -->
                 ${badgeHTML}
 
-                <!-- ÉTAPE 3: On crée un conteneur INTÉRIEUR pour le layout flex -->
-                <div style="display: flex; width: 100%; justify-content: space-between; align-items: stretch; gap: var(--space-20);">
+                <!-- On utilise notre nouvelle classe CSS pour gérer le layout flex -->
+                <div class="bus-card-wrapper">
                     
-                    <!-- Le contenu est maintenant à l'intérieur de ce conteneur flex -->
                     <div class="bus-card-main">
                         <div class="bus-card-time">
                             <span>${route.departure}</span>
@@ -2302,6 +2298,7 @@ function displayResults(results, isReturn = false) {
             </div>
         `;
     }).join("");
+
 
     if (legendContainer) {
         const amenityLabels = { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Climatisation", pause: "Pause", direct: "Direct" };
