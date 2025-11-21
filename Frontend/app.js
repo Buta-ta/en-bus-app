@@ -3250,56 +3250,74 @@ window.confirmBooking = async function(buttonElement) {
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
 // ============================================
 // DANS app.js, REMPLACEZ LA FONCTION displayConfirmation
-
-// DANS app.js, REMPLACEZ l'ancienne fonction displayConfirmation par celle-ci
+// ============================================
+// 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION (CORRIGÉE)
+// ============================================
 
 async function displayConfirmation(reservation) {
     console.log("🎟️ Affichage de la confirmation pour:", reservation.bookingNumber);
 
-    // --- Cible les conteneurs principaux ---
+    // 1. Cibles DOM
     const outboundSection = document.getElementById('outbound-ticket-section');
     const returnSection = document.getElementById('return-ticket-section');
     const actionsContainer = document.getElementById('confirmation-actions-container');
-
-    // --- Nettoyage initial pour éviter les duplications ---
-    outboundSection.innerHTML = '';
-    returnSection.innerHTML = '';
-    returnSection.style.display = 'none';
-    actionsContainer.innerHTML = '';
     
-    // Nettoie les anciens messages d'avertissement de paiement
-    const oldWarnings = document.querySelectorAll('.info-card-warning.payment-notice');
-    oldWarnings.forEach(el => el.remove());
-
-    // --- Mise à jour des titres et du numéro de réservation commun ---
+    // Éléments de titre
     const confirmationTitle = document.querySelector('#confirmation-page .confirmation-title');
     const confirmationSubtitle = document.querySelector('#confirmation-page .confirmation-subtitle');
     const bookingNumberDisplay = document.getElementById('booking-number-display');
     const statusBadge = document.querySelector('#confirmation-page .status-badge');
 
+    // 2. Nettoyage
+    outboundSection.innerHTML = '<div class="loading-spinner">Chargement du billet...</div>';
+    returnSection.innerHTML = '';
+    returnSection.style.display = 'none';
+    actionsContainer.innerHTML = '';
+    document.querySelectorAll('.info-card-warning.payment-notice').forEach(el => el.remove());
+
+    // 3. Mise à jour infos de base
     bookingNumberDisplay.textContent = reservation.bookingNumber;
 
-    // --- Fonction helper pour générer le HTML d'un billet (Aller ou Retour) ---
+    // 4. Cas "En attente"
+    if (reservation.status === 'En attente de paiement') {
+        confirmationTitle.textContent = "Finalisez votre paiement";
+        confirmationSubtitle.textContent = "Votre réservation est enregistrée mais en attente";
+        statusBadge.className = 'status-badge';
+        statusBadge.style.background = '#ff9800';
+        statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>En attente</span>`;
+        
+        outboundSection.innerHTML = ''; // Pas de billet
+        
+        const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
+        const instructionsHTML = `
+            <div class="info-card info-card-warning payment-notice" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
+                <div class="info-icon" style="font-size: 40px;">💳</div>
+                <div class="info-content">
+                    <h4>Paiement requis</h4>
+                    <p>Votre réservation est en attente. Veuillez payer avant le <strong>${deadline}</strong>.</p>
+                    <button class="btn btn-secondary" style="margin-top: 15px; width: auto;" onclick="viewPaymentInstructions('${reservation.bookingNumber}')">
+                        Voir les instructions
+                    </button>
+                </div>
+            </div>`;
+        
+        document.querySelector('.confirmation-card-modern').insertAdjacentHTML('afterbegin', instructionsHTML);
+        return; // On s'arrête là pour le cas "En attente"
+    }
+
+    // 5. Cas "Confirmé"
+    confirmationTitle.textContent = "Réservation confirmée !";
+    confirmationSubtitle.textContent = "Votre voyage est prêt. Bon voyage !";
+    statusBadge.className = 'status-badge status-confirmed';
+    statusBadge.style.background = '';
+    statusBadge.innerHTML = `<span class="status-icon">✓</span><span>Confirmé</span>`;
+
+    // --- Fonction Helper Génération Billet HTML ---
     const createTicketHTML = async (tripData, isReturn = false) => {
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
-        // On attend que la promesse du QR code soit résolue
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150).catch(err => {
-            console.error("Erreur génération QR Code:", err);
-            return ''; // Retourne une chaîne vide en cas d'erreur
-        });
-
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150).catch(err => '');
         const tripTypeLabel = isReturn ? "RETOUR" : "ALLER";
         const route = tripData.route;
-        const date = tripData.date;
-        const seats = tripData.seats;
-
-        // Sécurité : si une donnée est manquante, on affiche N/A
-        const from = route.from || 'N/A';
-        const to = route.to || 'N/A';
-        const departure = route.departure || '--:--';
-        const arrival = route.arrival || '--:--';
-        const duration = route.duration || 'N/A';
-        const company = route.company || 'N/A';
 
         return `
             <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">
@@ -3311,130 +3329,104 @@ async function displayConfirmation(reservation) {
                         <div class="point-icon">📍</div>
                         <div class="point-info">
                             <span class="point-label">Départ</span>
-                            <span class="point-city">${from}</span>
-                            <span class="point-date">${Utils.formatDate(date)}</span>
-                            <span class="point-time">${departure}</span>
+                            <span class="point-city">${route.from}</span>
+                            <span class="point-date">${Utils.formatDate(tripData.date)}</span>
+                            <span class="point-time">${route.departure}</span>
                         </div>
                     </div>
                     <div class="route-connector">
                         <div class="connector-line"></div>
                         <div class="connector-icon">🚌</div>
-                        <div class="connector-duration">${duration}</div>
+                        <div class="connector-duration">${route.duration || 'N/A'}</div>
                     </div>
                     <div class="route-point route-destination">
                         <div class="point-icon">🏁</div>
                         <div class="point-info">
                             <span class="point-label">Arrivée</span>
-                            <span class="point-city">${to}</span>
-                            <span class="point-time">${arrival}</span>
+                            <span class="point-city">${route.to}</span>
+                            <span class="point-time">${route.arrival}</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div id="confirmation-details" class="details-grid-modern">
+            <div class="details-grid-modern">
                 <div class="detail-item-modern"><div class="detail-label">Passagers</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">Sièges</div><div class="detail-value">${seats.join(', ')}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">Compagnie</div><div class="detail-value">${company}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">Montant Total</div><div class="detail-value" style="color: var(--color-accent-glow);">${reservation.totalPrice}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">Sièges</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">Compagnie</div><div class="detail-value">${route.company}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">Bus N°</div><div class="detail-value">${route.busIdentifier || 'N/A'}</div></div>
             </div>
             <div class="qr-section-modern">
                 <div class="qr-container">
-                    <div class="qr-code-box" style="padding:15px;"><img src="${qrCodeBase64}" alt="QR Code Billet ${tripTypeLabel}"></div>
+                    <div class="qr-code-box"><img src="${qrCodeBase64}" alt="QR Code"></div>
                     <div class="qr-info">
-                        <p class="qr-title">🎫 Votre billet électronique ${tripTypeLabel}</p>
-                        <p class="qr-instruction">Présentez ce QR code à l'embarquement</p>
+                        <p class="qr-title">🎫 Billet électronique</p>
+                        <p class="qr-instruction">Présentez ce code à l'embarquement</p>
                     </div>
                 </div>
             </div>
         `;
     };
 
-    // --- Logique d'affichage en fonction du statut de la réservation ---
-    if (reservation.status === 'En attente de paiement') {
-        confirmationTitle.textContent = "Finalisez votre paiement";
-        confirmationSubtitle.textContent = "Votre réservation est enregistrée mais en attente";
-        statusBadge.className = 'status-badge';
-        statusBadge.style.background = '#ff9800';
-        statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>En attente</span>`;
-        
-        // Cacher les sections de billets valides
-        outboundSection.style.display = 'none';
-        returnSection.style.display = 'none';
+    try {
+        // Génération Billet Aller
+        outboundSection.innerHTML = await createTicketHTML({ 
+            route: reservation.route, 
+            date: reservation.date, 
+            seats: reservation.seats 
+        }, false);
 
-        // Afficher des instructions claires
-        const cardModern = document.querySelector('.confirmation-card-modern');
-        const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
-        let instructionsHTML = `
-            <div class="info-card info-card-warning payment-notice" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
-                <div class="info-icon" style="font-size: 40px;">🏢</div>
-                <div class="info-content">
-                    <h4>Paiement requis</h4>
-                    <p>Votre réservation <strong>${reservation.bookingNumber}</strong> est en attente. Veuillez finaliser le paiement avant le <strong>${deadline}</strong> pour la valider.</p>
-                    <button class="btn btn-secondary" style="margin-top: 15px; width: auto;" onclick="viewPaymentInstructions('${reservation.bookingNumber}')">
-                        Voir les instructions de paiement
-                    </button>
-                </div>
-            </div>`;
-        cardModern.insertAdjacentHTML('afterbegin', instructionsHTML);
-
-    } else { // Statut "Confirmé"
-        confirmationTitle.textContent = "Réservation confirmée !";
-        confirmationSubtitle.textContent = "Votre voyage est prêt. Bon voyage !";
-        statusBadge.className = 'status-badge status-confirmed';
-        statusBadge.style.background = '';
-        statusBadge.innerHTML = `<span class="status-icon">✓</span><span>Confirmé</span>`;
-
-        // Afficher les sections de billets
-        outboundSection.style.display = 'block';
+        // Génération Billet Retour (si existe)
         if (reservation.returnRoute) {
             returnSection.style.display = 'block';
+            returnSection.innerHTML = await createTicketHTML({ 
+                route: reservation.returnRoute, 
+                date: reservation.returnDate, 
+                seats: reservation.returnSeats 
+            }, true);
         }
 
-        // --- Génération et affichage asynchrone des billets ---
-        (async () => {
-            // Billet ALLER
-            const outboundTicketData = { route: reservation.route, date: reservation.date, seats: reservation.seats };
-            outboundSection.innerHTML = await createTicketHTML(outboundTicketData, false);
+        // --- ✅ GÉNÉRATION DES BOUTONS D'ACTION (CORRIGÉE) ---
+        let actionsHTML = `
+            <button class="btn-modern btn-download" onclick="downloadTicket(false)">
+                <span class="btn-icon">📥</span>
+                <span class="btn-text">Télécharger Billet Aller</span>
+            </button>
+        `;
 
-            // Billet RETOUR (si applicable)
-            if (reservation.returnRoute) {
-                const returnTicketData = { route: reservation.returnRoute, date: reservation.returnDate, seats: reservation.returnSeats };
-                returnSection.innerHTML = await createTicketHTML(returnTicketData, true);
-            }
-
-            // --- Génération des boutons d'action ---
-            let actionsHTML = `
-                <button class="btn-modern btn-download" onclick="downloadTicket(false)">
+        if (reservation.returnRoute) {
+            actionsHTML += `
+                <button class="btn-modern btn-download" onclick="downloadTicket(true)">
                     <span class="btn-icon">📥</span>
-                    <span class="btn-text">Télécharger Billet Aller</span>
+                    <span class="btn-text">Télécharger Billet Retour</span>
                 </button>
             `;
-            if (reservation.returnRoute) {
-                actionsHTML += `
-                    <button class="btn-modern btn-download" onclick="downloadTicket(true)">
-                        <span class="btn-icon">📥</span>
-                        <span class="btn-text">Télécharger Billet Retour</span>
-                    </button>
-                `;
-            }
-             // ✅ ON VÉRIFIE QUE CE BLOC EST BIEN PRÉSENT
-       
+        }
+
+        // ✅ Vérification robuste pour le tracker
+        const trackerIdentifier = reservation.route.busIdentifier || reservation.route.trackerId;
+        console.log("🛰️ Tracker ID trouvé :", trackerIdentifier);
+
         if (trackerIdentifier) {
             actionsHTML += `
-                <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${reservation.bookingNumber}">
+                <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${reservation.bookingNumber}" target="_blank">
                     <span class="btn-icon">🛰️</span>
                     <span class="btn-text">Suivre mon bus</span>
                 </a>
             `;
-            }
-            actionsHTML += `
-                <button class="btn-modern btn-home" onclick="resetAndGoHome()">
-                    <span class="btn-icon">🏠</span>
-                    <span class="btn-text">Nouvelle Réservation</span>
-                </button>
-            `;
-            actionsContainer.innerHTML = actionsHTML;
-        })();
+        }
+
+        actionsHTML += `
+            <button class="btn-modern btn-home" onclick="resetAndGoHome()">
+                <span class="btn-icon">🏠</span>
+                <span class="btn-text">Nouvelle Réservation</span>
+            </button>
+        `;
+
+        actionsContainer.innerHTML = actionsHTML;
+
+    } catch (err) {
+        console.error("❌ Erreur affichage confirmation:", err);
+        Utils.showToast("Erreur lors de l'affichage des détails.", "error");
     }
 }
 // DANS app.js, AJOUTEZ CETTE FONCTION
