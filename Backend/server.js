@@ -32,7 +32,10 @@ const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
 );
 if (missingEnvVars.length > 0) {
-  console.error("❌ Variables d'environnement manquantes:", missingEnvVars.join(", "));
+  console.error(
+    "❌ Variables d'environnement manquantes:",
+    missingEnvVars.join(", ")
+  );
   process.exit(1);
 }
 console.log("✅ Variables d'environnement validées.");
@@ -42,20 +45,35 @@ const app = express();
 const server = http.createServer(app);
 app.set("trust proxy", 1);
 app.use(helmet());
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim());
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map((o) =>
+  o.trim()
+);
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 
 // --- Rate Limiting ---
-const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const strictLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: "Trop de tentatives. Réessayez dans 15 minutes." } });
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+});
 app.use("/api/", generalLimiter);
 
 // --- Configuration Services (Email, DB) ---
 const resend = new Resend(process.env.RESEND_API_KEY);
 const dbClient = new MongoClient(process.env.MONGODB_URI);
-let reservationsCollection, positionsCollection, tripsCollection, routeTemplatesCollection, systemSettingsCollection;
+let reservationsCollection,
+  positionsCollection,
+  tripsCollection,
+  routeTemplatesCollection,
+  systemSettingsCollection;
 
 async function connectToDb() {
   try {
@@ -66,14 +84,27 @@ async function connectToDb() {
     tripsCollection = database.collection("trips");
     routeTemplatesCollection = database.collection("route_templates");
     systemSettingsCollection = database.collection("system_settings");
-    await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 });
-    const existingSettings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+    await tripsCollection.createIndex({
+      date: 1,
+      "route.from": 1,
+      "route.to": 1,
+    });
+    const existingSettings = await systemSettingsCollection.findOne({
+      key: "reportSettings",
+    });
     if (!existingSettings) {
       await systemSettingsCollection.insertOne({
         key: "reportSettings",
-        value: { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000, maxReportsAllowed: 3, minHoursBeforeDeparture: 48, maxDaysInFuture: 30 },
+        value: {
+          firstReportFree: true,
+          secondReportFee: 2000,
+          thirdReportFee: 5000,
+          maxReportsAllowed: 3,
+          minHoursBeforeDeparture: 48,
+          maxDaysInFuture: 30,
+        },
         createdAt: new Date(),
-        updatedBy: "system"
+        updatedBy: "system",
       });
       console.log("✅ Paramètres de report initialisés.");
     }
@@ -87,7 +118,10 @@ async function connectToDb() {
 // ============================================
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
-const emailTemplate = (content, title = "Notification de votre réservation") => `
+const emailTemplate = (
+  content,
+  title = "Notification de votre réservation"
+) => `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -156,15 +190,18 @@ async function sendEmail(to, subject, htmlContent) {
 }
 
 function sendPendingPaymentEmail(reservation) {
-    const client = reservation.passengers?.[0];
-    if (!client?.email) return;
+  const client = reservation.passengers?.[0];
+  if (!client?.email) return;
 
-    const subject = `⏳ Action requise pour votre réservation En-Bus #${reservation.bookingNumber}`;
-    const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' });
-    
-    let paymentInstructions;
-    if (reservation.paymentMethod === 'AGENCY') {
-        paymentInstructions = `
+  const subject = `⏳ Action requise pour votre réservation En-Bus #${reservation.bookingNumber}`;
+  const deadline = new Date(reservation.paymentDeadline).toLocaleString(
+    "fr-FR",
+    { dateStyle: "full", timeStyle: "short" }
+  );
+
+  let paymentInstructions;
+  if (reservation.paymentMethod === "AGENCY") {
+    paymentInstructions = `
             <h3>Finalisez en agence</h3>
             <p>Pour confirmer votre voyage, veuillez vous rendre dans l'une de nos agences et présenter le code de paiement ci-dessous :</p>
             <div class="code-box">
@@ -172,8 +209,8 @@ function sendPendingPaymentEmail(reservation) {
                 <p class="code-box-code">${reservation.agencyPaymentCode}</p>
             </div>
         `;
-    } else {
-        paymentInstructions = `
+  } else {
+    paymentInstructions = `
             <h3>Finalisez votre paiement Mobile Money</h3>
             <div class="info-box">
                 <strong>Montant à payer :</strong>
@@ -185,23 +222,23 @@ function sendPendingPaymentEmail(reservation) {
             </div>
             <p>Veuillez utiliser cette référence lors de votre transfert pour que nous puissions identifier votre paiement.</p>
         `;
-    }
+  }
 
-    const htmlContent = `
+  const htmlContent = `
         <h2>Bonjour ${client.name},</h2>
         <p>Votre réservation pour le trajet <strong>${reservation.route.from} → ${reservation.route.to}</strong> est presque prête !</p>
         ${paymentInstructions}
         <p style="color: #c62828; font-weight: bold;">Attention, cette réservation expirera automatiquement si le paiement n'est pas reçu avant le ${deadline}.</p>
     `;
 
-    sendEmail(client.email, subject, htmlContent);
+  sendEmail(client.email, subject, htmlContent);
 }
 function sendPaymentConfirmedEmail(reservation) {
-    const client = reservation.passengers?.[0];
-    if (!client?.email) return;
+  const client = reservation.passengers?.[0];
+  if (!client?.email) return;
 
-    const subject = `✅ Confirmé ! Votre billet En-Bus #${reservation.bookingNumber}`;
-    const htmlContent = `
+  const subject = `✅ Confirmé ! Votre billet En-Bus #${reservation.bookingNumber}`;
+  const htmlContent = `
         <h2>Bonjour ${client.name},</h2>
         <p>Excellente nouvelle ! Votre paiement a été confirmé. Votre voyage est officiellement réservé.</p>
         <div class="info-box">
@@ -210,81 +247,127 @@ function sendPaymentConfirmedEmail(reservation) {
         </div>
         <div class="info-box">
             <strong>Date de départ :</strong>
-            <span>${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à ${reservation.route.departure}</span>
+            <span>${new Date(reservation.date).toLocaleDateString("fr-FR", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })} à ${reservation.route.departure}</span>
         </div>
         <p>Vous pouvez accéder à votre billet électronique, le télécharger et suivre votre bus à tout moment depuis la section "Mes Réservations" de notre application.</p>
         <a href="#" class="button">Accéder à mes réservations</a>
         <p>Nous vous souhaitons un excellent voyage !</p>
     `;
 
-    sendEmail(client.email, subject, htmlContent);
+  sendEmail(client.email, subject, htmlContent);
 }
 function sendReportConfirmedEmail(oldReservation, newReservation) {
-    const client = newReservation.passengers?.[0];
-    if (!client?.email) return;
-    
-    const subject = `🔄 Voyage reporté - Votre nouveau billet #${newReservation.bookingNumber}`;
-    const htmlContent = `
+  const client = newReservation.passengers?.[0];
+  if (!client?.email) return;
+
+  const subject = `🔄 Voyage reporté - Votre nouveau billet #${newReservation.bookingNumber}`;
+  const htmlContent = `
         <h2>Bonjour ${client.name},</h2>
         <p>Votre demande de report a été acceptée. Voici les détails de votre nouveau voyage :</p>
         <div class="info-box">
             <strong>Nouveau Trajet :</strong>
-            <span>${newReservation.route.from} → ${newReservation.route.to}</span>
+            <span>${newReservation.route.from} → ${
+    newReservation.route.to
+  }</span>
         </div>
         <div class="info-box">
             <strong>Nouvelle Date de départ :</strong>
-            <span>${new Date(newReservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à ${newReservation.route.departure}</span>
+            <span>${new Date(newReservation.date).toLocaleDateString("fr-FR", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })} à ${newReservation.route.departure}</span>
         </div>
-        <p>Votre ancien billet (${oldReservation.bookingNumber}) n'est plus valide. Votre nouveau numéro de réservation est <strong>${newReservation.bookingNumber}</strong>.</p>
+        <p>Votre ancien billet (${
+          oldReservation.bookingNumber
+        }) n'est plus valide. Votre nouveau numéro de réservation est <strong>${
+    newReservation.bookingNumber
+  }</strong>.</p>
         <a href="#" class="button">Voir mon nouveau billet</a>
     `;
 
-    sendEmail(client.email, subject, htmlContent);
+  sendEmail(client.email, subject, htmlContent);
 }
 
 // --- Middleware & Utilitaires ---
 function authenticateToken(req, res, next) {
-    const token = req.headers["authorization"]?.split(" ")[1];
-    if (!token) return res.sendStatus(401);
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
 }
 
 function generateBookingNumber() {
-    const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `EB-${timestamp.slice(-6)}${random}`;
+  const timestamp = Date.now().toString();
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0");
+  return `EB-${timestamp.slice(-6)}${random}`;
 }
 
 // ============================================
 // === ROUTES PUBLIQUES (CLIENT) ===
 // ============================================
-app.get("/api/version", (req, res) => res.json({ version: "2025-01-18-FINAL" }));
+app.get("/api/version", (req, res) =>
+  res.json({ version: "2025-01-18-FINAL" })
+);
 
 app.get("/api/search", async (req, res) => {
-    let { from, to, date } = req.query;
-    if (!from || !to || !date) return res.status(400).json({ error: "Paramètres manquants" });
-    try {
-        const trips = await tripsCollection.find({
-            "route.from": { $regex: `^${from.trim()}`, $options: "i" },
-            "route.to": { $regex: `^${to.trim()}`, $options: "i" },
-            date: date
-        }).toArray();
-        const results = trips.map(trip => ({ id: trip._id.toString(), from: trip.route.from, to: trip.route.to, company: trip.route.company, price: trip.route.price, duration: trip.route.duration || "N/A", departure: trip.route.departure, arrival: trip.route.arrival, amenities: trip.route.amenities || [], tripType: trip.route.tripType || "direct", stops: trip.route.stops || [], connections: trip.route.connections || [], departureLocation: trip.route.departureLocation || null, arrivalLocation: trip.route.arrivalLocation || null, trackerId: trip.busIdentifier || trip.route.trackerId || null, availableSeats: trip.seats.filter(s => s.status === 'available').length, totalSeats: trip.seats.length, date: trip.date, busIdentifier: trip.busIdentifier, baggageOptions: trip.route.baggageOptions, highlightBadge: trip.highlightBadge || null }));
-        res.json({ success: true, count: results.length, results });
-    } catch (error) {
-        console.error("❌ Erreur recherche:", error);
-        res.status(500).json({ error: "Erreur serveur" });
-    }
+  let { from, to, date } = req.query;
+  if (!from || !to || !date)
+    return res.status(400).json({ error: "Paramètres manquants" });
+  try {
+    const trips = await tripsCollection
+      .find({
+        "route.from": { $regex: `^${from.trim()}`, $options: "i" },
+        "route.to": { $regex: `^${to.trim()}`, $options: "i" },
+        date: date,
+      })
+      .toArray();
+    const results = trips.map((trip) => ({
+      id: trip._id.toString(),
+      from: trip.route.from,
+      to: trip.route.to,
+      company: trip.route.company,
+      price: trip.route.price,
+      duration: trip.route.duration || "N/A",
+      departure: trip.route.departure,
+      arrival: trip.route.arrival,
+      amenities: trip.route.amenities || [],
+      tripType: trip.route.tripType || "direct",
+      stops: trip.route.stops || [],
+      connections: trip.route.connections || [],
+      departureLocation: trip.route.departureLocation || null,
+      arrivalLocation: trip.route.arrivalLocation || null,
+      trackerId: trip.busIdentifier || trip.route.trackerId || null,
+      availableSeats: trip.seats.filter((s) => s.status === "available").length,
+      totalSeats: trip.seats.length,
+      date: trip.date,
+      busIdentifier: trip.busIdentifier,
+      baggageOptions: trip.route.baggageOptions,
+      highlightBadge: trip.highlightBadge || null,
+    }));
+    res.json({ success: true, count: results.length, results });
+  } catch (error) {
+    console.error("❌ Erreur recherche:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
 app.get("/api/trips/:id/seats", async (req, res) => {
   try {
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+    if (!ObjectId.isValid(id))
+      return res.status(400).json({ error: "ID invalide" });
     const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
     if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
     res.json({ success: true, seats: trip.seats });
@@ -294,85 +377,152 @@ app.get("/api/trips/:id/seats", async (req, res) => {
   }
 });
 
-app.post("/api/reservations", loginLimiter, [ body("bookingNumber").notEmpty(), body("route").isObject(), body("route.id").notEmpty(), body("date").isISO8601(), body("passengers").isArray({ min: 1 }) ], async (req, res) => {
+app.post(
+  "/api/reservations",
+  loginLimiter,
+  [
+    body("bookingNumber").notEmpty(),
+    body("route").isObject(),
+    body("route.id").notEmpty(),
+    body("date").isISO8601(),
+    body("passengers").isArray({ min: 1 }),
+  ],
+  async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
     try {
-        const reservationData = req.body;
-        const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
-        if (!trip) return res.status(404).json({ error: "Voyage aller introuvable." });
-        const seatNumbersToOccupy = reservationData.seats.map((s) => parseInt(s));
-        const alreadyTaken = trip.seats.filter((s) => seatNumbersToOccupy.includes(s.number) && s.status !== "available");
-        if (alreadyTaken.length > 0) return res.status(409).json({ error: `Conflit : Sièges aller ${alreadyTaken.map((s) => s.number).join(", ")} indisponibles.` });
-        
-        await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
-        
-        if (reservationData.paymentMethod === 'AGENCY') {
-            reservationData.agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
-            console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
-        }
-        
-        const result = await reservationsCollection.insertOne(reservationData);
-      
-        if (reservationData.status === 'En attente de paiement') {
-            console.log("-> Envoi de l'email de paiement en attente...");
-            sendPendingPaymentEmail(reservationData);
-        }
-      
-        res.status(201).json({ success: true, message: "Réservation créée.", reservationId: result.insertedId });
+      const reservationData = req.body;
+      const trip = await tripsCollection.findOne({
+        _id: new ObjectId(reservationData.route.id),
+      });
+      if (!trip)
+        return res.status(404).json({ error: "Voyage aller introuvable." });
+      const seatNumbersToOccupy = reservationData.seats.map((s) => parseInt(s));
+      const alreadyTaken = trip.seats.filter(
+        (s) =>
+          seatNumbersToOccupy.includes(s.number) && s.status !== "available"
+      );
+      if (alreadyTaken.length > 0)
+        return res
+          .status(409)
+          .json({
+            error: `Conflit : Sièges aller ${alreadyTaken
+              .map((s) => s.number)
+              .join(", ")} indisponibles.`,
+          });
+
+      await tripsCollection.updateOne(
+        { _id: trip._id },
+        { $set: { "seats.$[elem].status": "occupied" } },
+        { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+      );
+
+      if (reservationData.paymentMethod === "AGENCY") {
+        reservationData.agencyPaymentCode = `AG-${Math.floor(
+          10000 + Math.random() * 90000
+        )}`;
+        console.log(
+          `📠 Code agence généré: ${reservationData.agencyPaymentCode}`
+        );
+      }
+
+      const result = await reservationsCollection.insertOne(reservationData);
+
+      if (reservationData.status === "En attente de paiement") {
+        console.log("-> Envoi de l'email de paiement en attente...");
+        sendPendingPaymentEmail(reservationData);
+      }
+
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: "Réservation créée.",
+          reservationId: result.insertedId,
+        });
     } catch (error) {
-        console.error("❌ Erreur réservation:", error);
-        res.status(500).json({ error: "Erreur serveur." });
+      console.error("❌ Erreur réservation:", error);
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 app.get("/api/reservations/details", async (req, res) => {
-    try {
-        const ids = req.query.ids?.split(',').filter(id => id);
-        if (!ids || ids.length === 0) return res.status(400).json({ success: false, error: "Aucun ID fourni." });
-        const reservations = await reservationsCollection.find({ bookingNumber: { $in: ids } }).toArray();
-        const sorted = ids.map(id => reservations.find(r => r.bookingNumber === id)).filter(Boolean);
-        res.json({ success: true, reservations: sorted });
-    } catch (error) {
-        res.status(500).json({ success: false, error: "Erreur serveur." });
-    }
+  try {
+    const ids = req.query.ids?.split(",").filter((id) => id);
+    if (!ids || ids.length === 0)
+      return res
+        .status(400)
+        .json({ success: false, error: "Aucun ID fourni." });
+    const reservations = await reservationsCollection
+      .find({ bookingNumber: { $in: ids } })
+      .toArray();
+    const sorted = ids
+      .map((id) => reservations.find((r) => r.bookingNumber === id))
+      .filter(Boolean);
+    res.json({ success: true, reservations: sorted });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
 });
 
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
-    try {
-        const { bookingNumber } = req.params;
-        const reservation = await reservationsCollection.findOne({ bookingNumber });
-        if (!reservation) return res.status(404).json({ success: false, error: "Réservation introuvable" });
-        res.json({ success: true, status: reservation.status });
-    } catch (error) {
-        res.status(500).json({ success: false, error: "Erreur serveur" });
-    }
+  try {
+    const { bookingNumber } = req.params;
+    const reservation = await reservationsCollection.findOne({ bookingNumber });
+    if (!reservation)
+      return res
+        .status(404)
+        .json({ success: false, error: "Réservation introuvable" });
+    res.json({ success: true, status: reservation.status });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
 });
 
 app.get("/api/reservations/:bookingNumber", async (req, res) => {
-    try {
-        const { bookingNumber } = req.params;
-        const reservation = await reservationsCollection.findOne({ bookingNumber });
-        if (!reservation) return res.status(404).json({ success: false, error: "Réservation introuvable" });
-        res.json({ success: true, reservation });
-    } catch (error) {
-        res.status(500).json({ success: false, error: "Erreur serveur" });
-    }
+  try {
+    const { bookingNumber } = req.params;
+    const reservation = await reservationsCollection.findOne({ bookingNumber });
+    if (!reservation)
+      return res
+        .status(404)
+        .json({ success: false, error: "Réservation introuvable" });
+    res.json({ success: true, reservation });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
 });
 
-app.patch('/api/reservations/:bookingNumber/transaction-id', strictLimiter, [ body('transactionId').notEmpty().isString().trim() ], async (req, res) => {
+app.patch(
+  "/api/reservations/:bookingNumber/transaction-id",
+  strictLimiter,
+  [body("transactionId").notEmpty().isString().trim()],
+  async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
     try {
-        const { bookingNumber } = req.params;
-        const { transactionId } = req.body;
-        const result = await reservationsCollection.updateOne({ bookingNumber }, { $set: { 'paymentDetails.clientTransactionId': transactionId, 'paymentDetails.submittedAt': new Date() } });
-        if (result.matchedCount === 0) return res.status(404).json({ error: 'Réservation non trouvée.' });
-        res.json({ success: true, message: 'ID de transaction enregistré.' });
+      const { bookingNumber } = req.params;
+      const { transactionId } = req.body;
+      const result = await reservationsCollection.updateOne(
+        { bookingNumber },
+        {
+          $set: {
+            "paymentDetails.clientTransactionId": transactionId,
+            "paymentDetails.submittedAt": new Date(),
+          },
+        }
+      );
+      if (result.matchedCount === 0)
+        return res.status(404).json({ error: "Réservation non trouvée." });
+      res.json({ success: true, message: "ID de transaction enregistré." });
     } catch (error) {
-        res.status(500).json({ error: 'Erreur serveur.' });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 // ============================================
 // 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
@@ -381,188 +531,457 @@ app.get("/api/reservations/:bookingNumber/can-report", async (req, res) => {
   try {
     const { bookingNumber } = req.params;
     const reservation = await reservationsCollection.findOne({ bookingNumber });
-    if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
-    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-    const config = settings?.value || { maxReportsAllowed: 3, minHoursBeforeDeparture: 48 };
+    if (!reservation)
+      return res.status(404).json({ error: "Réservation introuvable." });
+    const settings = await systemSettingsCollection.findOne({
+      key: "reportSettings",
+    });
+    const config = settings?.value || {
+      maxReportsAllowed: 3,
+      minHoursBeforeDeparture: 48,
+    };
     const canReport = { allowed: true, reasons: [] };
     if (reservation.status !== "Confirmé") {
       canReport.allowed = false;
-      canReport.reasons.push(`Statut "${reservation.status}" ne permet pas le report.`);
+      canReport.reasons.push(
+        `Statut "${reservation.status}" ne permet pas le report.`
+      );
     }
-    const hoursUntilDeparture = (new Date(reservation.date) - new Date()) / 36e5;
+    const hoursUntilDeparture =
+      (new Date(reservation.date) - new Date()) / 36e5;
     if (hoursUntilDeparture < config.minHoursBeforeDeparture) {
       canReport.allowed = false;
-      canReport.reasons.push(`Report impossible moins de ${config.minHoursBeforeDeparture}h avant le départ.`);
+      canReport.reasons.push(
+        `Report impossible moins de ${config.minHoursBeforeDeparture}h avant le départ.`
+      );
     }
     const reportCount = reservation.reportCount || 0;
     if (reportCount >= config.maxReportsAllowed) {
       canReport.allowed = false;
-      canReport.reasons.push(`Nombre maximum de reports atteint (${config.maxReportsAllowed}).`);
+      canReport.reasons.push(
+        `Nombre maximum de reports atteint (${config.maxReportsAllowed}).`
+      );
     }
-    res.json({ success: true, canReport: canReport.allowed, reasons: canReport.reasons, currentReportCount: reportCount });
+    res.json({
+      success: true,
+      canReport: canReport.allowed,
+      reasons: canReport.reasons,
+      currentReportCount: reportCount,
+    });
   } catch (error) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => {
-  try {
-    const { bookingNumber } = req.params;
-    const reservation = await reservationsCollection.findOne({ bookingNumber });
-    if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
-    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-    const config = settings?.value || { maxDaysInFuture: 30 };
-    const minDate = new Date(); minDate.setDate(minDate.getDate() + 2);
-    const maxDate = new Date(reservation.date); maxDate.setDate(maxDate.getDate() + config.maxDaysInFuture);
-    const availableTrips = await tripsCollection.find({
-      "route.from": reservation.route.from, "route.to": reservation.route.to,
-      date: { $gte: minDate.toISOString().split('T')[0], $lte: maxDate.toISOString().split('T')[0], $ne: reservation.date }
-    }).sort({ date: 1 }).toArray();
-    const formattedTrips = availableTrips.map(trip => ({ id: trip._id.toString(), date: trip.date, route: { from: trip.route.from, to: trip.route.to, company: trip.route.company, price: trip.route.price, departure: trip.route.departure, arrival: trip.route.arrival }, availableSeats: trip.seats.filter(s => s.status === 'available').length }));
-    res.json({ success: true, currentTrip: { date: reservation.date, price: reservation.route.price }, availableTrips: formattedTrips, count: formattedTrips.length });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
-app.post("/api/reservations/:bookingNumber/calculate-report-cost", strictLimiter, [body('newTripId').notEmpty()], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+app.get(
+  "/api/reservations/:bookingNumber/available-trips",
+  async (req, res) => {
     try {
-      const { newTripId } = req.body;
-      const reservation = await reservationsCollection.findOne({ bookingNumber: req.params.bookingNumber });
-      if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
-      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
-      if (!newTrip) return res.status(404).json({ error: "Voyage cible introuvable." });
-      const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-      const config = settings?.value || { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
-      const reportCount = reservation.reportCount || 0;
-      const reportFee = (reportCount === 0 && config.firstReportFree) ? 0 : (reportCount === 1 ? config.secondReportFee : config.thirdReportFee);
-      const currentPrice = reservation.totalPriceNumeric || 0;
-      const newPrice = (newTrip.route.price || 0) * reservation.passengers.length;
-      const priceDifference = newPrice - currentPrice;
-      const totalCost = reportFee + priceDifference;
-      res.json({ success: true, calculation: { reportFee, currentPrice, newPrice, priceDifference, totalCost, isPaymentRequired: totalCost > 0, isCreditGenerated: totalCost < 0, creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0 }, reportNumber: reportCount + 1 });
+      const { bookingNumber } = req.params;
+      const reservation = await reservationsCollection.findOne({
+        bookingNumber,
+      });
+      if (!reservation)
+        return res.status(404).json({ error: "Réservation introuvable." });
+      const settings = await systemSettingsCollection.findOne({
+        key: "reportSettings",
+      });
+      const config = settings?.value || { maxDaysInFuture: 30 };
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() + 2);
+      const maxDate = new Date(reservation.date);
+      maxDate.setDate(maxDate.getDate() + config.maxDaysInFuture);
+      const availableTrips = await tripsCollection
+        .find({
+          "route.from": reservation.route.from,
+          "route.to": reservation.route.to,
+          date: {
+            $gte: minDate.toISOString().split("T")[0],
+            $lte: maxDate.toISOString().split("T")[0],
+            $ne: reservation.date,
+          },
+        })
+        .sort({ date: 1 })
+        .toArray();
+      const formattedTrips = availableTrips.map((trip) => ({
+        id: trip._id.toString(),
+        date: trip.date,
+        route: {
+          from: trip.route.from,
+          to: trip.route.to,
+          company: trip.route.company,
+          price: trip.route.price,
+          departure: trip.route.departure,
+          arrival: trip.route.arrival,
+        },
+        availableSeats: trip.seats.filter((s) => s.status === "available")
+          .length,
+      }));
+      res.json({
+        success: true,
+        currentTrip: { date: reservation.date, price: reservation.route.price },
+        availableTrips: formattedTrips,
+        count: formattedTrips.length,
+      });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
-app.post("/api/reservations/:bookingNumber/confirm-report", strictLimiter, [ body('newTripId').notEmpty(), body('paymentMethod').optional().isString(), body('transactionId').optional({ nullable: true }) ], async (req, res) => {
+app.post(
+  "/api/reservations/:bookingNumber/calculate-report-cost",
+  strictLimiter,
+  [body("newTripId").notEmpty()],
+  async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
     try {
-        const { newTripId, paymentMethod, transactionId } = req.body;
-        const reservation = await reservationsCollection.findOne({ bookingNumber: req.params.bookingNumber });
-        if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
-        const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
-        if (!newTrip) return res.status(404).json({ error: "Voyage cible introuvable." });
-        const requiredSeats = reservation.passengers.length;
-        if (newTrip.seats.filter(s => s.status === 'available').length < requiredSeats) return res.status(409).json({ error: `Pas assez de sièges.` });
-        
-        const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-        const config = settings?.value || { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
-        const reportCount = reservation.reportCount || 0;
-        const reportFee = (reportCount === 0 && config.firstReportFree) ? 0 : (reportCount === 1 ? config.secondReportFee : config.thirdReportFee);
-        const currentPrice = reservation.totalPriceNumeric || 0;
-        const newPrice = (newTrip.route.price || 0) * requiredSeats;
-        const priceDifference = newPrice - currentPrice;
-        const totalCost = reportFee + priceDifference;
-
-        if (totalCost > 0) {
-            let agencyPaymentCode = null;
-            if (paymentMethod?.toUpperCase() === 'AGENCY') {
-                agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
-            }
-            const reportRequest = {
-                requestedAt: new Date(),
-                targetTrip: { id: newTrip._id.toString(), date: newTrip.date, route: newTrip.route, seats: [] },
-                cost: { reportFee, priceDifference, totalCost },
-                paymentMethod: paymentMethod?.toUpperCase() || 'MTN',
-                transactionId: transactionId || null,
-                agencyPaymentCode,
-                status: 'En attente de validation admin'
-            };
-            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { reportRequest, status: 'En attente de report' } });
-            return res.status(200).json({ success: true, message: "Demande de report enregistrée.", requiresPayment: true, paymentAmount: totalCost, agencyPaymentCode, oldBookingNumber: req.params.bookingNumber });
-        } else {
-            const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeats).map(s => s.number);
-            await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
-            await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
-            
-            const newBookingNumber = generateBookingNumber();
-            const newReservation = {
-                ...reservation, _id: new ObjectId(), bookingNumber: newBookingNumber, route: { ...newTrip.route, id: newTrip._id.toString() }, date: newTrip.date,
-                seats: availableSeats, passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })), totalPriceNumeric: newPrice,
-                totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, status: "Confirmé",busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || 'Non assigné', 
-    // ... reportCount: (reservation.reportCount || 0) + 1,
-                originalReservation: reservation._id.toString(), reportHistory: [ ...(reservation.reportHistory || []), { from: { date: reservation.date, tripId: reservation.route.id.toString(), seats: reservation.seats }, to: { date: newTrip.date, tripId: newTrip._id.toString(), seats: availableSeats }, reportedAt: new Date(), totalCost, initiatedBy: "client" } ],
-                clientCredit: totalCost < 0 ? Math.abs(totalCost) + (reservation.clientCredit || 0) : (reservation.clientCredit || 0), createdAt: new Date()
-            };
-            delete newReservation.reportedAt; delete newReservation.replacementReservation; delete newReservation.reportRequest;
-            await reservationsCollection.insertOne(newReservation);
-            await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: "Reporté", reportedAt: new Date(), replacementReservation: newReservation._id.toString(), replacementBookingNumber: newBookingNumber } });
-            return res.status(201).json({ success: true, message: "Voyage reporté avec succès !", newBookingNumber, creditGenerated: newReservation.clientCredit });
-        }
+      const { newTripId } = req.body;
+      const reservation = await reservationsCollection.findOne({
+        bookingNumber: req.params.bookingNumber,
+      });
+      if (!reservation)
+        return res.status(404).json({ error: "Réservation introuvable." });
+      const newTrip = await tripsCollection.findOne({
+        _id: new ObjectId(newTripId),
+      });
+      if (!newTrip)
+        return res.status(404).json({ error: "Voyage cible introuvable." });
+      const settings = await systemSettingsCollection.findOne({
+        key: "reportSettings",
+      });
+      const config = settings?.value || {
+        firstReportFree: true,
+        secondReportFee: 2000,
+        thirdReportFee: 5000,
+      };
+      const reportCount = reservation.reportCount || 0;
+      const reportFee =
+        reportCount === 0 && config.firstReportFree
+          ? 0
+          : reportCount === 1
+          ? config.secondReportFee
+          : config.thirdReportFee;
+      const currentPrice = reservation.totalPriceNumeric || 0;
+      const newPrice =
+        (newTrip.route.price || 0) * reservation.passengers.length;
+      const priceDifference = newPrice - currentPrice;
+      const totalCost = reportFee + priceDifference;
+      res.json({
+        success: true,
+        calculation: {
+          reportFee,
+          currentPrice,
+          newPrice,
+          priceDifference,
+          totalCost,
+          isPaymentRequired: totalCost > 0,
+          isCreditGenerated: totalCost < 0,
+          creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0,
+        },
+        reportNumber: reportCount + 1,
+      });
     } catch (error) {
-        console.error("❌ Erreur confirmation report:", error);
-        res.status(500).json({ error: "Erreur serveur." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
+
+app.post(
+  "/api/reservations/:bookingNumber/confirm-report",
+  strictLimiter,
+  [
+    body("newTripId").notEmpty(),
+    body("paymentMethod").optional().isString(),
+    body("transactionId").optional({ nullable: true }),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
+    try {
+      const { newTripId, paymentMethod, transactionId } = req.body;
+      const reservation = await reservationsCollection.findOne({
+        bookingNumber: req.params.bookingNumber,
+      });
+      if (!reservation)
+        return res.status(404).json({ error: "Réservation introuvable." });
+      const newTrip = await tripsCollection.findOne({
+        _id: new ObjectId(newTripId),
+      });
+      if (!newTrip)
+        return res.status(404).json({ error: "Voyage cible introuvable." });
+      const requiredSeats = reservation.passengers.length;
+      if (
+        newTrip.seats.filter((s) => s.status === "available").length <
+        requiredSeats
+      )
+        return res.status(409).json({ error: `Pas assez de sièges.` });
+
+      const settings = await systemSettingsCollection.findOne({
+        key: "reportSettings",
+      });
+      const config = settings?.value || {
+        firstReportFree: true,
+        secondReportFee: 2000,
+        thirdReportFee: 5000,
+      };
+      const reportCount = reservation.reportCount || 0;
+      const reportFee =
+        reportCount === 0 && config.firstReportFree
+          ? 0
+          : reportCount === 1
+          ? config.secondReportFee
+          : config.thirdReportFee;
+      const currentPrice = reservation.totalPriceNumeric || 0;
+      const newPrice = (newTrip.route.price || 0) * requiredSeats;
+      const priceDifference = newPrice - currentPrice;
+      const totalCost = reportFee + priceDifference;
+
+      if (totalCost > 0) {
+        let agencyPaymentCode = null;
+        if (paymentMethod?.toUpperCase() === "AGENCY") {
+          agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
+        }
+        const reportRequest = {
+          requestedAt: new Date(),
+          targetTrip: {
+            id: newTrip._id.toString(),
+            date: newTrip.date,
+            route: newTrip.route,
+            seats: [],
+          },
+          cost: { reportFee, priceDifference, totalCost },
+          paymentMethod: paymentMethod?.toUpperCase() || "MTN",
+          transactionId: transactionId || null,
+          agencyPaymentCode,
+          status: "En attente de validation admin",
+        };
+        await reservationsCollection.updateOne(
+          { _id: reservation._id },
+          { $set: { reportRequest, status: "En attente de report" } }
+        );
+        return res
+          .status(200)
+          .json({
+            success: true,
+            message: "Demande de report enregistrée.",
+            requiresPayment: true,
+            paymentAmount: totalCost,
+            agencyPaymentCode,
+            oldBookingNumber: req.params.bookingNumber,
+          });
+      } else {
+        const availableSeats = newTrip.seats
+          .filter((s) => s.status === "available")
+          .slice(0, requiredSeats)
+          .map((s) => s.number);
+        await tripsCollection.updateOne(
+          { _id: new ObjectId(reservation.route.id) },
+          { $set: { "seats.$[elem].status": "available" } },
+          {
+            arrayFilters: [
+              {
+                "elem.number": {
+                  $in: reservation.seats.map((s) => parseInt(s)),
+                },
+              },
+            ],
+          }
+        );
+        await tripsCollection.updateOne(
+          { _id: newTrip._id },
+          { $set: { "seats.$[elem].status": "occupied" } },
+          { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
+        );
+
+        const newBookingNumber = generateBookingNumber();
+        const newReservation = {
+          ...reservation,
+          _id: new ObjectId(),
+          bookingNumber: newBookingNumber,
+          route: { ...newTrip.route, id: newTrip._id.toString() },
+          busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || null, // ✅ CORRECTION
+          date: newTrip.date,
+          seats: availableSeats,
+          passengers:  reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
+          totalPriceNumeric: newPrice,
+          totalPrice: `${newPrice
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+          status: "Confirmé",
+          busIdentifier:
+            newTrip.busIdentifier || newTrip.route?.trackerId || "Non assigné",
+          // ... reportCount: (reservation.reportCount || 0) + 1,
+          originalReservation: reservation._id.toString(),
+          reportHistory: [
+            ...(reservation.reportHistory || []),
+            {
+              from: {
+                date: reservation.date,
+                tripId: reservation.route.id.toString(),
+                seats: reservation.seats,
+              },
+              to: {
+                date: newTrip.date,
+                tripId: newTrip._id.toString(),
+                seats: availableSeats,
+              },
+              reportedAt: new Date(),
+              totalCost,
+              initiatedBy: "client",
+            },
+          ],
+          clientCredit:
+            totalCost < 0
+              ? Math.abs(totalCost) + (reservation.clientCredit || 0)
+              : reservation.clientCredit || 0,
+          createdAt: new Date(),
+        };
+        delete newReservation.reportedAt;
+        delete newReservation.replacementReservation;
+        delete newReservation.reportRequest;
+        await reservationsCollection.insertOne(newReservation);
+        await reservationsCollection.updateOne(
+          { _id: reservation._id },
+          {
+            $set: {
+              status: "Reporté",
+              reportedAt: new Date(),
+              replacementReservation: newReservation._id.toString(),
+              replacementBookingNumber: newBookingNumber,
+            },
+          }
+        );
+        return res
+          .status(201)
+          .json({
+            success: true,
+            message: "Voyage reporté avec succès !",
+            newBookingNumber,
+            creditGenerated: newReservation.clientCredit,
+          });
+      }
+    } catch (error) {
+      console.error("❌ Erreur confirmation report:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
 
 // ============================================
 // === ROUTES ADMIN (PROTÉGÉES) ===
 // ============================================
-app.post("/api/admin/login", loginLimiter, [body("username").notEmpty(), body("password").notEmpty()], async (req, res) => {
+app.post(
+  "/api/admin/login",
+  loginLimiter,
+  [body("username").notEmpty(), body("password").notEmpty()],
+  async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
     const { username, password } = req.body;
-    if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD_HASH) return res.status(500).json({ error: "Erreur de configuration." });
-    const isMatch = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
-    if (username !== process.env.ADMIN_USERNAME || !isMatch) return res.status(401).json({ error: "Identifiants incorrects" });
-    const token = jwt.sign({ username, role: "admin" }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
+    if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD_HASH)
+      return res.status(500).json({ error: "Erreur de configuration." });
+    const isMatch = await bcrypt.compare(
+      password,
+      process.env.ADMIN_PASSWORD_HASH
+    );
+    if (username !== process.env.ADMIN_USERNAME || !isMatch)
+      return res.status(401).json({ error: "Identifiants incorrects" });
+    const token = jwt.sign(
+      { username, role: "admin" },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
     res.json({ success: true, token });
-});
+  }
+);
 
-app.get("/api/admin/verify", authenticateToken, (req, res) => res.json({ valid: true, user: req.user }));
+app.get("/api/admin/verify", authenticateToken, (req, res) =>
+  res.json({ valid: true, user: req.user })
+);
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
-    try {
-        const reservations = await reservationsCollection.find({}).sort({ createdAt: -1 }).toArray();
-        const stats = { total: reservations.length, confirmed: reservations.filter(r => r.status === 'Confirmé').length, pending: reservations.filter(r => r.status === 'En attente de paiement').length, cancelled: reservations.filter(r => r.status === 'Annulé' || r.status === 'Expiré').length };
-        res.json({ success: true, count: reservations.length, stats, reservations });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
+  try {
+    const reservations = await reservationsCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    const stats = {
+      total: reservations.length,
+      confirmed: reservations.filter((r) => r.status === "Confirmé").length,
+      pending: reservations.filter((r) => r.status === "En attente de paiement")
+        .length,
+      cancelled: reservations.filter(
+        (r) => r.status === "Annulé" || r.status === "Expiré"
+      ).length,
+    };
+    res.json({
+      success: true,
+      count: reservations.length,
+      stats,
+      reservations,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
-app.patch("/api/admin/reservations/:id/confirm-payment", authenticateToken, async (req, res) => {
+app.patch(
+  "/api/admin/reservations/:id/confirm-payment",
+  authenticateToken,
+  async (req, res) => {
     try {
-        const { id } = req.params;
-        const { transactionProof } = req.body;
-        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
-        if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
-        if (reservation.status !== 'En attente de paiement') return res.status(400).json({ error: "Pas en attente de paiement." });
-        
-        await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: "Confirmé", confirmedAt: new Date(), 'paymentDetails.transactionProof': transactionProof, 'paymentDetails.confirmedByAdmin': req.user.username } });
-        const updatedReservation = await reservationsCollection.findOne({ _id: reservation._id });
-        
-        console.log("-> Envoi de l'email de paiement confirmé...");
-        sendPaymentConfirmedEmail(updatedReservation);
+      const { id } = req.params;
+      const { transactionProof } = req.body;
+      const reservation = await reservationsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!reservation)
+        return res.status(404).json({ error: "Réservation introuvable." });
+      if (reservation.status !== "En attente de paiement")
+        return res.status(400).json({ error: "Pas en attente de paiement." });
 
-        return res.json({ success: true, message: "Paiement confirmé !" });
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        {
+          $set: {
+            status: "Confirmé",
+            confirmedAt: new Date(),
+            "paymentDetails.transactionProof": transactionProof,
+            "paymentDetails.confirmedByAdmin": req.user.username,
+          },
+        }
+      );
+      const updatedReservation = await reservationsCollection.findOne({
+        _id: reservation._id,
+      });
+
+      console.log("-> Envoi de l'email de paiement confirmé...");
+      sendPaymentConfirmedEmail(updatedReservation);
+
+      return res.json({ success: true, message: "Paiement confirmé !" });
     } catch (error) {
-        res.status(500).json({ error: "Erreur serveur." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
-app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, res) => {
+app.patch(
+  "/api/admin/reservations/:id/seats",
+  authenticateToken,
+  async (req, res) => {
     try {
       const { id } = req.params;
       const { newSeats } = req.body;
 
       console.log("--- 🔄 Début de la modification des sièges ---");
-      console.log(`ID Réservation: ${id}, Nouveaux sièges demandés: ${newSeats}`);
+      console.log(
+        `ID Réservation: ${id}, Nouveaux sièges demandés: ${newSeats}`
+      );
 
       if (!ObjectId.isValid(id)) {
         console.log("-> Erreur: ID invalide.");
@@ -575,7 +994,9 @@ app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, re
       }
 
       // 1. Récupérer la réservation
-      const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+      const reservation = await reservationsCollection.findOne({
+        _id: new ObjectId(id),
+      });
       if (!reservation) {
         console.log("-> Erreur: Réservation introuvable.");
         return res.status(404).json({ error: "Réservation introuvable." });
@@ -584,33 +1005,64 @@ app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, re
 
       // 2. Vérifier la cohérence (nombre de sièges vs passagers)
       if (newSeats.length !== reservation.passengers.length) {
-        console.log("-> Erreur: Nombre de sièges ne correspond pas au nombre de passagers.");
-        return res.status(400).json({ error: `Le nombre de sièges (${newSeats.length}) doit correspondre au nombre de passagers (${reservation.passengers.length}).` });
+        console.log(
+          "-> Erreur: Nombre de sièges ne correspond pas au nombre de passagers."
+        );
+        return res
+          .status(400)
+          .json({
+            error: `Le nombre de sièges (${newSeats.length}) doit correspondre au nombre de passagers (${reservation.passengers.length}).`,
+          });
       }
-      
+
       // 3. Vérifier que la réservation a bien un voyage associé
-      if (!reservation.route || !reservation.route.id || !ObjectId.isValid(reservation.route.id)) {
-        console.log("-> Erreur: ID de voyage manquant ou invalide dans la réservation.");
-        return res.status(400).json({ error: "Données de voyage corrompues dans la réservation." });
+      if (
+        !reservation.route ||
+        !reservation.route.id ||
+        !ObjectId.isValid(reservation.route.id)
+      ) {
+        console.log(
+          "-> Erreur: ID de voyage manquant ou invalide dans la réservation."
+        );
+        return res
+          .status(400)
+          .json({ error: "Données de voyage corrompues dans la réservation." });
       }
 
       // 4. Récupérer le voyage associé
-      const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
+      const trip = await tripsCollection.findOne({
+        _id: new ObjectId(reservation.route.id),
+      });
       if (!trip) {
         console.log("-> Erreur: Voyage associé introuvable.");
-        return res.status(404).json({ error: "Le voyage associé est introuvable." });
+        return res
+          .status(404)
+          .json({ error: "Le voyage associé est introuvable." });
       }
       console.log(`-> Voyage associé trouvé (Date: ${trip.date})`);
 
       // 5. Vérifier la disponibilité des nouveaux sièges
-      const oldSeats = reservation.seats.map(s => parseInt(s));
+      const oldSeats = reservation.seats.map((s) => parseInt(s));
       const unavailable = trip.seats.filter(
-        s => newSeats.includes(s.number) && s.status !== 'available' && !oldSeats.includes(s.number)
+        (s) =>
+          newSeats.includes(s.number) &&
+          s.status !== "available" &&
+          !oldSeats.includes(s.number)
       );
 
       if (unavailable.length > 0) {
-        console.log(`-> Erreur: Conflit, sièges indisponibles: ${unavailable.map(s => s.number).join(', ')}`);
-        return res.status(409).json({ error: `Conflit : Le(s) siège(s) ${unavailable.map(s => s.number).join(", ")} est/sont déjà pris.` });
+        console.log(
+          `-> Erreur: Conflit, sièges indisponibles: ${unavailable
+            .map((s) => s.number)
+            .join(", ")}`
+        );
+        return res
+          .status(409)
+          .json({
+            error: `Conflit : Le(s) siège(s) ${unavailable
+              .map((s) => s.number)
+              .join(", ")} est/sont déjà pris.`,
+          });
       }
       console.log("-> Tous les nouveaux sièges sont disponibles.");
 
@@ -621,169 +1073,231 @@ app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, re
         { $set: { "seats.$[elem].status": "available" } },
         { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
       );
-      
+
       console.log("-> Occupation des nouveaux sièges...");
       await tripsCollection.updateOne(
         { _id: trip._id },
         { $set: { "seats.$[elem].status": "occupied" } },
         { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
       );
-      
+
       console.log("-> Mise à jour de la réservation...");
       await reservationsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { 
-              seats: newSeats,
-              passengers: reservation.passengers.map((p, i) => ({ ...p, seat: newSeats[i] })),
-              updatedAt: new Date()
-            }
-          }
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            seats: newSeats,
+            passengers: reservation.passengers.map((p, i) => ({
+              ...p,
+              seat: newSeats[i],
+            })),
+            updatedAt: new Date(),
+          },
+        }
       );
-      
-      console.log("--- ✅ Modification des sièges terminée avec succès ---");
-      res.json({ success: true, message: "Les sièges ont été modifiés avec succès." });
 
+      console.log("--- ✅ Modification des sièges terminée avec succès ---");
+      res.json({
+        success: true,
+        message: "Les sièges ont été modifiés avec succès.",
+      });
     } catch (error) {
-      console.error("❌ ERREUR FATALE lors de la modification des sièges:", error);
+      console.error(
+        "❌ ERREUR FATALE lors de la modification des sièges:",
+        error
+      );
       res.status(500).json({ error: "Erreur serveur inattendue." });
     }
   }
 );
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
-    try {
-        const { search } = req.query; // On récupère le paramètre 'search' de l'URL
+  try {
+    const { search } = req.query; // On récupère le paramètre 'search' de l'URL
 
-        let query = {
-            $or: [
-                { status: "En attente de report" },
-                { status: "Reporté" },
-                { originalReservation: { $exists: true, $ne: null } }
-            ]
-        };
+    let query = {
+      $or: [
+        { status: "En attente de report" },
+        { status: "Reporté" },
+        { originalReservation: { $exists: true, $ne: null } },
+      ],
+    };
 
-        // ✅ Ajout du filtre de recherche s'il est fourni
-        if (search) {
-            // On cherche dans le numéro de réservation, le nom du passager ou le code de paiement agence
-            query.$and = [ // On combine la condition de base avec la recherche
-                {
-                    $or: [
-                        { bookingNumber: { $regex: search, $options: 'i' } },
-                        { "passengers.0.name": { $regex: search, $options: 'i' } },
-                        { "reportRequest.agencyPaymentCode": { $regex: search, $options: 'i' } }
-                    ]
-                }
-            ];
-        }
-
-        const reports = await reservationsCollection.find(query).sort({ createdAt: -1 }).toArray();
-        
-        res.json({
-            success: true,
-            count: reports.length,
-            reports: reports
-        });
-        
-    } catch (error) {
-        console.error("❌ Erreur récupération historique reports:", error);
-        res.status(500).json({ error: "Erreur serveur." });
+    // ✅ Ajout du filtre de recherche s'il est fourni
+    if (search) {
+      // On cherche dans le numéro de réservation, le nom du passager ou le code de paiement agence
+      query.$and = [
+        // On combine la condition de base avec la recherche
+        {
+          $or: [
+            { bookingNumber: { $regex: search, $options: "i" } },
+            { "passengers.0.name": { $regex: search, $options: "i" } },
+            {
+              "reportRequest.agencyPaymentCode": {
+                $regex: search,
+                $options: "i",
+              },
+            },
+          ],
+        },
+      ];
     }
+
+    const reports = await reservationsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json({
+      success: true,
+      count: reports.length,
+      reports: reports,
+    });
+  } catch (error) {
+    console.error("❌ Erreur récupération historique reports:", error);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 });
 
-app.post("/api/admin/report-requests/:bookingNumber/approve", authenticateToken, [ body('transactionProof').optional().isString().trim() ], async (req, res) => {
+app.post(
+  "/api/admin/report-requests/:bookingNumber/approve",
+  authenticateToken,
+  [body("transactionProof").optional().isString().trim()],
+  async (req, res) => {
     try {
-        const { bookingNumber } = req.params;
-        let { transactionProof } = req.body;
-        const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
-        if (!reservation || !reservation.reportRequest) return res.status(404).json({ error: "Demande de report introuvable." });
-        
-        const request = reservation.reportRequest;
-        if (request.paymentMethod === 'AGENCY') { 
-            transactionProof = `AGENCE-PAY-${Date.now()}`; 
-        } else if (!transactionProof) { 
-            return res.status(400).json({ error: "Preuve de paiement requise pour Mobile Money." }); 
+      const { bookingNumber } = req.params;
+      let { transactionProof } = req.body;
+      const reservation = await reservationsCollection.findOne({
+        bookingNumber,
+        status: "En attente de report",
+      });
+      if (!reservation || !reservation.reportRequest)
+        return res
+          .status(404)
+          .json({ error: "Demande de report introuvable." });
+
+      const request = reservation.reportRequest;
+      if (request.paymentMethod === "AGENCY") {
+        transactionProof = `AGENCE-PAY-${Date.now()}`;
+      } else if (!transactionProof) {
+        return res
+          .status(400)
+          .json({ error: "Preuve de paiement requise pour Mobile Money." });
+      }
+
+      const newTrip = await tripsCollection.findOne({
+        _id: new ObjectId(request.targetTrip.id),
+      });
+      if (!newTrip)
+        return res
+          .status(404)
+          .json({ error: "Le voyage cible n'existe plus." });
+
+      const requiredSeatsCount = reservation.passengers.length;
+      const availableSeats = newTrip.seats
+        .filter((s) => s.status === "available")
+        .slice(0, requiredSeatsCount)
+        .map((s) => s.number);
+      if (availableSeats.length < requiredSeatsCount)
+        return res.status(409).json({ error: `Pas assez de sièges.` });
+
+      await tripsCollection.updateOne(
+        { _id: new ObjectId(reservation.route.id) },
+        { $set: { "seats.$[elem].status": "available" } },
+        {
+          arrayFilters: [
+            {
+              "elem.number": { $in: reservation.seats.map((s) => parseInt(s)) },
+            },
+          ],
         }
-        
-        const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
-        if (!newTrip) return res.status(404).json({ error: "Le voyage cible n'existe plus." });
-        
-        const requiredSeatsCount = reservation.passengers.length;
-        const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
-        if (availableSeats.length < requiredSeatsCount) return res.status(409).json({ error: `Pas assez de sièges.` });
+      );
+      await tripsCollection.updateOne(
+        { _id: newTrip._id },
+        { $set: { "seats.$[elem].status": "occupied" } },
+        { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
+      );
 
-        await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
-        await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
+      const newBookingNumber = generateBookingNumber();
+      const newPrice = newTrip.route.price * requiredSeatsCount;
 
-        const newBookingNumber = generateBookingNumber();
-        const newPrice = newTrip.route.price * requiredSeatsCount;
-        
-        // ============================================
-        // ✅ CORRECTION ICI
-        // ============================================ 
-        const newReservation = {
-            ...reservation, 
-            _id: new ObjectId(), 
-            bookingNumber: newBookingNumber, 
-            route: { ...newTrip.route, id: newTrip._id.toString() }, 
-            date: newTrip.date,
-            seats: availableSeats, 
-            passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })), 
-            totalPriceNumeric: newPrice,
-            totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, 
-            status: "Confirmé", 
-            reportCount: (reservation.reportCount || 0) + 1,
-            originalReservation: reservation._id.toString(),
-            busIdentifier: newTrip.busIdentifier || null, // <-- LA LIGNE MANQUANTE
-            reportHistory: [ 
-                ...(reservation.reportHistory || []), 
-                { 
-                    from: { date: reservation.date, tripId: reservation.route.id.toString() }, 
-                    to: { date: newTrip.date, tripId: newTrip._id.toString() }, 
-                    reportedAt: new Date(), 
-                    totalCost: request.cost.totalCost, 
-                    initiatedBy: "client", 
-                    approvedBy: req.user.username, 
-                    transactionProof 
-                } 
-            ],
-            createdAt: new Date()
-        };
-        // ============================================
+      // ============================================
+      // ✅ CORRECTION ICI
+      // ============================================
+      const newReservation = {
+        ...reservation,
+        _id: new ObjectId(),
+        bookingNumber: newBookingNumber,
+        route: { ...newTrip.route, id: newTrip._id.toString() },
+        date: newTrip.date,
+        seats: availableSeats,
+        passengers: reservation.passengers.map((p, i) => ({
+          ...p,
+          seat: availableSeats[i],
+        })),
+        totalPriceNumeric: newPrice,
+        totalPrice: `${newPrice
+          .toString()
+          .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+        status: "Confirmé",
+        reportCount: (reservation.reportCount || 0) + 1,
+        originalReservation: reservation._id.toString(),
+        busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || null, // ✅ CORRECTION
+        reportHistory: [
+          ...(reservation.reportHistory || []),
+          {
+            from: {
+              date: reservation.date,
+              tripId: reservation.route.id.toString(),
+            },
+            to: { date: newTrip.date, tripId: newTrip._id.toString() },
+            reportedAt: new Date(),
+            totalCost: request.cost.totalCost,
+            initiatedBy: "client",
+            approvedBy: req.user.username,
+            transactionProof,
+          },
+        ],
+        createdAt: new Date(),
+      };
+      // ============================================
 
-        delete newReservation.reportedAt; 
-        delete newReservation.replacementReservation; 
-        delete newReservation.reportRequest;
-        
-        await reservationsCollection.insertOne(newReservation);
-        await reservationsCollection.updateOne(
-            { _id: reservation._id }, 
-            { $set: { 
-                status: "Reporté", 
-                reportedAt: new Date(), 
-                replacementReservation: newReservation._id.toString(), 
-                replacementBookingNumber: newReservation.bookingNumber, 
-                'reportRequest.status': 'Approuvé', 
-                'reportRequest.approvedAt': new Date(), 
-                'reportRequest.approvedBy': req.user.username, 
-                'reportRequest.transactionProof': transactionProof 
-            }}
-        );
-        
-        console.log("-> Envoi de l'email de report confirmé...");
-        sendReportConfirmedEmail(reservation, newReservation);
+      delete newReservation.reportedAt;
+      delete newReservation.replacementReservation;
+      delete newReservation.reportRequest;
 
-        res.json({ success: true, message: "Demande de report validée.", newBookingNumber });
+      await reservationsCollection.insertOne(newReservation);
+      await reservationsCollection.updateOne(
+        { _id: reservation._id },
+        {
+          $set: {
+            status: "Reporté",
+            reportedAt: new Date(),
+            replacementReservation: newReservation._id.toString(),
+            replacementBookingNumber: newReservation.bookingNumber,
+            "reportRequest.status": "Approuvé",
+            "reportRequest.approvedAt": new Date(),
+            "reportRequest.approvedBy": req.user.username,
+            "reportRequest.transactionProof": transactionProof,
+          },
+        }
+      );
+
+      console.log("-> Envoi de l'email de report confirmé...");
+      sendReportConfirmedEmail(reservation, newReservation);
+
+      res.json({
+        success: true,
+        message: "Demande de report validée.",
+        newBookingNumber,
+      });
     } catch (error) {
-        console.error("❌ Erreur validation report:", error);
-        res.status(500).json({ error: "Erreur serveur." });
+      console.error("❌ Erreur validation report:", error);
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
-
-
+  }
+);
 
 // ... (toutes vos autres routes admin)
-
-
-
 
 // ============================================
 // --- GESTION DES MODÈLES DE TRAJETS (ADMIN) ---
@@ -798,34 +1312,57 @@ app.get("/api/admin/route-templates", authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/admin/route-templates', authenticateToken, async (req, res) => {
-    try {
-        let template = req.body;
-        template.baggageOptions = {
-            standard: { included: parseInt(template.standardBaggageIncluded) || 1, max: parseInt(template.standardBaggageMax) || 5, price: parseInt(template.standardBaggagePrice) || 2000 },
-            oversized: { max: parseInt(template.oversizedBaggageMax) || 2, price: parseInt(template.oversizedBaggagePrice) || 5000 }
-        };
-        // Nettoyage des champs bruts
-        ['standardBaggageIncluded', 'standardBaggageMax', 'standardBaggagePrice', 'oversizedBaggageMax', 'oversizedBaggagePrice'].forEach(p => delete template[p]);
+app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
+  try {
+    let template = req.body;
+    template.baggageOptions = {
+      standard: {
+        included: parseInt(template.standardBaggageIncluded) || 1,
+        max: parseInt(template.standardBaggageMax) || 5,
+        price: parseInt(template.standardBaggagePrice) || 2000,
+      },
+      oversized: {
+        max: parseInt(template.oversizedBaggageMax) || 2,
+        price: parseInt(template.oversizedBaggagePrice) || 5000,
+      },
+    };
+    // Nettoyage des champs bruts
+    [
+      "standardBaggageIncluded",
+      "standardBaggageMax",
+      "standardBaggagePrice",
+      "oversizedBaggageMax",
+      "oversizedBaggagePrice",
+    ].forEach((p) => delete template[p]);
 
-        await routeTemplatesCollection.insertOne(template);
-        res.status(201).json({ success: true, message: 'Modèle créé avec succès.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
+    await routeTemplatesCollection.insertOne(template);
+    res
+      .status(201)
+      .json({ success: true, message: "Modèle créé avec succès." });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
-app.delete("/api/admin/route-templates/:id", authenticateToken, async (req, res) => {
+app.delete(
+  "/api/admin/route-templates/:id",
+  authenticateToken,
+  async (req, res) => {
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+    if (!ObjectId.isValid(id))
+      return res.status(400).json({ error: "ID invalide" });
     try {
-      const result = await routeTemplatesCollection.deleteOne({ _id: new ObjectId(id) });
-      if (result.deletedCount === 0) return res.status(404).json({ error: "Modèle non trouvé" });
+      const result = await routeTemplatesCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      if (result.deletedCount === 0)
+        return res.status(404).json({ error: "Modèle non trouvé" });
       res.json({ success: true, message: "Modèle supprimé." });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
-});
+  }
+);
 
 // ============================================
 // --- GESTION DES VOYAGES (ADMIN) ---
@@ -840,79 +1377,136 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/admin/trips", authenticateToken, [ /* ... validations ... */ ], async (req, res) => {
+app.post(
+  "/api/admin/trips",
+  authenticateToken,
+  [
+    /* ... validations ... */
+  ],
+  async (req, res) => {
     try {
-        const { routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier, highlightBadge } = req.body;
-        const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
-        if (!routeTemplate) return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+      const {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek,
+        seatCount,
+        busIdentifier,
+        highlightBadge,
+      } = req.body;
+      const routeTemplate = await routeTemplatesCollection.findOne({
+        _id: new ObjectId(routeId),
+      });
+      if (!routeTemplate)
+        return res.status(404).json({ error: "Modèle de trajet non trouvé." });
 
-        let newTrips = [];
-        let currentDate = new Date(startDate);
-        const lastDate = new Date(endDate);
-        const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-        
-        while (currentDate <= lastDate) {
-            if (daysOfWeek.includes(dayMap[currentDate.getUTCDay()])) {
-                const seats = Array.from({ length: seatCount }, (_, i) => ({ number: i + 1, status: "available" }));
-                newTrips.push({
-                    date: currentDate.toISOString().split("T")[0],
-                    route: routeTemplate,
-                    seats: seats,
-                    busIdentifier: busIdentifier || null,
-                    highlightBadge: highlightBadge || null,
-                    createdAt: new Date(),
-                });
-            }
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-        }
+      let newTrips = [];
+      let currentDate = new Date(startDate);
+      const lastDate = new Date(endDate);
+      const dayMap = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
 
-        if (newTrips.length > 0) {
-            await tripsCollection.insertMany(newTrips);
+      while (currentDate <= lastDate) {
+        if (daysOfWeek.includes(dayMap[currentDate.getUTCDay()])) {
+          const seats = Array.from({ length: seatCount }, (_, i) => ({
+            number: i + 1,
+            status: "available",
+          }));
+          newTrips.push({
+            date: currentDate.toISOString().split("T")[0],
+            route: routeTemplate,
+            seats: seats,
+            busIdentifier: busIdentifier || null,
+            highlightBadge: highlightBadge || null,
+            createdAt: new Date(),
+          });
         }
-        res.status(201).json({ success: true, message: `${newTrips.length} voyage(s) créé(s).` });
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      }
+
+      if (newTrips.length > 0) {
+        await tripsCollection.insertMany(newTrips);
+      }
+      res
+        .status(201)
+        .json({
+          success: true,
+          message: `${newTrips.length} voyage(s) créé(s).`,
+        });
     } catch (error) {
-        res.status(500).json({ error: "Erreur serveur." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 app.delete("/api/admin/trips/:id", authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de voyage invalide" });
-        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-        if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
-        if (trip.seats.some((s) => s.status === "occupied")) return res.status(400).json({ error: "Impossible de supprimer : des sièges sont réservés" });
-        await tripsCollection.deleteOne({ _id: new ObjectId(id) });
-        res.json({ success: true, message: "Voyage supprimé avec succès" });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id))
+      return res.status(400).json({ error: "ID de voyage invalide" });
+    const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+    if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
+    if (trip.seats.some((s) => s.status === "occupied"))
+      return res
+        .status(400)
+        .json({ error: "Impossible de supprimer : des sièges sont réservés" });
+    await tripsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.json({ success: true, message: "Voyage supprimé avec succès" });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
-app.patch("/api/admin/trips/:id/reset-seats", authenticateToken, async (req, res) => {
+app.patch(
+  "/api/admin/trips/:id/reset-seats",
+  authenticateToken,
+  async (req, res) => {
     try {
       const { id } = req.params;
       const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
       if (!trip) return res.status(404).json({ error: "Voyage non trouvé." });
-      const newSeats = Array.from({ length: trip.seats.length }, (_, i) => ({ number: i + 1, status: "available" }));
-      await tripsCollection.updateOne({ _id: new ObjectId(id) }, { $set: { seats: newSeats } });
+      const newSeats = Array.from({ length: trip.seats.length }, (_, i) => ({
+        number: i + 1,
+        status: "available",
+      }));
+      await tripsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { seats: newSeats } }
+      );
       res.json({ success: true, message: "Sièges réinitialisés." });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
-app.patch("/api/admin/trips/:tripId/seats/:seatNumber", authenticateToken, [ body("status").isIn(["available", "blocked"]) ], async (req, res) => {
+app.patch(
+  "/api/admin/trips/:tripId/seats/:seatNumber",
+  authenticateToken,
+  [body("status").isIn(["available", "blocked"])],
+  async (req, res) => {
     try {
-        const { tripId, seatNumber } = req.params;
-        const { status } = req.body;
-        const result = await tripsCollection.updateOne({ _id: new ObjectId(tripId), "seats.number": parseInt(seatNumber) }, { $set: { "seats.$.status": status } });
-        if (result.matchedCount === 0) return res.status(404).json({ error: "Voyage ou siège non trouvé." });
-        res.json({ success: true, message: `Siège ${seatNumber} mis à jour` });
+      const { tripId, seatNumber } = req.params;
+      const { status } = req.body;
+      const result = await tripsCollection.updateOne(
+        { _id: new ObjectId(tripId), "seats.number": parseInt(seatNumber) },
+        { $set: { "seats.$.status": status } }
+      );
+      if (result.matchedCount === 0)
+        return res.status(404).json({ error: "Voyage ou siège non trouvé." });
+      res.json({ success: true, message: `Siège ${seatNumber} mis à jour` });
     } catch (error) {
-        res.status(500).json({ error: "Erreur serveur." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 // ============================================
 // --- GESTION DES PARAMÈTRES (ADMIN) ---
@@ -920,33 +1514,53 @@ app.patch("/api/admin/trips/:tripId/seats/:seatNumber", authenticateToken, [ bod
 
 app.get("/api/admin/settings/report", authenticateToken, async (req, res) => {
   try {
-    const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-    if (!settings) return res.status(404).json({ error: "Paramètres introuvables." });
+    const settings = await systemSettingsCollection.findOne({
+      key: "reportSettings",
+    });
+    if (!settings)
+      return res.status(404).json({ error: "Paramètres introuvables." });
     res.json({ success: true, settings: settings.value });
   } catch (error) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
 
-app.patch("/api/admin/settings/report", authenticateToken, [ /* ... validations ... */ ], async (req, res) => {
+app.patch(
+  "/api/admin/settings/report",
+  authenticateToken,
+  [
+    /* ... validations ... */
+  ],
+  async (req, res) => {
     try {
-        const updates = {};
-        if (req.body.secondReportFee !== undefined) updates['value.secondReportFee'] = req.body.secondReportFee;
-        if (req.body.thirdReportFee !== undefined) updates['value.thirdReportFee'] = req.body.thirdReportFee;
-        // ... etc
-        updates.updatedAt = new Date();
-        updates.updatedBy = req.user.username;
-        await systemSettingsCollection.updateOne({ key: "reportSettings" }, { $set: updates });
-        res.json({ success: true, message: "Paramètres mis à jour." });
+      const updates = {};
+      if (req.body.secondReportFee !== undefined)
+        updates["value.secondReportFee"] = req.body.secondReportFee;
+      if (req.body.thirdReportFee !== undefined)
+        updates["value.thirdReportFee"] = req.body.thirdReportFee;
+      // ... etc
+      updates.updatedAt = new Date();
+      updates.updatedBy = req.user.username;
+      await systemSettingsCollection.updateOne(
+        { key: "reportSettings" },
+        { $set: updates }
+      );
+      res.json({ success: true, message: "Paramètres mis à jour." });
     } catch (error) {
-        res.status(500).json({ error: "Erreur serveur." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
-});
+  }
+);
 
 // --- CRON JOB & WEBSOCKET ---
-if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true") {
-    cron.schedule("*/5 * * * *", async () => { /* ... votre logique cron ... */ });
-    console.log("✅ Cron jobs activés.");
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.CRON_ENABLED === "true"
+) {
+  cron.schedule("*/5 * * * *", async () => {
+    /* ... votre logique cron ... */
+  });
+  console.log("✅ Cron jobs activés.");
 }
 
 const io = new Server(server, { cors: { origin: allowedOrigins } });
@@ -967,17 +1581,22 @@ io.on("connection", (socket) => {
 
     // On lui envoie immédiatement la dernière position connue
     try {
-        const lastPosition = await positionsCollection.findOne(
-            { busId: busId },
-            { sort: { timestamp: -1 } }
-        );
+      const lastPosition = await positionsCollection.findOne(
+        { busId: busId },
+        { sort: { timestamp: -1 } }
+      );
 
-        if (lastPosition) {
-            socket.emit("updatePosition", lastPosition);
-            console.log(` -> Dernière position envoyée à [Socket ${socket.id}] pour le bus ${busId}`);
-        }
+      if (lastPosition) {
+        socket.emit("updatePosition", lastPosition);
+        console.log(
+          ` -> Dernière position envoyée à [Socket ${socket.id}] pour le bus ${busId}`
+        );
+      }
     } catch (error) {
-        console.error("Erreur lors de la récupération de la dernière position:", error);
+      console.error(
+        "Erreur lors de la récupération de la dernière position:",
+        error
+      );
     }
   });
 
@@ -997,11 +1616,11 @@ app.post("/track/update", async (req, res) => {
     return res.status(400).json({ error: "Données de suivi invalides" });
   }
 
-  const newPosition = { 
-    busId: tid, 
-    lat: parseFloat(lat), 
-    lon: parseFloat(lon), 
-    timestamp: new Date(parseInt(tst) * 1000) // Convertir le timestamp Unix en date
+  const newPosition = {
+    busId: tid,
+    lat: parseFloat(lat),
+    lon: parseFloat(lon),
+    timestamp: new Date(parseInt(tst) * 1000), // Convertir le timestamp Unix en date
   };
 
   try {
@@ -1014,10 +1633,11 @@ app.post("/track/update", async (req, res) => {
 
     // Diffuser la nouvelle position à tous les clients qui suivent ce bus
     io.to(tid).emit("updatePosition", newPosition);
-    console.log(`📍 Position mise à jour pour le bus ${tid} -> diffusée sur le canal ${tid}`);
-    
-    res.sendStatus(200); // Répondre au tracker GPS que tout est OK
+    console.log(
+      `📍 Position mise à jour pour le bus ${tid} -> diffusée sur le canal ${tid}`
+    );
 
+    res.sendStatus(200); // Répondre au tracker GPS que tout est OK
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la position:", error);
     res.sendStatus(500);
@@ -1028,5 +1648,7 @@ app.post("/track/update", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 (async () => {
   await connectToDb();
-  server.listen(PORT, () => console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`));
+  server.listen(PORT, () =>
+    console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`)
+  );
 })();
