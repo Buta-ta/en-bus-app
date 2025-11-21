@@ -494,7 +494,8 @@ app.post("/api/reservations/:bookingNumber/confirm-report", strictLimiter, [ bod
             const newReservation = {
                 ...reservation, _id: new ObjectId(), bookingNumber: newBookingNumber, route: { ...newTrip.route, id: newTrip._id.toString() }, date: newTrip.date,
                 seats: availableSeats, passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })), totalPriceNumeric: newPrice,
-                totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, status: "Confirmé", reportCount: (reservation.reportCount || 0) + 1,
+                totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, status: "Confirmé",busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || 'Non assigné', 
+    // ... reportCount: (reservation.reportCount || 0) + 1,
                 originalReservation: reservation._id.toString(), reportHistory: [ ...(reservation.reportHistory || []), { from: { date: reservation.date, tripId: reservation.route.id.toString(), seats: reservation.seats }, to: { date: newTrip.date, tripId: newTrip._id.toString(), seats: availableSeats }, reportedAt: new Date(), totalCost, initiatedBy: "client" } ],
                 clientCredit: totalCost < 0 ? Math.abs(totalCost) + (reservation.clientCredit || 0) : (reservation.clientCredit || 0), createdAt: new Date()
             };

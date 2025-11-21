@@ -3255,14 +3255,12 @@ window.confirmBooking = async function(buttonElement) {
 // ============================================
 
 async function displayConfirmation(reservation) {
-    console.log("🎟️ Affichage de la confirmation pour:", reservation.bookingNumber);
+    console.log("🎟️ Affichage de la confirmation pour:", reservation); // Log de l'objet complet pour le debug
 
     // 1. Cibles DOM
     const outboundSection = document.getElementById('outbound-ticket-section');
     const returnSection = document.getElementById('return-ticket-section');
     const actionsContainer = document.getElementById('confirmation-actions-container');
-    
-    // Éléments de titre
     const confirmationTitle = document.querySelector('#confirmation-page .confirmation-title');
     const confirmationSubtitle = document.querySelector('#confirmation-page .confirmation-subtitle');
     const bookingNumberDisplay = document.getElementById('booking-number-display');
@@ -3275,53 +3273,49 @@ async function displayConfirmation(reservation) {
     actionsContainer.innerHTML = '';
     document.querySelectorAll('.info-card-warning.payment-notice').forEach(el => el.remove());
 
-    // 3. Mise à jour infos de base
+    // 3. Mise à jour des infos de base
     bookingNumberDisplay.textContent = reservation.bookingNumber;
 
-    // 4. Cas "En attente"
+    // 4. Gérer le cas "En attente de paiement"
     if (reservation.status === 'En attente de paiement') {
         confirmationTitle.textContent = "Finalisez votre paiement";
         confirmationSubtitle.textContent = "Votre réservation est enregistrée mais en attente";
         statusBadge.className = 'status-badge';
         statusBadge.style.background = '#ff9800';
         statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>En attente</span>`;
-        
-        outboundSection.innerHTML = ''; // Pas de billet
-        
+        outboundSection.innerHTML = ''; // Pas de billet à afficher
+
         const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
-        const instructionsHTML = `
-            <div class="info-card info-card-warning payment-notice" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
-                <div class="info-icon" style="font-size: 40px;">💳</div>
-                <div class="info-content">
-                    <h4>Paiement requis</h4>
-                    <p>Votre réservation est en attente. Veuillez payer avant le <strong>${deadline}</strong>.</p>
-                    <button class="btn btn-secondary" style="margin-top: 15px; width: auto;" onclick="viewPaymentInstructions('${reservation.bookingNumber}')">
-                        Voir les instructions
-                    </button>
-                </div>
-            </div>`;
-        
+        const instructionsHTML = `<div class="info-card info-card-warning payment-notice" ...> ... </div>`; // Votre HTML pour les instructions est correct
         document.querySelector('.confirmation-card-modern').insertAdjacentHTML('afterbegin', instructionsHTML);
-        return; // On s'arrête là pour le cas "En attente"
+        return;
     }
 
-    // 5. Cas "Confirmé"
+    // 5. Gérer le cas "Confirmé"
     confirmationTitle.textContent = "Réservation confirmée !";
     confirmationSubtitle.textContent = "Votre voyage est prêt. Bon voyage !";
     statusBadge.className = 'status-badge status-confirmed';
     statusBadge.style.background = '';
     statusBadge.innerHTML = `<span class="status-icon">✓</span><span>Confirmé</span>`;
 
-    // --- Fonction Helper Génération Billet HTML ---
+    // --- Fonction Helper pour créer le HTML d'un billet ---
     const createTicketHTML = async (tripData, isReturn = false) => {
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150).catch(err => '');
         const tripTypeLabel = isReturn ? "RETOUR" : "ALLER";
         const route = tripData.route;
 
-        // ✅ CORRECTION ICI : On prend le busIdentifier de la réservation principale ou du retour
-        const busId = isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier;
-
+        // ========================================================
+        // ✅ CORRECTION DE LA LOGIQUE POUR TROUVER LE NUMÉRO DE BUS
+        // ========================================================
+        let busId = 'N/A';
+        if (isReturn) {
+            busId = reservation.returnBusIdentifier || reservation.returnRoute?.busIdentifier || reservation.returnRoute?.trackerId;
+        } else {
+            busId = reservation.busIdentifier || reservation.route?.busIdentifier || reservation.route?.trackerId;
+        }
+        console.log(`[${tripTypeLabel}] Bus ID trouvé :`, busId);
+        // ========================================================
 
         return `
             <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">
@@ -3329,43 +3323,21 @@ async function displayConfirmation(reservation) {
             </h2>
             <div class="journey-card">
                 <div class="journey-route">
-                    <div class="route-point route-origin">
-                        <div class="point-icon">📍</div>
-                        <div class="point-info">
-                            <span class="point-label">Départ</span>
-                            <span class="point-city">${route.from}</span>
-                            <span class="point-date">${Utils.formatDate(tripData.date)}</span>
-                            <span class="point-time">${route.departure}</span>
-                        </div>
-                    </div>
-                    <div class="route-connector">
-                        <div class="connector-line"></div>
-                        <div class="connector-icon">🚌</div>
-                        <div class="connector-duration">${route.duration || 'N/A'}</div>
-                    </div>
-                    <div class="route-point route-destination">
-                        <div class="point-icon">🏁</div>
-                        <div class="point-info">
-                            <span class="point-label">Arrivée</span>
-                            <span class="point-city">${route.to}</span>
-                            <span class="point-time">${route.arrival}</span>
-                        </div>
-                    </div>
+                    <div class="route-point route-origin"><div class="point-icon">📍</div><div class="point-info"><span class="point-label">Départ</span><span class="point-city">${route.from}</span><span class="point-date">${Utils.formatDate(tripData.date)}</span><span class="point-time">${route.departure}</span></div></div>
+                    <div class="route-connector"><div class="connector-line"></div><div class="connector-icon">🚌</div><div class="connector-duration">${route.duration || 'N/A'}</div></div>
+                    <div class="route-point route-destination"><div class="point-icon">🏁</div><div class="point-info"><span class="point-label">Arrivée</span><span class="point-city">${route.to}</span><span class="point-time">${route.arrival}</span></div></div>
                 </div>
             </div>
             <div class="details-grid-modern">
                 <div class="detail-item-modern"><div class="detail-label">Passagers</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
                 <div class="detail-item-modern"><div class="detail-label">Sièges</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
                 <div class="detail-item-modern"><div class="detail-label">Compagnie</div><div class="detail-value">${route.company}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">Bus N°</div><div class="detail-value">${route.busIdentifier || 'N/A'}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">Bus N°</div><div class="detail-value">${busId || 'N/A'}</div></div>
             </div>
             <div class="qr-section-modern">
                 <div class="qr-container">
                     <div class="qr-code-box"><img src="${qrCodeBase64}" alt="QR Code"></div>
-                    <div class="qr-info">
-                        <p class="qr-title">🎫 Billet électronique</p>
-                        <p class="qr-instruction">Présentez ce code à l'embarquement</p>
-                    </div>
+                    <div class="qr-info"><p class="qr-title">🎫 Billet électronique</p><p class="qr-instruction">Présentez ce code à l'embarquement</p></div>
                 </div>
             </div>
         `;
@@ -3373,59 +3345,29 @@ async function displayConfirmation(reservation) {
 
     try {
         // Génération Billet Aller
-        outboundSection.innerHTML = await createTicketHTML({ 
-            route: reservation.route, 
-            date: reservation.date, 
-            seats: reservation.seats 
-        }, false);
+        outboundSection.innerHTML = await createTicketHTML({ route: reservation.route, date: reservation.date, seats: reservation.seats }, false);
 
         // Génération Billet Retour (si existe)
         if (reservation.returnRoute) {
             returnSection.style.display = 'block';
-            returnSection.innerHTML = await createTicketHTML({ 
-                route: reservation.returnRoute, 
-                date: reservation.returnDate, 
-                seats: reservation.returnSeats 
-            }, true);
+            returnSection.innerHTML = await createTicketHTML({ route: reservation.returnRoute, date: reservation.returnDate, seats: reservation.returnSeats }, true);
         }
 
-        // --- ✅ GÉNÉRATION DES BOUTONS D'ACTION (CORRIGÉE) ---
-        let actionsHTML = `
-            <button class="btn-modern btn-download" onclick="downloadTicket(false)">
-                <span class="btn-icon">📥</span>
-                <span class="btn-text">Télécharger Billet Aller</span>
-            </button>
-        `;
-
+        // --- Génération des boutons d'action ---
+        let actionsHTML = `<button class="btn-modern btn-download" onclick="downloadTicket(false)"><span class="btn-icon">📥</span><span class="btn-text">Télécharger Billet Aller</span></button>`;
+        const trackerAller = reservation.busIdentifier || reservation.route?.trackerId;
+        if (trackerAller) {
+            actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerAller}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Aller</span></a>`;
+        }
         if (reservation.returnRoute) {
-            actionsHTML += `
-                <button class="btn-modern btn-download" onclick="downloadTicket(true)">
-                    <span class="btn-icon">📥</span>
-                    <span class="btn-text">Télécharger Billet Retour</span>
-                </button>
-            `;
+            actionsHTML += `<button class="btn-modern btn-download" onclick="downloadTicket(true)"><span class="btn-icon">📥</span><span class="btn-text">Télécharger Billet Retour</span></button>`;
+            const trackerRetour = reservation.returnBusIdentifier || reservation.returnRoute?.trackerId;
+            if (trackerRetour) {
+                actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerRetour}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Retour</span></a>`;
+            }
         }
-
-        // ✅ Vérification robuste pour le tracker
-        const trackerIdentifier = reservation.route.busIdentifier || reservation.route.trackerId;
-        console.log("🛰️ Tracker ID trouvé :", trackerIdentifier);
-
-        if (trackerIdentifier) {
-            actionsHTML += `
-                <a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${reservation.bookingNumber}" target="_blank">
-                    <span class="btn-icon">🛰️</span>
-                    <span class="btn-text">Suivre mon bus</span>
-                </a>
-            `;
-        }
-
-        actionsHTML += `
-            <button class="btn-modern btn-home" onclick="resetAndGoHome()">
-                <span class="btn-icon">🏠</span>
-                <span class="btn-text">Nouvelle Réservation</span>
-            </button>
-        `;
-
+        actionsHTML += `<button class="btn-modern btn-home" onclick="resetAndGoHome()"><span class="btn-icon">🏠</span><span class="btn-text">Nouvelle Réservation</span></button>`;
+        
         actionsContainer.innerHTML = actionsHTML;
 
     } catch (err) {
