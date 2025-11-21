@@ -2437,9 +2437,12 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
-        function renderTable(reservations) {
+    function renderTable(reservations) {
     const tbody = document.getElementById('reservations-body');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error("❌ Élément 'reservations-body' introuvable !");
+        return;
+    }
 
     if (!reservations || reservations.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
@@ -2451,11 +2454,21 @@
         const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
-        // Logique pour trouver la preuve de paiement
         let proof = r.paymentDetails?.transactionProof || r.agencyPaymentCode || 'N/A';
-        if (proof === 'PAIEMENT_AGENCE_VALIDE') proof = r.agencyPaymentCode; // Cas d'un report validé en agence
+        if (proof === 'PAIEMENT_AGENCE_VALIDE') proof = r.agencyPaymentCode;
         
         const method = r.paymentMethod || 'N/A';
+
+        // ✅ Déclaration du décompteur ici
+        let countdownHTML = '';
+        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+            countdownHTML = `
+                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
+                    <span class="countdown-icon">⏱️</span>
+                    <span class="countdown-time">Calcul...</span>
+                </div>
+            `;
+        }
 
         return `
             <tr>
@@ -2476,7 +2489,11 @@
                         (${method})
                     </div>
                 </td>
-                <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                <td>
+                    <span class="badge ${badgeClass}">${r.status}</span>
+                    <!-- ✅ Affichage du décompteur -->
+                    ${countdownHTML} 
+                </td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
                     ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
@@ -2487,9 +2504,9 @@
         `;
     }).join('');
 
-            // Cet appel est crucial et va animer le décompteur
-            startCountdownUpdates();
-        }
+    // ✅ L'APPEL EST MAINTENANT DANS LA FONCTION
+    startCountdownUpdates();
+} // ✅ L'ACCOLADE EST BIEN ICI
         // Dans Admin/index.html - Ajouter après renderTable()
 
         // ============================================
