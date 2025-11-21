@@ -152,6 +152,78 @@ async function connectToDb() {
     process.exit(1);
   }
 }
+
+
+// ============================================
+// 📧 CONFIGURATION ET ENVOI D'EMAILS (RESEND)
+// ============================================
+
+/**
+ * Fonction principale pour envoyer tous les emails transactionnels.
+ */
+async function sendEmail(to, subject, htmlContent) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("⚠️ Clé API Resend non configurée. Envoi d'email SIMULÉ.");
+    return { success: true, message: "Simulation." };
+  }
+  if (!process.env.EMAIL_FROM_ADDRESS) {
+      console.error("❌ Var env EMAIL_FROM_ADDRESS manquante.");
+      return { success: false, error: "Expéditeur manquant." };
+  }
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM_ADDRESS,
+      to: [to],
+      subject: subject,
+      html: htmlContent,
+    });
+    if (error) {
+      console.error(`❌ Erreur Resend à ${to}:`, error.message);
+      return { success: false, error: error.message };
+    }
+    console.log(`✅ Email envoyé à ${to}. ID: ${data.id}`);
+    return { success: true, messageId: data.id };
+  } catch (e) {
+    console.error("❌ Erreur critique sendEmail:", e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// --- Fonctions spécifiques pour chaque type d'email ---
+
+function sendPendingPaymentEmail(reservation) {
+    const client = reservation.passengers[0];
+    if (!client?.email) return;
+    const subject = `⏳ Votre réservation En-Bus ${reservation.bookingNumber} est en attente`;
+    const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' });
+    let paymentInstructions = '';
+    if (reservation.paymentMethod === 'AGENCY') {
+        paymentInstructions = `<p>Pour finaliser, présentez-vous en agence avec le code :</p><p style="font-size: 24px; font-weight: bold;">${reservation.agencyPaymentCode}</p>`;
+    } else {
+        paymentInstructions = `<p>Pour finaliser, effectuez un paiement Mobile Money de <strong>${reservation.totalPrice}</strong> avec la référence <strong>${reservation.bookingNumber}</strong>.</p>`;
+    }
+    const htmlContent = `<h1>Bonjour ${client.name},</h1><p>Votre réservation pour <strong>${reservation.route.from} → ${reservation.route.to}</strong> est enregistrée.</p>${paymentInstructions}<p>Attention, elle sera annulée si le paiement n'est pas reçu avant le <strong>${deadline}</strong>.</p>`;
+    sendEmail(client.email, subject, htmlContent);
+}
+
+function sendPaymentConfirmedEmail(reservation) {
+    const client = reservation.passengers[0];
+    if (!client?.email) return;
+    const subject = `✅ Paiement confirmé ! Votre billet En-Bus ${reservation.bookingNumber}`;
+    const htmlContent = `<h1>Bonjour ${client.name},</h1><p>Votre paiement a été confirmé. Votre voyage est prêt !</p><p>Vous pouvez télécharger votre billet depuis la section "Mes Réservations".</p><p>Bon voyage !</p>`;
+    sendEmail(client.email, subject, htmlContent);
+}
+
+function sendReportConfirmedEmail(oldReservation, newReservation) {
+    const client = newReservation.passengers[0];
+    if (!client?.email) return;
+    const subject = `🔄 Voyage reporté - Votre nouveau billet En-Bus ${newReservation.bookingNumber}`;
+    const htmlContent = `<h1>Bonjour ${client.name},</h1><p>Votre voyage a été reporté avec succès.</p><p><strong>Ancien départ :</strong> ${new Date(oldReservation.date).toLocaleDateString('fr-FR')}.</p><p><strong>Nouveau départ :</strong> ${new Date(newReservation.date).toLocaleDateString('fr-FR')}.</p><p>Votre nouveau numéro de réservation est : <strong>${newReservation.bookingNumber}</strong></p>`;
+    sendEmail(client.email, subject, htmlContent);
+}
+
+
+
 // ============================================
 // 🔐 MIDDLEWARE
 // ============================================
