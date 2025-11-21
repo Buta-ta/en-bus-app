@@ -4147,16 +4147,13 @@
         </div>
     `;
         }
-        function renderReportRequestsTable(requests) {
+       function renderReportRequestsTable(requests) {
     const tbody = document.getElementById('report-requests-body');
 
-    // Sécurité : si l'élément n'existe pas dans le HTML
-    if (!tbody) {
-        console.error("❌ Élément 'report-requests-body' introuvable !");
-        return;
-    }
+    if (!tbody) return;
 
     if (requests.length === 0) {
+        // Ici aussi, utilisez des backticks (touche 7 sur clavier AZERTY)
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center" style="padding:3rem;">
@@ -4172,7 +4169,7 @@
         const request = req.reportRequest;
         const passenger = req.passengers[0];
         
-        // ⚠️ IMPORTANT : Les backticks (`) ci-dessous permettent d'insérer les variables ${...}
+        // 👇 ATTENTION : C'est ce caractère (`) qu'il faut utiliser au début !
         return `
             <tr>
                 <td><strong class="font-mono">${req.bookingNumber}</strong></td>
@@ -4221,10 +4218,9 @@
                     </button>
                 </td>
             </tr>
-        `;
+        `; // 👆 Et ce caractère (`) à la fin !
     }).join('');
 }
-
         async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
             const confirmed = await showAdminConfirm({
