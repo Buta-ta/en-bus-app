@@ -1792,13 +1792,17 @@
 
                 <!-- Table des demandes -->
                 <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Demandes en attente</h2>
-                        <button class="btn btn-secondary" onclick="loadReportRequests()">
-                            🔄 Actualiser
-                        </button>
-                    </div>
-
+                   <div class="card-header">
+    <h2 class="card-title">Demandes en attente et Historique</h2>
+    
+    <!-- ✅ CHAMP DE RECHERCHE -->
+    <input type="text" id="report-search-input" class="form-control" style="flex: 1; max-width: 400px;" 
+           placeholder="Rechercher par N° réservation, nom, code..." oninput="loadReportRequests()">
+    
+    <button class="btn btn-secondary" onclick="loadReportRequests()">
+        🔄 Actualiser
+    </button>
+</div>
                     <div class="table-container">
                         <table>
                             <thead>
@@ -4207,33 +4211,34 @@ function switchTab(tabName) {
         // 🔄 GESTION DES DEMANDES DE REPORT
         // ============================================
 
-       async function loadReportRequests() {
+      async function loadReportRequests() {
     try {
-        // ✅ CORRECTION : On appelle la nouvelle route '/api/admin/reports/history'
-        const data = await apiCall('/admin/reports/history');
-
+        // ✅ On récupère la valeur du champ de recherche
+        const searchTerm = document.getElementById('report-search-input').value.trim();
+        
+        // ✅ On construit l'URL avec le paramètre de recherche
+        const endpoint = searchTerm 
+            ? `/admin/reports/history?search=${encodeURIComponent(searchTerm)}` 
+            : '/admin/reports/history';
+        
+        const data = await apiCall(endpoint); 
+        
         if (!data) {
-            console.log('Aucune donnée reçue pour l\'historique des reports.');
+            document.getElementById('report-requests-body').innerHTML = `<tr><td colspan="7" class="text-center">Erreur de chargement.</td></tr>`;
             return;
         }
         
-        console.log(`📋 ${data.count} entrée(s) trouvée(s) dans l'historique des reports.`);
-
-        // Séparez les demandes en attente de l'historique traité
         const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
         const processedReports = data.reports.filter(r => r.status !== 'En attente de report');
 
         displayReportRequestsStats(pendingRequests);
-        
-        // On passe les deux listes à la fonction d'affichage
         renderReportRequestsTable(pendingRequests, processedReports);
 
     } catch (error) {
         console.error('❌ Erreur chargement historique des reports:', error);
-        showNotification('Erreur lors du chargement de l\'historique des reports', 'error');
+        showNotification('Erreur lors du chargement de l\'historique', 'error');
     }
 }
-
         function displayReportRequestsStats(requests) {
             const statsGrid = document.getElementById('report-stats-grid');
 

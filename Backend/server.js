@@ -559,9 +559,40 @@ app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, re
 
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
     try {
-        const reports = await reservationsCollection.find({ $or: [ { status: "En attente de report" }, { status: "Reporté" }, { originalReservation: { $exists: true, $ne: null } } ] }).sort({ createdAt: -1 }).toArray();
-        res.json({ success: true, count: reports.length, reports });
+        const { search } = req.query; // On récupère le paramètre 'search' de l'URL
+
+        let query = {
+            $or: [
+                { status: "En attente de report" },
+                { status: "Reporté" },
+                { originalReservation: { $exists: true, $ne: null } }
+            ]
+        };
+
+        // ✅ Ajout du filtre de recherche s'il est fourni
+        if (search) {
+            // On cherche dans le numéro de réservation, le nom du passager ou le code de paiement agence
+            query.$and = [ // On combine la condition de base avec la recherche
+                {
+                    $or: [
+                        { bookingNumber: { $regex: search, $options: 'i' } },
+                        { "passengers.0.name": { $regex: search, $options: 'i' } },
+                        { "reportRequest.agencyPaymentCode": { $regex: search, $options: 'i' } }
+                    ]
+                }
+            ];
+        }
+
+        const reports = await reservationsCollection.find(query).sort({ createdAt: -1 }).toArray();
+        
+        res.json({
+            success: true,
+            count: reports.length,
+            reports: reports
+        });
+        
     } catch (error) {
+        console.error("❌ Erreur récupération historique reports:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
