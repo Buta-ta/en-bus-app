@@ -1426,7 +1426,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
         const date = isReturn ? reservation.returnDate : reservation.date;
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
         
-        const busIdentifier = route.busIdentifier || route.trackerId || 'N/A';
+        const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
         const ticketType = isReturn ? 'BILLET RETOUR' : 'BILLET ALLER';
 
         // --- 2. CONSTRUCTION DES SECTIONS DYNAMIQUES ---
@@ -3318,6 +3318,10 @@ async function displayConfirmation(reservation) {
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150).catch(err => '');
         const tripTypeLabel = isReturn ? "RETOUR" : "ALLER";
         const route = tripData.route;
+
+        // ✅ CORRECTION ICI : On prend le busIdentifier de la réservation principale ou du retour
+        const busId = isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier;
+
 
         return `
             <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">
