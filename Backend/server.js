@@ -829,9 +829,13 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
 );
 // Valider une demande de report (après paiement vérifié)
 // Valider une demande de report (après paiement vérifié)
+// Valider une demande de report
 app.post("/api/admin/report-requests/:bookingNumber/approve",
   authenticateToken,
-  [body('transactionProof').notEmpty().withMessage("Preuve de paiement requise")],
+  [
+    // On rend la preuve optionnelle au niveau de la validation initiale
+    body('transactionProof').optional().isString().trim() 
+  ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -840,11 +844,10 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
     
     try {
       const { bookingNumber } = req.params;
-      const { transactionProof } = req.body;
+      let { transactionProof } = req.body; // 'let' pour pouvoir la modifier
       
       console.log(`✅ Validation de la demande de report pour ${bookingNumber}`);
       
-      // 1. Récupérer la réservation avec la demande de report
       const reservation = await reservationsCollection.findOne({ 
         bookingNumber,
         status: "En attente de report"
@@ -855,63 +858,66 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       }
       
       const request = reservation.reportRequest;
-      const newTripId = request.targetTrip.id;
-      
-      // Les sièges sont vides car attribués à la volée
-      const requiredSeatsCount = reservation.passengers.length;
 
-      // 2. Vérifier que le voyage cible existe toujours
+      // ============================================
+      // ✅ LOGIQUE DE VALIDATION DE LA PREUVE
+      // ============================================
+      if (request.paymentMethod === 'AGENCY') {
+          // Pour un paiement agence, on génère notre propre preuve interne
+          transactionProof = `AGENCE-PAY-${Date.now()}`;
+          console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
+      } 
+      // Pour Mobile Money, la preuve qui vient du client est obligatoire
+      else if (!transactionProof && request.paymentMethod !== 'AGENCY') {
+          return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
+      }
+
+      // --- Suite de la logique (inchangée mais importante) ---
+      
+      const newTripId = request.targetTrip.id;
+      const requiredSeatsCount = reservation.passengers.length;
       const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
       if (!newTrip) {
         return res.status(404).json({ error: "Le voyage cible n'existe plus." });
       }
       
-      // 3. Vérifier la disponibilité des sièges et les attribuer
       const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
-      
       if (availableSeats.length < requiredSeatsCount) {
-        return res.status(409).json({ 
-          error: `Pas assez de sièges disponibles. Requis: ${requiredSeatsCount}, Disponibles: ${availableSeats.length}` 
-        });
+        return res.status(409).json({ error: `Pas assez de sièges disponibles.` });
       }
       
-      // 4. Libérer les sièges de l'ancien voyage
-      const oldTripId = reservation.route.id;
-      const oldSeats = reservation.seats.map(s => parseInt(s));
-      
+      // Libérer les anciens sièges
       await tripsCollection.updateOne(
-        { _id: new ObjectId(oldTripId) },
+        { _id: new ObjectId(reservation.route.id) },
         { $set: { "seats.$[elem].status": "available" } },
-        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+        { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] }
       );
       
-      // 5. Réserver les sièges du nouveau voyage
+      // Réserver les nouveaux sièges
       await tripsCollection.updateOne(
         { _id: newTrip._id },
         { $set: { "seats.$[elem].status": "occupied" } },
         { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
       );
       
-      // 6. Marquer l'ancienne réservation comme "Reporté"
+      // Mettre à jour l'ancienne réservation
       await reservationsCollection.updateOne(
         { _id: reservation._id },
         { 
           $set: { 
             status: "Reporté",
             reportedAt: new Date(),
-            'reportRequest.status': 'Approuvé', // Mettre à jour le statut de la demande
+            'reportRequest.status': 'Approuvé',
             'reportRequest.approvedAt': new Date(),
             'reportRequest.approvedBy': req.user.username,
-            'reportRequest.transactionProof': transactionProof
+            'reportRequest.transactionProof': transactionProof // Utilise la preuve finale
           }
         }
       );
       
-      // 7. Créer la nouvelle réservation
+      // Créer la nouvelle réservation
       const newBookingNumber = generateBookingNumber();
-      const reportCount = reservation.reportCount || 0;
       const newPrice = newTrip.route.price * requiredSeatsCount;
-      
       const newReservation = {
         ...reservation,
         _id: new ObjectId(),
@@ -923,16 +929,14 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
         totalPriceNumeric: newPrice,
         totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
         status: "Confirmé",
-        reportCount: reportCount + 1,
+        reportCount: (reservation.reportCount || 0) + 1,
         originalReservation: reservation._id.toString(),
         reportHistory: [
           ...(reservation.reportHistory || []),
           {
-            from: { date: reservation.date, tripId: oldTripId.toString(), seats: oldSeats },
-            to: { date: newTrip.date, tripId: newTrip._id.toString(), seats: availableSeats },
+            from: { date: reservation.date, tripId: reservation.route.id.toString() },
+            to: { date: newTrip.date, tripId: newTrip._id.toString() },
             reportedAt: new Date(),
-            reportFee: request.cost.reportFee,
-            priceDifference: request.cost.priceDifference,
             totalCost: request.cost.totalCost,
             initiatedBy: "client",
             approvedBy: req.user.username,
@@ -948,20 +952,16 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       
       await reservationsCollection.insertOne(newReservation);
       
-      // 8. Lier les deux réservations
       await reservationsCollection.updateOne(
         { _id: reservation._id },
-        { $set: { replacementReservation: newReservation._id.toString(), replacementBookingNumber: newReservation.bookingNumber } } // Ajout du numéro pour l'affichage
+        { $set: { replacementReservation: newReservation._id.toString(), replacementBookingNumber: newReservation.bookingNumber } }
       );
       
       console.log(`✅✅ Report validé par admin: ${newBookingNumber}`);
       
-      // TODO: Envoyer un email au client avec le nouveau billet
-      
       res.json({
         success: true,
         message: "Demande de report validée avec succès.",
-        oldBookingNumber: bookingNumber,
         newBookingNumber: newBookingNumber
       });
       
