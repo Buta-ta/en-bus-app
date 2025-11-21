@@ -4134,54 +4134,86 @@
         </div>
     `;
         }
-     function renderReportRequestsTable(requests) {
-    const tbody = document.getElementById('report-requests-body');
-    if (!tbody) return;
 
-    if (requests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucune demande</td></tr>';
+        function renderReportRequestsTable(requests) {
+    const tbody = document.getElementById('report-requests-body');
+
+    // Sécurité : si l'élément n'existe pas dans le HTML
+    if (!tbody) {
+        console.error("❌ Élément 'report-requests-body' introuvable !");
         return;
     }
 
-    let htmlContent = '';
+    if (requests.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center" style="padding:3rem;">
+                    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+                    <div style="color:var(--text-muted);font-weight:600;">Aucune demande en attente</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
 
-    requests.forEach(req => {
+    tbody.innerHTML = requests.map(req => {
         const request = req.reportRequest;
         const passenger = req.passengers[0];
-        const amount = formatPrice(request.cost.totalCost);
-        const txId = request.transactionId || 'N/A';
-        const method = request.paymentMethod || 'Mobile Money';
-        const dateRequested = new Date(request.requestedAt).toLocaleString('fr-FR');
-        const currentDate = new Date(req.date).toLocaleDateString('fr-FR');
-        const newDate = new Date(request.targetTrip.date).toLocaleDateString('fr-FR');
-
-        htmlContent += '<tr>';
-        htmlContent += '<td><strong class="font-mono">' + req.bookingNumber + '</strong></td>';
-        htmlContent += '<td><div class="font-bold">' + passenger.name + '</div><div class="text-xs text-muted">' + passenger.phone + '</div></td>';
-        htmlContent += '<td><div class="font-bold">' + req.route.from + ' → ' + req.route.to + '</div><div class="text-xs text-muted">📅 ' + currentDate + '</div></td>';
-        htmlContent += '<td><div class="font-bold">' + request.targetTrip.route.from + ' → ' + request.targetTrip.route.to + '</div><div class="text-xs text-muted">📅 ' + newDate + '</div></td>';
         
-        htmlContent += '<td>';
-        htmlContent += '<div class="font-bold" style="color: var(--primary); font-size: 1.1em;">' + amount + ' FCFA</div>';
-        htmlContent += '<div class="transaction-id-display" style="margin-top: 8px; padding: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; border: 1px solid var(--dark-border);">';
-        htmlContent += '<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">Preuve de paiement :</div>';
-        htmlContent += '<strong style="color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">' + txId + '</strong>';
-        htmlContent += '</div>';
-        htmlContent += '<div class="text-xs text-muted" style="margin-top: 4px;">Via ' + method + '</div>';
-        htmlContent += '</td>';
+        // ⚠️ IMPORTANT : Les backticks (`) ci-dessous permettent d'insérer les variables ${...}
+        return `
+            <tr>
+                <td><strong class="font-mono">${req.bookingNumber}</strong></td>
+                <td>
+                    <div class="font-bold">${passenger.name}</div>
+                    <div class="text-xs text-muted">${passenger.phone}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${req.route.from} → ${req.route.to}</div>
+                    <div class="text-xs text-muted">📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${request.targetTrip.route.from} → ${request.targetTrip.route.to}</div>
+                    <div class="text-xs text-muted">📅 ${new Date(request.targetTrip.date).toLocaleDateString('fr-FR')}</div>
+                </td>
+                
+                <td>
+                    <div class="font-bold" style="color: var(--primary); font-size: 1.1em;">
+                        ${formatPrice(request.cost.totalCost)} FCFA
+                    </div>
+                    
+                    <div class="transaction-id-display" style="margin-top: 8px; padding: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; border: 1px solid var(--dark-border);">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">Preuve de paiement :</div>
+                        <strong style="color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">
+                            ${request.transactionId || '⏳ En attente'}
+                        </strong>
+                    </div>
+                    
+                    <div class="text-xs text-muted" style="margin-top: 4px;">
+                        Via ${request.paymentMethod || 'Mobile Money'}
+                    </div>
+                </td>
 
-        htmlContent += '<td class="text-xs">' + dateRequested + '</td>';
-        
-        htmlContent += '<td class="actions-cell">';
-        htmlContent += '<button class="btn btn-icon btn-success" onclick="approveReportRequest(\'' + req.bookingNumber + '\', \'' + txId + '\')" title="Valider">✅</button>';
-        htmlContent += '<button class="btn btn-icon btn-danger" onclick="rejectReportRequest(\'' + req.bookingNumber + '\')" title="Rejeter">❌</button>';
-        htmlContent += '</td>';
-        htmlContent += '</tr>';
-    });
-
-    tbody.innerHTML = htmlContent;
+                <td class="text-xs">${new Date(request.requestedAt).toLocaleString('fr-FR')}</td>
+                
+                <td class="actions-cell">
+                    <button class="btn btn-icon btn-success" 
+                            onclick="approveReportRequest('${req.bookingNumber}', '${request.transactionId || ''}')" 
+                            title="Valider le report">
+                        ✅
+                    </button>
+                    <button class="btn btn-icon btn-danger" 
+                            onclick="rejectReportRequest('${req.bookingNumber}')" 
+                            title="Rejeter la demande">
+                        ❌
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
-        async function approveReportRequest(bookingNumber, transactionId) {
+
+       async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
             const confirmed = await showAdminConfirm({
                 title: "Valider le paiement ?",
