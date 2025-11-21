@@ -1925,25 +1925,32 @@ app.patch("/api/admin/settings/report",
 );
 
 // Obtenir l'historique des reports
+// Renommée et modifiée pour tout récupérer
+// Renommée et modifiée pour tout récupérer
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
   try {
-    const reportedReservations = await reservationsCollection.find({
-      status: "Reporté"
-    }).sort({ reportedAt: -1 }).toArray();
+    // On cherche les réservations qui ont été reportées OU qui ont une demande de report
+    const reports = await reservationsCollection.find({
+      $or: [
+        { status: "En attente de report" }, // Demandes payantes en attente
+        { status: "Reporté" }, // Anciens billets qui ont été remplacés
+        { originalReservation: { $exists: true, $ne: null } } // ✅ NOUVELLE CONDITION : Nouveaux billets créés suite à un report
+      ]
+    }).sort({ createdAt: -1 }).toArray(); // Trier par date de création (plus pertinent)
+    
+    console.log(`📋 Historique des reports: ${reports.length} entrée(s) trouvée(s)`);
     
     res.json({
       success: true,
-      count: reportedReservations.length,
-      reports: reportedReservations
+      count: reports.length,
+      reports: reports
     });
     
   } catch (error) {
-    console.error("❌ Erreur récupération historique:", error);
+    console.error("❌ Erreur récupération historique reports:", error);
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
-
-
 
 
 
