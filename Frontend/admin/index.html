@@ -4340,17 +4340,18 @@ function renderReportRequestsTable(pending, processed) {
 
     tbody.innerHTML = htmlContent;
 }
-async function approveReportRequest(bookingNumber, proofFromTable) {
-    console.log(`▶️ Clic sur "Valider" détecté pour ${bookingNumber} avec la preuve : ${proofFromTable}`); // ✅ AJOUTEZ CETTE LIGNE
 
-    const isAgencyPayment = (proofFromTable.toUpperCase() === 'PAIEMENT_AGENCE' || !proofFromTable);
+    async function approveReportRequest(bookingNumber, proofFromTable) {
+    // 1. Log pour être sûr que le clic fonctionne
+    console.log(`▶️ Validation demandée pour ${bookingNumber}. Preuve reçue: "${proofFromTable}"`);
 
+    // 2. Demander une confirmation simple à l'admin
     const confirmed = await showAdminConfirm({
-        title: isAgencyPayment ? 'Valider le paiement en agence ?' : 'Valider le paiement Mobile Money ?',
-        message: `Confirmez-vous avoir reçu le paiement pour la réservation ${bookingNumber} ?\n\n${!isAgencyPayment ? `Preuve soumise : ${proofFromTable}` : ''}`,
-        icon: isAgencyPayment ? '🏢' : '✅',
+        title: "Confirmer la validation ?",
+        message: `Vous êtes sur le point de valider le report pour la réservation ${bookingNumber}.\n\nAvez-vous vérifié le paiement ?`,
+        icon: '✅',
         iconClass: 'success',
-        confirmText: 'Oui, paiement reçu'
+        confirmText: 'Oui, valider'
     });
 
     if (!confirmed) {
@@ -4358,26 +4359,25 @@ async function approveReportRequest(bookingNumber, proofFromTable) {
         return;
     }
 
+    // 3. Appel de l'API avec la preuve récupérée
     try {
-        // Pour les paiements agence, on envoie un body vide. Pour les autres, on envoie la preuve.
-        const body = isAgencyPayment ? {} : { transactionProof: proofFromTable };
-        
         const data = await apiCall(
             `/admin/report-requests/${bookingNumber}/approve`,
             'POST',
-            body
+            { transactionProof: proofFromTable } // On envoie simplement la preuve, le backend fera le tri
         );
 
         if (data && data.success) {
-            showNotification(`✅ Report validé ! Nouveau billet : ${data.newBookingNumber}`, 'success');
-            loadReportRequests();
+            showNotification('Report validé avec succès !', 'success');
+            loadReportRequests(); // Recharger la liste
+        } else {
+            showNotification(data?.error || 'La validation a échoué.', 'error');
         }
-
     } catch (error) {
-        console.error('❌ Erreur validation report:', error);
-        showNotification('Erreur lors de la validation', 'error');
+        showNotification(`Erreur: ${error.message}`, 'error');
     }
-}    // Rejeter une demande de report
+}
+// Rejeter une demande de report
         async function rejectReportRequest(bookingNumber) {
             const confirmed = await showAdminConfirm({
                 title: "Rejeter cette demande ?",
