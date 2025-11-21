@@ -4263,96 +4263,80 @@ function switchTab(tabName) {
         </div>
     `;
         }
-function renderReportRequestsTable(pending, processed) {
+
+        function renderReportRequestsTable(pending, processed) {
     const tbody = document.getElementById('report-requests-body');
-    if (!tbody) {
-        console.error("❌ Élément 'report-requests-body' introuvable !");
-        return;
-    }
+    if (!tbody) return;
 
     if (pending.length === 0 && processed.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center" style="padding:3rem;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
-                    <div style="color:var(--text-muted);font-weight:600;">Aucun report trouvé (en attente ou traité)</div>
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center">Aucun report trouvé.</td></tr>`;
         return;
     }
 
     let htmlContent = '';
 
-    // Fonction pour générer une ligne (TR)
     const createRowHTML = (req) => {
-        const isPending = req.status === 'En attente de report';
+        // --- SÉCURITÉ : Valeurs par défaut ---
+        const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
         
-        // On récupère les infos soit depuis la demande en cours, soit depuis l'historique
-        const reportData = req.reportRequest || (req.reportHistory && req.reportHistory[req.reportHistory.length - 1]);
-        
-        // Sécurité si les données sont incomplètes
-        if (!reportData || !req.passengers || !req.passengers.length > 0) {
-            return ''; 
+        let statusBadge = '<span class="badge badge-gray">Inconnu</span>';
+        let fromHTML = 'N/A';
+        let toHTML = 'N/A';
+        let paymentHTML = 'N/A';
+        let requestedDate = 'N/A';
+        let actionsHTML = '<span>-</span>';
+
+        // --- Cas 1 : Demande en attente ---
+        if (req.status === 'En attente de report' && req.reportRequest) {
+            statusBadge = '<span class="badge badge-warning">En attente</span>';
+            
+            fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+            toHTML = `${req.reportRequest.targetTrip.route.from} → ${req.reportRequest.targetTrip.route.to}<br><small>📅 ${new Date(req.reportRequest.targetTrip.date).toLocaleDateString('fr-FR')}</small>`;
+            
+            paymentHTML = `
+                <strong>${formatPrice(req.reportRequest.cost?.totalCost || 0)} FCFA</strong><br>
+                <small>Preuve: ${req.reportRequest.transactionId || 'N/A'}</small>
+            `;
+            
+            requestedDate = new Date(req.reportRequest.requestedAt).toLocaleString('fr-FR');
+            
+            actionsHTML = `
+                <button class="btn btn-icon btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${req.reportRequest.transactionId || ''}')">✅</button>
+                <button class="btn btn-icon btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')">❌</button>
+            `;
+        } 
+        // --- Cas 2 : Ancien billet reporté ---
+        else if (req.status === 'Reporté') {
+            statusBadge = '<span class="badge badge-gray">Obsolète</span>';
+            fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+            toHTML = `<small>Remplacé</small>`;
+            paymentHTML = `-`;
+            requestedDate = new Date(req.reportedAt).toLocaleString('fr-FR');
+        } 
+        // --- Cas 3 : Nouveau billet créé par report ---
+        else if (req.originalReservation) {
+            statusBadge = '<span class="badge badge-success">Validé</span>';
+            const history = req.reportHistory[req.reportHistory.length - 1];
+            
+            fromHTML = `${history.from.routeFrom || '...'} → ${history.from.routeTo || '...'}<br><small>📅 ${new Date(history.from.date).toLocaleDateString('fr-FR')}</small>`;
+            toHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+            
+            paymentHTML = `
+                <strong>${formatPrice(history.totalCost || 0)} FCFA</strong><br>
+                <small>Preuve: ${history.transactionProof || 'GRATUIT'}</small>
+            `;
+            requestedDate = new Date(history.reportedAt).toLocaleString('fr-FR');
         }
 
-        const passenger = req.passengers[0];
-        
-        // Données du trajet actuel
-        const currentTripDate = new Date(req.date).toLocaleDateString('fr-FR');
-        const currentTripRoute = `${req.route.from} → ${req.route.to}`;
-
-        // Données du nouveau trajet (cible)
-        const targetTrip = reportData.targetTrip || reportData.to; // 'to' pour l'historique
-        const newTripDate = new Date(targetTrip.date).toLocaleDateString('fr-FR');
-        const newTripRoute = `${targetTrip.route.from} → ${targetTrip.route.to}`;
-
-        // Données du paiement
-        const cost = reportData.cost?.totalCost ?? reportData.totalCost ?? 0;
-        const proof = reportData.transactionId ?? reportData.transactionProof ?? 'N/A';
-        const method = reportData.paymentMethod || 'Mobile Money';
-
         return `
-            <tr style="${!isPending ? 'opacity: 0.6; filter: grayscale(50%);' : ''}">
-                <td>
-                    <strong class="font-mono">${req.bookingNumber}</strong><br>
-                    ${isPending 
-                        ? '<span class="badge badge-warning">En attente</span>'
-                        : `<span class="badge badge-gray">Traité le ${new Date(req.reportedAt || reportData.reportedAt).toLocaleDateString('fr-FR')}</span>`
-                    }
-                </td>
-                <td>
-                    <div class="font-bold">${passenger.name}</div>
-                    <div class="text-xs text-muted">${passenger.phone}</div>
-                </td>
-                <td>
-                    <div class="font-bold">${currentTripRoute}</div>
-                    <div class="text-xs text-muted">📅 ${currentTripDate}</div>
-                </td>
-                <td>
-                    <div class="font-bold">${newTripRoute}</div>
-                    <div class="text-xs text-muted">📅 ${newTripDate}</div>
-                </td>
-                <td>
-                    <div class="font-bold" style="color: var(--primary); font-size: 1.1em;">
-                        ${formatPrice(cost)} FCFA
-                    </div>
-                    <div class="transaction-id-display" style="margin-top: 8px;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">Preuve :</div>
-                        <strong style="color: var(--accent); font-family: var(--font-mono);">
-                            ${proof}
-                        </strong>
-                        <div class="text-xs text-muted">Via ${method}</div>
-                    </div>
-                </td>
-                <td class="text-xs">${new Date(reportData.requestedAt || req.createdAt).toLocaleString('fr-FR')}</td>
-                <td class="actions-cell">
-                    ${isPending 
-                        ? `<button class="btn btn-icon btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${proof}')" title="Valider">✅</button>
-                           <button class="btn btn-icon btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')" title="Rejeter">❌</button>`
-                        : '<span class="text-xs text-muted">Terminé</span>'
-                    }
-                </td>
+            <tr style="${req.status === 'Reporté' ? 'opacity: 0.5; text-decoration: line-through;' : ''}">
+                <td><strong class="font-mono">${req.bookingNumber}</strong><br>${statusBadge}</td>
+                <td>${passenger.name}</td>
+                <td>${fromHTML}</td>
+                <td>${toHTML}</td>
+                <td>${paymentHTML}</td>
+                <td>${requestedDate}</td>
+                <td class="actions-cell">${actionsHTML}</td>
             </tr>
         `;
     };
@@ -4376,7 +4360,6 @@ function renderReportRequestsTable(pending, processed) {
 
     tbody.innerHTML = htmlContent;
 }
-
         async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
             const confirmed = await showAdminConfirm({
