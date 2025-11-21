@@ -4360,36 +4360,64 @@ function switchTab(tabName) {
 
     tbody.innerHTML = htmlContent;
 }
-        async function approveReportRequest(bookingNumber, transactionId) {
-            // On passe l'ID qui est affiché dans le tableau
-            const confirmed = await showAdminConfirm({
-                title: "Valider le paiement ?",
-                message: `Confirmez-vous avoir reçu le paiement correspondant à l'ID de transaction :\n\n👉 ${transactionId}\n\nPour la réservation ${bookingNumber} ?`,
-                icon: '✅',
-                iconClass: 'success',
-                confirmText: 'Oui, paiement reçu'
-            });
+async function approveReportRequest(bookingNumber, proofFromTable) {
+    let finalTransactionProof = proofFromTable;
 
-            if (!confirmed) return;
+    // --- CAS 1 : C'est un paiement en agence ---
+    // On vérifie si la preuve est 'PAIEMENT_AGENCE' ou si elle est vide/N/A
+    if (proofFromTable.toUpperCase() === 'PAIEMENT_AGENCE' || !proofFromTable) {
+        
+        const confirmed = await showAdminConfirm({
+            title: 'Valider le paiement en agence',
+            message: `Confirmez-vous avoir reçu le paiement en espèces pour la réservation ${bookingNumber} ?`,
+            icon: '🏢',
+            iconClass: 'success',
+            confirmText: 'Oui, paiement reçu'
+        });
 
-            try {
-                // On envoie l'ID qui était déjà dans la demande
-                const data = await apiCall(
-                    `/admin/report-requests/${bookingNumber}/approve`,
-                    'POST',
-                    { transactionProof: transactionId }
-                );
-
-                if (data && data.success) {
-                    showNotification(`✅ Report validé ! Nouveau billet généré.`, 'success');
-                    loadReportRequests();
-                }
-
-            } catch (error) {
-                console.error('❌ Erreur validation:', error);
-                showNotification('Erreur lors de la validation', 'error');
-            }
+        if (!confirmed) {
+            showNotification('Validation annulée.', 'info');
+            return;
         }
+        
+        // La preuve est simplement la confirmation de l'admin
+        finalTransactionProof = 'Paiement Agence Validé par Admin';
+
+    } 
+    // --- CAS 2 : C'est un paiement Mobile Money ---
+    else {
+        const confirmed = await showAdminConfirm({
+            title: "Valider le paiement Mobile Money ?",
+            message: `Confirmez-vous la réception du paiement correspondant à l'ID de transaction :\n\n👉 ${proofFromTable}`,
+            icon: '✅',
+            iconClass: 'success',
+            confirmText: 'Oui, paiement reçu'
+        });
+
+        if (!confirmed) {
+            showNotification('Validation annulée.', 'info');
+            return;
+        }
+    }
+
+    // --- Appel API ---
+    try {
+        const data = await apiCall(
+            `/admin/report-requests/${bookingNumber}/approve`,
+            'POST',
+            { transactionProof: finalTransactionProof } // On envoie la preuve finale
+        );
+
+        if (data && data.success) {
+            showNotification(`✅ Report validé ! Nouveau billet : ${data.newBookingNumber}`, 'success');
+            loadReportRequests(); // Recharger la liste
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur validation report:', error);
+        showNotification('Erreur lors de la validation', 'error');
+    }
+}
         // Rejeter une demande de report
         async function rejectReportRequest(bookingNumber) {
             const confirmed = await showAdminConfirm({
