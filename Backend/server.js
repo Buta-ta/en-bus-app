@@ -251,7 +251,6 @@ app.get("/api/trips/:id/seats", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
 app.post(
   "/api/reservations",
   strictLimiter,
@@ -266,26 +265,25 @@ app.post(
     const errors = validationResult(req);
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
+    
     try {
       const reservationData = req.body;
+      
       const trip = await tripsCollection.findOne({
         _id: new ObjectId(reservationData.route.id),
       });
       if (!trip)
         return res.status(404).json({ error: "Voyage aller introuvable." });
+        
       const seatNumbersToOccupy = reservationData.seats.map((s) => parseInt(s));
       const alreadyTaken = trip.seats.filter(
         (s) =>
           seatNumbersToOccupy.includes(s.number) && s.status !== "available"
       );
       if (alreadyTaken.length > 0)
-        return res
-          .status(409)
-          .json({
-            error: `Conflit : Sièges aller ${alreadyTaken
-              .map((s) => s.number)
-              .join(", ")} indisponibles.`,
-          });
+        return res.status(409).json({
+          error: `Conflit : Sièges aller ${alreadyTaken.map((s) => s.number).join(", ")} indisponibles.`,
+        });
 
       await tripsCollection.updateOne(
         { _id: trip._id },
@@ -298,7 +296,7 @@ app.post(
           _id: new ObjectId(reservationData.returnRoute.id),
         });
         if (!returnTrip) {
-          // Annuler l'occupation des sièges aller en cas d'erreur sur le retour
+          // Annuler l'occupation des sièges aller en cas d'erreur
           await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "available" } },
@@ -306,26 +304,21 @@ app.post(
           );
           return res.status(404).json({ error: "Voyage retour introuvable." });
         }
-        const returnSeatNumbers = reservationData.returnSeats.map((s) =>
-          parseInt(s)
-        );
+        const returnSeatNumbers = reservationData.returnSeats.map((s) => parseInt(s));
         const returnAlreadyTaken = returnTrip.seats.filter(
           (s) =>
             returnSeatNumbers.includes(s.number) && s.status !== "available"
         );
         if (returnAlreadyTaken.length > 0) {
+          // Annuler l'occupation des sièges aller
           await tripsCollection.updateOne(
             { _id: trip._id },
             { $set: { "seats.$[elem].status": "available" } },
             { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
           );
-          return res
-            .status(409)
-            .json({
-              error: `Conflit : Sièges retour ${returnAlreadyTaken
-                .map((s) => s.number)
-                .join(", ")} indisponibles.`,
-            });
+          return res.status(409).json({
+            error: `Conflit : Sièges retour ${returnAlreadyTaken.map((s) => s.number).join(", ")} indisponibles.`,
+          });
         }
         await tripsCollection.updateOne(
           { _id: returnTrip._id },
@@ -334,15 +327,29 @@ app.post(
         );
       }
 
+      // ===============================================
+      // ✅ LOGIQUE DE GÉNÉRATION DU CODE AGENCE
+      // ===============================================
+      if (reservationData.paymentMethod === 'AGENCY') {
+        const randomCode = Math.floor(10000 + Math.random() * 90000); // Code à 5 chiffres
+        reservationData.agencyPaymentCode = `AG-${randomCode}`;
+        console.log(`📠 Code de paiement agence généré: ${reservationData.agencyPaymentCode} pour ${reservationData.bookingNumber}`);
+      }
+      // ===============================================
+
       const result = await reservationsCollection.insertOne(reservationData);
-      sendConfirmationEmail(reservationData);
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "Réservation créée.",
-          reservationId: result.insertedId,
-        });
+      
+      // On n'envoie l'email que si le paiement n'est pas déjà confirmé
+      if (reservationData.status !== 'Confirmé') {
+        sendConfirmationEmail(reservationData);
+      }
+      
+      res.status(201).json({
+        success: true,
+        message: "Réservation créée.",
+        reservationId: result.insertedId,
+      });
+
     } catch (error) {
       console.error("❌ Erreur réservation:", error);
       res.status(500).json({ error: "Erreur serveur." });
@@ -668,7 +675,8 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
   [
     body('newTripId').notEmpty(),
     body('paymentMethod').optional().isString(),
-    body('customerPhone').optional().isString()
+    body('customerPhone').optional().isString(),
+    body('transactionId').optional({ nullable: true })
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -680,17 +688,9 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
       const { bookingNumber } = req.params;
       const { newTripId, paymentMethod, customerPhone, transactionId } = req.body;
       
-      console.log(`🔄 Demande de report pour ${bookingNumber} vers voyage ${newTripId}`);
-      
-      // 1. Récupérer la réservation actuelle
       const reservation = await reservationsCollection.findOne({ bookingNumber });
       if (!reservation) {
         return res.status(404).json({ error: "Réservation introuvable." });
-      }
-      
-      // 2. Récupérer le nouveau voyage
-      if (!ObjectId.isValid(newTripId)) {
-        return res.status(400).json({ error: "ID de voyage invalide." });
       }
       
       const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
@@ -698,243 +698,136 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
         return res.status(404).json({ error: "Voyage cible introuvable." });
       }
       
-      // 3. Vérifier la disponibilité des sièges
       const requiredSeats = reservation.passengers.length;
       const availableSeatsCount = newTrip.seats.filter(s => s.status === 'available').length;
-      
       if (availableSeatsCount < requiredSeats) {
-        return res.status(409).json({ 
-          error: `Pas assez de sièges disponibles. Requis: ${requiredSeats}, Disponibles: ${availableSeatsCount}` 
-        });
+        return res.status(409).json({ error: `Pas assez de sièges. Requis: ${requiredSeats}, Dispo: ${availableSeatsCount}` });
       }
       
-      // 4. Calculer le coût du report
       const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-      const config = settings?.value || {
-        firstReportFree: true,
-        secondReportFee: 2000,
-        thirdReportFee: 5000
-      };
-      
+      const config = settings?.value || { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
       const reportCount = reservation.reportCount || 0;
-      let reportFee = 0;
-      
-      if (reportCount === 0 && config.firstReportFree) {
-        reportFee = 0;
-      } else if (reportCount === 1) {
-        reportFee = config.secondReportFee;
-      } else {
-        reportFee = config.thirdReportFee;
-      }
-      
-      const currentPrice = reservation.totalPriceNumeric || reservation.route.price * reservation.passengers.length;
-      const newPrice = newTrip.route.price * reservation.passengers.length;
+      const reportFee = (reportCount === 0 && config.firstReportFree) ? 0 : (reportCount === 1 ? config.secondReportFee : config.thirdReportFee);
+      const currentPrice = reservation.totalPriceNumeric || 0;
+      const newPrice = (newTrip.route.price || 0) * requiredSeats;
       const priceDifference = newPrice - currentPrice;
       const totalCost = reportFee + priceDifference;
-      
-      console.log(`💰 Coût du report: Frais=${reportFee}, Différence=${priceDifference}, Total=${totalCost}`);
-      
-      // ✅ 5. SI PAIEMENT REQUIS → Créer une DEMANDE DE REPORT
-      
-      // ✅ 5. SI PAIEMENT REQUIS
+
       if (totalCost > 0) {
-        console.log('💳 Paiement requis. Création demande avec preuve...');
+        // --- CAS 1 : PAIEMENT REQUIS ---
         
-        
-        // Attribuer automatiquement les sièges pour la future réservation
-        const availableSeats = newTrip.seats
-          .filter(s => s.status === 'available')
-          .slice(0, requiredSeats)
-          .map(s => s.number);
-        
-        // Créer un objet "demande de report" dans la réservation
+        let agencyPaymentCode = null;
+        if (paymentMethod?.toUpperCase() === 'AGENCY') {
+            const randomCode = Math.floor(10000 + Math.random() * 90000);
+            agencyPaymentCode = `AG-${randomCode}`;
+            console.log(`📠 Code paiement agence pour report généré: ${agencyPaymentCode}`);
+        }
+
         const reportRequest = {
           requestedAt: new Date(),
           targetTrip: {
             id: newTrip._id.toString(),
             date: newTrip.date,
             route: newTrip.route,
-            seats: availableSeats
+            seats: [] // Les sièges seront attribués à la validation
           },
-          cost: {
-            reportFee: reportFee,
-            priceDifference: priceDifference,
-            totalCost: totalCost
-          },
+          cost: { reportFee, priceDifference, totalCost },
           paymentMethod: paymentMethod?.toUpperCase() || 'MTN',
-           transactionId: transactionId || 'NON FOURNI', // ✅ Enregistrement de l'ID
           customerPhone: customerPhone || reservation.customerPhone,
+          transactionId: transactionId || null,
+          agencyPaymentCode: agencyPaymentCode,
           status: 'En attente de validation admin'
         };
         
-        // Mettre à jour la réservation avec la demande
         await reservationsCollection.updateOne(
           { _id: reservation._id },
-          { 
-            $set: { 
-              reportRequest: reportRequest,
-              status: 'En attente de report' // ✅ Nouveau statut
-            }
-          }
+          { $set: { reportRequest: reportRequest, status: 'En attente de report' } }
         );
-        
-        console.log('✅ Demande de report créée avec succès');
         
         return res.status(200).json({
           success: true,
-          message: "Demande de report enregistrée. Un administrateur la validera après réception du paiement.",
+          message: "Demande de report enregistrée.",
           requiresPayment: true,
           paymentAmount: totalCost,
-          paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h pour payer
+          agencyPaymentCode: agencyPaymentCode,
           oldBookingNumber: bookingNumber
+        });
+
+      } else {
+        // --- CAS 2 : GRATUIT OU CRÉDIT ---
+        
+        const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeats).map(s => s.number);
+        
+        // Libérer anciens sièges
+        await tripsCollection.updateOne(
+            { _id: new ObjectId(reservation.route.id) },
+            { $set: { "seats.$[elem].status": "available" } },
+            { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] }
+        );
+        // Réserver nouveaux sièges
+        await tripsCollection.updateOne(
+            { _id: newTrip._id },
+            { $set: { "seats.$[elem].status": "occupied" } },
+            { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
+        );
+        
+        const newBookingNumber = generateBookingNumber();
+        
+        // Création de la nouvelle réservation
+        const newReservation = {
+            ...reservation,
+            _id: new ObjectId(),
+            bookingNumber: newBookingNumber,
+            route: { ...newTrip.route, id: newTrip._id.toString() },
+            date: newTrip.date,
+            seats: availableSeats,
+            passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
+            totalPriceNumeric: newPrice,
+            totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+            status: "Confirmé",
+            reportCount: (reservation.reportCount || 0) + 1,
+            originalReservation: reservation._id.toString(),
+            reportHistory: [
+              ...(reservation.reportHistory || []),
+              {
+                from: { date: reservation.date, tripId: reservation.route.id.toString(), seats: reservation.seats },
+                to: { date: newTrip.date, tripId: newTrip._id.toString(), seats: availableSeats },
+                reportedAt: new Date(),
+                totalCost: totalCost,
+                initiatedBy: "client"
+              }
+            ],
+            clientCredit: totalCost < 0 ? Math.abs(totalCost) + (reservation.clientCredit || 0) : (reservation.clientCredit || 0),
+            createdAt: new Date()
+        };
+        
+        delete newReservation.reportedAt;
+        delete newReservation.replacementReservation;
+        delete newReservation.reportRequest;
+        
+        await reservationsCollection.insertOne(newReservation);
+        
+        // Lier l'ancienne à la nouvelle
+        await reservationsCollection.updateOne(
+            { _id: reservation._id },
+            { $set: { status: "Reporté", reportedAt: new Date(), replacementReservation: newReservation._id.toString() } }
+        );
+        
+        return res.status(201).json({
+          success: true,
+          message: "Voyage reporté avec succès !",
+          newBookingNumber: newBookingNumber,
+          creditGenerated: newReservation.clientCredit
         });
       }
       
-      // ✅ 6. SI GRATUIT/CRÉDIT → Report immédiat (code existant)
-      console.log('🎁 Report gratuit ou crédit. Traitement immédiat...');
-      
-      const availableSeats = newTrip.seats
-        .filter(s => s.status === 'available')
-        .slice(0, requiredSeats)
-        .map(s => s.number);
-      
-      // Libérer les sièges de l'ancien voyage
-      const oldTripId = reservation.route.id;
-      const oldSeats = reservation.seats.map(s => parseInt(s));
-      
-      await tripsCollection.updateOne(
-        { _id: new ObjectId(oldTripId) },
-        { $set: { "seats.$[elem].status": "available" } },
-        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
-      );
-      
-      // Réserver les sièges du nouveau voyage
-      await tripsCollection.updateOne(
-        { _id: newTrip._id },
-        { $set: { "seats.$[elem].status": "occupied" } },
-        { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
-      );
-      
-      // Marquer l'ancienne réservation comme "Reporté"
-      await reservationsCollection.updateOne(
-        { _id: reservation._id },
-        { 
-          $set: { 
-            status: "Reporté",
-            reportedAt: new Date()
-          }
-        }
-      );
-      
-      // Créer la nouvelle réservation
-      const newBookingNumber = generateBookingNumber();
-      
-      const newReservation = {
-        ...reservation,
-        _id: new ObjectId(),
-        bookingNumber: newBookingNumber,
-        route: {
-          ...newTrip.route,
-          id: newTrip._id.toString()
-        },
-        date: newTrip.date,
-        seats: availableSeats,
-        passengers: reservation.passengers.map((p, i) => ({
-          ...p,
-          seat: availableSeats[i]
-        })),
-        totalPriceNumeric: newPrice,
-        totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
-        status: "Confirmé", // ✅ Confirmé car gratuit
-        reportCount: reportCount + 1,
-        originalReservation: reservation._id.toString(),
-        reportHistory: [
-          ...(reservation.reportHistory || []),
-          {
-            from: {
-              date: reservation.date,
-              tripId: oldTripId,
-              seats: oldSeats
-            },
-            to: {
-              date: newTrip.date,
-              tripId: newTrip._id.toString(),
-              seats: availableSeats
-            },
-            reportedAt: new Date(),
-            reportFee: reportFee,
-            priceDifference: priceDifference,
-            totalCost: totalCost,
-            initiatedBy: "client"
-          }
-        ],
-        clientCredit: totalCost < 0 ? Math.abs(totalCost) : 0,
-        createdAt: new Date()
-      };
-      
-      delete newReservation.reportedAt;
-      delete newReservation.replacementReservation;
-      delete newReservation.reportRequest; // Pas de demande si traité immédiatement
-      
-      await reservationsCollection.insertOne(newReservation);
-      
-      // Lier les deux réservations
-      await reservationsCollection.updateOne(
-        { _id: reservation._id },
-        { $set: { replacementReservation: newReservation._id.toString() } }
-      );
-      
-      console.log(`✅ Report gratuit effectué: ${newBookingNumber}`);
-      
-      res.status(201).json({
-        success: true,
-        message: "Voyage reporté avec succès !",
-        oldBookingNumber: bookingNumber,
-        newBookingNumber: newBookingNumber,
-        newReservation: {
-          bookingNumber: newBookingNumber,
-          date: newTrip.date,
-          seats: availableSeats,
-          totalCost: newReservation.totalPrice,
-          status: newReservation.status,
-          creditGenerated: newReservation.clientCredit
-        }
-      });
-      
     } catch (error) {
       console.error("❌ Erreur confirmation report:", error);
-      res.status(500).json({ error: "Erreur serveur lors du report." });
+      res.status(500).json({ error: "Erreur serveur." });
     }
   }
 );
-
-
-
-// ============================================
-// 👨‍💼 ROUTES ADMIN - GESTION DES DEMANDES DE REPORT
-// ============================================
-
-// Obtenir toutes les demandes de report en attente
-app.get("/api/admin/report-requests", authenticateToken, async (req, res) => {
-  try {
-    const requests = await reservationsCollection.find({
-      status: "En attente de report"
-    }).sort({ 'reportRequest.requestedAt': -1 }).toArray();
-    
-    console.log(`📋 ${requests.length} demande(s) de report trouvée(s)`);
-    
-    res.json({
-      success: true,
-      count: requests.length,
-      requests: requests
-    });
-    
-  } catch (error) {
-    console.error("❌ Erreur récupération demandes report:", error);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
-});
-
+// Valider une demande de report (après paiement vérifié)
 // Valider une demande de report (après paiement vérifié)
 app.post("/api/admin/report-requests/:bookingNumber/approve",
   authenticateToken,
@@ -951,34 +844,34 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       
       console.log(`✅ Validation de la demande de report pour ${bookingNumber}`);
       
-      // 1. Récupérer la réservation avec demande
+      // 1. Récupérer la réservation avec la demande de report
       const reservation = await reservationsCollection.findOne({ 
         bookingNumber,
         status: "En attente de report"
       });
       
       if (!reservation || !reservation.reportRequest) {
-        return res.status(404).json({ error: "Demande de report introuvable." });
+        return res.status(404).json({ error: "Demande de report introuvable ou déjà traitée." });
       }
       
       const request = reservation.reportRequest;
       const newTripId = request.targetTrip.id;
-      const newSeats = request.targetTrip.seats;
       
+      // Les sièges sont vides car attribués à la volée
+      const requiredSeatsCount = reservation.passengers.length;
+
       // 2. Vérifier que le voyage cible existe toujours
       const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
       if (!newTrip) {
         return res.status(404).json({ error: "Le voyage cible n'existe plus." });
       }
       
-      // 3. Vérifier que les sièges sont toujours disponibles
-      const unavailable = newTrip.seats.filter(
-        s => newSeats.includes(s.number) && s.status !== 'available'
-      );
+      // 3. Vérifier la disponibilité des sièges et les attribuer
+      const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
       
-      if (unavailable.length > 0) {
+      if (availableSeats.length < requiredSeatsCount) {
         return res.status(409).json({ 
-          error: `Les sièges ${unavailable.map(s => s.number).join(', ')} ne sont plus disponibles. Veuillez annuler cette demande.` 
+          error: `Pas assez de sièges disponibles. Requis: ${requiredSeatsCount}, Disponibles: ${availableSeats.length}` 
         });
       }
       
@@ -996,7 +889,7 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       await tripsCollection.updateOne(
         { _id: newTrip._id },
         { $set: { "seats.$[elem].status": "occupied" } },
-        { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+        { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
       );
       
       // 6. Marquer l'ancienne réservation comme "Reporté"
@@ -1006,6 +899,7 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
           $set: { 
             status: "Reporté",
             reportedAt: new Date(),
+            'reportRequest.status': 'Approuvé', // Mettre à jour le statut de la demande
             'reportRequest.approvedAt': new Date(),
             'reportRequest.approvedBy': req.user.username,
             'reportRequest.transactionProof': transactionProof
@@ -1016,39 +910,26 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       // 7. Créer la nouvelle réservation
       const newBookingNumber = generateBookingNumber();
       const reportCount = reservation.reportCount || 0;
+      const newPrice = newTrip.route.price * requiredSeatsCount;
       
       const newReservation = {
         ...reservation,
         _id: new ObjectId(),
         bookingNumber: newBookingNumber,
-        route: {
-          ...newTrip.route,
-          id: newTrip._id.toString()
-        },
+        route: { ...newTrip.route, id: newTrip._id.toString() },
         date: newTrip.date,
-        seats: newSeats,
-        passengers: reservation.passengers.map((p, i) => ({
-          ...p,
-          seat: newSeats[i]
-        })),
-        totalPriceNumeric: request.targetTrip.route.price * reservation.passengers.length,
-        totalPrice: `${(request.targetTrip.route.price * reservation.passengers.length).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+        seats: availableSeats,
+        passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
+        totalPriceNumeric: newPrice,
+        totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
         status: "Confirmé",
         reportCount: reportCount + 1,
         originalReservation: reservation._id.toString(),
         reportHistory: [
           ...(reservation.reportHistory || []),
           {
-            from: {
-              date: reservation.date,
-              tripId: oldTripId,
-              seats: oldSeats
-            },
-            to: {
-              date: newTrip.date,
-              tripId: newTrip._id.toString(),
-              seats: newSeats
-            },
+            from: { date: reservation.date, tripId: oldTripId.toString(), seats: oldSeats },
+            to: { date: newTrip.date, tripId: newTrip._id.toString(), seats: availableSeats },
             reportedAt: new Date(),
             reportFee: request.cost.reportFee,
             priceDifference: request.cost.priceDifference,
@@ -1070,7 +951,7 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
       // 8. Lier les deux réservations
       await reservationsCollection.updateOne(
         { _id: reservation._id },
-        { $set: { replacementReservation: newReservation._id.toString() } }
+        { $set: { replacementReservation: newReservation._id.toString(), replacementBookingNumber: newReservation.bookingNumber } } // Ajout du numéro pour l'affichage
       );
       
       console.log(`✅✅ Report validé par admin: ${newBookingNumber}`);
