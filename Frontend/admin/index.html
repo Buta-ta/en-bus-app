@@ -3461,45 +3461,68 @@
         // DANS Admin/index.
 
         // DANS Admin/index.html, dans la section <script>
+function switchTab(tabName) {
+    console.log(`🚀 DEMANDE DE CHANGEMENT D'ONGLET VERS : ${tabName}`);
 
-        function switchTab(tabName) {
-            // 1. Gérer les classes 'active' pour le contenu et les liens
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+    // 1. Désactiver tous les onglets
+    const allTabs = document.querySelectorAll('.tab-content');
+    console.log(`ℹ️ ${allTabs.length} onglets trouvés dans le DOM.`);
+    
+    allTabs.forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none'; // Force le masquage
+        console.log(`- Masqué : ${tab.id}`);
+    });
 
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`.nav-link[data-tab="${tabName}"]`).classList.add('active');
+    // 2. Désactiver tous les liens
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-            console.log(`🚀 Changement vers l'onglet : ${tabName}`);
+    // 3. Activer le bon lien
+    const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+        console.log(`✅ Lien activé pour : ${tabName}`);
+    } else {
+        console.error(`❌ Lien introuvable pour : ${tabName}`);
+    }
 
-            // ✅ VÉRIFICATION ET CORRECTION
-            // Arrête les chronomètres si on n'est plus sur l'onglet des réservations
-            if (tabName !== 'reservations') {
-                stopCountdownUpdates();
-            }
+    // 4. Activer le bon onglet
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.display = 'block'; // Force l'affichage
+        console.log(`✅ Onglet activé et affiché : tab-${tabName}`);
+    } else {
+        console.error(`❌ ERREUR CRITIQUE : L'onglet "tab-${tabName}" n'existe pas dans le HTML !`);
+        return;
+    }
 
-            // 2. Charger les données spécifiques à l'onglet
-            switch (tabName) {
-                case 'reservations':
-                    // L'appel à loadAdminData va automatiquement lancer les chronomètres via renderTable
-                    loadAdminData();
-                    break;
-                case 'report-requests':  // ✅ NOUVEAU
-                    loadReportRequests();
-                    break;
+    // 5. Charger les données
+    if (tabName !== 'reservations') {
+        stopCountdownUpdates();
+    }
 
-                case 'trips':
-                    loadAllTemplates().then(loadAllTrips);
-                    break;
-                case 'templates':
-                    loadAllTemplates();
-                    break;
-                case 'settings':
-                    loadSettings();
-                    break;
-
-            }
-        }
+    switch (tabName) {
+        case 'reservations':
+            loadAdminData();
+            break;
+        case 'report-requests':
+            loadReportRequests();
+            break;
+        case 'trips':
+            loadAllTemplates().then(loadAllTrips);
+            break;
+        case 'templates':
+            loadAllTemplates();
+            break;
+        case 'settings':
+            console.log("⚙️ Chargement des paramètres...");
+            loadSettings();
+            break;
+        default:
+            console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+    }
+}
         // ============================================
         // 🎯 INITIALISATION
         // ============================================
