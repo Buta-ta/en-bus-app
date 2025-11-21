@@ -4361,6 +4361,8 @@ function switchTab(tabName) {
     tbody.innerHTML = htmlContent;
 }
 async function approveReportRequest(bookingNumber, proofFromTable) {
+    console.log(`▶️ Clic sur "Valider" détecté pour ${bookingNumber} avec la preuve : ${proofFromTable}`); // ✅ AJOUTEZ CETTE LIGNE
+
     const isAgencyPayment = (proofFromTable.toUpperCase() === 'PAIEMENT_AGENCE' || !proofFromTable);
 
     const confirmed = await showAdminConfirm({
