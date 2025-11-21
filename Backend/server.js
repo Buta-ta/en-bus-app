@@ -678,7 +678,7 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
     
     try {
       const { bookingNumber } = req.params;
-      const { newTripId, paymentMethod, customerPhone } = req.body;
+      const { newTripId, paymentMethod, customerPhone, transactionId } = req.body;
       
       console.log(`🔄 Demande de report pour ${bookingNumber} vers voyage ${newTripId}`);
       
@@ -735,8 +735,11 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
       console.log(`💰 Coût du report: Frais=${reportFee}, Différence=${priceDifference}, Total=${totalCost}`);
       
       // ✅ 5. SI PAIEMENT REQUIS → Créer une DEMANDE DE REPORT
+      
+      // ✅ 5. SI PAIEMENT REQUIS
       if (totalCost > 0) {
-        console.log('💳 Paiement requis. Création d\'une demande de report...');
+        console.log('💳 Paiement requis. Création demande avec preuve...');
+        
         
         // Attribuer automatiquement les sièges pour la future réservation
         const availableSeats = newTrip.seats
@@ -759,6 +762,7 @@ app.post("/api/reservations/:bookingNumber/confirm-report",
             totalCost: totalCost
           },
           paymentMethod: paymentMethod?.toUpperCase() || 'MTN',
+           transactionId: transactionId || 'NON FOURNI', // ✅ Enregistrement de l'ID
           customerPhone: customerPhone || reservation.customerPhone,
           status: 'En attente de validation admin'
         };

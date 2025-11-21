@@ -3751,9 +3751,42 @@ window.selectReportTrip = async function(tripId, bookingNumber, currentReportCou
 // 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT
 // ============================================
 
+// ============================================
+// 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT (AVEC PAIEMENT)
+// ============================================
+
 function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
     const modalBody = document.getElementById('report-modal-body');
     
+    // Logique pour l'affichage du paiement
+    let paymentSectionHTML = '';
+    
+    if (calculation.isPaymentRequired) {
+        paymentSectionHTML = `
+            <div class="report-payment-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--color-border);">
+                <h4 style="color: var(--color-text-primary); margin-bottom: 10px;">💳 Paiement de la différence</h4>
+                
+                <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 15px;">
+                    Veuillez envoyer <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong> via Mobile Money.
+                </p>
+
+                <div class="payment-methods" style="margin-bottom: 15px;">
+                    <label style="margin-right: 15px;">
+                        <input type="radio" name="report-payment-method" value="MTN" checked> MTN (${CONFIG.MTN_MERCHANT_NUMBER})
+                    </label>
+                    <label>
+                        <input type="radio" name="report-payment-method" value="AIRTEL"> Airtel (${CONFIG.AIRTEL_MERCHANT_NUMBER})
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="report-transaction-id" style="display:block; margin-bottom: 5px; font-weight: 600;">ID de Transaction (Preuve) *</label>
+                    <input type="text" id="report-transaction-id" class="form-control" placeholder="Entrez l'ID reçu par SMS" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary);">
+                </div>
+            </div>
+        `;
+    }
+
     let summaryHTML = `
         <div class="report-summary">
             <h3>📊 Récapitulatif du report</h3>
@@ -3781,9 +3814,11 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
             </div>
             
             <div class="report-summary-line total">
-                <span>TOTAL ${calculation.isPaymentRequired ? 'À PAYER' : calculation.isCreditGenerated ? 'CRÉDIT GÉNÉRÉ' : ''}</span>
+                <span>TOTAL À PAYER</span>
                 <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong>
             </div>
+            
+            ${paymentSectionHTML}
             
             ${calculation.isCreditGenerated ? `
                 <div class="report-warning" style="margin-top: var(--space-16); background: rgba(115, 215, 0, 0.1); border-color: var(--color-accent-glow); color: var(--color-accent-glow);">
@@ -3795,51 +3830,45 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
         <div class="report-actions">
             <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
             <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired}, ${calculation.totalCost})">
-    ${calculation.isPaymentRequired ? '💳 Soumettre la demande' : '✅ Confirmer le report'}
-</button>
-    ${calculation.isPaymentRequired ? '💳 Soumettre la demande' : '✅ Confirmer le report'}
-</button>
-                ${calculation.isPaymentRequired ? '💳 Payer et Confirmer' : '✅ Confirmer le report'}
+                ${calculation.isPaymentRequired ? 'Envoyer la preuve et Valider' : '✅ Confirmer le report'}
             </button>
         </div>
     `;
     
-    // Ajouter le récapitulatif en bas de la modale
+    // Nettoyage et insertion
     const existingSummary = modalBody.querySelector('.report-summary');
-    if (existingSummary) {
-        existingSummary.remove();
-    }
-    
+    if (existingSummary) existingSummary.remove();
     const existingActions = modalBody.querySelector('.report-actions');
-    if (existingActions) {
-        existingActions.remove();
-    }
+    if (existingActions) existingActions.remove();
     
     modalBody.insertAdjacentHTML('beforeend', summaryHTML);
 }
 
 // ============================================
-// ✅ CONFIRMATION DU REPORT
+// ✅ CONFIRMATION DU REPORT (VERSION FINALE)
 // ============================================
 
 window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, totalCost) {
-    console.log('✅ Confirmation du report...');
-    
-    // ✅ SI PAIEMENT REQUIS → Demande de validation admin
+    let transactionId = null;
+    let paymentMethod = 'MTN';
+
+    // Si paiement requis, on valide les champs
     if (isPaymentRequired) {
-        const confirmed = await showCustomConfirm({
-            title: "Paiement requis pour le report",
-            message: `Ce report nécessite un paiement de ${Utils.formatPrice(totalCost)} FCFA.\n\nVoulez-vous soumettre une demande de report ?\n\nUn administrateur la validera après réception du paiement.`,
-            icon: '💳',
-            iconClass: 'warning',
-            confirmText: 'Soumettre la demande',
-            confirmClass: 'btn-primary'
-        });
+        const txInput = document.getElementById('report-transaction-id');
+        const methodInput = document.querySelector('input[name="report-payment-method"]:checked');
         
-        if (!confirmed) return;
+        if (!txInput || txInput.value.trim() === "") {
+            Utils.showToast("Veuillez entrer l'ID de transaction.", "error");
+            txInput.focus();
+            return;
+        }
         
-        Utils.showToast('Envoi de la demande...', 'info');
+        transactionId = txInput.value.trim();
+        paymentMethod = methodInput ? methodInput.value : 'MTN';
     }
+    
+    console.log('✅ Envoi de la demande de report avec ID:', transactionId);
+    Utils.showToast('Traitement en cours...', 'info');
     
     try {
         const response = await fetch(
@@ -3849,8 +3878,8 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     newTripId: tripId,
-                    paymentMethod: 'MTN', // Par défaut, peut être changé
-                    customerPhone: '' // Sera récupéré depuis la réservation
+                    paymentMethod: paymentMethod,
+                    transactionId: transactionId // ✅ On envoie l'ID
                 })
             }
         );
@@ -3861,42 +3890,23 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
             throw new Error(data.error || 'Erreur lors de la confirmation');
         }
         
-        console.log('✅ Réponse serveur:', data);
-        
-        // ✅ SI C'EST UNE DEMANDE (paiement requis)
+        closeReportModal();
+
         if (data.requiresPayment) {
-            Utils.showToast('✅ Demande de report enregistrée !', 'success');
-            
-            closeReportModal();
-            
-            // Afficher un message d'information détaillé
             await showCustomConfirm({
-                title: "Demande enregistrée",
-                message: `Votre demande de report a été enregistrée.\n\nMontant à payer : ${Utils.formatPrice(data.paymentAmount)} FCFA\n\nVeuillez effectuer le paiement via Mobile Money et contacter notre service client avec la référence de transaction.\n\nUn administrateur validera votre report dans les plus brefs délais.`,
+                title: "Demande envoyée !",
+                message: `Votre demande de report et votre preuve de paiement (ID: ${transactionId}) ont été envoyées.\n\nUn administrateur va vérifier la transaction et valider votre nouveau billet sous peu.`,
                 icon: '✅',
                 iconClass: 'success',
-                confirmText: 'J\'ai compris',
-                cancelText: '' // Pas de bouton annuler
+                confirmText: 'OK',
+                cancelText: ''
             });
-            
-            // Rafraîchir la liste des réservations
-            displayReservations();
-            
-            return;
+        } else {
+            Utils.showToast('✅ Voyage reporté avec succès !', 'success');
+            if (data.newBookingNumber) addBookingToLocalHistory(data.newBookingNumber);
         }
         
-        // ✅ SI C'EST UN REPORT IMMÉDIAT (gratuit/crédit)
-        if (data.newBookingNumber) {
-            // Ajouter le nouveau numéro de réservation à l'historique local
-            addBookingToLocalHistory(data.newBookingNumber);
-            
-            Utils.showToast('✅ Voyage reporté avec succès !', 'success');
-            
-            closeReportModal();
-            
-            // Rafraîchir la liste des réservations
-            displayReservations();
-        }
+        displayReservations();
         
     } catch (error) {
         console.error('❌ Erreur confirmation report:', error);
