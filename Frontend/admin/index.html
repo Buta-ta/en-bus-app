@@ -4263,8 +4263,7 @@ function switchTab(tabName) {
         </div>
     `;
         }
-
-        function renderReportRequestsTable(pending, processed) {
+function renderReportRequestsTable(pending, processed) {
     const tbody = document.getElementById('report-requests-body');
     if (!tbody) return;
 
@@ -4276,56 +4275,48 @@ function switchTab(tabName) {
     let htmlContent = '';
 
     const createRowHTML = (req) => {
-        // --- SÉCURITÉ : Valeurs par défaut ---
         const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
         
-        let statusBadge = '<span class="badge badge-gray">Inconnu</span>';
-        let fromHTML = 'N/A';
-        let toHTML = 'N/A';
-        let paymentHTML = 'N/A';
-        let requestedDate = 'N/A';
-        let actionsHTML = '<span>-</span>';
+        let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
 
-        // --- Cas 1 : Demande en attente ---
         if (req.status === 'En attente de report' && req.reportRequest) {
             statusBadge = '<span class="badge badge-warning">En attente</span>';
-            
             fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
             toHTML = `${req.reportRequest.targetTrip.route.from} → ${req.reportRequest.targetTrip.route.to}<br><small>📅 ${new Date(req.reportRequest.targetTrip.date).toLocaleDateString('fr-FR')}</small>`;
             
-            paymentHTML = `
-                <strong>${formatPrice(req.reportRequest.cost?.totalCost || 0)} FCFA</strong><br>
-                <small>Preuve: ${req.reportRequest.transactionId || 'N/A'}</small>
-            `;
+            const proof = req.reportRequest.paymentMethod === 'AGENCY' 
+                ? req.reportRequest.agencyPaymentCode 
+                : req.reportRequest.transactionId;
             
+            paymentHTML = `<strong>${formatPrice(req.reportRequest.cost?.totalCost || 0)} FCFA</strong><br><small>Preuve: ${proof || 'N/A'}</small>`;
             requestedDate = new Date(req.reportRequest.requestedAt).toLocaleString('fr-FR');
             
+            const proofForApproval = req.reportRequest.paymentMethod === 'AGENCY' ? 'PAIEMENT_AGENCE' : (req.reportRequest.transactionId || '');
+            
             actionsHTML = `
-                <button class="btn btn-icon btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${req.reportRequest.transactionId || ''}')">✅</button>
+                <button class="btn btn-icon btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${proofForApproval}')">✅</button>
                 <button class="btn btn-icon btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')">❌</button>
             `;
         } 
-        // --- Cas 2 : Ancien billet reporté ---
         else if (req.status === 'Reporté') {
             statusBadge = '<span class="badge badge-gray">Obsolète</span>';
             fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-            toHTML = `<small>Remplacé</small>`;
+            toHTML = `<small>Remplacé par <strong>${req.replacementBookingNumber || '...'}</strong></small>`;
             paymentHTML = `-`;
             requestedDate = new Date(req.reportedAt).toLocaleString('fr-FR');
+            actionsHTML = `<span>-</span>`;
         } 
-        // --- Cas 3 : Nouveau billet créé par report ---
         else if (req.originalReservation) {
             statusBadge = '<span class="badge badge-success">Validé</span>';
             const history = req.reportHistory[req.reportHistory.length - 1];
             
-            fromHTML = `${history.from.routeFrom || '...'} → ${history.from.routeTo || '...'}<br><small>📅 ${new Date(history.from.date).toLocaleDateString('fr-FR')}</small>`;
-            toHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-            
-            paymentHTML = `
-                <strong>${formatPrice(history.totalCost || 0)} FCFA</strong><br>
-                <small>Preuve: ${history.transactionProof || 'GRATUIT'}</small>
-            `;
-            requestedDate = new Date(history.reportedAt).toLocaleString('fr-FR');
+            if (history && history.from && history.to) {
+                fromHTML = `(Report de ...)<br><small>📅 ${new Date(history.from.date).toLocaleDateString('fr-FR')}</small>`;
+                toHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+                paymentHTML = `<strong>${formatPrice(history.totalCost || 0)} FCFA</strong><br><small>Preuve: ${history.transactionProof || 'GRATUIT'}</small>`;
+                requestedDate = new Date(history.reportedAt).toLocaleString('fr-FR');
+            }
+            actionsHTML = `<span>✓</span>`;
         }
 
         return `
@@ -4341,20 +4332,9 @@ function switchTab(tabName) {
         `;
     };
 
-    // Construire le HTML pour les demandes en attente
-    if (pending.length > 0) {
-        htmlContent += pending.map(createRowHTML).join('');
-    }
-
-    // Construire le HTML pour l'historique
+    if (pending.length > 0) htmlContent += pending.map(createRowHTML).join('');
     if (processed.length > 0) {
-        htmlContent += `
-            <tr>
-                <td colspan="7" style="background: var(--dark-elevated); text-align: center; font-weight: bold; color: var(--text-secondary); padding: 12px; border-top: 2px solid var(--primary);">
-                    HISTORIQUE DES REPORTS TRAITÉS
-                </td>
-            </tr>
-        `;
+        htmlContent += `<tr><td colspan="7" style="background: var(--dark-elevated); text-align: center; font-weight: bold;">HISTORIQUE</td></tr>`;
         htmlContent += processed.map(createRowHTML).join('');
     }
 
