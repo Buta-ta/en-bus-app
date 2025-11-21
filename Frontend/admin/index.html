@@ -1730,25 +1730,37 @@
                 <!-- Filters & Table -->
                 <div class="content-card">
                     <div class="filters">
-                        <input type="text" id="search-input" class="form-control search-input"
-                            placeholder="🔍 Rechercher par N°, nom ou téléphone..." />
-                        <div class="filter-pills">
-                            <button class="filter-pill active" data-status="all">Tous</button>
-                            <button class="filter-pill" data-status="Confirmé">Confirmé</button>
-                            <button class="filter-pill" data-status="En attente de paiement">En attente</button>
-                            <button class="filter-pill" data-status="Annulé">Annulé</button>
-                        </div>
-                    </div>
+    <input type="text" id="search-input" class="form-control search-input"
+        placeholder="🔍 Rechercher par N°, nom, tél, preuve..." oninput="applyFilters()" />
+    
+    <!-- ✅ FILTRE PAR MÉTHODE DE PAIEMENT -->
+    <select id="filter-payment-method" class="form-control" style="flex: 0 1 200px;" onchange="applyFilters()">
+        <option value="all">Toutes les méthodes</option>
+        <option value="MTN">MTN</option>
+        <option value="AIRTEL">Airtel</option>
+        <option value="AGENCY">Agence</option>
+    </select>
+    
+    <!-- ✅ FILTRE PAR NUMÉRO DE BUS -->
+    <input type="text" id="filter-bus-id" class="form-control" style="flex: 0 1 200px;" placeholder="Filtrer par N° Bus..." oninput="applyFilters()">
+
+    <div class="filter-pills">
+        <button class="filter-pill active" data-status="all">Tous</button>
+        <button class="filter-pill" data-status="Confirmé">Confirmé</button>
+        <button class="filter-pill" data-status="En attente de paiement">En attente</button>
+        <button class="filter-pill" data-status="Annulé">Annulé</button>
+    </div>
+</div>
 
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
                                     <th>N° Réservation</th>
-                                    <th>Date Voyage</th>
+                                    <th>Date Voyage / N° Bus</th>
                                     <th>Trajet</th>
                                     <th>Passager</th>
-                                    <th>Prix</th>
+                                    <th>Prix / Preuve de Paiement</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
                                 </tr>
@@ -2373,33 +2385,41 @@
             <div class="stat-value">${totalCancelled}</div>
         </div>
     `;
-        }
-        // ✅ NOUVELLE VERSION (CORRECTE)
-        function applyFilters() {
-            let filtered = allReservations;
-            const activeStatus = document.querySelector(".filter-pill.active")
-                .dataset.status;
+        }function applyFilters() {
+    let filtered = allReservations;
+    
+    // Filtre par statut (pills)
+    const activeStatus = document.querySelector(".filter-pill.active")?.dataset.status;
+    if (activeStatus && activeStatus !== "all") {
+        filtered = filtered.filter(r => r.status === activeStatus);
+    }
+    
+    // Filtre par méthode de paiement
+    const paymentMethod = document.getElementById('filter-payment-method').value;
+    if (paymentMethod !== 'all') {
+        filtered = filtered.filter(r => r.paymentMethod === paymentMethod);
+    }
+    
+    // Filtre par N° de Bus
+    const busId = document.getElementById('filter-bus-id').value.toLowerCase().trim();
+    if (busId) {
+        filtered = filtered.filter(r => r.busIdentifier?.toLowerCase().includes(busId));
+    }
 
-            if (activeStatus !== "all") {
-                filtered = filtered.filter((r) => r.status === activeStatus);
-            }
-
-            const searchTerm = document
-                .getElementById("search-input")
-                .value.toLowerCase();
-            if (searchTerm) {
-                filtered = filtered.filter(
-                    (r) =>
-                        r.bookingNumber.toLowerCase().includes(searchTerm) ||
-                        r.passengers[0]?.name.toLowerCase().includes(searchTerm) ||
-                        r.passengers[0]?.phone.includes(searchTerm)
-                );
-            }
-
-            // On appelle la bonne fonction : renderTable
-            renderTable(filtered);
-        }
-
+    // Filtre par recherche générale
+    const searchTerm = document.getElementById("search-input").value.toLowerCase().trim();
+    if (searchTerm) {
+        filtered = filtered.filter(r => 
+            (r.bookingNumber || '').toLowerCase().includes(searchTerm) ||
+            (r.passengers[0]?.name || '').toLowerCase().includes(searchTerm) ||
+            (r.passengers[0]?.phone || '').includes(searchTerm) ||
+            (r.paymentDetails?.transactionProof || '').toLowerCase().includes(searchTerm) ||
+            (r.agencyPaymentCode || '').toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    renderTable(filtered);
+}
         // DANS Admin/index.html (section <script>)
 
         // Dans Admin/index.html - Remplacer la fonction renderTable existante
@@ -2413,81 +2433,55 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
-
         function renderTable(reservations) {
-            const tbody = document.getElementById('reservations-body');
+    const tbody = document.getElementById('reservations-body');
+    if (!tbody) return;
 
-            if (!reservations || reservations.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation trouvée.</td></tr>`;
-                return;
-            }
+    if (!reservations || reservations.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
+        return;
+    }
 
-            tbody.innerHTML = reservations.map(r => {
-                const p = r.passengers[0] || {};
-                const statusMap = {
-                    'Confirmé': 'success',
-                    'En attente de paiement': 'warning',
-                    'Annulé': 'danger',
-                    'Expiré': 'gray'
-                };
-                const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+    tbody.innerHTML = reservations.map(r => {
+        const p = r.passengers?.[0] || {};
+        const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
+        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+        
+        // Logique pour trouver la preuve de paiement
+        let proof = r.paymentDetails?.transactionProof || r.agencyPaymentCode || 'N/A';
+        if (proof === 'PAIEMENT_AGENCE_VALIDE') proof = r.agencyPaymentCode; // Cas d'un report validé en agence
+        
+        const method = r.paymentMethod || 'N/A';
 
-                // ✅ CORRECTION : Le HTML complet du décompteur est restauré ici
-                let countdownHTML = '';
-                if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-                    countdownHTML = `
-                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
-                    <span class="countdown-icon">⏱️</span>
-                    <span class="countdown-time">Calcul...</span>
-                </div>
-            `;
-                }
-
-                const rowClass = r.status === 'En attente de paiement' ? 'reservation-row pending-payment' : '';
-
-                let transactionIdHTML = '';
-                if (r.paymentDetails && r.paymentDetails.clientTransactionId) {
-                    transactionIdHTML = `
-                <div class="transaction-id-display">
-                    🧾 ID soumis: <strong>${r.paymentDetails.clientTransactionId}</strong>
-                </div>
-            `;
-                } else if (r.status === 'En attente de paiement' && (r.paymentMethod === 'MTN' || r.paymentMethod === 'AIRTEL')) {
-                    transactionIdHTML = `
-                <div class="transaction-id-display pending">
-                    🧾 ID Transaction non soumis
-                </div>
-            `;
-                }
-
-                return `
-            <tr class="${rowClass}">
+        return `
+            <tr>
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
-                <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
                 <td>
-                    <div class="font-bold">${r.route.from} → ${r.route.to}</div>
-                    <div class="text-xs text-muted">${r.route.company}</div>
+                    ${new Date(r.date).toLocaleDateString('fr-FR')}<br>
+                    <strong class="text-xs" style="color: var(--accent);">Bus: ${r.busIdentifier || 'N/A'}</strong>
                 </td>
+                <td>${r.route.from} → ${r.route.to}</td>
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
-                    ${transactionIdHTML}
                 </td>
-                <td class="font-bold">${r.totalPrice}</td>
                 <td>
-                    <span class="badge ${badgeClass}">${r.status}</span>
-                    <!-- La variable countdownHTML contient maintenant le bon code -->
-                    ${countdownHTML} 
+                    <div class="font-bold">${r.totalPrice}</div>
+                    <div class="text-xs text-muted" style="margin-top: 4px;">
+                        Preuve: <span class="font-mono" style="color: white; background: var(--dark-elevated); padding: 2px 4px; border-radius: 4px;">${proof}</span>
+                        (${method})
+                    </div>
                 </td>
+                <td><span class="badge ${badgeClass}">${r.status}</span></td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
-                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer Paiement">✅</button>` : ''}
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>
-                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler">❌</button>` : ''}
+                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
+                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')">💺</button>
+                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
                 </td>
             </tr>
         `;
-            }).join('');
+    }).join('');
 
             // Cet appel est crucial et va animer le décompteur
             startCountdownUpdates();
