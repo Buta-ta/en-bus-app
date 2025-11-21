@@ -87,21 +87,47 @@ async function connectToDb() {
 // ============================================
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
-const emailTemplate = (content) => `
-  <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-    <div style="background-color: #0a0e27; color: white; padding: 20px; text-align: center;">
-      <h1 style="margin: 0; color: #73d700; font-family: 'Audiowide', sans-serif;">En-Bus</h1>
+const emailTemplate = (content, title = "Notification de votre réservation") => `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; background-color: #f4f7f9; font-family: 'Inter', Arial, sans-serif; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { background-color: #0a0e27; padding: 30px; text-align: center; }
+        .logo { font-family: 'Audiowide', sans-serif; font-size: 32px; color: #73d700; margin: 0; text-decoration: none; }
+        .content { padding: 30px; color: #333; line-height: 1.6; }
+        .content h2 { font-size: 24px; color: #0a0e27; margin-top: 0; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .info-box strong { display: block; color: #495057; font-size: 14px; margin-bottom: 5px; }
+        .info-box span { font-size: 18px; font-weight: 700; color: #0a0e27; }
+        .code-box { background-color: #e8f5e9; border: 2px dashed #73d700; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
+        .code-box-title { margin: 0 0 10px 0; font-size: 16px; color: #388e3c; }
+        .code-box-code { font-size: 32px; font-weight: bold; color: #1b5e20; letter-spacing: 4px; margin: 0; }
+        .button { display: inline-block; background-color: #73d700; color: #ffffff !important; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; margin-top: 20px; }
+        .footer { background-color: #0a0e27; color: #a2a7c0; padding: 20px; text-align: center; font-size: 12px; }
+        .footer a { color: #73d700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="#" class="logo">En-Bus</a>
+        </div>
+        <div class="content">
+            ${content}
+            <p style="margin-top: 30px;">Merci de votre confiance,<br>L'équipe En-Bus</p>
+        </div>
+        <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.</p>
+            <p><a href="#">Contact</a> | <a href="#">Mes Réservations</a></p>
+        </div>
     </div>
-    <div style="padding: 20px;">
-      ${content}
-      <p>Merci de voyager avec nous.</p>
-      <p>L'équipe En-Bus</p>
-    </div>
-    <div style="background-color: #f7f7f7; color: #888; padding: 15px; text-align: center; font-size: 12px;">
-      <p>&copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.</p>
-      <p>Ceci est un email transactionnel. Veuillez ne pas répondre.</p>
-    </div>
-  </div>
+</body>
+</html>
 `;
 
 async function sendEmail(to, subject, htmlContent) {
@@ -131,32 +157,88 @@ async function sendEmail(to, subject, htmlContent) {
 
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) {
-      console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
-      return;
-    };
-    const subject = `⏳ Votre réservation En-Bus ${reservation.bookingNumber} est en attente`;
+    if (!client?.email) return;
+
+    const subject = `⏳ Action requise pour votre réservation En-Bus #${reservation.bookingNumber}`;
     const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' });
-    let paymentInstructions = reservation.paymentMethod === 'AGENCY'
-      ? `<p>Pour finaliser, veuillez vous rendre en agence avec votre code de paiement :</p><p style="font-size: 24px; font-weight: bold; color: #73d700; text-align: center;">${reservation.agencyPaymentCode}</p>`
-      : `<p>Pour finaliser, effectuez un paiement Mobile Money de <strong>${reservation.totalPrice}</strong> avec la référence <strong>${reservation.bookingNumber}</strong>.</p>`;
-    const htmlContent = `<h2>Bonjour ${client.name},</h2><p>Votre réservation pour <strong>${reservation.route.from} → ${reservation.route.to}</strong> est enregistrée.</p>${paymentInstructions}<p>Attention, cette réservation expirera si le paiement n'est pas reçu avant le <strong>${deadline}</strong>.</p>`;
+    
+    let paymentInstructions;
+    if (reservation.paymentMethod === 'AGENCY') {
+        paymentInstructions = `
+            <h3>Finalisez en agence</h3>
+            <p>Pour confirmer votre voyage, veuillez vous rendre dans l'une de nos agences et présenter le code de paiement ci-dessous :</p>
+            <div class="code-box">
+                <h4 class="code-box-title">Votre Code de Paiement</h4>
+                <p class="code-box-code">${reservation.agencyPaymentCode}</p>
+            </div>
+        `;
+    } else {
+        paymentInstructions = `
+            <h3>Finalisez votre paiement Mobile Money</h3>
+            <div class="info-box">
+                <strong>Montant à payer :</strong>
+                <span>${reservation.totalPrice}</span>
+            </div>
+            <div class="info-box">
+                <strong>Référence de paiement (obligatoire) :</strong>
+                <span>${reservation.bookingNumber}</span>
+            </div>
+            <p>Veuillez utiliser cette référence lors de votre transfert pour que nous puissions identifier votre paiement.</p>
+        `;
+    }
+
+    const htmlContent = `
+        <h2>Bonjour ${client.name},</h2>
+        <p>Votre réservation pour le trajet <strong>${reservation.route.from} → ${reservation.route.to}</strong> est presque prête !</p>
+        ${paymentInstructions}
+        <p style="color: #c62828; font-weight: bold;">Attention, cette réservation expirera automatiquement si le paiement n'est pas reçu avant le ${deadline}.</p>
+    `;
+
     sendEmail(client.email, subject, htmlContent);
 }
-
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) return;
-    const subject = `✅ Paiement confirmé ! Votre billet En-Bus ${reservation.bookingNumber}`;
-    const htmlContent = `<h2>Bonjour ${client.name},</h2><p>Excellente nouvelle ! Votre paiement a été confirmé. Votre voyage pour le <strong>${new Date(reservation.date).toLocaleDateString('fr-FR')}</strong> est prêt.</p><p>Vous pouvez télécharger votre billet depuis la section "Mes Réservations" de l'application.</p><p>Bon voyage !</p>`;
+
+    const subject = `✅ Confirmé ! Votre billet En-Bus #${reservation.bookingNumber}`;
+    const htmlContent = `
+        <h2>Bonjour ${client.name},</h2>
+        <p>Excellente nouvelle ! Votre paiement a été confirmé. Votre voyage est officiellement réservé.</p>
+        <div class="info-box">
+            <strong>Trajet :</strong>
+            <span>${reservation.route.from} → ${reservation.route.to}</span>
+        </div>
+        <div class="info-box">
+            <strong>Date de départ :</strong>
+            <span>${new Date(reservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à ${reservation.route.departure}</span>
+        </div>
+        <p>Vous pouvez accéder à votre billet électronique, le télécharger et suivre votre bus à tout moment depuis la section "Mes Réservations" de notre application.</p>
+        <a href="#" class="button">Accéder à mes réservations</a>
+        <p>Nous vous souhaitons un excellent voyage !</p>
+    `;
+
     sendEmail(client.email, subject, htmlContent);
 }
-
 function sendReportConfirmedEmail(oldReservation, newReservation) {
     const client = newReservation.passengers?.[0];
     if (!client?.email) return;
-    const subject = `🔄 Voyage reporté - Votre nouveau billet ${newReservation.bookingNumber}`;
-    const htmlContent = `<h2>Bonjour ${client.name},</h2><p>Votre demande de report a été acceptée !</p><ul><li><strong>Ancien départ :</strong> ${new Date(oldReservation.date).toLocaleDateString('fr-FR')}</li><li><strong>Nouveau départ :</strong> ${new Date(newReservation.date).toLocaleDateString('fr-FR')}</li></ul><p>Votre nouveau numéro de réservation est : <strong>${newReservation.bookingNumber}</strong>.</p><p>Veuillez utiliser ce nouveau billet pour votre voyage.</p>`;
+    
+    const subject = `🔄 Voyage reporté - Votre nouveau billet #${newReservation.bookingNumber}`;
+    const htmlContent = `
+        <h2>Bonjour ${client.name},</h2>
+        <p>Votre demande de report a été acceptée. Voici les détails de votre nouveau voyage :</p>
+        <div class="info-box">
+            <strong>Nouveau Trajet :</strong>
+            <span>${newReservation.route.from} → ${newReservation.route.to}</span>
+        </div>
+        <div class="info-box">
+            <strong>Nouvelle Date de départ :</strong>
+            <span>${new Date(newReservation.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à ${newReservation.route.departure}</span>
+        </div>
+        <p>Votre ancien billet (${oldReservation.bookingNumber}) n'est plus valide. Votre nouveau numéro de réservation est <strong>${newReservation.bookingNumber}</strong>.</p>
+        <a href="#" class="button">Voir mon nouveau billet</a>
+    `;
+
     sendEmail(client.email, subject, htmlContent);
 }
 
