@@ -1426,7 +1426,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
         const date = isReturn ? reservation.returnDate : reservation.date;
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
         
-        const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
+            const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
+
         const ticketType = isReturn ? 'BILLET RETOUR' : 'BILLET ALLER';
 
         // --- 2. CONSTRUCTION DES SECTIONS DYNAMIQUES ---
@@ -3253,9 +3254,8 @@ window.confirmBooking = async function(buttonElement) {
 // ============================================
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION (CORRIGÉE)
 // ============================================
-
 async function displayConfirmation(reservation) {
-    console.log("🎟️ Affichage de la confirmation pour:", reservation); // Log de l'objet complet pour le debug
+    console.log("🎟️ Affichage de la confirmation pour:", reservation);
 
     // 1. Cibles DOM
     const outboundSection = document.getElementById('outbound-ticket-section');
@@ -3266,17 +3266,17 @@ async function displayConfirmation(reservation) {
     const bookingNumberDisplay = document.getElementById('booking-number-display');
     const statusBadge = document.querySelector('#confirmation-page .status-badge');
 
-    // 2. Nettoyage
+    // 2. Nettoyage initial
     outboundSection.innerHTML = '<div class="loading-spinner">Chargement du billet...</div>';
     returnSection.innerHTML = '';
     returnSection.style.display = 'none';
     actionsContainer.innerHTML = '';
     document.querySelectorAll('.info-card-warning.payment-notice').forEach(el => el.remove());
 
-    // 3. Mise à jour des infos de base
+    // 3. Mise à jour des informations de base
     bookingNumberDisplay.textContent = reservation.bookingNumber;
 
-    // 4. Gérer le cas "En attente de paiement"
+    // 4. Gestion du cas "En attente de paiement"
     if (reservation.status === 'En attente de paiement') {
         confirmationTitle.textContent = "Finalisez votre paiement";
         confirmationSubtitle.textContent = "Votre réservation est enregistrée mais en attente";
@@ -3286,12 +3286,22 @@ async function displayConfirmation(reservation) {
         outboundSection.innerHTML = ''; // Pas de billet à afficher
 
         const deadline = new Date(reservation.paymentDeadline).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
-        const instructionsHTML = `<div class="info-card info-card-warning payment-notice" ...> ... </div>`; // Votre HTML pour les instructions est correct
+        const instructionsHTML = `
+            <div class="info-card info-card-warning payment-notice" style="grid-column: 1 / -1; background: rgba(255, 152, 0, 0.1); border-color: #ff9800; margin-bottom: 24px;">
+                <div class="info-icon" style="font-size: 40px;">💳</div>
+                <div class="info-content">
+                    <h4>Paiement requis</h4>
+                    <p>Votre réservation est en attente. Veuillez payer avant le <strong>${deadline}</strong>.</p>
+                    <button class="btn btn-secondary" style="margin-top: 15px; width: auto;" onclick="viewPaymentInstructions('${reservation.bookingNumber}')">
+                        Voir les instructions
+                    </button>
+                </div>
+            </div>`;
         document.querySelector('.confirmation-card-modern').insertAdjacentHTML('afterbegin', instructionsHTML);
         return;
     }
 
-    // 5. Gérer le cas "Confirmé"
+    // 5. Cas "Confirmé" (ou autre statut final)
     confirmationTitle.textContent = "Réservation confirmée !";
     confirmationSubtitle.textContent = "Votre voyage est prêt. Bon voyage !";
     statusBadge.className = 'status-badge status-confirmed';
@@ -3305,22 +3315,11 @@ async function displayConfirmation(reservation) {
         const tripTypeLabel = isReturn ? "RETOUR" : "ALLER";
         const route = tripData.route;
 
-        // ========================================================
-        // ✅ CORRECTION DE LA LOGIQUE POUR TROUVER LE NUMÉRO DE BUS
-        // ========================================================
-        let busId = 'N/A';
-        if (isReturn) {
-            busId = reservation.returnBusIdentifier || reservation.returnRoute?.busIdentifier || reservation.returnRoute?.trackerId;
-        } else {
-            busId = reservation.busIdentifier || reservation.route?.busIdentifier || reservation.route?.trackerId;
-        }
-        console.log(`[${tripTypeLabel}] Bus ID trouvé :`, busId);
-        // ========================================================
+        // ✅ LOGIQUE SIMPLIFIÉE POUR LIRE LE NUMÉRO DE BUS
+        const busId = isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier;
 
         return `
-            <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">
-                Billet ${tripTypeLabel}
-            </h2>
+            <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">Billet ${tripTypeLabel}</h2>
             <div class="journey-card">
                 <div class="journey-route">
                     <div class="route-point route-origin"><div class="point-icon">📍</div><div class="point-info"><span class="point-label">Départ</span><span class="point-city">${route.from}</span><span class="point-date">${Utils.formatDate(tripData.date)}</span><span class="point-time">${route.departure}</span></div></div>
@@ -3355,17 +3354,21 @@ async function displayConfirmation(reservation) {
 
         // --- Génération des boutons d'action ---
         let actionsHTML = `<button class="btn-modern btn-download" onclick="downloadTicket(false)"><span class="btn-icon">📥</span><span class="btn-text">Télécharger Billet Aller</span></button>`;
-        const trackerAller = reservation.busIdentifier || reservation.route?.trackerId;
-        if (trackerAller) {
-            actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerAller}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Aller</span></a>`;
+        
+        // Bouton "Suivre Bus Aller"
+        if (reservation.busIdentifier) {
+            actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Aller</span></a>`;
         }
+
         if (reservation.returnRoute) {
             actionsHTML += `<button class="btn-modern btn-download" onclick="downloadTicket(true)"><span class="btn-icon">📥</span><span class="btn-text">Télécharger Billet Retour</span></button>`;
-            const trackerRetour = reservation.returnBusIdentifier || reservation.returnRoute?.trackerId;
-            if (trackerRetour) {
-                actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${trackerRetour}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Retour</span></a>`;
+            
+            // Bouton "Suivre Bus Retour"
+            if (reservation.returnBusIdentifier) {
+                actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.returnBusIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">Suivre Bus Retour</span></a>`;
             }
         }
+        
         actionsHTML += `<button class="btn-modern btn-home" onclick="resetAndGoHome()"><span class="btn-icon">🏠</span><span class="btn-text">Nouvelle Réservation</span></button>`;
         
         actionsContainer.innerHTML = actionsHTML;
