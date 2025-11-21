@@ -4148,14 +4148,31 @@
     `;
         }
         function renderReportRequestsTable(requests) {
-            const tbody = document.getElementById('report-requests-body');
+    const tbody = document.getElementById('report-requests-body');
 
-            if (requests.length === 0) {
-                   tbody.innerHTML = requests.map(req => {
+    // Sécurité : si l'élément n'existe pas dans le HTML
+    if (!tbody) {
+        console.error("❌ Élément 'report-requests-body' introuvable !");
+        return;
+    }
+
+    if (requests.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center" style="padding:3rem;">
+                    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+                    <div style="color:var(--text-muted);font-weight:600;">Aucune demande en attente</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = requests.map(req => {
         const request = req.reportRequest;
         const passenger = req.passengers[0];
         
-        // 👇 ATTENTION : C'est ici que le backtick (`) commence !
+        // ⚠️ IMPORTANT : Les backticks (`) ci-dessous permettent d'insérer les variables ${...}
         return `
             <tr>
                 <td><strong class="font-mono">${req.bookingNumber}</strong></td>
@@ -4204,9 +4221,9 @@
                     </button>
                 </td>
             </tr>
-        `; // 👆 ET ICI qu'il se termine !
+        `;
     }).join('');
-        } 
+}
 
         async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
