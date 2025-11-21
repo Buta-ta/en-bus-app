@@ -2439,35 +2439,41 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
    function renderTable(reservations) {
     const tbody = document.getElementById('reservations-body');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error("❌ Élément 'reservations-body' introuvable !");
+        return;
+    }
 
     if (!reservations || reservations.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center">...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = reservations.map(r => {
         const p = r.passengers?.[0] || {};
-        const statusMap = { /* ... */ };
+        const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
         const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
         
-        // ===============================================
-        // ✅ CORRECTION DE LA LOGIQUE DE PREUVE
-        // ===============================================
-        // 1. Preuve confirmée par l'admin
-        // 2. Preuve soumise par le client
-        // 3. Code de paiement agence
-        const proof = r.paymentDetails?.transactionProof || 
-                      r.paymentDetails?.clientTransactionId || 
-                      r.agencyPaymentCode || 
-                      'N/A';
-        // ===============================================
+        // ==========================================================
+        // ✅ CORRECTION DE LA LOGIQUE D'AFFICHAGE DE LA PREUVE
+        // ==========================================================
+        const proof = 
+            r.paymentDetails?.transactionProof ||       // 1. Preuve validée par l'admin
+            r.paymentDetails?.clientTransactionId ||  // 2. Preuve soumise par le client
+            r.agencyPaymentCode ||                    // 3. Code de paiement agence
+            'N/A';                                    // 4. Si rien n'est trouvé
+        // ==========================================================
         
         const method = r.paymentMethod || 'N/A';
-        
+
         let countdownHTML = '';
         if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">...</div>`;
+            countdownHTML = `
+                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
+                    <span class="countdown-icon">⏱️</span>
+                    <span class="countdown-time">Calcul...</span>
+                </div>
+            `;
         }
 
         return `
@@ -2475,14 +2481,18 @@
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>
                     ${new Date(r.date).toLocaleDateString('fr-FR')}<br>
-                    <strong class="text-xs">Bus: ${r.busIdentifier || 'N/A'}</strong>
+                    <strong class="text-xs" style="color: var(--accent);">Bus: ${r.busIdentifier || 'N/A'}</strong>
                 </td>
                 <td>${r.route.from} → ${r.route.to}</td>
-                <td>${p.name || 'N/A'}<br><small>${p.phone || 'N/A'}</small></td>
                 <td>
-                    <strong>${r.totalPrice}</strong><br>
+                    <div class="font-bold">${p.name || 'N/A'}</div>
+                    <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
+                </td>
+                <td>
+                    <div class="font-bold">${r.totalPrice}</div>
                     <div class="text-xs text-muted" style="margin-top: 4px;">
-                        Preuve: <span class="font-mono" style="background: var(--dark-elevated); padding: 2px 4px;">${proof}</span> (${method})
+                        Preuve: <span class="font-mono" style="color: white; background: var(--dark-elevated); padding: 2px 4px; border-radius: 4px;">${proof}</span>
+                        (${method})
                     </div>
                 </td>
                 <td>
@@ -2490,7 +2500,10 @@
                     ${countdownHTML} 
                 </td>
                 <td class="actions-cell">
-                    <!-- ... vos boutons ... -->
+                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
+                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
+                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')">💺</button>
+                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
                 </td>
             </tr>
         `;
