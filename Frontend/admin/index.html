@@ -1685,12 +1685,15 @@
                         </a>
                     </li>
 
+                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-tab="settings">
+                        <a href="#" class="nav-link" onclick="openSettingsModal()">
                             <span class="nav-icon">⚙️</span>
                             <span>Paramètres</span>
                         </a>
                     </li>
+
+                    
                 </ul>
 
 
@@ -2104,47 +2107,7 @@
             </div>
 
         <!-- TAB: Paramètres -->
-                        <!-- TAB: Paramètres -->
-            <div id="tab-settings" class="tab-content">
-                <div class="page-header">
-                    <h1 class="page-title">Paramètres du système</h1>
-                    <p class="page-subtitle">Configuration générale de l'application</p>
-                </div>
-
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Configuration des Reports</h2>
-                    </div>
-                    
-                    <form id="report-settings-form">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Frais 2ème report (FCFA)</label>
-                                <input type="number" id="setting-second-fee" class="form-control" min="0" step="500">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Frais 3ème report (FCFA)</label>
-                                <input type="number" id="setting-third-fee" class="form-control" min="0" step="500">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Max reports par réservation</label>
-                                <input type="number" id="setting-max-reports" class="form-control" min="1" max="5">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Délai minimum (heures avant départ)</label>
-                                <input type="number" id="setting-min-hours" class="form-control" min="1">
-                            </div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary mt-4">
-                            <span>💾</span> Enregistrer les paramètres
-                        </button>
-                    </form>
-                </div>
-            </div>
+            
         </main>
     </div>
 
@@ -4437,6 +4400,18 @@ function switchTab(tabName) {
         }
 
 
+        async function openSettingsModal() {
+    // D'abord, charger les données
+    await loadSettings(); 
+    // Ensuite, afficher la modale
+    document.getElementById('settings-modal').classList.add('active');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('active');
+}
+
+
     </script>
 
     <!-- DANS Admin/index.html, juste avant </body> -->
@@ -4489,6 +4464,51 @@ function switchTab(tabName) {
             </div>
         </div>
     </div>
+
+
+
+        <!-- ... (vos autres modales et scripts) ... -->
+
+    <!-- ============================================
+         ⚙️ MODALE DES PARAMÈTRES (NOUVELLE)
+         ============================================ -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2 class="modal-title">Paramètres du système</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="report-settings-form">
+                    <h3 style="color: var(--primary); margin-bottom: 20px;">Configuration des Reports</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="setting-second-fee">Frais 2ème report (FCFA)</label>
+                            <input type="number" id="setting-second-fee" class="form-control" min="0" step="500">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="setting-third-fee">Frais 3ème report (FCFA)</label>
+                            <input type="number" id="setting-third-fee" class="form-control" min="0" step="500">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="setting-max-reports">Max reports par réservation</label>
+                            <input type="number" id="setting-max-reports" class="form-control" min="1" max="5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="setting-min-hours">Délai minimum avant départ (heures)</label>
+                            <input type="number" id="setting-min-hours" class="form-control" min="1">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-4">
+                        <span>💾</span> Enregistrer les paramètres
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body> <!-- Votre balise de fermeture </body> -->
+</html>
 
 </body>
 
