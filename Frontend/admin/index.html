@@ -4151,22 +4151,12 @@
             const tbody = document.getElementById('report-requests-body');
 
             if (requests.length === 0) {
-                tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center" style="padding:3rem;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
-                    <div style="color:var(--text-muted);font-weight:600;">Aucune demande en attente</div>
-                </td>
-            </tr>
-        `;
-                return;
-            }
-
-            tbody.innerHTML = requests.map(req => {
-                const request = req.reportRequest;
-                const passenger = req.passengers[0];
-
-                return `
+                   tbody.innerHTML = requests.map(req => {
+        const request = req.reportRequest;
+        const passenger = req.passengers[0];
+        
+        // 👇 ATTENTION : C'est ici que le backtick (`) commence !
+        return `
             <tr>
                 <td><strong class="font-mono">${req.bookingNumber}</strong></td>
                 <td>
@@ -4182,7 +4172,6 @@
                     <div class="text-xs text-muted">📅 ${new Date(request.targetTrip.date).toLocaleDateString('fr-FR')}</div>
                 </td>
                 
-                <!-- ✅ COLONNE PAIEMENT & PREUVE -->
                 <td>
                     <div class="font-bold" style="color: var(--primary); font-size: 1.1em;">
                         ${formatPrice(request.cost.totalCost)} FCFA
@@ -4215,9 +4204,9 @@
                     </button>
                 </td>
             </tr>
-        `;
-            }).join('');
-        } c
+        `; // 👆 ET ICI qu'il se termine !
+    }).join('');
+        } 
 
         async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
