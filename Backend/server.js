@@ -555,8 +555,99 @@ app.patch("/api/admin/reservations/:id/confirm-payment", authenticateToken, asyn
     }
 });
 
-app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, res) => { /* ... (votre code pour modifier les sièges) */ });
+app.patch("/api/admin/reservations/:id/seats", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { newSeats } = req.body;
 
+      console.log("--- 🔄 Début de la modification des sièges ---");
+      console.log(`ID Réservation: ${id}, Nouveaux sièges demandés: ${newSeats}`);
+
+      if (!ObjectId.isValid(id)) {
+        console.log("-> Erreur: ID invalide.");
+        return res.status(400).json({ error: "ID de réservation invalide." });
+      }
+
+      if (!Array.isArray(newSeats) || newSeats.length === 0) {
+        console.log("-> Erreur: 'newSeats' n'est pas un tableau valide.");
+        return res.status(400).json({ error: "Format de sièges invalide." });
+      }
+
+      // 1. Récupérer la réservation
+      const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+      if (!reservation) {
+        console.log("-> Erreur: Réservation introuvable.");
+        return res.status(404).json({ error: "Réservation introuvable." });
+      }
+      console.log(`-> Réservation trouvée: ${reservation.bookingNumber}`);
+
+      // 2. Vérifier la cohérence (nombre de sièges vs passagers)
+      if (newSeats.length !== reservation.passengers.length) {
+        console.log("-> Erreur: Nombre de sièges ne correspond pas au nombre de passagers.");
+        return res.status(400).json({ error: `Le nombre de sièges (${newSeats.length}) doit correspondre au nombre de passagers (${reservation.passengers.length}).` });
+      }
+      
+      // 3. Vérifier que la réservation a bien un voyage associé
+      if (!reservation.route || !reservation.route.id || !ObjectId.isValid(reservation.route.id)) {
+        console.log("-> Erreur: ID de voyage manquant ou invalide dans la réservation.");
+        return res.status(400).json({ error: "Données de voyage corrompues dans la réservation." });
+      }
+
+      // 4. Récupérer le voyage associé
+      const trip = await tripsCollection.findOne({ _id: new ObjectId(reservation.route.id) });
+      if (!trip) {
+        console.log("-> Erreur: Voyage associé introuvable.");
+        return res.status(404).json({ error: "Le voyage associé est introuvable." });
+      }
+      console.log(`-> Voyage associé trouvé (Date: ${trip.date})`);
+
+      // 5. Vérifier la disponibilité des nouveaux sièges
+      const oldSeats = reservation.seats.map(s => parseInt(s));
+      const unavailable = trip.seats.filter(
+        s => newSeats.includes(s.number) && s.status !== 'available' && !oldSeats.includes(s.number)
+      );
+
+      if (unavailable.length > 0) {
+        console.log(`-> Erreur: Conflit, sièges indisponibles: ${unavailable.map(s => s.number).join(', ')}`);
+        return res.status(409).json({ error: `Conflit : Le(s) siège(s) ${unavailable.map(s => s.number).join(", ")} est/sont déjà pris.` });
+      }
+      console.log("-> Tous les nouveaux sièges sont disponibles.");
+
+      // 6. Mettre à jour la base de données (libérer les anciens, occuper les nouveaux)
+      console.log("-> Libération des anciens sièges...");
+      await tripsCollection.updateOne(
+        { _id: trip._id },
+        { $set: { "seats.$[elem].status": "available" } },
+        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+      );
+      
+      console.log("-> Occupation des nouveaux sièges...");
+      await tripsCollection.updateOne(
+        { _id: trip._id },
+        { $set: { "seats.$[elem].status": "occupied" } },
+        { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+      );
+      
+      console.log("-> Mise à jour de la réservation...");
+      await reservationsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { 
+              seats: newSeats,
+              passengers: reservation.passengers.map((p, i) => ({ ...p, seat: newSeats[i] })),
+              updatedAt: new Date()
+            }
+          }
+      );
+      
+      console.log("--- ✅ Modification des sièges terminée avec succès ---");
+      res.json({ success: true, message: "Les sièges ont été modifiés avec succès." });
+
+    } catch (error) {
+      console.error("❌ ERREUR FATALE lors de la modification des sièges:", error);
+      res.status(500).json({ error: "Erreur serveur inattendue." });
+    }
+  }
+);
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
     try {
         const { search } = req.query; // On récupère le paramètre 'search' de l'URL
