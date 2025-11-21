@@ -3538,22 +3538,36 @@
 
 
         async function loadSettings() {
-            try {
-                const data = await apiCall('/admin/settings/report');
-                if (!data || !data.success) return;
+    console.log('🔄 Chargement des paramètres...');
+    try {
+        const data = await apiCall('/admin/settings/report');
+        console.log('📦 Données reçues:', data);
 
-                const settings = data.settings;
-
-                document.getElementById('setting-second-fee').value = settings.secondReportFee;
-                document.getElementById('setting-third-fee').value = settings.thirdReportFee;
-                document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
-                document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
-
-            } catch (error) {
-                console.error('❌ Erreur chargement paramètres:', error);
-                showNotification('Impossible de charger les paramètres', 'error');
-            }
+        if (!data || !data.success) {
+            console.error('❌ Erreur: succès=false ou data vide');
+            return;
         }
+        
+        const settings = data.settings;
+        console.log('⚙️ Settings:', settings);
+        
+        // Vérification des éléments DOM
+        const elSecond = document.getElementById('setting-second-fee');
+        console.log('Élément second-fee existe ?', !!elSecond);
+
+        if (elSecond) {
+            document.getElementById('setting-second-fee').value = settings.secondReportFee;
+            document.getElementById('setting-third-fee').value = settings.thirdReportFee;
+            document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
+            document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
+            console.log('✅ Champs remplis !');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement paramètres:', error);
+        showNotification('Impossible de charger les paramètres', 'error');
+    }
+}
 
         async function saveSettings(e) {
             e.preventDefault();
