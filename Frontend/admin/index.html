@@ -1679,7 +1679,17 @@
                             <span>Modèles de trajets</span>
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="settings">
+                            <span class="nav-icon">⚙️</span>
+                            <span>Paramètres</span>
+                        </a>
+                    </li>
                 </ul>
+
+
+
             </nav>
 
             <div class="sidebar-footer">
@@ -1788,7 +1798,7 @@
                             <tbody id="report-requests-body">
                                 <!-- Généré dynamiquement -->
                             </tbody>
-                            
+
                         </table>
                     </div>
                 </div>
@@ -2082,6 +2092,51 @@
                         </table>
                     </div>
                 </div>
+
+
+                <!-- TAB: Paramètres -->
+                <div id="tab-settings" class="tab-content">
+                    <div class="page-header">
+                        <h1 class="page-title">Paramètres du système</h1>
+                        <p class="page-subtitle">Configuration générale de l'application</p>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Configuration des Reports</h2>
+                        </div>
+
+                        <form id="report-settings-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Frais 2ème report (FCFA)</label>
+                                    <input type="number" id="setting-second-fee" class="form-control" min="0"
+                                        step="500">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Frais 3ème report (FCFA)</label>
+                                    <input type="number" id="setting-third-fee" class="form-control" min="0" step="500">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Max reports par réservation</label>
+                                    <input type="number" id="setting-max-reports" class="form-control" min="1" max="5">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Délai minimum (heures avant départ)</label>
+                                    <input type="number" id="setting-min-hours" class="form-control" min="1">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary mt-4">
+                                <span>💾</span> Enregistrer les paramètres
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -3437,6 +3492,10 @@
                 case 'templates':
                     loadAllTemplates();
                     break;
+                case 'settings':
+                    loadSettings();
+                    break;
+
             }
         }
         // ============================================
@@ -3472,6 +3531,50 @@
         // ============================================
 
         // DANS admin/index.html, dans <script>
+
+
+
+
+        async function loadSettings() {
+            try {
+                const data = await apiCall('/admin/settings/report');
+                if (!data || !data.success) return;
+
+                const settings = data.settings;
+
+                document.getElementById('setting-second-fee').value = settings.secondReportFee;
+                document.getElementById('setting-third-fee').value = settings.thirdReportFee;
+                document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
+                document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
+
+            } catch (error) {
+                console.error('❌ Erreur chargement paramètres:', error);
+                showNotification('Impossible de charger les paramètres', 'error');
+            }
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+
+            const updates = {
+                secondReportFee: parseInt(document.getElementById('setting-second-fee').value),
+                thirdReportFee: parseInt(document.getElementById('setting-third-fee').value),
+                maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value),
+                minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value)
+            };
+
+            try {
+                const data = await apiCall('/admin/settings/report', 'PATCH', updates);
+
+                if (data && data.success) {
+                    showNotification('✅ Paramètres mis à jour avec succès !', 'success');
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur sauvegarde paramètres:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
 
         function setupEventListeners() {
             // --- Login & Logout (INCHANGÉ) ---
@@ -3550,7 +3653,15 @@
                             break;
                     }
                 });
+                
             }
+
+            const settingsForm = document.getElementById("report-settings-form");
+    if (settingsForm) {
+        settingsForm.addEventListener("submit", saveSettings);
+    }
+
+
         }
         // ============================================
         // 🚀 DÉMARRAGE
@@ -4136,16 +4247,16 @@
         }
 
         function renderReportRequestsTable(requests) {
-    const tbody = document.getElementById('report-requests-body');
+            const tbody = document.getElementById('report-requests-body');
 
-    // Sécurité : si l'élément n'existe pas dans le HTML
-    if (!tbody) {
-        console.error("❌ Élément 'report-requests-body' introuvable !");
-        return;
-    }
+            // Sécurité : si l'élément n'existe pas dans le HTML
+            if (!tbody) {
+                console.error("❌ Élément 'report-requests-body' introuvable !");
+                return;
+            }
 
-    if (requests.length === 0) {
-        tbody.innerHTML = `
+            if (requests.length === 0) {
+                tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center" style="padding:3rem;">
                     <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
@@ -4153,15 +4264,15 @@
                 </td>
             </tr>
         `;
-        return;
-    }
+                return;
+            }
 
-    tbody.innerHTML = requests.map(req => {
-        const request = req.reportRequest;
-        const passenger = req.passengers[0];
-        
-        // ⚠️ IMPORTANT : Les backticks (`) ci-dessous permettent d'insérer les variables ${...}
-        return `
+            tbody.innerHTML = requests.map(req => {
+                const request = req.reportRequest;
+                const passenger = req.passengers[0];
+
+                // ⚠️ IMPORTANT : Les backticks (`) ci-dessous permettent d'insérer les variables ${...}
+                return `
             <tr>
                 <td><strong class="font-mono">${req.bookingNumber}</strong></td>
                 <td>
@@ -4210,10 +4321,10 @@
                 </td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
-       async function approveReportRequest(bookingNumber, transactionId) {
+        async function approveReportRequest(bookingNumber, transactionId) {
             // On passe l'ID qui est affiché dans le tableau
             const confirmed = await showAdminConfirm({
                 title: "Valider le paiement ?",
