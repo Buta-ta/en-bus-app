@@ -2100,43 +2100,36 @@
 
         <!-- TAB: Paramètres -->
                 <!-- TAB: Paramètres -->
-<div id="tab-settings" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title" style="color: white;">Paramètres du système</h1>
-        <p class="page-subtitle" style="color: #ccc;">Configuration générale de l'application</p>
-    </div>
-
-    <div class="content-card" style="background: #1a1f36; padding: 20px; border-radius: 10px;">
-        <div class="card-header">
-            <h2 class="card-title" style="color: white;">Configuration des Reports</h2>
-        </div>
+            <div id="tab-settings" class="tab-content" style="display: none; padding: 20px;">
+    <div style="background: #fff; color: #000; padding: 30px; border-radius: 8px; border: 2px solid red;">
+        <h1>TEST VISIBILITÉ</h1>
+        <p>Si vous voyez ce message, l'onglet fonctionne.</p>
         
+        <hr style="margin: 20px 0;">
+
+        <div class="page-header" style="margin-bottom: 20px;">
+            <h1 class="page-title" style="color: black;">Paramètres du système</h1>
+        </div>
+
         <form id="report-settings-form">
-            <div class="form-grid" style="display: grid; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label" style="color: white; display: block; margin-bottom: 5px;">Frais 2ème report (FCFA)</label>
-                    <input type="number" id="setting-second-fee" class="form-control" min="0" step="500" style="width: 100%; padding: 10px;">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" style="color: white; display: block; margin-bottom: 5px;">Frais 3ème report (FCFA)</label>
-                    <input type="number" id="setting-third-fee" class="form-control" min="0" step="500" style="width: 100%; padding: 10px;">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" style="color: white; display: block; margin-bottom: 5px;">Max reports par réservation</label>
-                    <input type="number" id="setting-max-reports" class="form-control" min="1" max="5" style="width: 100%; padding: 10px;">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" style="color: white; display: block; margin-bottom: 5px;">Délai minimum (heures avant départ)</label>
-                    <input type="number" id="setting-min-hours" class="form-control" min="1" style="width: 100%; padding: 10px;">
-                </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Frais 2ème report</label>
+                <input type="number" id="setting-second-fee" class="form-control" style="border: 1px solid #ccc; padding: 8px; width: 100%;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Frais 3ème report</label>
+                <input type="number" id="setting-third-fee" class="form-control" style="border: 1px solid #ccc; padding: 8px; width: 100%;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Max reports</label>
+                <input type="number" id="setting-max-reports" class="form-control" style="border: 1px solid #ccc; padding: 8px; width: 100%;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:bold;">Délai min (h)</label>
+                <input type="number" id="setting-min-hours" class="form-control" style="border: 1px solid #ccc; padding: 8px; width: 100%;">
             </div>
             
-            <button type="submit" class="btn btn-primary mt-4" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
-                <span>💾</span> Enregistrer les paramètres
-            </button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
         </form>
     </div>
 </div>
