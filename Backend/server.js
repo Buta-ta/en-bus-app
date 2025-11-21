@@ -694,9 +694,13 @@ app.post("/api/admin/report-requests/:bookingNumber/approve", authenticateToken,
         let { transactionProof } = req.body;
         const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
         if (!reservation || !reservation.reportRequest) return res.status(404).json({ error: "Demande de report introuvable." });
+        
         const request = reservation.reportRequest;
-        if (request.paymentMethod === 'AGENCY') { transactionProof = `AGENCE-PAY-${Date.now()}`; }
-        else if (!transactionProof) { return res.status(400).json({ error: "Preuve de paiement requise pour Mobile Money." }); }
+        if (request.paymentMethod === 'AGENCY') { 
+            transactionProof = `AGENCE-PAY-${Date.now()}`; 
+        } else if (!transactionProof) { 
+            return res.status(400).json({ error: "Preuve de paiement requise pour Mobile Money." }); 
+        }
         
         const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
         if (!newTrip) return res.status(404).json({ error: "Le voyage cible n'existe plus." });
@@ -710,17 +714,58 @@ app.post("/api/admin/report-requests/:bookingNumber/approve", authenticateToken,
 
         const newBookingNumber = generateBookingNumber();
         const newPrice = newTrip.route.price * requiredSeatsCount;
+        
+        // ============================================
+        // ✅ CORRECTION ICI
+        // ============================================
         const newReservation = {
-            ...reservation, _id: new ObjectId(), bookingNumber: newBookingNumber, route: { ...newTrip.route, id: newTrip._id.toString() }, date: newTrip.date,
-            seats: availableSeats, passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })), totalPriceNumeric: newPrice,
-            totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, status: "Confirmé", reportCount: (reservation.reportCount || 0) + 1,
-            originalReservation: reservation._id.toString(), reportHistory: [ ...(reservation.reportHistory || []), { from: { date: reservation.date, tripId: reservation.route.id.toString() }, to: { date: newTrip.date, tripId: newTrip._id.toString() }, reportedAt: new Date(), totalCost: request.cost.totalCost, initiatedBy: "client", approvedBy: req.user.username, transactionProof } ],
+            ...reservation, 
+            _id: new ObjectId(), 
+            bookingNumber: newBookingNumber, 
+            route: { ...newTrip.route, id: newTrip._id.toString() }, 
+            date: newTrip.date,
+            seats: availableSeats, 
+            passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })), 
+            totalPriceNumeric: newPrice,
+            totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`, 
+            status: "Confirmé", 
+            reportCount: (reservation.reportCount || 0) + 1,
+            originalReservation: reservation._id.toString(),
+            busIdentifier: newTrip.busIdentifier || null, // <-- LA LIGNE MANQUANTE
+            reportHistory: [ 
+                ...(reservation.reportHistory || []), 
+                { 
+                    from: { date: reservation.date, tripId: reservation.route.id.toString() }, 
+                    to: { date: newTrip.date, tripId: newTrip._id.toString() }, 
+                    reportedAt: new Date(), 
+                    totalCost: request.cost.totalCost, 
+                    initiatedBy: "client", 
+                    approvedBy: req.user.username, 
+                    transactionProof 
+                } 
+            ],
             createdAt: new Date()
         };
-        delete newReservation.reportedAt; delete newReservation.replacementReservation; delete newReservation.reportRequest;
+        // ============================================
+
+        delete newReservation.reportedAt; 
+        delete newReservation.replacementReservation; 
+        delete newReservation.reportRequest;
         
         await reservationsCollection.insertOne(newReservation);
-        await reservationsCollection.updateOne({ _id: reservation._id }, { $set: { status: "Reporté", reportedAt: new Date(), replacementReservation: newReservation._id.toString(), replacementBookingNumber: newBookingNumber, 'reportRequest.status': 'Approuvé', 'reportRequest.approvedAt': new Date(), 'reportRequest.approvedBy': req.user.username, 'reportRequest.transactionProof': transactionProof } });
+        await reservationsCollection.updateOne(
+            { _id: reservation._id }, 
+            { $set: { 
+                status: "Reporté", 
+                reportedAt: new Date(), 
+                replacementReservation: newReservation._id.toString(), 
+                replacementBookingNumber: newReservation.bookingNumber, 
+                'reportRequest.status': 'Approuvé', 
+                'reportRequest.approvedAt': new Date(), 
+                'reportRequest.approvedBy': req.user.username, 
+                'reportRequest.transactionProof': transactionProof 
+            }}
+        );
         
         console.log("-> Envoi de l'email de report confirmé...");
         sendReportConfirmedEmail(reservation, newReservation);
@@ -731,8 +776,6 @@ app.post("/api/admin/report-requests/:bookingNumber/approve", authenticateToken,
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
-
 
 
 
