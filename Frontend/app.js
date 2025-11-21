@@ -3754,7 +3754,6 @@ window.selectReportTrip = async function(tripId, bookingNumber, currentReportCou
 // ============================================
 // 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT (AVEC PAIEMENT)
 // ============================================
-
 function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
     const modalBody = document.getElementById('report-modal-body');
     
@@ -3767,26 +3766,45 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
                 <h4 style="color: var(--color-text-primary); margin-bottom: 10px;">💳 Paiement de la différence</h4>
                 
                 <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 15px;">
-                    Veuillez envoyer <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong> via Mobile Money.
+                    Montant à régler : <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong>
                 </p>
 
-                <div class="payment-methods" style="margin-bottom: 15px;">
-                    <label style="margin-right: 15px;">
-                        <input type="radio" name="report-payment-method" value="MTN" checked> MTN (${CONFIG.MTN_MERCHANT_NUMBER})
+                <div class="payment-methods" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="report-payment-method" value="MTN" checked onclick="toggleReportAgencyInfo(false)"> 
+                        <span>📱 MTN Mobile Money</span>
                     </label>
-                    <label>
-                        <input type="radio" name="report-payment-method" value="AIRTEL"> Airtel (${CONFIG.AIRTEL_MERCHANT_NUMBER})
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="report-payment-method" value="AIRTEL" onclick="toggleReportAgencyInfo(false)"> 
+                        <span>📱 Airtel Money</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="report-payment-method" value="AGENCY" onclick="toggleReportAgencyInfo(true)"> 
+                        <span>🏢 Agence</span>
                     </label>
                 </div>
 
-                <div class="form-group">
-                    <label for="report-transaction-id" style="display:block; margin-bottom: 5px; font-weight: 600;">ID de Transaction (Preuve) *</label>
-                    <input type="text" id="report-transaction-id" class="form-control" placeholder="Entrez l'ID reçu par SMS" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary);">
+                <!-- Zone ID Transaction (pour Mobile Money) -->
+                <div id="report-transaction-input">
+                    <div class="form-group">
+                        <label for="report-transaction-id" style="display:block; margin-bottom: 5px; font-weight: 600;">ID de Transaction (Preuve) *</label>
+                        <input type="text" id="report-transaction-id" class="form-control" placeholder="Entrez l'ID reçu par SMS" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary);">
+                        <small style="color: var(--color-text-secondary); font-size: 0.8rem;">Envoyez au : ${CONFIG.MTN_MERCHANT_NUMBER}</small>
+                    </div>
+                </div>
+
+                <!-- Zone Info Agence (cachée par défaut) -->
+                <div id="report-agency-info" style="display: none; background: rgba(255, 152, 0, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff9800; margin-bottom: 15px;">
+                    <p style="color: #ff9800; font-size: 0.9rem; margin: 0;">
+                        <strong>⚠️ Paiement à l'agence requis</strong><br>
+                        Vous devrez payer la différence directement à l'agence avant le départ. Votre demande sera validée par un administrateur.
+                    </p>
                 </div>
             </div>
         `;
     }
 
+    // Le reste de la fonction est inchangé...
     let summaryHTML = `
         <div class="report-summary">
             <h3>📊 Récapitulatif du report</h3>
@@ -3830,12 +3848,11 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
         <div class="report-actions">
             <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
             <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired}, ${calculation.totalCost})">
-                ${calculation.isPaymentRequired ? 'Envoyer la preuve et Valider' : '✅ Confirmer le report'}
+                ${calculation.isPaymentRequired ? 'Valider la demande' : '✅ Confirmer le report'}
             </button>
         </div>
     `;
     
-    // Nettoyage et insertion
     const existingSummary = modalBody.querySelector('.report-summary');
     if (existingSummary) existingSummary.remove();
     const existingActions = modalBody.querySelector('.report-actions');
@@ -3844,6 +3861,17 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
     modalBody.insertAdjacentHTML('beforeend', summaryHTML);
 }
 
+
+// Helper pour afficher/masquer les infos selon le mode de paiement
+window.toggleReportAgencyInfo = function(showAgency) {
+    const txInput = document.getElementById('report-transaction-input');
+    const agencyInfo = document.getElementById('report-agency-info');
+    
+    if (txInput && agencyInfo) {
+        txInput.style.display = showAgency ? 'none' : 'block';
+        agencyInfo.style.display = showAgency ? 'block' : 'none';
+    }
+};
 // ============================================
 // ✅ CONFIRMATION DU REPORT (VERSION FINALE)
 // ============================================
@@ -3853,19 +3881,25 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
     let paymentMethod = 'MTN';
 
     // Si paiement requis, on valide les champs
-    if (isPaymentRequired) {
-        const txInput = document.getElementById('report-transaction-id');
+       if (isPaymentRequired) {
         const methodInput = document.querySelector('input[name="report-payment-method"]:checked');
-        
-        if (!txInput || txInput.value.trim() === "") {
-            Utils.showToast("Veuillez entrer l'ID de transaction.", "error");
-            txInput.focus();
-            return;
-        }
-        
-        transactionId = txInput.value.trim();
         paymentMethod = methodInput ? methodInput.value : 'MTN';
+
+        if (paymentMethod === 'AGENCY') {
+            // ✅ Cas Agence : Pas d'ID requis, on met un marqueur
+            transactionId = 'PAIEMENT_AGENCE';
+        } else {
+            // ✅ Cas Mobile Money : ID requis
+            const txInput = document.getElementById('report-transaction-id');
+            if (!txInput || txInput.value.trim() === "") {
+                Utils.showToast("Veuillez entrer l'ID de transaction.", "error");
+                if(txInput) txInput.focus();
+                return;
+            }
+            transactionId = txInput.value.trim();
+        }
     }
+
     
     console.log('✅ Envoi de la demande de report avec ID:', transactionId);
     Utils.showToast('Traitement en cours...', 'info');
