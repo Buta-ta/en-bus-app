@@ -610,34 +610,47 @@ generateQRCodeData(reservation, isReturn = false) {
     return qrString;
 },
 
-// ✅ 2. FONCTION DE DÉCODAGE (MISE À JOUR POUR LE NOUVEAU FORMAT)
+// Dans app.js, à l'intérieur de const Utils = { ... }
+
 decodeQRCodeData(qrString) {
     try {
         const parts = qrString.split('|');
         
-        // Vérifier si le format est correct (5 parties)
+        // --- NOUVEAU FORMAT (6 parties avec N° de Bus) ---
         if (parts.length === 6) {
+            console.log("Decoding QR Code v4.0 (with bus ID)");
             return {
                 valid: true,
-                version: "4.0", // Nouvelle version
+                version: "4.0",
                 bookingNumber: parts[0],
                 travelDate: parts[1],
                 mainPassengerName: parts[2],
                 totalPassengers: parseInt(parts[3]),
                 travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
-                busIdentifier: parts[5] // ✅ Numéro de bus
+                busIdentifier: parts[5] // Numéro de bus
             };
         }
         
-        // Tentative de décoder l'ancien format JSON par sécurité
-        const data = JSON.parse(qrString);
-        if (data.v === "2.0") {
-            // ... (logique pour l'ancien format)
+        // --- ANCIEN FORMAT (5 parties sans N° de Bus) ---
+        if (parts.length === 5) {
+            console.log("Decoding QR Code v3.0 (without bus ID)");
+            return {
+                valid: true,
+                version: "3.0",
+                bookingNumber: parts[0],
+                travelDate: parts[1],
+                mainPassengerName: parts[2],
+                totalPassengers: parseInt(parts[3]),
+                travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
+                busIdentifier: 'N/A' // Pas d'info de bus dans ce format
+            };
         }
         
-        throw new Error('Format de QR Code inconnu ou invalide.');
+        // Si aucun des formats ne correspond, on lève une erreur
+        throw new Error('Format de QR Code non reconnu.');
 
     } catch (error) {
+        console.error("Erreur de décodage QR Code:", error.message, "Chaîne reçue:", qrString);
         return {
             valid: false,
             error: error.message
