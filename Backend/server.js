@@ -450,58 +450,41 @@ app.post(
 
 app.get("/api/reservations/details", async (req, res) => {
     try {
-        const knownBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
+        const initialBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
 
-        if (!knownBookingNumbers || knownBookingNumbers.length === 0) {
+        if (!initialBookingNumbers || initialBookingNumbers.length === 0) {
             return res.status(400).json({ success: false, error: "Aucun ID de réservation fourni." });
         }
         
-        console.log(`🔍 Recherche pour les billets connus: ${knownBookingNumbers.join(', ')}`);
+        console.log(`[Phase 1] Recherche pour les billets connus: ${initialBookingNumbers.join(', ')}`);
 
-        // On récupère TOUTES les réservations liées, y compris les remplacements
-        const allRelatedReservations = await reservationsCollection.aggregate([
-            // Étape 1 : Trouver les réservations initiales connues
-            {
-                $match: {
-                    bookingNumber: { $in: knownBookingNumbers }
-                }
-            },
-            // Étape 2 : Utiliser la relation "originalReservation" pour trouver toute la chaîne
-            {
-                $graphLookup: {
-                    from: "reservations",
-                    startWith: "$originalReservation",
-                    connectFromField: "originalReservation",
-                    connectToField: "originalReservation",
-                    as: "report_chain_up" // Toute la chaîne vers l'original
-                }
-            },
-            {
-                $graphLookup: {
-                    from: "reservations",
-                    startWith: "$replacementReservation",
-                    connectFromField: "replacementReservation",
-                    connectToField: "replacementReservation",
-                    as: "report_chain_down" // Toute la chaîne vers le plus récent
-                }
-            },
-            // Étape 3 : Aplatir les résultats
-            {
-                $project: {
-                    "docs": {
-                        $concatArrays: [ ["$$ROOT"], "$report_chain_up", "$report_chain_down" ]
-                    }
-                }
-            },
-            { $unwind: "$docs" },
-            { $replaceRoot: { newRoot: "$docs" } }
+        // ÉTAPE 1 : Récupérer les réservations que le client connaît
+        const initialReservations = await reservationsCollection
+            .find({ bookingNumber: { $in: initialBookingNumbers } })
+            .toArray();
 
-        ]).toArray();
+        // ÉTAPE 2 : Trouver si, parmi ces réservations, certaines ont été remplacées
+        const replacementBookingNumbers = initialReservations
+            .map(r => r.replacementBookingNumber)
+            .filter(Boolean); // Garder uniquement les numéros qui existent
 
-        // Étape 4 : Dédoublonner et renvoyer
-        const uniqueReservations = Array.from(new Map(allRelatedReservations.map(r => [r.bookingNumber, r])).values());
+        let finalReservations = [...initialReservations];
+
+        // ÉTAPE 3 : S'il y a des billets de remplacement, aller les chercher
+        if (replacementBookingNumbers.length > 0) {
+            console.log(`[Phase 2] Recherche des billets de remplacement: ${replacementBookingNumbers.join(', ')}`);
+            const replacementReservations = await reservationsCollection
+                .find({ bookingNumber: { $in: replacementBookingNumbers } })
+                .toArray();
+            
+            // Ajouter les nouveaux billets à la liste
+            finalReservations.push(...replacementReservations);
+        }
+
+        // ÉTAPE 4 : Renvoyer une liste unique de tous les billets trouvés
+        const uniqueReservations = Array.from(new Map(finalReservations.map(r => [r.bookingNumber, r])).values());
         
-        console.log(`✅ Total de billets trouvés (chaîne complète): ${uniqueReservations.map(r => r.bookingNumber).join(', ')}`);
+        console.log(`✅ Total de billets renvoyés: ${uniqueReservations.length}`);
         
         res.json({ success: true, reservations: uniqueReservations });
 
