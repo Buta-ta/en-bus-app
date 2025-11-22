@@ -3380,74 +3380,81 @@ async function displayConfirmation(reservation) {
 }
 // DANS app.js, AJOUTEZ CETTE FONCTION
 
-// DANS app.js, REMPLACEZ la fonction displayReservations
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
-
     listContainer.innerHTML = '<div class="loading-spinner">Chargement...</div>';
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-
     if (history.length === 0) {
         listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3><p>Vos réservations apparaîtront ici.</p></div>`;
         return;
     }
 
     try {
+        // 1. On demande les infos des billets qu'on connaît
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
+        if (!data.success || !data.reservations) throw new Error("Données invalides");
 
-        if (!data.success || !data.reservations) {
-            listContainer.innerHTML = `<div class="no-results">Erreur de chargement.</div>`;
-            return;
-        }
-        
-        // ===============================================
-        // ✅ CORRECTION CRUCIALE : MISE À JOUR DE L'HISTORIQUE
-        // ===============================================
-        const allServerBookingNumbers = data.reservations.map(r => r.bookingNumber);
-        const currentLocalHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        
-        // On fusionne l'historique local avec tous les numéros reçus du serveur
-        const updatedHistory = [...new Set([...currentLocalHistory, ...allServerBookingNumbers])];
+        // ==========================================================
+        // ✅ AUTO-DÉCOUVERTE ET MISE À JOUR DE L'HISTORIQUE
+        // ==========================================================
+        let needsRefresh = false;
+        const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        const serverBookingNumbers = new Set(data.reservations.map(r => r.bookingNumber));
 
-        // On vérifie si l'historique a changé avant de le sauvegarder et de recharger
-        if (updatedHistory.length > currentLocalHistory.length) {
-            console.log("🔥 Nouveaux billets détectés ! Mise à jour de l'historique local et rechargement...");
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(updatedHistory));
-            // On relance la fonction pour que la prochaine requête inclue les nouveaux billets.
-            // C'est une astuce pour s'assurer que tout est à jour.
+        // Ajoute les nouveaux billets découverts à l'historique
+        serverBookingNumbers.forEach(num => {
+            if (!currentHistory.includes(num)) {
+                console.log(`🔥 Nouveau billet ${num} découvert, ajout à l'historique local.`);
+                currentHistory.push(num);
+                needsRefresh = true;
+            }
+        });
+
+        // Si l'historique a changé, on sauvegarde et on relance la fonction pour tout afficher
+        if (needsRefresh) {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(currentHistory));
+            console.log("🔄 Historique mis à jour, rechargement de la liste...");
             return displayReservations();
         }
-        // ===============================================
-        
+        // ==========================================================
+
+        // Si l'historique est à jour, on affiche
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
-                // ... (votre code d'affichage de carte est correct)
                 const isReported = res.status === 'Reporté';
-                let actionsButtons = '';
-                if (isReported) {
-                    const newBookingNum = res.replacementBookingNumber;
-                    actionsButtons = `
-                        <div style="text-align: center; color: #9e9e9e;">
-                            Remplacé par : <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong>
-                        </div>
-                    `;
+                let actionsHTML = '';
+                if (res.status === 'Confirmé') {
+                    actionsHTML = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
+                } else if (isReported) {
+                    actionsHTML = `<div style="text-align:center; color:#ccc;">Remplacé par <strong style="color:white;">${res.replacementBookingNumber}</strong></div>`;
                 } else {
-                    // ... autre logique de boutons
+                    // Autres statuts
                 }
-                // ... reste du HTML
-                return `...`;
+
+                return `
+                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.5' : ''}">
+                        <div class="res-pwa-header">
+                            <span>${res.bookingNumber}</span>
+                            <span>${res.status}</span>
+                        </div>
+                        <div class="res-pwa-body">
+                            <h4>${res.route.from} → ${res.route.to}</h4>
+                            <p>${new Date(res.date).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                        <div class="res-pwa-actions">${actionsHTML}</div>
+                    </div>
+                `;
             }).join('');
 
     } catch (error) {
         console.error("Erreur affichage réservations:", error);
-        listContainer.innerHTML = `<div class="no-results error"><h3>Erreur de chargement.</h3></div>`;
+        listContainer.innerHTML = `<div class="no-results error">Erreur de chargement.</div>`;
     }
 }
-
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
 async function viewTicket(bookingNumber) {
