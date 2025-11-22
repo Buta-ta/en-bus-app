@@ -4266,7 +4266,7 @@ body.pwa-installed textarea {
        Taille minimale: 2.5rem (pour les petits écrans)
        Taille maximale: 3.5rem (pour les grands écrans)
     */
-    font-size: clamp(2.5rem, 5vw, 1.5rem);
+    font-size: clamp(2.5rem, 5vw, 0.5rem);
     
     text-align: center;
     margin-bottom: var(--space-48, 3rem); /* Plus d'espace en dessous */
