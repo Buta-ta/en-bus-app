@@ -616,16 +616,16 @@ decodeQRCodeData(qrString) {
         const parts = qrString.split('|');
         
         // Vérifier si le format est correct (5 parties)
-        if (parts.length === 5) {
+        if (parts.length === 6) {
             return {
                 valid: true,
-                version: "3.0", // Nouvelle version personnalisée
+                version: "4.0", // Nouvelle version
                 bookingNumber: parts[0],
                 travelDate: parts[1],
                 mainPassengerName: parts[2],
                 totalPassengers: parseInt(parts[3]),
                 travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
-                 busIdentifier: parts[5] //
+                busIdentifier: parts[5] // ✅ Numéro de bus
             };
         }
         
