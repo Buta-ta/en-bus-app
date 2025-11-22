@@ -3386,7 +3386,7 @@ async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
 
-    listContainer.innerHTML = '<div class="loading-spinner">Chargement de vos réservations...</div>';
+    listContainer.innerHTML = '<div class="loading-spinner">Chargement...</div>';
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
 
@@ -3394,117 +3394,86 @@ async function displayReservations() {
         listContainer.innerHTML = `
             <div class="no-results" style="padding: 48px; text-align: center;">
                 <h3>Aucune réservation sur cet appareil</h3>
-                <p>Vos nouvelles réservations apparaîtront ici automatiquement.</p>
-                <button class="btn btn-primary" onclick="showPage('home')" style="margin-top: 16px;">Réserver un voyage</button>
+                <p>Vos réservations apparaîtront ici.</p>
+                <button class="btn btn-primary" onclick="showPage('home')">Réserver un voyage</button>
             </div>`;
         return;
     }
 
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
-        if (!response.ok) throw new Error('Erreur réseau lors de la récupération des réservations.');
+        if (!response.ok) throw new Error('Erreur réseau lors de la récupération.');
         
         const data = await response.json();
-        if (!data.success || data.reservations.length === 0) {
+        if (!data.success || !data.reservations) {
             listContainer.innerHTML = `<div class="no-results"><h3>Aucune réservation trouvée.</h3></div>`;
             return;
         }
         
-        // Dans displayReservations...
-
-listContainer.innerHTML = data.reservations.map(res => {
-    const isConfirmed = res.status === 'Confirmé';
-    const isPending = res.status === 'En attente de paiement';
-    const isReportPending = res.status === 'En attente de report'; // ✅ Nouveau statut
-    const isReported = res.status === 'Reporté'; // ✅ Nouveau statut
-    const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
-    
-    let statusHTML = '';
-    
-    // ✅ Gestion des icônes et couleurs par statut
-    if (isConfirmed) {
-        statusHTML = `<span style="color: var(--color-accent-glow);">✓ Confirmé</span>`;
-    } else if (isPending) {
-        statusHTML = `<span style="color: #ff9800;">⏳ En attente de paiement</span>`;
-    } else if (isReportPending) {
-        statusHTML = `<span style="color: #2196f3;">🔄 Report en cours de validation</span>`;
-    } else if (isReported) {
-        statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">↪️ Reporté (Obsolète)</span>`;
-    } else if (isCancelled) {
-        statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
-    }
-    
-    const trackerIdentifier = res.route.busIdentifier || res.route.trackerId;
-
-    // ✅ Logique des boutons d'action
-    let actionsButtons = '';
-
-    if (isConfirmed) {
-        actionsButtons = `
-            <button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir le Billet</button>
-            ${trackerIdentifier ? `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre le bus</a>` : ''}
-            <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); border: none;">
-                🔄 Reporter
-            </button>
-        `;
-    } else if (isPending) {
-        actionsButtons = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Voir Instructions</button>`;
-    } else if (isReportPending) {
-        // ✅ Bouton informatif pour demande en cours
-        actionsButtons = `
-            <div style="width: 100%; text-align: center; padding: 8px; background: rgba(33, 150, 243, 0.1); border-radius: 8px; color: #2196f3; font-size: 0.9rem;">
-                ℹ️ Votre demande de report est en cours de traitement par l'administrateur.
-            </div>
-        `;
-    } else if (isReported) {
-
-        console.log("Billet reporté trouvé :", res); // ✅ 
-    // ===================================
-    // ✅ CORRECTION ICI
-    // ===================================
-    const newBookingNum = res.replacementBookingNumber; // On lit le bon champ
-
-    actionsButtons = `
-        <div style="width: 100%; text-align: center; padding: 8px; color: #9e9e9e; font-size: 0.9rem;">
-            Ce billet a été remplacé. 
-            ${newBookingNum 
-                ? `<br>Nouveau billet : <strong style="color: white; font-family: monospace; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum}</strong>` 
-                : ''
-            }
-        </div>
-    `;
-    } else if (isCancelled) {
-        actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>`;
-    }
-
-    return `
-        <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6; border-left-color: #9e9e9e;' : ''}">
-            <div class="res-pwa-header">
-                <span class="res-pwa-booking-number">${res.bookingNumber}</span>
-                ${(!isPending && !isReportPending) ? `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Masquer de l'historique">🗑️</button>` : ''}
-                <span class="res-pwa-status">${statusHTML}</span>
-            </div>
-            <div class="res-pwa-body">
-                <h4>${res.route.from} → ${res.route.to}</h4>
-                <p>Le ${Utils.formatDate(res.date)} à ${res.route.departure}</p>
-                <p>${res.passengers.length} passager(s) - Total: ${res.totalPrice}</p>
+        // ===============================================
+        // ✅ MISE À JOUR DE L'HISTORIQUE LOCAL (LA CLÉ)
+        // ===============================================
+        // On récupère tous les numéros de billets renvoyés par le serveur
+        const allBookingNumbersFromServer = data.reservations.map(r => r.bookingNumber);
+        // On met à jour le localStorage pour qu'il contienne tous ces numéros
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify([...new Set(allBookingNumbersFromServer)]));
+        // ===============================================
+        
+        listContainer.innerHTML = data.reservations
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Trier par plus récent
+            .map(res => {
+                const isConfirmed = res.status === 'Confirmé';
+                const isPending = res.status === 'En attente de paiement';
+                const isReportPending = res.status === 'En attente de report';
+                const isReported = res.status === 'Reporté';
+                const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                ${isReportPending && res.reportRequest ? `
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(33, 150, 243, 0.1); border-radius: 6px; font-size: 0.85rem;">
-                        <strong>Demande de report :</strong><br>
-                        Vers le ${new Date(res.reportRequest.targetTrip.date).toLocaleDateString('fr-FR')}
+                let statusHTML = '';
+                if (isConfirmed) statusHTML = `<span style="color: var(--color-accent-glow);">✓ Confirmé</span>`;
+                else if (isPending) statusHTML = `<span style="color: #ff9800;">⏳ En attente</span>`;
+                else if (isReportPending) statusHTML = `<span style="color: #2196f3;">🔄 Report en cours</span>`;
+                else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">↪️ Obsolète</span>`;
+                else if (isCancelled) statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
+                
+                let actionsButtons = '';
+                if (isConfirmed) {
+                    actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
+                    if (!res.returnRoute && !res.originalReservation) { // On ne peut pas reporter un billet déjà reporté ou A/R
+                        actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')">🔄 Reporter</button>`;
+                    }
+                } else if (isPending) {
+                    actionsButtons = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Payer</button>`;
+                } else if (isReportPending) {
+                    actionsButtons = `<div style="text-align: center; color: #2196f3;">Demande en cours...</div>`;
+                } else if (isReported) {
+                    const newBookingNum = res.replacementBookingNumber;
+                    actionsButtons = `
+                        <div style="text-align: center; color: #9e9e9e;">
+                            Remplacé par : <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong>
+                        </div>
+                    `;
+                } else {
+                    actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">Nouvelle réservation</button>`;
+                }
+
+                return `
+                    <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6;' : ''}">
+                        <div class="res-pwa-header">
+                            <span class="res-pwa-booking-number">${res.bookingNumber}</span>
+                            <span class="res-pwa-status">${statusHTML}</span>
+                        </div>
+                        <div class="res-pwa-body">
+                            <h4>${res.route.from} → ${res.route.to}</h4>
+                            <p>Le ${Utils.formatDate(res.date)} à ${res.route.departure}</p>
+                        </div>
+                        <div class="res-pwa-actions">${actionsButtons}</div>
                     </div>
-                ` : ''}
-            </div>
-            <div class="res-pwa-actions">
-                ${actionsButtons}
-            </div>
-        </div>
-    `;
-}).join('');
+                `;
+            }).join('');
+
     } catch (error) {
         console.error("Erreur affichage réservations:", error);
-        listContainer.innerHTML = `<div class="no-results error"><h3>Impossible de charger vos réservations.</h3><p>${error.message}</p></div>`;
+        listContainer.innerHTML = `<div class="no-results error"><h3>Erreur de chargement.</h3></div>`;
     }
 }
 
