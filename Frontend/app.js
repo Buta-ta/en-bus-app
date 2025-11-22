@@ -3386,42 +3386,59 @@ async function displayReservations() {
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
-        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3></div>`;
+        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3><p>Vos réservations apparaîtront ici.</p></div>`;
         return;
     }
 
     try {
+        // 1. On demande les infos des billets qu'on connaît
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
         if (!data.success || !data.reservations) throw new Error("Données invalides");
 
-        // 1. Mettre à jour l'historique local pour inclure tous les billets liés
-        const allKnownNumbers = data.reservations.map(r => r.bookingNumber);
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify([...new Set(allKnownNumbers)]));
+        // ==========================================================
+        // ✅ AUTO-DÉCOUVERTE ET MISE À JOUR DE L'HISTORIQUE
+        // ==========================================================
+        let needsRefresh = false;
+        const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        const serverBookingNumbers = new Set(data.reservations.map(r => r.bookingNumber));
 
-        // 2. Afficher la liste complète et triée
+        // Ajoute les nouveaux billets découverts à l'historique
+        serverBookingNumbers.forEach(num => {
+            if (!currentHistory.includes(num)) {
+                console.log(`🔥 Nouveau billet ${num} découvert, ajout à l'historique local.`);
+                currentHistory.push(num);
+                needsRefresh = true;
+            }
+        });
+
+        // Si l'historique a changé, on sauvegarde et on relance la fonction pour tout afficher
+        if (needsRefresh) {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(currentHistory));
+            console.log("🔄 Historique mis à jour, rechargement de la liste...");
+            return displayReservations();
+        }
+        // ==========================================================
+
+        // Si l'historique est à jour, on affiche
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
                 const isReported = res.status === 'Reporté';
                 let actionsHTML = '';
-                let statusHTML = `<span class="res-pwa-status">${res.status}</span>`;
-
                 if (res.status === 'Confirmé') {
-                    statusHTML = `<span class="res-pwa-status" style="color: #73d700;">✓ Confirmé</span>`;
                     actionsHTML = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
                 } else if (isReported) {
-                    statusHTML = `<span class="res-pwa-status" style="color: #999; text-decoration: line-through;">↪️ Obsolète</span>`;
-                    actionsHTML = `<div style="text-align:center; color:#ccc;">Remplacé par <strong>${res.replacementBookingNumber}</strong></div>`;
+                    actionsHTML = `<div style="text-align:center; color:#ccc;">Remplacé par <strong style="color:white;">${res.replacementBookingNumber}</strong></div>`;
                 } else {
                     // Autres statuts
                 }
 
                 return `
-                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.6' : ''}">
+                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.5' : ''}">
                         <div class="res-pwa-header">
-                            <span class="res-pwa-booking-number">${res.bookingNumber}</span>
-                            ${statusHTML}
+                            <span>${res.bookingNumber}</span>
+                            <span>${res.status}</span>
                         </div>
                         <div class="res-pwa-body">
                             <h4>${res.route.from} → ${res.route.to}</h4>
@@ -3433,7 +3450,7 @@ async function displayReservations() {
             }).join('');
 
     } catch (error) {
-        console.error("Erreur d'affichage :", error);
+        console.error("Erreur affichage réservations:", error);
         listContainer.innerHTML = `<div class="no-results error">Erreur de chargement.</div>`;
     }
 }
