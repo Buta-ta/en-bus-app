@@ -3378,7 +3378,7 @@ async function displayConfirmation(reservation) {
         Utils.showToast("Erreur lors de l'affichage des détails.", "error");
     }
 }
-// DANS app.js, AJOUTEZ CETTE FONCTION
+
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
@@ -3386,59 +3386,84 @@ async function displayReservations() {
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
-        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3><p>Vos réservations apparaîtront ici.</p></div>`;
+        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3></div>`;
         return;
     }
 
     try {
-        // 1. On demande les infos des billets qu'on connaît
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
         if (!data.success || !data.reservations) throw new Error("Données invalides");
 
-        // ==========================================================
-        // ✅ AUTO-DÉCOUVERTE ET MISE À JOUR DE L'HISTORIQUE
-        // ==========================================================
+        // --- Logique d'auto-découverte ---
         let needsRefresh = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         const serverBookingNumbers = new Set(data.reservations.map(r => r.bookingNumber));
-
-        // Ajoute les nouveaux billets découverts à l'historique
         serverBookingNumbers.forEach(num => {
             if (!currentHistory.includes(num)) {
-                console.log(`🔥 Nouveau billet ${num} découvert, ajout à l'historique local.`);
                 currentHistory.push(num);
                 needsRefresh = true;
             }
         });
-
-        // Si l'historique a changé, on sauvegarde et on relance la fonction pour tout afficher
         if (needsRefresh) {
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(currentHistory));
-            console.log("🔄 Historique mis à jour, rechargement de la liste...");
             return displayReservations();
         }
-        // ==========================================================
 
-        // Si l'historique est à jour, on affiche
+        // --- Affichage ---
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
+                const isConfirmed = res.status === 'Confirmé';
+                const isPending = res.status === 'En attente de paiement';
+                const isReportPending = res.status === 'En attente de report';
                 const isReported = res.status === 'Reporté';
+                const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
+                
+                let statusHTML = '';
+                if (isConfirmed) statusHTML = `<span style="color: #73d700;">✓ Confirmé</span>`;
+                else if (isPending) statusHTML = `<span style="color: #ff9800;">⏳ En attente</span>`;
+                else if (isReportPending) statusHTML = `<span style="color: #2196f3;">🔄 Report en cours</span>`;
+                else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">↪️ Obsolète</span>`;
+                else statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
+
                 let actionsHTML = '';
-                if (res.status === 'Confirmé') {
+                const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
+
+                // ===================================
+                // ✅ LOGIQUE COMPLÈTE DES BOUTONS
+                // ===================================
+                if (isConfirmed) {
                     actionsHTML = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
+                    
+                    if (trackerIdentifier) {
+                        actionsHTML += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre</a>`;
+                    }
+                    
+                    if (!res.returnRoute && !res.originalReservation) {
+                        actionsHTML += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">🔄 Reporter</button>`;
+                    }
+                } else if (isPending) {
+                    actionsHTML = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Payer</button>`;
+                } else if (isReportPending) {
+                    actionsHTML = `<div style="text-align: center; color: #2196f3;">Demande en cours...</div>`;
                 } else if (isReported) {
-                    actionsHTML = `<div style="text-align:center; color:#ccc;">Remplacé par <strong style="color:white;">${res.replacementBookingNumber}</strong></div>`;
+                    const newBookingNum = res.replacementBookingNumber;
+                    actionsHTML = `
+                        <div style="text-align: center; color: #9e9e9e;">
+                            Remplacé par : <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong>
+                        </div>
+                    `;
                 } else {
-                    // Autres statuts
+                    actionsHTML = `<button class="btn btn-primary" onclick="showPage('home')">Nouvelle réservation</button>`;
                 }
+                // ===================================
 
                 return `
-                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.5' : ''}">
+                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.6' : ''}">
                         <div class="res-pwa-header">
-                            <span>${res.bookingNumber}</span>
-                            <span>${res.status}</span>
+                            <span class="res-pwa-booking-number">${res.bookingNumber}</span>
+                            ${statusHTML}
                         </div>
                         <div class="res-pwa-body">
                             <h4>${res.route.from} → ${res.route.to}</h4>
@@ -3450,7 +3475,7 @@ async function displayReservations() {
             }).join('');
 
     } catch (error) {
-        console.error("Erreur affichage réservations:", error);
+        console.error("Erreur d'affichage :", error);
         listContainer.innerHTML = `<div class="no-results error">Erreur de chargement.</div>`;
     }
 }
