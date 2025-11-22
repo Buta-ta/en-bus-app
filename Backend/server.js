@@ -449,22 +449,66 @@ app.post(
 );
 
 app.get("/api/reservations/details", async (req, res) => {
-  try {
-    const ids = req.query.ids?.split(",").filter((id) => id);
-    if (!ids || ids.length === 0)
-      return res
-        .status(400)
-        .json({ success: false, error: "Aucun ID fourni." });
-    const reservations = await reservationsCollection
-      .find({ bookingNumber: { $in: ids } })
-      .toArray();
-    const sorted = ids
-      .map((id) => reservations.find((r) => r.bookingNumber === id))
-      .filter(Boolean);
-    res.json({ success: true, reservations: sorted });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Erreur serveur." });
-  }
+    try {
+        const knownBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
+
+        if (!knownBookingNumbers || knownBookingNumbers.length === 0) {
+            return res.status(400).json({ success: false, error: "Aucun ID de réservation fourni." });
+        }
+        
+        console.log(`🔍 Recherche pour les billets connus: ${knownBookingNumbers.join(', ')}`);
+
+        // On récupère TOUTES les réservations liées, y compris les remplacements
+        const allRelatedReservations = await reservationsCollection.aggregate([
+            // Étape 1 : Trouver les réservations initiales connues
+            {
+                $match: {
+                    bookingNumber: { $in: knownBookingNumbers }
+                }
+            },
+            // Étape 2 : Utiliser la relation "originalReservation" pour trouver toute la chaîne
+            {
+                $graphLookup: {
+                    from: "reservations",
+                    startWith: "$originalReservation",
+                    connectFromField: "originalReservation",
+                    connectToField: "originalReservation",
+                    as: "report_chain_up" // Toute la chaîne vers l'original
+                }
+            },
+            {
+                $graphLookup: {
+                    from: "reservations",
+                    startWith: "$replacementReservation",
+                    connectFromField: "replacementReservation",
+                    connectToField: "replacementReservation",
+                    as: "report_chain_down" // Toute la chaîne vers le plus récent
+                }
+            },
+            // Étape 3 : Aplatir les résultats
+            {
+                $project: {
+                    "docs": {
+                        $concatArrays: [ ["$$ROOT"], "$report_chain_up", "$report_chain_down" ]
+                    }
+                }
+            },
+            { $unwind: "$docs" },
+            { $replaceRoot: { newRoot: "$docs" } }
+
+        ]).toArray();
+
+        // Étape 4 : Dédoublonner et renvoyer
+        const uniqueReservations = Array.from(new Map(allRelatedReservations.map(r => [r.bookingNumber, r])).values());
+        
+        console.log(`✅ Total de billets trouvés (chaîne complète): ${uniqueReservations.map(r => r.bookingNumber).join(', ')}`);
+        
+        res.json({ success: true, reservations: uniqueReservations });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération multi-réservations:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur." });
+    }
 });
 
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
