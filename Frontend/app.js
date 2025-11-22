@@ -579,37 +579,41 @@ const Utils = {
 // Dans app.js, à l'intérieur de const Utils = { ... }
 
 // ✅ 1. FONCTION DE GÉNÉRATION DE LA CHAÎNE POUR LE QR CODE
+// Dans app.js, à l'intérieur de const Utils = { ... }
+
 generateQRCodeData(reservation, isReturn = false) {
-    // Récupérer les informations de base
+    // 1. Récupérer les informations de base
     const bookingNumber = reservation.bookingNumber;
     const mainPassengerName = reservation.passengers[0]?.name || 'N/A';
     const totalPassengers = reservation.passengers.length;
 
-    // Déterminer la date et le type de trajet (Aller ou Retour)
-    let travelDate, travelType;
+    let travelDate, travelType, busIdentifier; // ✅ Déclaration ici
+
+    // 2. Déterminer les données pour l'aller ou le retour
     if (isReturn && reservation.returnDate) {
         travelDate = reservation.returnDate;
-        travelType = 'R'; // R pour Retour
+        travelType = 'R'; // Retour
+        busIdentifier = reservation.returnBusIdentifier || 'N/A'; // On lit le bon champ
     } else {
         travelDate = reservation.date;
-        travelType = 'A'; // A pour Aller
+        travelType = 'A'; // Aller
+        busIdentifier = reservation.busIdentifier || 'N/A'; // On lit le bon champ
     }
 
-    // Assembler la chaîne de caractères finale avec le séparateur '|'
+    // 3. Assembler la chaîne de caractères
     const qrString = [
         bookingNumber,
         travelDate,
         mainPassengerName,
         totalPassengers,
         travelType,
-        busIdentifier 
+        busIdentifier // Maintenant, cette variable existe
     ].join('|');
 
-    console.log(`✅ Chaîne de caractères pour le QR Code (${travelType}) générée :`, qrString);
+    console.log(`✅ Chaîne QR Code générée (v4.0 avec Bus ID):`, qrString);
     
     return qrString;
 },
-
 // ✅ 2. FONCTION DE DÉCODAGE (MISE À JOUR POUR LE NOUVEAU FORMAT)
 decodeQRCodeData(qrString) {
     try {
