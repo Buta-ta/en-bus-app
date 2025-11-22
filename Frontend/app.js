@@ -624,7 +624,8 @@ decodeQRCodeData(qrString) {
                 travelDate: parts[1],
                 mainPassengerName: parts[2],
                 totalPassengers: parseInt(parts[3]),
-                travelType: parts[4] === 'A' ? 'Aller' : 'Retour'
+                travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
+                 busIdentifier: parts[5] //
             };
         }
         
