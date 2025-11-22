@@ -3457,14 +3457,20 @@ listContainer.innerHTML = data.reservations.map(res => {
             </div>
         `;
     } else if (isReported) {
-        // ✅ Lien vers le nouveau billet si disponible
-        const newRef = res.replacementReservation;
-        actionsButtons = `
-            <div style="width: 100%; text-align: center; padding: 8px; color: #9e9e9e; font-size: 0.9rem;">
-                Ce billet a été remplacé. 
-                ${newRef ? `<br>Nouveau billet : <strong>${res.reportHistory?.[res.reportHistory.length-1]?.newBookingNumber || 'Voir liste'}</strong>` : ''}
-            </div>
-        `;
+    // ===================================
+    // ✅ CORRECTION ICI
+    // ===================================
+    const newBookingNum = res.replacementBookingNumber; // On lit le bon champ
+
+    actionsButtons = `
+        <div style="width: 100%; text-align: center; padding: 8px; color: #9e9e9e; font-size: 0.9rem;">
+            Ce billet a été remplacé. 
+            ${newBookingNum 
+                ? `<br>Nouveau billet : <strong style="color: white; font-family: monospace; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum}</strong>` 
+                : ''
+            }
+        </div>
+    `;
     } else if (isCancelled) {
         actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">Faire une nouvelle réservation</button>`;
     }
