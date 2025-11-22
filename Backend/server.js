@@ -1157,72 +1157,56 @@ app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Erreur serveur." });
   }
 });
-
-app.post(
-  "/api/admin/report-requests/:bookingNumber/approve",
+// Valider une demande de report
+app.post("/api/admin/report-requests/:bookingNumber/approve",
   authenticateToken,
-  [body("transactionProof").optional().isString().trim()],
+  [
+    body('transactionProof').optional().isString().trim() 
+  ],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
     try {
       const { bookingNumber } = req.params;
       let { transactionProof } = req.body;
-      const reservation = await reservationsCollection.findOne({
-        bookingNumber,
-        status: "En attente de report",
-      });
-      if (!reservation || !reservation.reportRequest)
-        return res
-          .status(404)
-          .json({ error: "Demande de report introuvable." });
-
+      
+      console.log(`✅ Validation de la demande de report pour ${bookingNumber}`);
+      
+      const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
+      if (!reservation || !reservation.reportRequest) {
+        return res.status(404).json({ error: "Demande de report introuvable ou déjà traitée." });
+      }
+      
       const request = reservation.reportRequest;
-      if (request.paymentMethod === "AGENCY") {
-        transactionProof = `AGENCE-PAY-${Date.now()}`;
-      } else if (!transactionProof) {
-        return res
-          .status(400)
-          .json({ error: "Preuve de paiement requise pour Mobile Money." });
+
+      if (request.paymentMethod === 'AGENCY') {
+          transactionProof = `AGENCE-PAY-${Date.now()}`;
+          console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
+      } 
+      else if (!transactionProof && request.paymentMethod !== 'AGENCY') {
+          return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
       }
 
-      const newTrip = await tripsCollection.findOne({
-        _id: new ObjectId(request.targetTrip.id),
-      });
-      if (!newTrip)
-        return res
-          .status(404)
-          .json({ error: "Le voyage cible n'existe plus." });
-
+      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
+      if (!newTrip) {
+        return res.status(404).json({ error: "Le voyage cible n'existe plus." });
+      }
+      
       const requiredSeatsCount = reservation.passengers.length;
-      const availableSeats = newTrip.seats
-        .filter((s) => s.status === "available")
-        .slice(0, requiredSeatsCount)
-        .map((s) => s.number);
-      if (availableSeats.length < requiredSeatsCount)
+      const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
+      if (availableSeats.length < requiredSeatsCount) {
         return res.status(409).json({ error: `Pas assez de sièges.` });
-
-      await tripsCollection.updateOne(
-        { _id: new ObjectId(reservation.route.id) },
-        { $set: { "seats.$[elem].status": "available" } },
-        {
-          arrayFilters: [
-            {
-              "elem.number": { $in: reservation.seats.map((s) => parseInt(s)) },
-            },
-          ],
-        }
-      );
-      await tripsCollection.updateOne(
-        { _id: newTrip._id },
-        { $set: { "seats.$[elem].status": "occupied" } },
-        { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
-      );
-
+      }
+      
+      await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
+      await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
+      
+      // La création de la nouvelle réservation
       const newBookingNumber = generateBookingNumber();
       const newPrice = newTrip.route.price * requiredSeatsCount;
-
-      // ============================================
-      // ✅ CORRECTION ICI
-      // ============================================
       const newReservation = {
         ...reservation,
         _id: new ObjectId(),
@@ -1230,66 +1214,58 @@ app.post(
         route: { ...newTrip.route, id: newTrip._id.toString() },
         date: newTrip.date,
         seats: availableSeats,
-        passengers: reservation.passengers.map((p, i) => ({
-          ...p,
-          seat: availableSeats[i],
-        })),
+        passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
         totalPriceNumeric: newPrice,
-        totalPrice: `${newPrice
-          .toString()
-          .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+        totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
         status: "Confirmé",
         reportCount: (reservation.reportCount || 0) + 1,
         originalReservation: reservation._id.toString(),
-        busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || null, // ✅ CORRECTION
+        busIdentifier: newTrip.busIdentifier || null,
         reportHistory: [
           ...(reservation.reportHistory || []),
           {
-            from: {
-              date: reservation.date,
-              tripId: reservation.route.id.toString(),
-            },
+            from: { date: reservation.date, tripId: reservation.route.id.toString() },
             to: { date: newTrip.date, tripId: newTrip._id.toString() },
             reportedAt: new Date(),
             totalCost: request.cost.totalCost,
             initiatedBy: "client",
             approvedBy: req.user.username,
-            transactionProof,
-          },
+            transactionProof
+          }
         ],
-        createdAt: new Date(),
+        createdAt: new Date()
       };
-      // ============================================
-
+      
       delete newReservation.reportedAt;
       delete newReservation.replacementReservation;
       delete newReservation.reportRequest;
+      delete newReservation.replacementBookingNumber; // On nettoie l'ancien au cas où
 
       await reservationsCollection.insertOne(newReservation);
+      
+      // Mise à jour de l'ancienne réservation pour la lier à la nouvelle
       await reservationsCollection.updateOne(
         { _id: reservation._id },
-        {
-          $set: {
-            status: "Reporté",
-            reportedAt: new Date(),
-            replacementReservation: newReservation._id.toString(),
-            replacementBookingNumber: newReservation.bookingNumber,
-            "reportRequest.status": "Approuvé",
-            "reportRequest.approvedAt": new Date(),
-            "reportRequest.approvedBy": req.user.username,
-            "reportRequest.transactionProof": transactionProof,
-          },
+        { 
+          $set: { 
+            status: "Reporté", 
+            reportedAt: new Date(), 
+            replacementReservation: newReservation._id.toString(), 
+            replacementBookingNumber: newReservation.bookingNumber, // ✅ On ajoute le numéro du nouveau billet
+            'reportRequest.status': 'Approuvé', 
+            'reportRequest.approvedAt': new Date(), 
+            'reportRequest.approvedBy': req.user.username, 
+            'reportRequest.transactionProof': transactionProof 
+          }
         }
       );
-
-      console.log("-> Envoi de l'email de report confirmé...");
+      
+      console.log(`✅✅ Report validé par admin. Ancien: ${bookingNumber}, Nouveau: ${newBookingNumber}`);
+      
       sendReportConfirmedEmail(reservation, newReservation);
 
-      res.json({
-        success: true,
-        message: "Demande de report validée.",
-        newBookingNumber,
-      });
+      res.json({ success: true, message: "Demande de report validée avec succès.", newBookingNumber });
+      
     } catch (error) {
       console.error("❌ Erreur validation report:", error);
       res.status(500).json({ error: "Erreur serveur." });

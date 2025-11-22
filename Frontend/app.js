@@ -3457,6 +3457,8 @@ listContainer.innerHTML = data.reservations.map(res => {
             </div>
         `;
     } else if (isReported) {
+
+        console.log("Billet reporté trouvé :", res); // ✅ 
     // ===================================
     // ✅ CORRECTION ICI
     // ===================================
