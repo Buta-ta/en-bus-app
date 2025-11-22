@@ -3378,39 +3378,51 @@ async function displayConfirmation(reservation) {
         Utils.showToast("Erreur lors de l'affichage des détails.", "error");
     }
 }
-
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
-    listContainer.innerHTML = '<div class="loading-spinner">Chargement...</div>';
+    listContainer.innerHTML = '<div class="loading-spinner">Chargement de vos réservations...</div>';
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
-        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3></div>`;
+        listContainer.innerHTML = `
+            <div class="no-results" style="padding: 48px; text-align: center;">
+                <h3>Aucune réservation sur cet appareil</h3>
+                <p>Vos réservations apparaîtront ici.</p>
+                <button class="btn btn-primary" onclick="showPage('home')">Réserver un voyage</button>
+            </div>`;
         return;
     }
 
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
+        if (!response.ok) throw new Error('Erreur réseau lors de la récupération.');
+        
         const data = await response.json();
-        if (!data.success || !data.reservations) throw new Error("Données invalides");
-
-        // --- Logique d'auto-découverte ---
+        if (!data.success || !data.reservations) {
+            listContainer.innerHTML = `<div class="no-results"><h3>Aucune réservation trouvée.</h3></div>`;
+            return;
+        }
+        
+        // --- Auto-découverte et mise à jour de l'historique local ---
         let needsRefresh = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        const serverBookingNumbers = new Set(data.reservations.map(r => r.bookingNumber));
+        const serverBookingNumbers = data.reservations.map(r => r.bookingNumber);
+        
         serverBookingNumbers.forEach(num => {
             if (!currentHistory.includes(num)) {
                 currentHistory.push(num);
                 needsRefresh = true;
             }
         });
+        
         if (needsRefresh) {
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(currentHistory));
+            console.log("🔄 Historique local mis à jour, rechargement de la liste...");
             return displayReservations();
         }
 
-        // --- Affichage ---
+        // --- Affichage des cartes de réservation ---
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
@@ -3426,57 +3438,64 @@ async function displayReservations() {
                 else if (isReportPending) statusHTML = `<span style="color: #2196f3;">🔄 Report en cours</span>`;
                 else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">↪️ Obsolète</span>`;
                 else statusHTML = `<span style="color: #f44336;">❌ ${res.status}</span>`;
-
-                let actionsHTML = '';
+                
+                let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
 
-                // ===================================
-                // ✅ LOGIQUE COMPLÈTE DES BOUTONS
-                // ===================================
                 if (isConfirmed) {
-                    actionsHTML = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
+                    actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">Voir Billet</button>`;
                     
                     if (trackerIdentifier) {
-                        actionsHTML += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre</a>`;
+                        actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre</a>`;
                     }
                     
-                    if (!res.returnRoute && !res.originalReservation) {
-                        actionsHTML += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">🔄 Reporter</button>`;
+                    // ================================================
+                    // ✅ LOGIQUE CORRIGÉE POUR LE BOUTON "REPORTER"
+                    // ================================================
+                    const reportCount = res.reportCount || 0;
+                    const maxReports = 2; // Limite à 2 reports au total (l'original + son remplaçant)
+                    
+                    // On affiche le bouton si :
+                    // 1. Ce n'est pas un billet Aller/Retour
+                    // 2. Le nombre de reports effectués est inférieur à la limite
+                    if (!res.returnRoute && reportCount < maxReports) {
+                        actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">🔄 Reporter</button>`;
                     }
+                    // ================================================
+
                 } else if (isPending) {
-                    actionsHTML = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Payer</button>`;
+                    actionsButtons = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">Payer</button>`;
                 } else if (isReportPending) {
-                    actionsHTML = `<div style="text-align: center; color: #2196f3;">Demande en cours...</div>`;
+                    actionsButtons = `<div style="text-align: center; color: #2196f3;">Demande en cours...</div>`;
                 } else if (isReported) {
                     const newBookingNum = res.replacementBookingNumber;
-                    actionsHTML = `
+                    actionsButtons = `
                         <div style="text-align: center; color: #9e9e9e;">
                             Remplacé par : <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong>
                         </div>
                     `;
                 } else {
-                    actionsHTML = `<button class="btn btn-primary" onclick="showPage('home')">Nouvelle réservation</button>`;
+                    actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">Nouvelle réservation</button>`;
                 }
-                // ===================================
 
                 return `
-                    <div class="reservation-card-pwa" style="${isReported ? 'opacity:0.6' : ''}">
+                    <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6;' : ''}">
                         <div class="res-pwa-header">
                             <span class="res-pwa-booking-number">${res.bookingNumber}</span>
-                            ${statusHTML}
+                            <span class="res-pwa-status">${statusHTML}</span>
                         </div>
                         <div class="res-pwa-body">
                             <h4>${res.route.from} → ${res.route.to}</h4>
-                            <p>${new Date(res.date).toLocaleDateString('fr-FR')}</p>
+                            <p>Le ${Utils.formatDate(res.date)} à ${res.route.departure}</p>
                         </div>
-                        <div class="res-pwa-actions">${actionsHTML}</div>
+                        <div class="res-pwa-actions">${actionsButtons}</div>
                     </div>
                 `;
             }).join('');
 
     } catch (error) {
-        console.error("Erreur d'affichage :", error);
-        listContainer.innerHTML = `<div class="no-results error">Erreur de chargement.</div>`;
+        console.error("Erreur affichage réservations:", error);
+        listContainer.innerHTML = `<div class="no-results error"><h3>Erreur de chargement.</h3></div>`;
     }
 }
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
