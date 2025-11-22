@@ -447,54 +447,26 @@ app.post(
     }
   }
 );
+
 app.get("/api/reservations/details", async (req, res) => {
-    try {
-        const initialBookingNumbers = req.query.ids?.split(',').filter(id => id);
-
-        if (!initialBookingNumbers || initialBookingNumbers.length === 0) {
-            return res.status(400).json({ success: false, error: "Aucun ID de réservation fourni." });
-        }
-
-        // 1. Récupérer les réservations initialement demandées par le client
-        const initialReservations = await reservationsCollection
-            .find({ bookingNumber: { $in: initialBookingNumbers } })
-            .toArray();
-
-        // 2. Identifier s'il y a des billets de remplacement à chercher
-        const replacementBookingNumbers = initialReservations
-            .filter(r => r.status === 'Reporté' && r.replacementBookingNumber)
-            .map(r => r.replacementBookingNumber);
-
-        let finalReservations = [...initialReservations];
-
-        // 3. Si des billets de remplacement existent, aller les chercher dans la base
-        if (replacementBookingNumbers.length > 0) {
-            console.log(`-> Recherche des billets de remplacement: ${replacementBookingNumbers.join(', ')}`);
-            const replacementReservations = await reservationsCollection
-                .find({ bookingNumber: { $in: replacementBookingNumbers } })
-                .toArray();
-            
-            // Ajouter les nouveaux billets à la liste finale
-            finalReservations.push(...replacementReservations);
-        }
-
-        // 4. Dédoublonner la liste au cas où le client connaissait déjà les deux
-        const uniqueReservations = Array.from(new Map(finalReservations.map(r => [r.bookingNumber, r])).values());
-
-        // 5. Renvoyer la liste complète, en s'assurant que les billets demandés initialement sont là
-        const allRelevantBookings = [...initialBookingNumbers, ...replacementBookingNumbers];
-        const sortedReservations = uniqueReservations.filter(r => allRelevantBookings.includes(r.bookingNumber));
-
-        res.json({ 
-            success: true, 
-            reservations: sortedReservations 
-        });
-
-    } catch (error) {
-        console.error("❌ Erreur récupération multi-réservations:", error);
-        res.status(500).json({ success: false, error: "Erreur serveur." });
-    }
+  try {
+    const ids = req.query.ids?.split(",").filter((id) => id);
+    if (!ids || ids.length === 0)
+      return res
+        .status(400)
+        .json({ success: false, error: "Aucun ID fourni." });
+    const reservations = await reservationsCollection
+      .find({ bookingNumber: { $in: ids } })
+      .toArray();
+    const sorted = ids
+      .map((id) => reservations.find((r) => r.bookingNumber === id))
+      .filter(Boolean);
+    res.json({ success: true, reservations: sorted });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
 });
+
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
   try {
     const { bookingNumber } = req.params;
