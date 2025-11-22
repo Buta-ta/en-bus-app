@@ -601,7 +601,8 @@ generateQRCodeData(reservation, isReturn = false) {
         travelDate,
         mainPassengerName,
         totalPassengers,
-        travelType
+        travelType,
+        busIdentifier 
     ].join('|');
 
     console.log(`✅ Chaîne de caractères pour le QR Code (${travelType}) générée :`, qrString);
