@@ -449,22 +449,43 @@ app.post(
 );
 
 app.get("/api/reservations/details", async (req, res) => {
-  try {
-    const ids = req.query.ids?.split(",").filter((id) => id);
-    if (!ids || ids.length === 0)
-      return res
-        .status(400)
-        .json({ success: false, error: "Aucun ID fourni." });
-    const reservations = await reservationsCollection
-      .find({ bookingNumber: { $in: ids } })
-      .toArray();
-    const sorted = ids
-      .map((id) => reservations.find((r) => r.bookingNumber === id))
-      .filter(Boolean);
-    res.json({ success: true, reservations: sorted });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Erreur serveur." });
-  }
+    try {
+        const initialBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
+
+        if (!initialBookingNumbers || initialBookingNumbers.length === 0) {
+            return res.status(400).json({ success: false, error: "Aucun ID de réservation fourni." });
+        }
+        
+        // 1. Récupérer les réservations que le client connaît
+        const initialReservations = await reservationsCollection
+            .find({ bookingNumber: { $in: initialBookingNumbers } })
+            .toArray();
+
+        // 2. Chercher si des billets de remplacement existent
+        const replacementBookingNumbers = initialReservations
+            .map(r => r.replacementBookingNumber)
+            .filter(Boolean); // Garder seulement les numéros valides
+
+        let finalReservations = [...initialReservations];
+
+        // 3. S'il y a des billets de remplacement, aller les chercher
+        if (replacementBookingNumbers.length > 0) {
+            const replacementReservations = await reservationsCollection
+                .find({ bookingNumber: { $in: replacementBookingNumbers } })
+                .toArray();
+            
+            finalReservations.push(...replacementReservations);
+        }
+
+        // 4. Renvoyer une liste unique de tous les billets trouvés
+        const uniqueReservations = Array.from(new Map(finalReservations.map(r => [r.bookingNumber, r])).values());
+        
+        res.json({ success: true, reservations: uniqueReservations });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération multi-réservations:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur." });
+    }
 });
 
 
