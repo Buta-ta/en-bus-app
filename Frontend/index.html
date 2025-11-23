@@ -946,87 +946,90 @@
   <script src="app.js"></script>
 
   <script>
-    // ... (votre script PWA est correct et reste inchangé) ...
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then((registration) => {
-            console.log("✅ Service Worker enregistré:", registration.scope);
-            registration.addEventListener("updatefound", () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener("statechange", () => {
-                if (
-                  newWorker.state === "installed" &&
-                  navigator.serviceWorker.controller
-                ) {
+    // ============================================
+    // INITIALISATION DE L'APPLICATION ET PWA
+    // ============================================
 
-                  
-                  if (
-                    confirm(
-                      "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
-                    )
-                  ) {
-                    newWorker.postMessage({ type: "SKIP_WAITING" });
-                    window.location.reload();
-                  }
-                }
-              });
-            });
-          })
-          .catch((error) => {
-            console.error("❌ Erreur Service Worker:", error);
-          });
-      });
-      let refreshing;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
+    // --- 1. Démarrage de l'application ---
+    // Cet événement se déclenche quand TOUS les fichiers (JS, CSS, images) sont chargés.
+    window.addEventListener('load', () => {
+        try {
+            if (typeof initApp === 'function') {
+                initApp(); // initApp est dans app.js
+                console.log("🚀 Application initialisée.");
+            } else {
+                console.error("ERREUR : initApp() est introuvable.");
+            }
+        } catch (e) {
+            console.error("Erreur critique lors de l'initialisation:", e);
+        }
+    });
+
+    // --- 2. Logique du Service Worker (PWA Offline & Update) ---
+    if ("serviceWorker" in navigator) {
+        // On enregistre le SW dès que la page est chargée
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("/sw.js")
+                .then(registration => {
+                    console.log("✅ Service Worker enregistré:", registration.scope);
+                    registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                if (confirm("Une nouvelle version est disponible. Mettre à jour ?")) {
+                                    installingWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            }
+                        };
+                    };
+                })
+                .catch(error => console.error("❌ Erreur Service Worker:", error));
+        });
+
+        // Rechargement automatique après mise à jour
+        let refreshing;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            window.location.reload();
+            refreshing = true;
+        });
     }
+
+    // --- 3. Logique d'installation (Bouton "Installer l'app") ---
     let deferredPrompt;
     window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      showInstallButton();
+        e.preventDefault();
+        deferredPrompt = e;
+        showInstallButton();
     });
-    function showInstallButton() {
-      const installBtn = document.createElement("button");
-      installBtn.className = "install-pwa-btn";
-      installBtn.innerHTML = `<span style="font-size: 20px;">📱</span><span>Installer l'application</span>`;
-      installBtn.onclick = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Installation: ${outcome}`);
-        if (outcome === "accepted") {
-          installBtn.style.display = "none";
-        }
-        deferredPrompt = null;
-      };
-      document.body.appendChild(installBtn);
-      setTimeout(() => {
-        installBtn.classList.add("show");
-      }, 2000);
-    }
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone
-    ) {
-      console.log("✅ Application installée et lancée en mode standalone");
-      document.body.classList.add("pwa-installed");
-    }
-    window.addEventListener("online", () => {
-      if (typeof Utils !== "undefined")
-        Utils.showToast("Connexion rétablie", "success");
-    });
-    window.addEventListener("offline", () => {
-      if (typeof Utils !== "undefined")
-        Utils.showToast("Mode hors-ligne activé", "warning");
-    });
-  </script>
 
+    function showInstallButton() {
+        const existingBtn = document.querySelector('.install-pwa-btn');
+        if (existingBtn) return; // Ne pas ajouter le bouton s'il existe déjà
+
+        const installBtn = document.createElement("button");
+        installBtn.className = "install-pwa-btn";
+        installBtn.innerHTML = `<span>📱</span><span>Installer l'application</span>`;
+        installBtn.onclick = async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+        };
+        document.body.appendChild(installBtn);
+        setTimeout(() => installBtn.classList.add("show"), 1000);
+    }
+    
+    // --- 4. Détection du mode Standalone (PWA) ---
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
+      console.log("✅ Application lancée en mode standalone.");
+    }
+
+</script>
+    
 
 
 
