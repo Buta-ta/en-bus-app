@@ -2850,61 +2850,65 @@ window.proceedToPassengerInfo = async function() {
 function displayPassengerForms() {
     const formsContainer = document.getElementById("passengers-forms");
     const baggageContainer = document.getElementById("baggage-options");
-    const baggageInfo = document.getElementById("baggage-section-info"); // Assurez-vous d'avoir un élément avec cet ID
+    const baggageInfo = document.getElementById("baggage-section-info");
+    const baggageTitle = document.querySelector("#baggage-section h3");
+
+    // ===========================================
+    // ✅ TRADUCTION
+    // ===========================================
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    // ===========================================
 
     let formsHTML = "";
     let baggageHTML = "";
     appState.baggageCounts = {};
     
-    // ✅ ÉTAPE 1 : Récupérer les options de bagages du trajet sélectionné (avec des valeurs par défaut)
     const baggageOptions = appState.selectedBus.baggageOptions || {
         standard: { included: 1, max: 5, price: 2000 },
         oversized: { max: 2, price: 5000 }
     };
 
-    // ✅ ÉTAPE 2 : Mettre à jour l'information sur les bagages inclus
-    if (baggageInfo) {
-        baggageInfo.innerHTML = `
-            Chaque passager a droit à <strong>${baggageOptions.standard.included} bagage(s) en soute</strong> inclus.
-        `;
+    if (baggageInfo && translation.baggage_info) {
+        // La traduction peut contenir du HTML comme <strong>
+        baggageInfo.innerHTML = translation.baggage_info(baggageOptions.standard.included);
+    }
+    if (baggageTitle && translation.baggage_title) {
+        baggageTitle.innerHTML = translation.baggage_title;
     }
 
-    // ✅ ÉTAPE 3 : Créer les formulaires pour chaque passager
     for (let i = 0; i < appState.currentSearch.passengers; i++) {
-        const passengerType = i < appState.passengerCounts.adults ? "Adulte" : "Enfant";
+        const passengerType = i < appState.passengerCounts.adults 
+            ? (translation.passenger_type_adult || "Adulte") 
+            : (translation.passenger_type_child || "Enfant");
         const seatNumber = appState.selectedSeats[i];
         
-        // Le HTML pour le formulaire passager ne change pas
         formsHTML += `
             <div class="passenger-form">
-                <h3>Passager ${i + 1} (${passengerType}) - Siège ${seatNumber}</h3>
+                <h3>${translation.passenger_form_title(i + 1, passengerType, seatNumber)}</h3>
                 <div class="form-group">
-                    <label for="name-${i}">Nom complet *</label>
-                    <input type="text" id="name-${i}" class="form-control" required>
+                    <label for="name-${i}">${translation.passengers_name_label}</label>
+                    <input type="text" id="name-${i}" class="form-control" placeholder="${translation.passengers_name_placeholder}" required>
                 </div>
                 <div class="form-group">
-                    <label for="phone-${i}">Numéro de téléphone (international accepté) *</label>
-                    <input type="tel" id="phone-${i}" class="form-control" placeholder="Ex: +242 06 123 4567 ou 06 123 4567" required>
-                    <small style="color: var(--color-text-secondary); font-size: 13px; margin-top: 4px; display: block;">
-                        Formats acceptés : +XXX..., 00XXX..., ou national
-                    </small>
+                    <label for="phone-${i}">${translation.passengers_phone_label}</label>
+                    <input type="tel" id="phone-${i}" class="form-control" placeholder="${translation.passengers_phone_placeholder}" required>
+                    <small style="color: var(--color-text-secondary);">${translation.passengers_phone_info}</small>
                 </div>
                 <div class="form-group">
-                    <label for="email-${i}">Email (optionnel)</label>
-                    <input type="email" id="email-${i}" class="form-control" placeholder="exemple@email.com">
+                    <label for="email-${i}">${translation.passengers_email_label}</label>
+                    <input type="email" id="email-${i}" class="form-control" placeholder="${translation.passengers_email_placeholder}">
                 </div>
             </div>`;
         
-        // ✅ ÉTAPE 4 : Initialiser le compteur de bagages pour chaque passager (avec les 2 types)
         appState.baggageCounts[i] = { standard: 0, oversized: 0 };
         
-        // ✅ ÉTAPE 5 : Afficher les options de bagages avec les prix DYNAMIQUES
         baggageHTML += `
             <div class="baggage-passenger-section">
-                <h4>Options pour Passager ${i + 1} (Siège ${seatNumber})</h4>
+                <h4>${translation.baggage_options_for(i + 1, seatNumber)}</h4>
                 <div class="baggage-row">
                     <span class="baggage-label">
-                        Bagage standard suppl. (+${Utils.formatPrice(baggageOptions.standard.price)} FCFA/pce)
+                        ${translation.baggage_standard_label(Utils.formatPrice(baggageOptions.standard.price))}
                     </span>
                     <div class="passenger-counter">
                         <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="standard" data-action="decrement">-</button>
@@ -2914,7 +2918,7 @@ function displayPassengerForms() {
                 </div>
                 <div class="baggage-row">
                     <span class="baggage-label">
-                        Bagage hors format (+${Utils.formatPrice(baggageOptions.oversized.price)} FCFA/pce)
+                        ${translation.baggage_oversized_label(Utils.formatPrice(baggageOptions.oversized.price))}
                     </span>
                     <div class="passenger-counter">
                         <button type="button" class="counter-btn" data-passenger-index="${i}" data-type="oversized" data-action="decrement">-</button>
@@ -2926,16 +2930,13 @@ function displayPassengerForms() {
         `;
     }
 
-    // Appliquer les changements au DOM
     formsContainer.innerHTML = formsHTML;
     baggageContainer.innerHTML = baggageHTML;
     
-    // Attacher les événements aux nouveaux boutons
     document.querySelectorAll("#baggage-options .counter-btn").forEach(btn => {
         btn.addEventListener("click", handleBaggageChange);
     });
     
-    // Mettre à jour le récapitulatif des prix
     updateBookingSummary();
 }
 // Dans app.js

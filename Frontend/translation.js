@@ -51,6 +51,19 @@ const translations = {
     feature_security: "Sécurité maximale",
     feature_security_desc: "Vos informations sont sécurisées",
 
+    baggage_title: "Bagages Supplémentaires",
+baggage_info: (count) => `Chaque passager a droit à <strong>${count} bagage(s) en soute</strong> inclus.`,
+passenger_form_title: (num, type, seat) => `Passager ${num} (${type}) - Siège ${seat}`,
+passenger_type_adult: "Adulte",
+passenger_type_child: "Enfant",
+passengers_name_label: "Nom complet *",
+passengers_phone_label: "Numéro de téléphone (international accepté) *",
+passengers_phone_info: "Formats acceptés : +XXX..., 00XXX..., ou national",
+passengers_email_label: "Email (optionnel)",
+baggage_options_for: (num, seat) => `Options pour Passager ${num} (Siège ${seat})`,
+baggage_standard_label: (price) => `Bagage standard suppl. (+${price} FCFA/pce)`,
+baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
+
 
     
   },
@@ -105,6 +118,19 @@ const translations = {
     feature_comfort_desc: "Travel with the best companies",
     feature_security: "Maximum Security",
     feature_security_desc: "Your information is secure",
+
+    baggage_title: "Extra Baggage",
+baggage_info: (count) => `Each passenger is entitled to <strong>${count} checked bag(s)</strong>.`,
+passenger_form_title: (num, type, seat) => `Passenger ${num} (${type}) - Seat ${seat}`,
+passenger_type_adult: "Adult",
+passenger_type_child: "Child",
+passengers_name_label: "Full name *",
+passengers_phone_label: "Phone number (international accepted) *",
+passengers_phone_info: "Accepted formats: +XXX..., 00XXX..., or national",
+passengers_email_label: "Email (optional)",
+baggage_options_for: (num, seat) => `Options for Passenger ${num} (Seat ${seat})`,
+baggage_standard_label: (price) => `Extra standard bag (+${price} FCFA/pc)`,
+baggage_oversized_label: (price) => `Oversized bag (+${price} FCFA/pc)`,
   }
 };
 
