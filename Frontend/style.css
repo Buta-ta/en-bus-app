@@ -4281,6 +4281,29 @@ body.pwa-installed textarea {
 }
 
 
+.language-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.lang-btn {
+    background: none;
+    border: 2px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 6px 10px;
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+}
+.lang-btn:hover {
+    background: var(--color-surface);
+    color: var(--color-accent-glow);
+    border-color: var(--color-accent-glow);
+}
+
+
+
 /* Correction orientation flèche mobile */
 @media (max-width: 768px) {
     

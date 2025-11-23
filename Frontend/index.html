@@ -306,10 +306,17 @@
         </button>
       </div>
       <div id="mobile-nav-menu" class="mobile-nav">
-        <a href="#" onclick="closeMenuAndShowPage('home')">Accueil</a><a href="#"
-          onclick="closeMenuAndShowPage('reservations')">Mes Réservations</a><a href="#"
-          onclick="closeMenuAndShowPage('about')">À propos</a><a href="#"
-          onclick="closeMenuAndShowPage('contact')">Contact</a>
+        <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
+        <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+
+        <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
+        <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
+      </div>
+
+      <!-- ✅ AJOUTER CE SÉLECTEUR DE LANGUE ICI -->
+      <div class="language-selector">
+        <button class="lang-btn" onclick="changeLanguage('fr')">🇫🇷</button>
+        <button class="lang-btn" onclick="changeLanguage('en')">🇬🇧</butto>
       </div>
     </div>
   </nav>
@@ -321,46 +328,50 @@
       <section class="hero">
         <div class="container">
           <div class="hero-content">
-            <h1>Voyagez à travers l'Afrique</h1>
-            <p>
+
+            <!-- ✅ Clés de traduction ajoutées -->
+            <h1 data-i18n="hero_title">Voyagez à travers l'Afrique</h1>
+            <p data-i18n="hero_subtitle">
               Réservez vos billets de bus en ligne facilement et rapidement
             </p>
             <div class="search-box">
               <div class="search-form">
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="origin">Ville de départ</label>
+                    <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
                     <select id="origin" class="form-control"></select>
                   </div>
                   <div class="form-group">
-                    <label for="destination">Ville d'arrivée</label>
+                    <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
                     <select id="destination" class="form-control"></select>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Type de voyage</label>
+                    <label data-i18n="search_form_trip_type">Type de voyage</label>
                     <div class="trip-type-toggle" data-mode="one-way">
-                      <label class="toggle-option active" data-value="one-way">Aller simple</label>
-                      <label class="toggle-option" data-value="round-trip">Aller-retour</label>
+                      <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller
+                        simple</label>
+                      <label class="toggle-option" data-value="round-trip"
+                        data-i18n="search_form_round_trip">Aller-retour</label>
                       <div class="toggle-switch"></div>
                     </div>
                   </div>
                   <div class="form-group">
-                    <label for="travel-date">Dates du voyage</label>
+                    <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
                     <input type="text" id="travel-date" class="form-control date-picker"
                       placeholder="Sélectionnez vos dates" />
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label>Passagers</label>
+                    <label data-i18n="search_form_passengers">Passagers</label>
                     <div id="passenger-input" class="form-control passenger-selector">
                       <span id="passenger-summary">1 Adulte</span>
                     </div>
                     <div id="passenger-dropdown" class="passenger-dropdown-menu">
                       <div class="passenger-row">
-                        <label>Adultes</label>
+                        <label data-i18n="search_form_adults">Adultes</label>
                         <div class="passenger-counter">
                           <button type="button" class="counter-btn" data-type="adults" data-action="decrement">
                             -
@@ -372,7 +383,7 @@
                         </div>
                       </div>
                       <div class="passenger-row">
-                        <label>Enfants <small>(0-6 ans)</small></label>
+                        <label data-i18n="search_form_children">Enfants <small>(0-6 ans)</small></label>
                         <div class="passenger-counter">
                           <button type="button" class="counter-btn" data-type="children" data-action="decrement">
                             -
@@ -386,7 +397,7 @@
                     </div>
                   </div>
                 </div>
-                <button class="btn btn-primary btn-large" onclick="searchBuses()">
+                <button class="btn btn-primary btn-large" onclick="searchBuses()" data-i18n="search_form_button">
                   Rechercher
                 </button>
               </div>
@@ -396,33 +407,34 @@
       </section>
       <section class="popular-destinations">
         <div class="container">
-          <h2>Destinations populaires</h2>
+          <h2 data-i18n="popular_destinations_title">Destinations populaires</h2>
           <div class="destinations-grid" id="popular-destinations-grid"></div>
         </div>
       </section>
       <section class="why-en-bus">
         <div class="container">
-          <h2>Pourquoi choisir En-Bus ?</h2>
+          <h2 data-i18n="why_en_bus_title">Pourquoi choisir En-Bus ?</h2>
           <div class="features-grid">
             <div class="feature-card">
               <div class="feature-icon">📱</div>
-              <h3>Réservation facile</h3>
-              <p>Réservez vos billets en quelques clics</p>
+              <h3 data-i18n="feature_easy_booking">Réservation facile</h3>
+              <p data-i18n="feature_easy_booking_desc">Réservez vos billets en quelques clics</p>
+
             </div>
             <div class="feature-card">
               <div class="feature-icon">💰</div>
-              <h3>Meilleurs prix</h3>
-              <p>Trouvez les meilleures offres</p>
+              h3 data-i18n="feature_best_prices">Meilleurs prix</h3>
+              <p data-i18n="feature_best_prices_desc">Trouvez les meilleures offres</p>
             </div>
             <div class="feature-card">
               <div class="feature-icon">🚌</div>
-              <h3>Confort garanti</h3>
-              <p>Voyagez avec les meilleures compagnies</p>
+              <h3 data-i18n="feature_comfort">Confort garanti</h3>
+              <p data-i18n="feature_comfort_desc">Voyagez avec les meilleures compagnies</p>
             </div>
             <div class="feature-card">
               <div class="feature-icon">🔒</div>
-              <h3>Sécurité maximale</h3>
-              <p>Vos informations sont sécurisées</p>
+              <h3 data-i18n="feature_security">Sécurité maximale</h3>
+              <p data-i18n="feature_security_desc">Vos informations sont sécurisées</p>
             </div>
           </div>
         </div>
@@ -433,10 +445,10 @@
       <!-- ... (Contenu de la page des résultats, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <button class="btn btn-secondary" onclick="showPage('home')">
+          <button class="btn btn-secondary" onclick="showPage('home')" data-i18n="results_back_button">
             ← Retour
           </button>
-          <h2>Résultats de recherche</h2>
+          <h2 data-i18n="results_title">Résultats de recherche</h2>
         </div>
         <div id="search-summary" class="search-summary"></div>
         <div class="filters-bar-enhanced">
@@ -445,7 +457,7 @@
 
           <!-- ✅ NOUVEAU FILTRE PAR LIEU DE DÉPART -->
           <div id="departure-location-filter-section" class="filter-section" style="display: none;">
-            <label for="filter-departure-location" class="filter-label">
+            <label for="filter-departure-location" class="filter-label" data-i18n="filter_departure_location">
               <span class="filter-icon">📍</span>
               Lieu de départ :
             </label>
@@ -456,22 +468,24 @@
           </div>
 
           <div class="filter-section">
-            <label for="sort-by" class="filter-label">
+            <label for="sort-by" class="filter-label" data-i18n="filter_sort_by">
               <span class="filter-icon">🔽</span> Trier par :
             </label>
             <select id="sort-by" class="filter-select" onchange="updateFilter('sortBy', this.value)">
-              <option value="departure">Heure de départ</option>
-              <option value="price">Prix croissant</option>
-              <option value="duration">Durée du trajet</option>
-              <option value="company">Compagnie (A-Z)</option>
+              <option value="departure" data-i18n="sort_by_departure">Heure de départ</option>
+              <option value="price" data-i18n="sort_by_price">Prix croissant</option>
+              <option value="duration" data-i18n="sort_by_duration">Durée du trajet</option>
+              <option value="company" data-i18n="sort_by_company">Compagnie (A-Z)</option>
             </select>
+
           </div>
           <div class="filter-section">
-            <label for="filter-company" class="filter-label">
-              <span class="filter-icon">🚌</span> Compagnie :
+            <label for="filter-company" class="filter-label" data-i18n="filter_company"></label>
+            <span class="filter-icon">🚌</span> Compagnie :
             </label>
             <select id="filter-company" class="filter-select" onchange="updateFilter('company', this.value)">
-              <option value="all">Toutes</option>
+              <option value="all" data-i18n="filter_all">Toutes</option>
+
               <option value="Océan du Nord">Océan du Nord</option>
               <option value="Trans Bony">Trans Bony</option>
               <option value="Stellimac">Stellimac</option>
@@ -483,43 +497,43 @@
             </select>
           </div>
           <div class="filter-section">
-            <label for="filter-trip-type" class="filter-label">
+            <label for="filter-trip-type" class="filter-label" data-i18n="filter_trip_type">
               <span class="filter-icon">🛣️</span> Type :
             </label>
             <select id="filter-trip-type" class="filter-select" onchange="updateFilter('tripType', this.value)">
-              <option value="all">Tous</option>
-              <option value="direct">Direct uniquement</option>
-              <option value="stops">Avec arrêts</option>
-              <option value="connections">Avec correspondances</option>
+              <option value="all" data-i18n="filter_all">Tous</option>
+              <option value="direct" data-i18n="filter_type_direct">Direct uniquement</option>
+              <option value="stops" data-i18n="filter_type_stops">Avec arrêts</option>
+              <option value="connections" data-i18n="filter_type_connections">Avec correspondances</option>
             </select>
           </div>
           <div class="filter-section">
-            <label for="filter-time" class="filter-label">
+            <label for="filter-time" class="filter-label" data-i18n="filter_departure_time">
               <span class="filter-icon">🕐</span> Départ :
             </label>
             <select id="filter-time" class="filter-select" onchange="updateFilter('departureTime', this.value)">
-              <option value="all">Toute la journée</option>
-              <option value="morning">Matin (5h-12h)</option>
-              <option value="afternoon">Après-midi (12h-17h)</option>
-              <option value="evening">Soirée (17h-21h)</option>
-              <option value="night">Nuit (21h-5h)</option>
+              <option value="all" data-i18n="filter_time_all">Toute la journée</option>
+              <option value="morning" data-i18n="filter_time_morning">Matin (5h-12h)</option>
+              <option value="afternoon" data-i18n="filter_time_afternoon">Après-midi (12h-17h)</option>
+              <option value="evening" data-i18n="filter_time_evening">Soirée (17h-21h)</option>
+              <option value="night" data-i18n="filter_time_night">Nuit (21h-5h)</option>
             </select>
           </div>
           <div class="filter-section filter-price">
-            <label class="filter-label">
+            <label class="filter-label" data-i18n="filter_price">
               <span class="filter-icon">💰</span> Prix :
             </label>
             <div class="price-range-container">
               <div class="price-inputs">
                 <div class="price-input-group">
-                  <label for="price-min" class="price-label">Min</label>
+                  <label for="price-min" class="price-label" data-i18n="filter_price_min">Min</label>
                   <input type="range" id="price-min" min="0" max="100000" step="1000" value="0"
                     oninput="updateFilter('priceMin', this.value)" />
                   <span id="price-min-display" class="price-display">0</span>
                   FCFA
                 </div>
                 <div class="price-input-group">
-                  <label for="price-max" class="price-label">Max</label>
+                  <label for="price-max" class="price-label" data-i18n="filter_price_max">Max</label>
                   <input type="range" id="price-max" min="0" max="100000" step="1000" value="100000"
                     oninput="updateFilter('priceMax', this.value)" />
                   <span id="price-max-display" class="price-display">100 000</span>
@@ -529,13 +543,14 @@
             </div>
           </div>
           <div class="filter-section filter-amenities">
-            <label class="filter-label">
+            <label class="filter-label" data-i18n="filter_amenities">
               <span class="filter-icon">⚙️</span> Équipements :
             </label>
             <div class="amenities-checkboxes" id="amenities-filter-container"></div>
           </div>
           <div class="filter-section">
-            <button class="btn btn-secondary btn-reset-filters" onclick="resetFilters()">
+            <button class="btn btn-secondary btn-reset-filters" onclick="resetFilters()"
+              data-i18n="filter_reset_button">
               🔄 Réinitialiser
             </button>
           </div>
@@ -549,10 +564,10 @@
       <!-- ... (Contenu de la page des sièges, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <button class="btn btn-secondary" onclick="showPage('results')">
+          <button class="btn btn-secondary" onclick="showPage('results')" data-i18n="seats_back_button">
             ← Retour
           </button>
-          <h2>Sélection des sièges</h2>
+          <h2 data-i18n="seats_title">Sélection des sièges</h2>
         </div>
         <div
           class="max-w-4xl mx-auto bg-gray-800/50 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-2xl border border-gray-700">
@@ -569,26 +584,30 @@
             <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-white text-sm">
               <div class="flex items-center gap-2">
                 <div class="w-4 h-4 rounded-sm bg-green-500"></div>
-                <span>Disponible</span>
+                <span data-i18n="seats_legend_available">Disponible</span>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-4 h-4 rounded-sm bg-blue-500"></div>
-                <span>Sélectionné</span>
+                <span data-i18n="seats_legend_selected">Sélectionné</span>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-4 h-4 rounded-sm bg-gray-500"></div>
-                <span>Occupé</span>
+                <span data-i18n="seats_legend_occupied">Occupé</span>
               </div>
             </div>
             <div class="w-full md:w-auto flex flex-col items-center gap-4">
               <div class="text-white text-center">
-                <span>Sièges :
-                  <strong id="selected-seats-display" class="text-blue-400">Aucun</strong></span>
-                <span class="mx-2">|</span>
-                <span>Prix :
-                  <strong id="total-price-display" class="text-green-400">0 FCFA</strong></span>
+                <span data-i18n="seats_summary_seats">Sièges :
+                  <strong id="selected-seats-display" class="text-blue-400"
+                    data-i18n="seats_summary_none">Aucun</strong>
+                </span>
+                <span data-i18n="seats_summary_price">Prix :
+                  <strong id="total-price-display" class="text-green-400">0 FCFA</strong>
+                </span>
+
               </div>
-              <button class="btn btn-primary btn-large w-full" onclick="proceedToPassengerInfo()">
+              <button class="btn btn-primary btn-large w-full" onclick="proceedToPassengerInfo()"
+                data-i18n="continue_button">
                 Continuer
               </button>
             </div>
@@ -601,14 +620,14 @@
       <!-- ... (Contenu de la page passagers, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <button class="btn btn-secondary" onclick="showPage('seats')">
+          <button class="btn btn-secondary" onclick="showPage('seats')" data-i18n="passengers_back_button">
             ← Retour
           </button>
-          <h2>Informations passagers</h2>
+          <h2 data-i18n="passengers_title">Informations passagers</h2>
         </div>
         <div id="passengers-forms" class="passengers-forms"></div>
         <div id="baggage-section" class="content-card" style="margin-top: 32px">
-          <h3>Bagages Supplémentaires</h3>
+          <h3 data-i18n="baggage_title">Bagages Supplémentaires</h3>
           <p id="baggage-section-info" style="margin-bottom: 1rem"></p>
           <div id="baggage-options"></div>
         </div>
@@ -617,10 +636,10 @@
               justify-content: space-between;
               margin-top: 32px;
             ">
-          <button class="btn btn-secondary" onclick="showPage('seats')">
+          <button class="btn btn-secondary" onclick="showPage('seats')" data-i18n="passengers_back_button_alt">
             Retour
           </button>
-          <button class="btn btn-primary" onclick="proceedToPayment()">
+          <button class="btn btn-primary" onclick="proceedToPayment()" data-i18n="passengers_continue_button">
             Continuer vers paiement
           </button>
         </div>
@@ -631,14 +650,14 @@
       <!-- ... (Contenu de la page de paiement, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <button class="btn btn-secondary" onclick="showPage('passengers')">
+          <button class="btn btn-secondary" onclick="showPage('passengers')" data-i18n="payment_back_button">
             ← Retour
           </button>
-          <h2>Paiement</h2>
+          <h2 data-i18n="payment_title">Paiement</h2>
         </div>
         <div class="payment-container">
           <div class="booking-summary-card">
-            <h3>Récapitulatif</h3>
+            <h3 data-i18n="payment_summary_title">Récapitulatif</h3>
             <!-- ✅ AJOUTER CE BLOC HTML ICI -->
             <div id="urgency-box" class="urgency-box" style="display: none;">
               <!-- Contenu généré par JavaScript -->
@@ -646,32 +665,30 @@
             <div id="booking-summary" class="booking-details"></div>
           </div>
           <div class="payment-methods-card">
-            <h3>💳 Mode de paiement</h3>
+            <h3 data-i18n="payment_method_title">💳 Mode de paiement</h3>
             <div class="payment-methods">
               <label class="payment-method">
                 <input type="radio" name="payment" value="mtn" checked />
                 <div class="method-content">
                   <div class="method-icon">📱</div>
                   <div class="method-info">
-                    <strong>
-                      MTN Mobile Money
-                      <span class="method-badge">Rapide</span>
-                    </strong>
-                    <span>⚡ Paiement instantané via MTN</span>
+                    <strong>MTN Mobile Money <span class="method-badge"
+                        data-i18n="payment_badge_fast">Rapide</span></strong>
+                    <span data-i18n="payment_mtn_desc">⚡ Paiement instantané via MTN</span>
                   </div>
                 </div>
               </label>
               <div class="payment-details-form" id="mtn-details">
                 <div class="form-group">
-                  <label for="mtn-phone">📞 Numéro de téléphone MTN</label>
+                  <label for="mtn-phone" data-i18n="payment_phone_label">📞 Numéro de téléphone MTN</label>
                   <input type="tel" id="mtn-phone" class="form-control" placeholder="Ex: 06 123 4567" />
                 </div>
                 <div class="form-group">
-                  <label for="mtn-amount">💰 Montant à payer</label>
+                  <label for="mtn-amount" data-i18n="payment_amount_label">💰 Montant à payer</label>
                   <input type="text" id="mtn-amount" class="form-control" readonly />
                 </div>
                 <div class="form-group">
-                  <label for="mtn-booking-ref">🎫 Référence de réservation</label>
+                  <label for="mtn-booking-ref" data-i18n="payment_ref_label">🎫 Référence de réservation</label>
                   <input type="text" id="mtn-booking-ref" class="form-control" readonly />
                 </div>
               </div>
@@ -680,22 +697,22 @@
                 <div class="method-content">
                   <div class="method-icon">📱</div>
                   <div class="method-info">
-                    <strong>Airtel Money</strong>
-                    <span>⚡ Paiement instantané via Airtel</span>
+                    <strong data-i18n="payment_airtel_name">Airtel Money</strong>
+                    <span data-i18n="payment_airtel_desc">⚡ Paiement instantané via Airtel</span>
                   </div>
                 </div>
               </label>
               <div class="payment-details-form" id="airtel-details" style="display: none">
                 <div class="form-group">
-                  <label for="airtel-phone">📞 Numéro de téléphone Airtel</label>
+                  <label for="airtel-phone" data-i18n="payment_phone_label_airtel">📞 Numéro de téléphone Airtel</label>
                   <input type="tel" id="airtel-phone" class="form-control" placeholder="Ex: 05 123 4567" />
                 </div>
                 <div class="form-group">
-                  <label for="airtel-amount">💰 Montant à payer</label>
+                  <label for="airtel-amount" data-i18n="payment_amount_label">💰 Montant à payer</label>
                   <input type="text" id="airtel-amount" class="form-control" readonly />
                 </div>
                 <div class="form-group">
-                  <label for="airtel-booking-ref">🎫 Référence de réservation</label>
+                  <label for="airtel-booking-ref" data-i18n="payment_ref_label">🎫 Référence de réservation</label>
                   <input type="text" id="airtel-booking-ref" class="form-control" readonly />
                 </div>
               </div>
@@ -704,36 +721,32 @@
                 <div class="method-content">
                   <div class="method-icon">🏢</div>
                   <div class="method-info">
-                    <strong>Paiement à l'agence</strong>
-                    <span id="agency-payment-subtitle">⏰ Payez dans les 10h à l'agence</span>
+                    <strong data-i18n="payment_agency_name">Paiement à l'agence</strong>
+                    <span id="agency-payment-subtitle" data-i18n="payment_agency_desc">⏰ Payez dans les 10h à
+                      l'agence</span>
                   </div>
                 </div>
               </label>
               <div class="payment-details-form" id="agency-details" style="display: none">
                 <div class="agency-info-box">
-                  <h4>📍 Agence la plus proche</h4>
+                  <h4 data-i18n="payment_agency_nearest">📍 Agence la plus proche</h4>
                   <div id="selected-agency-info"></div>
                 </div>
                 <div class="form-group">
-                  <label>⏰ Vous devez payer avant :</label>
+                  <label data-i18n="payment_agency_deadline">⏰ Vous devez payer avant :</label>
                   <input type="text" id="agency-deadline" class="form-control" readonly />
                 </div>
                 <div class="form-group">
-                  <label>📋 Référence de réservation</label>
+                  <label data-i18n="payment_agency_ref">📋 Référence de réservation</label>
                   <input type="text" id="agency-booking-ref" class="form-control" readonly />
                 </div>
                 <div class="info-note">
-                  <strong>⚠️ Important :</strong>
+                  <strong data-i18n="payment_agency_important">⚠️ Important :</strong>
                   <ul style="margin: 10px 0 0 20px; font-size: 14px">
-                    <li>
-                      Cette réservation sera
-                      <strong>automatiquement annulée</strong> si le paiement
-                      n'est pas effectué dans les 10h
-                    </li>
-                    <li>
-                      Présentez-vous à l'agence avec une pièce d'identité
-                    </li>
-                    <li>Le numéro de réservation sera requis</li>
+                    <li data-i18n="payment_agency_rule1">Cette réservation sera <strong>automatiquement annulée</strong>
+                      si le paiement n'est pas effectué dans les 10h</li>
+                    <li data-i18n="payment_agency_rule2">Présentez-vous à l'agence avec une pièce d'identité</li>
+                    <li data-i18n="payment_agency_rule3">Le numéro de réservation sera requis</li>
                   </ul>
                 </div>
               </div>
@@ -741,12 +754,10 @@
           </div>
         </div>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="showPage('passengers')">
-            Retour
-          </button>
-          <button class="btn btn-primary btn-large" onclick="confirmBooking(this)">
-            Confirmer la Réservation
-          </button>
+          <button class="btn btn-secondary" onclick="showPage('passengers')"
+            data-i18n="payment_back_button_alt">Retour</button>
+          <button class="btn btn-primary btn-large" onclick="confirmBooking(this)"
+            data-i18n="payment_confirm_button">Confirmer la Réservation</button>
         </div>
       </div>
     </div>
@@ -770,22 +781,22 @@
               </div>
             </div>
           </div>
-          <h1 class="confirmation-title">Réservation confirmée !</h1>
-          <p class="confirmation-subtitle">
-            Votre billet a été réservé avec succès
-          </p>
+         <h1 class="confirmation-title" data-i18n="confirmation_title">Réservation confirmée !</h1>
+<p class="confirmation-subtitle" data-i18n="confirmation_subtitle">
+    Votre billet a été réservé avec succès
+</p>
 
           <!-- Carte principale qui contiendra les billets -->
           <div class="confirmation-card-modern">
             <!-- En-tête commun avec le numéro de réservation -->
             <div class="confirmation-header">
               <div class="booking-badge">
-                <span class="badge-label">N° de réservation</span>
+                <span class="badge-label" data-i18n="confirmation_booking_number">N° de réservation</span>
                 <span id="booking-number-display" class="badge-number"></span>
               </div>
               <div class="status-badge status-confirmed">
                 <span class="status-icon">✓</span>
-                <span>Confirmé</span>
+                <span data-i18n="confirmation_status_confirmed">Confirmé</span>
               </div>
             </div>
 
@@ -805,19 +816,17 @@
               <div class="info-card info-card-warning">
                 <div class="info-icon">⏰</div>
                 <div class="info-content">
-                  <h4>Arrivez à l'avance</h4>
-                  <p>
-                    Présentez-vous
-                    <strong>30 minutes avant le départ</strong> avec une pièce
-                    d'identité valide
-                  </p>
+                  <h4 data-i18n="info_arrive_early_title">Arrivez à l'avance</h4>
+                <p data-i18n="info_arrive_early_desc">
+                    Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide
+                </p>
                 </div>
               </div>
               <div class="info-card info-card-info">
                 <div class="info-icon">🎒</div>
                 <div class="info-content">
-                  <h4>Bagages inclus</h4>
-                  <p>1 bagage en soute (20kg) + 1 bagage à main</p>
+                   <h4 data-i18n="info_baggage_title">Bagages inclus</h4>
+                <p data-i18n="info_baggage_desc">1 bagage en soute (20kg) + 1 bagage à main</p>
                 </div>
               </div>
             </div>
@@ -828,7 +837,7 @@
 
           <!-- Footer de la page de confirmation -->
           <div class="confirmation-footer">
-            <p>Besoin d'aide ? Contactez-nous :</p>
+             <p data-i18n="confirmation_help">Besoin d'aide ? Contactez-nous :</p>
             <div class="contact-links">
               <a href="tel:+242061234567">📞 +242 06 123 4567</a>
               <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
@@ -841,7 +850,7 @@
     <div id="reservations-page" class="page">
       <div class="container">
         <div class="page-header">
-          <h2>Mes Réservations</h2>
+          <h2 data-i18n="my_bookings_title">Mes Réservations</h2>
         </div>
         <div id="reservations-list" class="reservations-list"></div>
       </div>
@@ -851,20 +860,22 @@
       <!-- ... (Contenu de la page À Propos, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <h2>À propos d'En-Bus</h2>
+          <h2 data-i18n="about_title">À propos d'En-Bus</h2>
         </div>
         <div class="content-card">
-          <p>
+          <p data-i18n="about_intro">
+
             En-Bus est la plateforme de réservation de billets de bus en ligne
             pour l'Afrique. Notre mission est de rendre les voyages en bus
             plus accessibles et plus faciles pour tous.
           </p>
-          <h3>Notre vision</h3>
-          <p>
+          <h3 data-i18n="about_vision_title">Notre vision</h3>
+          <p data-i18n="about_vision_desc">
+
             Connecter les grandes villes d'Afrique et faciliter les
             déplacements des populations à travers le continent.
           </p>
-          <h3>Nos partenaires</h3>
+            <h3 data-i18n="about_partners_title">Nos partenaires</h3>
           <ul>
             <li>Océan du Nord</li>
             <li>Trans Bony Voyage</li>
@@ -878,11 +889,11 @@
       <!-- ... (Contenu de la page Contact, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-          <h2>Contact</h2>
+          <h2 data-i18n="contact_title">Contact</h2>
         </div>
         <div class="content-card">
-          <h3>Contactez-nous</h3>
-          <p>
+           <h3 data-i18n="contact_header">Contactez-nous</h3>
+          <p data-i18n="contact_intro">
             Pour toute question ou assistance, n'hésitez pas à nous contacter
             :
           </p>
@@ -895,7 +906,7 @@
             </div>
             <div class="contact-item">
               <strong>📍 Siège Social:</strong>
-              <span>Brazzaville, République du Congo</span>
+              <span data-i18n="contact_hq">Brazzaville, République du Congo</span>
             </div>
           </div>
         </div>
@@ -909,22 +920,22 @@
       <div class="footer-content">
         <div class="footer-section">
           <h4>En-Bus</h4>
-          <p>Voyagez à travers l'Afrique en toute simplicité</p>
+          <p data-i18n="footer_tagline">Voyagez à travers l'Afrique en toute simplicité</p>
         </div>
         <div class="footer-section">
-          <h4>Liens rapides</h4>
-          <a href="#" onclick="showPage('home')">Accueil</a>
-          <a href="#" onclick="showPage('reservations')">Mes Réservations</a>
-          <a href="#" onclick="showPage('about')">À propos</a>
+           <h4 data-i18n="footer_quicklinks">Liens rapides</h4>
+          <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
+          <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+          <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
         </div>
         <div class="footer-section">
-          <h4>Contact</h4>
+          <h4 data-i18n="contact_title">Contact</h4>
           <p>Email: contact@en-bus.com</p>
           <p>Tél: +242 06 123 4567</p>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 En-Bus. Tous droits réservés.</p>
+        <p data-i18n="footer_copyright">&copy; 2025 En-Bus. Tous droits réservés.</p>
       </div>
     </div>
   </footer>
@@ -932,6 +943,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+  <script src="translations.js"></script>
   <script src="app.js"></script>
 
   <script>
@@ -1056,7 +1068,7 @@
 
 
 
-  
+
 
 </body>
 

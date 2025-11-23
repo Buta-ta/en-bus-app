@@ -686,6 +686,67 @@ async generateQRCodeBase64(text, size = 200) {
 }
 
 
+// ============================================
+// 🌍 INTERNATIONALISATION (i18n)
+// ============================================
+
+function setLanguage(lang) {
+    localStorage.setItem('enbus_language', lang);
+    applyLanguage(lang);
+}
+
+function getLanguage() {
+    return localStorage.getItem('enbus_language') || navigator.language.split('-')[0] || 'fr';
+}
+
+// Dans app.js
+
+function applyLanguage(lang = getLanguage()) {
+    // Sécurité : vérifier que le fichier de traductions est bien chargé
+    if (typeof translations === 'undefined') {
+        console.error("Erreur: Le fichier translations.js n'est pas chargé. Assurez-vous qu'il est inclus AVANT app.js dans votre index.html.");
+        return;
+    }
+
+    document.documentElement.lang = lang;
+    const translation = translations[lang] || translations.fr; // Fallback sur le français
+
+    // 1. Traduire tous les éléments avec l'attribut data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        
+        if (translation[key]) {
+            // Gérer les placeholders des champs input
+            if (el.placeholder !== undefined) {
+                el.placeholder = translation[key];
+            } 
+            // Gérer le texte des autres éléments
+            else {
+                el.innerHTML = translation[key];
+            }
+        }
+    });
+
+    // 2. Mettre à jour les textes qui sont générés dynamiquement
+    updateDynamicTexts(lang);
+}
+// Fonction pour les textes qui ne sont pas dans des data-i18n
+function updateDynamicTexts(lang) {
+    const translation = translations[lang] || translations.fr;
+    // Exemple pour le résumé des passagers
+    const summaryEl = document.getElementById('passenger-summary');
+    if (summaryEl && typeof translation.passenger_summary === 'function') {
+        summaryEl.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
+    }
+}
+
+// Fonction globale pour changer la langue
+window.changeLanguage = function(lang) {
+    setLanguage(lang);
+};
+
+
+
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 
 function startFrontendCountdown() {
@@ -1632,7 +1693,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
         populatePopularDestinations();
         setupPaymentMethodToggle();
         addToastStyles();
-        setupAmenitiesFilters(); // ✅ AJOUTER CETTE LIGNE
+        setupAmenitiesFilters(); 
+        applyLanguage();// ✅ AJOUTER CETTE LIGNE
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
     }
@@ -1878,7 +1940,7 @@ function setupPassengerSelector() {
         }
     });
     
-    updateDisplay();
+    updateDynamicTexts(getLanguage());
 }
 
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
