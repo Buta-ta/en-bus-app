@@ -947,49 +947,44 @@
 
   <script>
     // ... (votre script PWA est correct et reste inchangé) ...
-    
-    // On attend que toute la page soit chargée (HTML, CSS, images, et tous les scripts externes)
-    window.addEventListener('load', () => {
-        
-        // --- 1. Démarrage de la logique de l'application ---
-        try {
-            // On vérifie que la fonction initApp() existe bien (elle vient de app.js)
-            if (typeof initApp === 'function') {
-                initApp(); // initApp va maintenant appeler applyLanguage() à la fin
-                console.log("🚀 Application initialisée.");
-            } else {
-                console.error("ERREUR CRITIQUE : La fonction initApp() est introuvable. Vérifiez que app.js est bien chargé.");
-            }
-        } catch (e) {
-            console.error("Erreur critique lors de l'initialisation de l'application :", e);
-        }
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("✅ Service Worker enregistré:", registration.scope);
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
 
-        // --- 2. Enregistrement du Service Worker ---
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker
-                .register("/sw.js")
-                .then((registration) => {
-                    console.log("✅ Service Worker enregistré:", registration.scope);
-                    
-                    // Gestion de la mise à jour du Service Worker
-                    registration.addEventListener("updatefound", () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener("statechange", () => {
-                            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                                if (confirm("Une nouvelle version est disponible ! Mettre à jour maintenant ?")) {
-                                    newWorker.postMessage({ type: "SKIP_WAITING" });
-                                }
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error("❌ Erreur d'enregistrement du Service Worker:", error);
-                });
-
-            // Logique pour forcer le rechargement de la page après une mise à jour du SW
-            let refreshing;
-
+                  
+                  if (
+                    confirm(
+                      "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
+                    )
+                  ) {
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                    window.location.reload();
+                  }
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.error("❌ Erreur Service Worker:", error);
+          });
+      });
+      let refreshing;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    }
     let deferredPrompt;
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
