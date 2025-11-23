@@ -4003,7 +4003,7 @@ function addBookingToLocalHistory(bookingNumber) {
 }
 
 
-window.addEventListener("DOMContentLoaded", initApp);
+
 
 
 
@@ -4044,3 +4044,5 @@ if (reservation.route.trackerId) {
         </a>
     `;
 }
+
+window.addEventListener("DOMContentLoaded", initApp);
