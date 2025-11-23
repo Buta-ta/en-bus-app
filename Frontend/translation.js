@@ -24,6 +24,13 @@ const translations = {
     search_form_dates: "Dates du voyage",
     search_form_passengers: "Passagers",
     search_form_button: "Rechercher",
+
+    search_form_dates_placeholder: "Sélectionnez vos dates",
+    passengers_name_placeholder: "Nom complet",
+    passengers_phone_placeholder: "Ex: +242 06 123 4567",
+    passengers_email_placeholder: "exemple@email.com",
+    payment_phone_placeholder_mtn: "Ex: 06 123 4567",
+    payment_phone_placeholder_airtel: "Ex: 05 123 4567",
     passenger_summary: (adults, children) => {
         let text = `${adults} Adulte(s)`;
         if (children > 0) {
@@ -43,6 +50,9 @@ const translations = {
     feature_comfort_desc: "Voyagez avec les meilleures compagnies",
     feature_security: "Sécurité maximale",
     feature_security_desc: "Vos informations sont sécurisées",
+
+
+    
   },
 
   // ====================
@@ -68,6 +78,14 @@ const translations = {
     search_form_dates: "Travel Dates",
     search_form_passengers: "Passengers",
     search_form_button: "Search",
+    // ✅ ET AJOUTER LES TRADUCTIONS ANGLAISES ICI
+    search_form_dates_placeholder: "Select your dates",
+    passengers_name_placeholder: "Full name",
+    passengers_phone_placeholder: "E.g. +242 06 123 4567",
+    passengers_email_placeholder: "example@email.com",
+    payment_phone_placeholder_mtn: "E.g. 06 123 4567",
+    payment_phone_placeholder_airtel: "E.g. 05 123 4567",
+
     passenger_summary: (adults, children) => {
         let text = `${adults} Adult(s)`;
         if (children > 0) {
@@ -89,3 +107,5 @@ const translations = {
     feature_security_desc: "Your information is secure",
   }
 };
+
+
