@@ -742,6 +742,9 @@ function updateDynamicTexts(lang) {
 
 // Fonction globale pour changer la langue
 window.changeLanguage = function(lang) {
+
+    // ✅ AJOUTEZ CE LOG
+    console.log(`🖱️ Clic sur le bouton de langue détecté. Langue demandée : "${lang}"`);
     setLanguage(lang);
 };
 
