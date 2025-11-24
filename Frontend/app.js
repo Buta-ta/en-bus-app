@@ -695,6 +695,9 @@ function setLanguage(lang) {
     applyLanguage(lang);
 }
 
+
+
+
 function getLanguage() {
     return localStorage.getItem('enbus_language') || navigator.language.split('-')[0] || 'fr';
 }
