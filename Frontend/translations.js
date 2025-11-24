@@ -82,6 +82,42 @@ button_pay: "Payer",
 info_report_pending: "Demande en cours...",
 info_replaced_by: "Remplacé par :",
 button_new_booking: "Nouvelle réservation",
+"error_missing_departure_date": "Veuillez sélectionner une date de départ",
+
+
+"error_missing_origin_destination": "Veuillez sélectionner la ville de départ et d'arrivée",
+"error_same_origin_destination": "La ville de départ et d'arrivée doivent être différentes",
+"error_missing_departure_date": "Veuillez sélectionner une date de départ",
+"error_missing_return_date": "Veuillez sélectionner une date de départ ET de retour",
+"info_searching": "Recherche en cours...",
+"info_no_trips_found": "Aucun trajet disponible pour cet itinéraire à cette date",
+"success_trips_found": (count) => `${count} trajet(s) trouvé(s)`,
+"error_search_failed": "Erreur lors de la recherche",
+
+
+
+"badge_cheapest": "💰 Le Moins Cher",
+"badge_fastest": "🚀 Le Plus Rapide",
+"departure_location_label": (location) => `📍 Départ : ${location}`,
+"details_stops_planned": "Arrêts prévus :",
+"details_stops_count": (count) => `${count} arrêt(s)`,
+"details_arrival": "Arrivée",
+"details_departure": "Départ",
+"details_direct_trip": "Trajet direct",
+"seats_available": "sièges dispo.",
+"button_select": "Sélectionner",
+"amenity_labels": { "wifi": "Wi-Fi", "wc": "Toilettes", "prise": "Prises", "clim": "Clim", "pause": "Pause", "direct": "Direct" },
+
+
+"results_summary_outbound": (count, from, to) => `Sélectionnez votre <strong>ALLER</strong> : <strong>${from}</strong> → <strong>${to}</strong> (${count} résultat(s))`,
+"results_summary_return": (count, from, to) => `Sélectionnez votre <strong>RETOUR</strong> : <strong>${from}</strong> → <strong>${to}</strong> (${count} résultat(s))`,
+"results_no_results_title": "Aucun trajet ne correspond à vos filtres",
+"results_no_results_desc": "Essayez de modifier vos critères de recherche.",
+
+
+
+
+
 passenger_count: (count) => `${count} passager(s)`,
 
 
@@ -168,6 +204,36 @@ footer_tagline: "Travel across Africa with ease",
 "info_report_pending": "Request in progress...",
 "info_replaced_by": "Replaced by:",
 "button_new_booking": "New Booking",
+"error_missing_departure_date": "Please select a departure date",
+
+"error_missing_origin_destination": "Please select an origin and a destination city",
+"error_same_origin_destination": "Origin and destination cities must be different",
+"error_missing_departure_date": "Please select a departure date",
+"error_missing_return_date": "Please select both a departure and a return date",
+"info_searching": "Searching...",
+"info_no_trips_found": "No trips available for this route on this date",
+"success_trips_found": (count) => `${count} trip(s) found`,
+"error_search_failed": "Error during search",
+
+
+"badge_cheapest": "💰 Cheapest",
+"badge_fastest": "🚀 Fastest",
+"departure_location_label": (location) => `📍 Departs from: ${location}`,
+"details_stops_planned": "Scheduled stops:",
+"details_stops_count": (count) => `${count} stop(s)`,
+"details_arrival": "Arrival",
+"details_departure": "Departure",
+"details_direct_trip": "Direct trip",
+"seats_available": "seats left",
+"button_select": "Select",
+"amenity_labels": { "wifi": "Wi-Fi", "wc": "Restroom", "prise": "Outlets", "clim": "AC", "pause": "Break", "direct": "Direct" },
+
+"results_summary_outbound": (count, from, to) => `Select your <strong>OUTBOUND</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
+"results_summary_return": (count, from, to) => `Select your <strong>RETURN</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
+"results_no_results_title": "No trips match your filters",
+"results_no_results_desc": "Try changing your search criteria.",
+
+
 "passenger_count": (count) => `${count} passenger(s)`,
   }
 };
