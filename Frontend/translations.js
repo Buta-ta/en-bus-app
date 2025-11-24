@@ -31,6 +31,10 @@ const translations = {
     passengers_email_placeholder: "exemple@email.com",
     payment_phone_placeholder_mtn: "Ex: 06 123 4567",
     payment_phone_placeholder_airtel: "Ex: 05 123 4567",
+    // ✅ VÉRIFIEZ QUE CETTE LIGNE EXISTE
+    footer_tagline: "Voyagez à travers l'Afrique en toute simplicité",
+
+
     passenger_summary: (adults, children) => {
         let text = `${adults} Adulte(s)`;
         if (children > 0) {
@@ -134,6 +138,7 @@ baggage_options_for: (num, seat) => `Options for Passenger ${num} (Seat ${seat})
 baggage_standard_label: (price) => `Extra standard bag (+${price} FCFA/pc)`,
 baggage_oversized_label: (price) => `Oversized bag (+${price} FCFA/pc)`,
 "destination_price_from": (price) => `From ${price} FCFA`,
+footer_tagline: "Travel across Africa with ease",
   }
 };
 
