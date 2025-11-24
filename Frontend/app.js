@@ -701,43 +701,21 @@ function getLanguage() {
 
 // Dans app.js
 function applyLanguage(lang = getLanguage()) {
-    // Sécurité : vérifier que le fichier de traductions est bien chargé
-    if (typeof translations === 'undefined') {
-        console.error("Erreur: Le fichier translations.js n'est pas chargé. Assurez-vous qu'il est inclus AVANT app.js dans votre index.html.");
-        return;
-    }
+    if (typeof translations === 'undefined') return;
 
-    // On sauvegarde la langue et on met à jour l'attribut de la page
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
-    const translation = translations[lang] || translations.fr; // Fallback sur le français
+    const translation = translations[lang] || translations.fr;
 
-    // 1. Traduire tous les éléments statiques avec l'attribut data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        
         if (translation[key]) {
-            // On ne touche pas aux placeholders ici, car ils sont gérés dynamiquement
-            if (el.placeholder === undefined) {
-                el.innerHTML = translation[key];
-            }
+            el.innerHTML = translation[key];
         }
     });
 
-    // 2. Mettre à jour les textes qui sont générés dynamiquement
     updateDynamicTexts(lang);
-    
-    // ===========================================
-    // ✅ MISE À JOUR POUR FLATPICKR
-    // ===========================================
-    // On réinitialise le date picker pour qu'il prenne en compte la nouvelle langue
-    // et le nouveau placeholder.
-    if (typeof setupDatePickers === 'function') {
-        setupDatePickers();
-    }
-    // ===========================================
 }
-// Fonction pour les textes qui ne sont pas dans des data-i18n
 function updateDynamicTexts(lang) {
     const translation = translations[lang] || translations.fr;
     // Exemple pour le résumé des passagers
@@ -749,10 +727,12 @@ function updateDynamicTexts(lang) {
 
 // Fonction globale pour changer la langue
 window.changeLanguage = function(lang) {
-
-    // ✅ AJOUTEZ CE LOG
-    console.log(`🖱️ Clic sur le bouton de langue détecté. Langue demandée : "${lang}"`);
-    setLanguage(lang);
+    setLanguage(lang); // setLanguage contient applyLanguage
+    
+    // ✅ On force la reconstruction du calendrier avec la nouvelle langue
+    if (typeof setupDatePickers === 'function') {
+        setupDatePickers();
+    }
 };
 
 
@@ -1876,29 +1856,34 @@ function setupTripTypeToggle() {
         });
     });
 }
-
 function setupDatePickers() {
-    const tripMode = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") || "one-way";
-    
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
     }
 
-    // ===================================
-    // ✅ CORRECTION ICI
-    // ===================================
-    // On récupère la langue actuelle et la traduction du placeholder
+    // On récupère la langue actuelle et la traduction
     const lang = getLanguage();
-    const placeholderText = translations[lang]?.search_form_dates_placeholder || "Select your dates";
-    // ===================================
-    
+    const placeholderText = translations[lang]?.search_form_dates_placeholder || "Sélectionnez vos dates";
+
     const config = {
         altInput: true,
         altFormat: "d F Y",
         dateFormat: "Y-m-d",
         minDate: "today",
-        locale: "fr",
-        mode: tripMode === "round-trip" ? "range" : "single"
+        locale: lang,
+        mode: document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip" ? "range" : "single",
+        
+        // ===========================================
+        // ✅ LE HACK QUI FORCE LE PLACEHOLDER
+        // ===========================================
+        // onReady se déclenche juste après que Flatpickr a créé ses éléments
+        onReady: function(selectedDates, dateStr, instance) {
+            // 'instance.altInput' est le champ de texte visible par l'utilisateur
+            if (instance.altInput) {
+                instance.altInput.placeholder = placeholderText;
+                console.log(`Placeholder forcé en '${lang}': "${placeholderText}"`);
+            }
+        }
     };
     
     appState.departurePicker = flatpickr("#travel-date", config);
