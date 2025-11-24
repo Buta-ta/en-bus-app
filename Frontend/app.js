@@ -1938,7 +1938,10 @@ function setupPassengerSelector() {
     const childrenCount = document.getElementById("children-count");
     const summary = document.getElementById("passenger-summary");
     
-    if (!input || !dropdown) return;
+    if (!input || !dropdown || !adultsCount || !childrenCount || !summary) {
+        console.warn("Un ou plusieurs éléments du sélecteur de passagers sont manquants.");
+        return;
+    }
     
     function updateDisplay() {
         appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
@@ -1947,16 +1950,29 @@ function setupPassengerSelector() {
         adultsCount.textContent = appState.passengerCounts.adults;
         childrenCount.textContent = appState.passengerCounts.children;
         
-        dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = 
-            appState.passengerCounts.adults <= 1;
-        dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = 
-            appState.passengerCounts.children <= 0;
+        dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
+        dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
         
-        let summaryText = `${appState.passengerCounts.adults} Adulte(s)`;
-        if (appState.passengerCounts.children > 0) {
-            summaryText += `, ${appState.passengerCounts.children} Enfant(s)`;
+        // ===================================
+        // ✅ CORRECTION DE LA TRADUCTION DU RÉSUMÉ
+        // ===================================
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        
+        if (typeof translation.passenger_summary === 'function') {
+            summary.textContent = translation.passenger_summary(
+                appState.passengerCounts.adults, 
+                appState.passengerCounts.children
+            );
+        } else {
+            // Solution de secours si la traduction n'est pas trouvée
+            let summaryText = `${appState.passengerCounts.adults} Adulte(s)`;
+            if (appState.passengerCounts.children > 0) {
+                summaryText += `, ${appState.passengerCounts.children} Enfant(s)`;
+            }
+            summary.textContent = summaryText;
         }
-        summary.textContent = summaryText;
+        // ===================================
     }
     
     input.addEventListener("click", (e) => {
@@ -1965,9 +1981,10 @@ function setupPassengerSelector() {
     });
     
     dropdown.addEventListener("click", (e) => {
-        if (e.target.classList.contains("counter-btn")) {
-            const type = e.target.dataset.type;
-            const action = e.target.dataset.action;
+        const target = e.target.closest('.counter-btn');
+        if (target) {
+            const type = target.dataset.type;
+            const action = target.dataset.action;
             
             if (action === "increment") {
                 appState.passengerCounts[type]++;
@@ -1975,19 +1992,20 @@ function setupPassengerSelector() {
                 appState.passengerCounts[type]--;
             }
             
-            updateDisplay();
+            updateDisplay(); // Met à jour les compteurs ET le texte du résumé
         }
     });
     
-    document.addEventListener("click", () => {
-        if (dropdown.classList.contains("open")) {
+    document.addEventListener("click", (e) => {
+        // Ferme le dropdown si on clique en dehors
+        if (!dropdown.contains(e.target) && !input.contains(e.target)) {
             dropdown.classList.remove("open");
         }
     });
     
-    updateDynamicTexts(getLanguage());
+    // Appel initial pour afficher les bonnes valeurs au chargement
+    updateDisplay();
 }
-
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
 
 function setupPaymentMethodToggle() {

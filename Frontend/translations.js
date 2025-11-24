@@ -232,6 +232,7 @@ footer_tagline: "Travel across Africa with ease",
 "results_summary_return": (count, from, to) => `Select your <strong>RETURN</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
 "results_no_results_title": "No trips match your filters",
 "results_no_results_desc": "Try changing your search criteria.",
+"search_form_children": "Children <small>(0-6 yrs)</small>",
 
 
 "passenger_count": (count) => `${count} passenger(s)`,
