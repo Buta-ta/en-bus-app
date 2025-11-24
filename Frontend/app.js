@@ -3501,9 +3501,15 @@ async function displayReservations() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
+    // ✅ TRADUCTION DU TITRE DE LA PAGE
+    const pageTitle = document.querySelector("#reservations-page .page-header h2");
+    if (pageTitle) {
+        pageTitle.textContent = translation.my_bookings_title;
+    }
+
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
-        listContainer.innerHTML = `<div class="no-results" ...><h3>${translation.my_bookings_none_title}</h3>...</div>`;
+        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3 data-i18n="my_bookings_none_title">${translation.my_bookings_none_title || 'Aucune réservation'}</h3><p data-i18n="my_bookings_none_desc">${translation.my_bookings_none_desc || 'Vos réservations apparaîtront ici.'}</p></div>`;
         return;
     }
 
@@ -3511,8 +3517,7 @@ async function displayReservations() {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
         if (!data.success || !data.reservations) throw new Error("Données invalides");
-        
-        // --- Logique d'auto-découverte (inchangée) ---
+
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         data.reservations.forEach(r => {
@@ -3526,25 +3531,16 @@ async function displayReservations() {
             return displayReservations();
         }
 
-        // --- Affichage ---
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
-                // ===========================================
-                // ✅ CORRECTION : ON DÉFINIT TOUT ICI, AVANT LE RETURN
-                // ===========================================
                 const isConfirmed = res.status === 'Confirmé';
                 const isPending = res.status === 'En attente de paiement';
                 const isReportPending = res.status === 'En attente de report';
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                let statusHTML = '';
-                if (isConfirmed) statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
-                else if (isPending) statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
-                else if (isReportPending) statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
-                else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
-                else statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
+                let statusHTML = '<span>' + (translation[`status_${res.status.toLowerCase().replace(' ', '_')}`] || res.status) + '</span>';
 
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
@@ -3552,7 +3548,11 @@ async function displayReservations() {
                 if (isConfirmed) {
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
                     if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre</a>`;
-                    if (!res.returnRoute && !res.originalReservation) {
+                    
+                    // ✅ LOGIQUE DE REPORT CORRIGÉE
+                    const reportCount = res.reportCount || 0;
+                    const maxReports = 2; // Limite fixée à 2 pour le moment
+                    if (!res.returnRoute && reportCount < maxReports) {
                         actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
                     }
                 } else if (isPending) {
@@ -3565,12 +3565,18 @@ async function displayReservations() {
                 } else {
                     actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
                 }
-                // ===========================================
+
+                // ✅ BOUTON DE SUPPRESSION RÉINTÉGRÉ
+                let deleteButton = '';
+                if (!isPending && !isReportPending) {
+                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Masquer de cet appareil">🗑️</button>`;
+                }
 
                 return `
                     <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6;' : ''}">
                         <div class="res-pwa-header">
                             <span class="res-pwa-booking-number">${res.bookingNumber}</span>
+                            ${deleteButton}
                             <span class="res-pwa-status">${statusHTML}</span>
                         </div>
                         <div class="res-pwa-body">
