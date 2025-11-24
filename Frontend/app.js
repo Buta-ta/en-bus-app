@@ -700,7 +700,6 @@ function getLanguage() {
 }
 
 // Dans app.js
-
 function applyLanguage(lang = getLanguage()) {
     // Sécurité : vérifier que le fichier de traductions est bien chargé
     if (typeof translations === 'undefined') {
@@ -708,20 +707,18 @@ function applyLanguage(lang = getLanguage()) {
         return;
     }
 
+    // On sauvegarde la langue et on met à jour l'attribut de la page
+    localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr; // Fallback sur le français
 
-    // 1. Traduire tous les éléments avec l'attribut data-i18n
+    // 1. Traduire tous les éléments statiques avec l'attribut data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         
         if (translation[key]) {
-            // Gérer les placeholders des champs input
-            if (el.placeholder !== undefined) {
-                el.placeholder = translation[key];
-            } 
-            // Gérer le texte des autres éléments
-            else {
+            // On ne touche pas aux placeholders ici, car ils sont gérés dynamiquement
+            if (el.placeholder === undefined) {
                 el.innerHTML = translation[key];
             }
         }
@@ -729,6 +726,16 @@ function applyLanguage(lang = getLanguage()) {
 
     // 2. Mettre à jour les textes qui sont générés dynamiquement
     updateDynamicTexts(lang);
+    
+    // ===========================================
+    // ✅ MISE À JOUR POUR FLATPICKR
+    // ===========================================
+    // On réinitialise le date picker pour qu'il prenne en compte la nouvelle langue
+    // et le nouveau placeholder.
+    if (typeof setupDatePickers === 'function') {
+        setupDatePickers();
+    }
+    // ===========================================
 }
 // Fonction pour les textes qui ne sont pas dans des data-i18n
 function updateDynamicTexts(lang) {
@@ -1876,6 +1883,14 @@ function setupDatePickers() {
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
     }
+
+    // ===================================
+    // ✅ CORRECTION ICI
+    // ===================================
+    // On récupère la langue actuelle et la traduction du placeholder
+    const lang = getLanguage();
+    const placeholderText = translations[lang]?.search_form_dates_placeholder || "Select your dates";
+    // ===================================
     
     const config = {
         altInput: true,
