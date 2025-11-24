@@ -704,12 +704,18 @@ function getLanguage() {
 
 // Dans app.js
 function applyLanguage(lang = getLanguage()) {
-    if (typeof translations === 'undefined') return;
+    // Sécurité : ne pas exécuter si les traductions ne sont pas chargées
+    if (typeof translations === 'undefined') {
+        console.error("ERREUR: La variable 'translations' est introuvable.");
+        return;
+    }
 
+    // Mettre à jour la langue sauvegardée et sur la page
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
+    // Traduire les éléments statiques
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translation[key]) {
@@ -717,7 +723,22 @@ function applyLanguage(lang = getLanguage()) {
         }
     });
 
+    // Mettre à jour les textes générés par JavaScript
     updateDynamicTexts(lang);
+    
+    // ================================================
+    // ✅ CORRECTION : RAFRAÎCHIR LES ÉLÉMENTS DYNAMIQUES
+    // ================================================
+    // On doit regénérer les destinations populaires pour qu'elles prennent la nouvelle langue.
+    if (typeof populatePopularDestinations === 'function') {
+        populatePopularDestinations();
+    }
+    
+    // On doit aussi mettre à jour le calendrier Flatpickr.
+    if (typeof setupDatePickers === 'function') {
+        setupDatePickers();
+    }
+    // ================================================
 }
 function updateDynamicTexts(lang) {
     const translation = translations[lang] || translations.fr;
