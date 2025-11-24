@@ -83,12 +83,12 @@ baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
     hero_subtitle: "Book your bus tickets online easily and quickly",
 
     // --- Search Form ---
-    search_form_origin: "Origin City",
-    search_form_destination: "Destination City",
+    search_form_origin: "From",
+    search_form_destination: "To",
     search_form_trip_type: "Trip Type",
     search_form_one_way: "One-way",
     search_form_round_trip: "Round-trip",
-    search_form_dates: "Travel Dates",
+    search_form_dates: "When",
     search_form_passengers: "Passengers",
     search_form_button: "Search",
     // ✅ ET AJOUTER LES TRADUCTIONS ANGLAISES ICI
