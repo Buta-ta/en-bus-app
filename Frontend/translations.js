@@ -63,6 +63,7 @@ passengers_email_label: "Email (optionnel)",
 baggage_options_for: (num, seat) => `Options pour Passager ${num} (Siège ${seat})`,
 baggage_standard_label: (price) => `Bagage standard suppl. (+${price} FCFA/pce)`,
 baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
+destination_price_from: (price) => `À partir de ${price} FCFA`,
 
 
     
@@ -98,6 +99,7 @@ baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
     passengers_email_placeholder: "example@email.com",
     payment_phone_placeholder_mtn: "E.g. 06 123 4567",
     payment_phone_placeholder_airtel: "E.g. 05 123 4567",
+    
 
     passenger_summary: (adults, children) => {
         let text = `${adults} Adult(s)`;
@@ -131,6 +133,7 @@ passengers_email_label: "Email (optional)",
 baggage_options_for: (num, seat) => `Options for Passenger ${num} (Seat ${seat})`,
 baggage_standard_label: (price) => `Extra standard bag (+${price} FCFA/pc)`,
 baggage_oversized_label: (price) => `Oversized bag (+${price} FCFA/pc)`,
+"destination_price_from": (price) => `From ${price} FCFA`,
   }
 };
 
