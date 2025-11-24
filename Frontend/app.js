@@ -3498,6 +3498,14 @@ async function displayReservations() {
     if (!listContainer) return;
     listContainer.innerHTML = '<div class="loading-spinner">Chargement...</div>';
 
+    // ===================================
+    // ✅ TRADUCTION
+    // ===================================
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    // ===================================
+
+
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
         listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3>Aucune réservation</h3><p>Vos réservations apparaîtront ici.</p></div>`;
@@ -3534,6 +3542,9 @@ async function displayReservations() {
                 const isPending = res.status === 'En attente de paiement';
                 const isReportPending = res.status === 'En attente de report';
                 const isReported = res.status === 'Reporté';
+
+        
+                if (isConfirmed) statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
                 let statusHTML = '';

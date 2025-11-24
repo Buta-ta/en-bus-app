@@ -68,6 +68,21 @@ baggage_options_for: (num, seat) => `Options pour Passager ${num} (Siège ${seat
 baggage_standard_label: (price) => `Bagage standard suppl. (+${price} FCFA/pce)`,
 baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
 destination_price_from: (price) => `À partir de ${price} FCFA`,
+my_bookings_title: "Mes Réservations",
+my_bookings_none_title: "Aucune réservation",
+my_bookings_none_desc: "Vos futures réservations apparaîtront ici.",
+status_confirmed: "✓ Confirmé",
+status_pending: "⏳ En attente de paiement",
+status_report_pending: "🔄 Report en cours",
+status_reported: "↪️ Obsolète",
+status_cancelled: (status) => `❌ ${status}`,
+button_view_ticket: "Voir le Billet",
+button_report: "Reporter",
+button_pay: "Payer",
+info_report_pending: "Demande en cours...",
+info_replaced_by: "Remplacé par :",
+button_new_booking: "Nouvelle réservation",
+passenger_count: (count) => `${count} passager(s)`,
 
 
     
@@ -139,6 +154,21 @@ baggage_standard_label: (price) => `Extra standard bag (+${price} FCFA/pc)`,
 baggage_oversized_label: (price) => `Oversized bag (+${price} FCFA/pc)`,
 "destination_price_from": (price) => `From ${price} FCFA`,
 footer_tagline: "Travel across Africa with ease",
+
+"my_bookings_none_title": "No Bookings",
+"my_bookings_none_desc": "Your future bookings will appear here.",
+"status_confirmed": "✓ Confirmed",
+"status_pending": "⏳ Pending Payment",
+"status_report_pending": "🔄 Rescheduling...",
+"status_reported": "↪️ Obsolete",
+"status_cancelled": (status) => `❌ ${status}`,
+"button_view_ticket": "View Ticket",
+"button_report": "Reschedule",
+"button_pay": "Pay",
+"info_report_pending": "Request in progress...",
+"info_replaced_by": "Replaced by:",
+"button_new_booking": "New Booking",
+"passenger_count": (count) => `${count} passenger(s)`,
   }
 };
 
