@@ -147,6 +147,9 @@ passenger_count: (count) => `${count} passager(s)`,
     search_form_dates: "When",
     search_form_passengers: "Passengers",
     search_form_button: "Search",
+    search_form_children: "Children <small>(0-6 yrs)</small>",
+    search_form_adults: "Adults",
+  
     // ✅ ET AJOUTER LES TRADUCTIONS ANGLAISES ICI
     search_form_dates_placeholder: "Select your dates",
     passengers_name_placeholder: "Full name",
