@@ -4003,6 +4003,7 @@ function addBookingToLocalHistory(bookingNumber) {
 }
 
 
+window.addEventListener("DOMContentLoaded", initApp);
 
 
 
@@ -4032,6 +4033,7 @@ window.resetAndGoHome = function() {
 }
 
 
+
 // Dans app.js - Version améliorée avec numéro de réservation
 
 if (reservation.route.trackerId) {
@@ -4044,5 +4046,3 @@ if (reservation.route.trackerId) {
         </a>
     `;
 }
-
-window.addEventListener("DOMContentLoaded", initApp);
