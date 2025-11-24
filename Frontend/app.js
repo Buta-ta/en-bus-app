@@ -740,15 +740,37 @@ function applyLanguage(lang = getLanguage()) {
     }
     // ================================================
 }
+// Mettez cette fonction avec vos autres fonctions globales
+
 function updateDynamicTexts(lang) {
+    // Sécurité : ne rien faire si les traductions ne sont pas prêtes
+    if (typeof translations === 'undefined') return;
+    
     const translation = translations[lang] || translations.fr;
-    // Exemple pour le résumé des passagers
+    
+    // --- 1. Traduction du résumé des passagers ---
     const summaryEl = document.getElementById('passenger-summary');
     if (summaryEl && typeof translation.passenger_summary === 'function') {
-        summaryEl.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
+        summaryEl.textContent = translation.passenger_summary(
+            appState.passengerCounts.adults,
+            appState.passengerCounts.children
+        );
     }
-}
+    
+    // --- 2. Traduction des labels DANS le dropdown ---
+    const adultsLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_adults"]');
+    if (adultsLabel && translation.search_form_adults) {
+        adultsLabel.innerHTML = translation.search_form_adults;
+    }
+    
+    const childrenLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_children"]');
+    if (childrenLabel && translation.search_form_children) {
+        childrenLabel.innerHTML = translation.search_form_children;
+    }
 
+    // --- 3. (Futur) Traduction d'autres textes dynamiques ---
+    // ...
+}
 // Fonction globale pour changer la langue
 window.changeLanguage = function(lang) {
     setLanguage(lang); // setLanguage contient applyLanguage
