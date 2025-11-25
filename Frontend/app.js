@@ -1642,40 +1642,48 @@ async function generateTicketPDF(reservation, isReturn = false) {
                 </div>
             `;
         }
-        
-        let stopsHTML = '';
-        if (route.stops && route.stops.length > 0) {
-            stopsHTML = `
-                <div class="passengers-section">
-                    <div class="passengers-title" style="border-color: #ffc107;">🛑 Arrêts Prévus</div>
-                    <div class="passenger-list">
-                        ${route.stops.map(stop => `
-                            <div class="item">
-                                <span class="passenger-name">${stop.city}</span>
-                                <span style="color: var(--text-light); font-size: 12px;">Arrêt de ${stop.duration} (Arrivée: ${stop.arrivalTime})</span>
-                            </div>
-                        `).join('')}
-                    </div>
+            // --- Génération dynamique des arrêts (TRADUIT) ---
+    let stopsHTML = '';
+    if (route.stops && route.stops.length > 0) {
+        stopsHTML = `
+            <div class="passengers-section">
+                <div class="passengers-title">${translation.details_stops_planned}</div>
+                <div class="passenger-list">
+                    ${route.stops.map(stop => `
+                        <div class="item">
+                            <span class="passenger-name">${stop.city}</span>
+                            <span style="color: #555; font-size: 12px;">
+                                ${translation.details_stop_info(stop.duration, stop.arrivalTime)}
+                            </span>
+                        </div>
+                    `).join('')}
                 </div>
-            `;
-        }
-        
-        let connectionsHTML = '';
-        if (route.connections && route.connections.length > 0) {
-            connectionsHTML = `
-                <div class="passengers-section">
-                    <div class="passengers-title" style="border-color: #ef5350;">🔄 Correspondances</div>
-                    <div class="passenger-list">
-                        ${route.connections.map(conn => `
-                            <div class="item">
-                                <span class="passenger-name">À ${conn.at} (attente ${conn.waitTime})</span>
-                                <span style="color: var(--text-light); font-size: 12px;">Prochain bus: ${conn.nextCompany} N°${conn.nextBusNumber || '?'} à ${conn.nextDeparture}</span>
+            </div>
+        `;
+    }
+
+    // --- Génération dynamique des correspondances (TRADUIT) ---
+    let connectionsHTML = '';
+    if (route.connections && route.connections.length > 0) {
+        connectionsHTML = `
+            <div class="passengers-section">
+                <div class="passengers-title" style="border-color: #ef5350;">${translation.details_connections_title}</div>
+                <div class="passenger-list">
+                    ${route.connections.map(conn => `
+                        <div class="item">
+                            <div>
+                                <span class="passenger-name">${translation.details_connection_info(conn.at, conn.waitTime)}</span>
+                                <small style="display: block; color: #555; font-size: 12px;">
+                                    ${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}
+                                </small>
                             </div>
-                        `).join('')}
-                    </div>
+                        </div>
+                    `).join('')}
                 </div>
-            `;
-        }
+            </div>
+        `;
+    }
+
 
         // --- 3. TEMPLATE HTML COMPLET ---
         // DANS la fonction generateTicketPDF, après avoir défini les variables

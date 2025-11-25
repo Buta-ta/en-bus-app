@@ -313,6 +313,13 @@ const translations = {
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
+    details_connections_title: "🔄 Correspondances",
+    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+    details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
+    details_stops_planned: "🛑 Arrêts Prévus",
+    details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
+
+
 
 
   },
@@ -625,7 +632,13 @@ const translations = {
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
     details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
+    details_connections_title: "🔄 Connections",
+    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+    details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
+    details_stops_planned: "🛑 Scheduled Stops",
+    details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
 
-        
+
+            
   }
 }
