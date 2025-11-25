@@ -2836,40 +2836,39 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     `;
 }
 function updateSeatSummary() {
-    // --- 1. Récupération des traductions ---
+    console.log("--- Début de updateSeatSummary ---");
+
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+    console.log("Langue utilisée:", lang);
 
-    // --- 2. Récupération des données et éléments DOM ---
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-    
+    console.log("Sièges sélectionnés:", currentSeats);
+
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
-    const seatsLabel = document.querySelector('span[data-i18n="seats_summary_seats"]');
-    const priceLabel = document.querySelector('span[data-i18n="seats_summary_price"]');
-
-    // Sécurité : si les éléments de base n'existent pas, on arrête
-    if (!seatsDisplay || !priceDisplay || !seatsLabel || !priceLabel) {
+    
+    if (!seatsDisplay || !priceDisplay) {
+        console.error("ERREUR FATALE: Les éléments seatsDisplay ou priceDisplay sont introuvables.");
         return;
     }
-    
-    // --- 3. Traduction des labels statiques ---
-    seatsLabel.textContent = translation.seats_summary_seats || "Sièges :";
-    priceLabel.textContent = translation.seats_summary_price || "Prix :";
+    console.log("Éléments d'affichage trouvés.");
 
-    // Sécurité : si le bus n'est pas encore sélectionné, on ne peut pas calculer le prix
     if (!currentBus) {
+        console.warn("ATTENTION: currentBus est indéfini. Impossible de calculer le prix.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
         return;
     }
-    
-    // --- 4. Mise à jour des valeurs dynamiques ---
+    console.log("Bus actuel trouvé. Prix de base:", currentBus.price);
+
     if (currentSeats.length === 0) {
+        console.log("Aucun siège sélectionné. Affichage du texte par défaut.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
     } else {
+        console.log("Calcul du prix pour les sièges:", currentSeats.join(", "));
         seatsDisplay.textContent = currentSeats.join(", ");
         
         const numSeats = currentSeats.length;
@@ -2879,8 +2878,10 @@ function updateSeatSummary() {
         
         const totalPrice = (adultsSelected * currentBus.price) + (childrenSelected * CONFIG.CHILD_TICKET_PRICE);
         
+        console.log(`Prix calculé: ${totalPrice} FCFA`);
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
+    console.log("--- Fin de updateSeatSummary ---");
 }
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
