@@ -1379,7 +1379,7 @@ function displayPaymentInstructions(reservation) {
             <div class="detail-row">
                 <span class="detail-label">${translation.payment_ref_label_important}</span>
                 <span class="detail-value highlight">${reservation.agencyPaymentCode}</span>
-                <div class="detail-warning">${translation.payment_ref_warning_agency || "Présentez ce code à l'agence."}</div>
+                <div class="detail-warning">${translation.payment_ref_warning_agency}</div>
             </div>
         `;
     } else { // Mobile Money

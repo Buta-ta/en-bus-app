@@ -236,6 +236,7 @@ const translations = {
     countdown_time_left: "Temps restant :",
     countdown_calculating: "Calcul...",
     countdown_expired: "EXPIRÉ",
+    payment_ref_warning_agency: "⚠️ Présentez ce code unique à l'agent de caisse.",
 
 
 
@@ -464,6 +465,7 @@ const translations = {
     countdown_time_left: "Time left:",
     countdown_calculating: "Calculating...",
     countdown_expired: "EXPIRED",
+    payment_ref_warning_agency: "⚠️ Show this unique code to the agency cashier.",
  
 
 
