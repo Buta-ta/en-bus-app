@@ -1794,6 +1794,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
                     // printWindow.print(); // Décommenter pour lancer l'impression automatiquement
                 }
             }
+
+            
         } catch (downloadError) {
             console.error("Erreur de téléchargement du billet:", downloadError);
             Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
