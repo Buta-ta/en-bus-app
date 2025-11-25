@@ -431,14 +431,16 @@ const Utils = {
         return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     },
 
-    formatDate(date) {
-        return new Date(date).toLocaleDateString("fr-FR", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        });
-    },
+    formatDate(date, lang = 'fr') { // On ajoute 'lang' comme paramètre
+    const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; // On choisit la locale
+    return new Date(date).toLocaleDateString(locale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+},
+
 
     formatDateTime(date) {
         return new Date(date).toLocaleString("fr-FR", {
@@ -3546,7 +3548,7 @@ async function displayConfirmation(reservation) {
                         <div class="point-info">
                             <span class="point-label">${translation.details_label_departure}</span>
                             <span class="point-city">${route.from}</span>
-                            <span class="point-date">${Utils.formatDate(tripData.date)}</span>
+                             <span class="point-date">${Utils.formatDate(tripData.date, lang)}</span>
                             <span class="point-time">${route.departure}</span>
                         </div>
                     </div>
