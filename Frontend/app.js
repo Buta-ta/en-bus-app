@@ -3556,7 +3556,6 @@ async function displayConfirmation(reservation) {
                         <div class="point-info">
                             <span class="point-label">${translation.details_label_departure}</span>
                             <span class="point-city">${route.from}</span>
-                             <span class="point-date">${Utils.formatDate(tripData.date, lang)}</span>
                             <span class="point-time">${route.departure}</span>
                         </div>
                     </div>
