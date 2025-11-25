@@ -3378,7 +3378,8 @@ function displayBookingSummary() {
     
     console.log("✅ Récapitulatif affiché et mis à jour avec succès.");
 
-    startAgencyCountdown();
+    // ✅ NOUVEAU CODE (on réutilise la fonction existante)
+startFrontendCountdown(); 
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking
 

@@ -422,6 +422,13 @@ app.post(
       return res.status(400).json({ errors: errors.array() });
     try {
       const reservationData = req.body;
+
+       // ✅ SÉCURITÉ : Vérifier que la route et son ID existent
+        if (!reservationData.route || !reservationData.route.id) {
+            return res.status(400).json({ error: "Données de route invalides." });
+        }
+
+
       const trip = await tripsCollection.findOne({
         _id: new ObjectId(reservationData.route.id),
       });
