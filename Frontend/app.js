@@ -3534,6 +3534,7 @@ async function displayConfirmation(reservation) {
         const tripTypeLabel = isReturn ? translation.confirmation_ticket_return : translation.confirmation_ticket_outbound;
         const busId = isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier;
         const route = tripData.route;
+        const lang = getLanguage();
 
    
         // ===================================
