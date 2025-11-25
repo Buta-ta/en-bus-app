@@ -100,6 +100,9 @@ const translations = {
     toast_select_outbound_seats: "Sélectionnez vos sièges pour l'aller",
     toast_select_return_seats: "Sélectionnez vos sièges pour le retour",
     toast_select_return_bus: "Sélectionnez maintenant votre bus de RETOUR",
+    error_max_seats: (max) => `Vous pouvez sélectionner au maximum ${max} siège(s)`,
+    // ...
+
 
     seats_title: "Sélection des sièges",
     seats_back_button: "← Retour",
@@ -260,7 +263,11 @@ const translations = {
     amenity_ac: "AC",
 
     // --- Seat Selection Page ---
-    
+    //✅ VÉRIFIEZ QUE CES LIGNES SONT BIEN PRÉSENTES ET CORRECTEMENT ÉCRITES
+    toast_select_outbound_seats: "Select your seats for the outbound trip",
+    toast_select_return_seats: "Select your seats for the return trip",
+    toast_select_return_bus: "Now select your RETURN bus",
+    error_max_seats: (max) => `You can select a maximum of ${max} seat(s)`,
     seats_title: "Seat Selection",
     seats_back_button: "← Back",
     seats_price_info_adult: "Adult",
