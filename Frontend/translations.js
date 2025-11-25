@@ -258,6 +258,7 @@ const translations = {
     error_booking_not_found: "Réservation introuvable",
     toast_current_status: "Statut actuel :",
     error_check_status: "Erreur lors de la vérification. Réessayez.",
+    
 
 
 
@@ -299,6 +300,9 @@ const translations = {
     button_track_return: "🛰️ Suivre Bus Retour",
     button_new_booking_alt: "🏠 Nouvelle Réservation",
     confirmation_help: "Besoin d'aide ? Contactez-nous :",
+    details_label_departure: "Départ",
+    details_label_arrival: "Arrivée",
+
   },
   // ===================================
   // LANGUE ANGLAISE (EN)
@@ -596,6 +600,8 @@ const translations = {
     button_track_return: "🛰️ Track Return Bus",
     button_new_booking_alt: "🏠 New Booking",
     confirmation_help: "Need help? Contact us:",
+    details_label_departure: "Departure",
+    details_label_arrival: "Arrival",
     
   }
 }

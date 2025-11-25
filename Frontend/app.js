@@ -3531,23 +3531,61 @@ async function displayConfirmation(reservation) {
         const busId = isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier;
         const route = tripData.route;
 
+   
+        // ===================================
+        // ✅ HTML COMPLET RÉINTÉGRÉ
+        // ===================================
         return `
-            <h2 style="font-family: var(--font-logo); ...">${tripTypeLabel}</h2>
-            <div class="journey-card">...</div>
+            <h2 style="font-family: var(--font-logo); color: var(--color-accent-glow); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">
+                ${tripTypeLabel}
+            </h2>
+            <div class="journey-card">
+                <div class="journey-route">
+                    <div class="route-point route-origin">
+                        <div class="point-icon">📍</div>
+                        <div class="point-info">
+                            <span class="point-label">${translation.details_label_departure}</span>
+                            <span class="point-city">${route.from}</span>
+                            <span class="point-date">${Utils.formatDate(tripData.date)}</span>
+                            <span class="point-time">${route.departure}</span>
+                        </div>
+                    </div>
+                    <div class="route-connector">
+                        <div class="connector-line"></div>
+                        <div class="connector-icon">🚌</div>
+                        <div class="connector-duration">${route.duration || 'N/A'}</div>
+                    </div>
+                    <div class="route-point route-destination">
+                        <div class="point-icon">🏁</div>
+                        <div class="point-info">
+                            <span class="point-label">${translation.details_label_arrival}</span>
+
+                            <span class="point-city">${route.to}</span>
+                            <span class="point-time">${route.arrival}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="details-grid-modern">
-                <div><div class="detail-label">${translation.details_label_passengers}</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
-                <div><div class="detail-label">${translation.details_label_seats}</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
-                <div><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
-                <div><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busId || 'N/A'}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_passengers}</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_seats}</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
+                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busId || 'N/A'}</div></div>
             </div>
             <div class="qr-section-modern">
-                <div class="qr-info">
-                    <p class="qr-title">${translation.qr_code_title}</p>
-                    <p class="qr-instruction">${translation.qr_code_instruction}</p>
+                <div class="qr-container">
+                    <div class="qr-code-box">
+                        <img src="${qrCodeBase64}" alt="QR Code">
+                    </div>
+                    <div class="qr-info">
+                        <p class="qr-title">${translation.qr_code_title}</p>
+                        <p class="qr-instruction">${translation.qr_code_instruction}</p>
+                    </div>
                 </div>
             </div>
         `;
     };
+
 
     try {
         outboundSection.innerHTML = await createTicketHTML({ route: reservation.route, date: reservation.date, seats: reservation.seats }, false);
