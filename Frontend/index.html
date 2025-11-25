@@ -734,26 +734,31 @@
               </label>
               <div class="payment-details-form" id="agency-details" style="display: none">
                 <div class="agency-info-box">
-                  <h4 data-i18n="payment_agency_nearest">📍 Agence la plus proche</h4>
-                  <div id="selected-agency-info"></div>
-                </div>
-                <div class="form-group">
-                  <label data-i18n="payment_agency_deadline">⏰ Vous devez payer avant :</label>
-                  <input type="text" id="agency-deadline" class="form-control" readonly />
-                </div>
-                <div class="form-group">
-                  <label data-i18n="payment_agency_ref">📋 Référence de réservation</label>
-                  <input type="text" id="agency-booking-ref" class="form-control" readonly />
-                </div>
-                <div class="info-note">
-                  <strong data-i18n="payment_agency_important">⚠️ Important :</strong>
-                  <ul style="margin: 10px 0 0 20px; font-size: 14px">
-                    <li data-i18n="payment_agency_rule1">Cette réservation sera <strong>automatiquement annulée</strong>
-                      si le paiement n'est pas effectué dans les 10h</li>
-                    <li data-i18n="payment_agency_rule2">Présentez-vous à l'agence avec une pièce d'identité</li>
-                    <li data-i18n="payment_agency_rule3">Le numéro de réservation sera requis</li>
-                  </ul>
-                </div>
+        <!-- ✅ TRADUCTION DU TITRE -->
+        <h4 data-i18n="payment_agency_nearest">📍 Agence la plus proche</h4>
+        <div id="selected-agency-info"></div>
+    </div>
+    <div class="form-group">
+        <!-- ✅ TRADUCTION DU LABEL -->
+        <label data-i18n="payment_agency_deadline">⏰ Vous devez payer avant :</label>
+        <input type="text" id="agency-deadline" class="form-control" readonly />
+    </div>
+    <div class="form-group">
+        <!-- ✅ TRADUCTION DU LABEL -->
+        <label data-i18n="payment_agency_ref">📋 Référence de réservation</label>
+        <input type="text" id="agency-booking-ref" class="form-control" readonly />
+    </div>
+    <div class="info-note">
+        <!-- ✅ TRADUCTION DU TITRE -->
+        <strong data-i18n="payment_agency_important_title">⚠️ Important :</strong>
+        <ul style="margin: 10px 0 0 20px; font-size: 14px">
+            <!-- ✅ Le premier point sera géré par JS -->
+            <li id="agency-rule1-placeholder"></li> 
+            <!-- ✅ TRADUCTION DES RÈGLES STATIQUES -->
+            <li data-i18n="payment_agency_rule2">Présentez-vous à l'agence avec une pièce d'identité</li>
+            <li data-i18n="payment_agency_rule3">Le numéro de réservation sera requis</li>
+        </ul>
+    </div>
               </div>
             </div>
           </div>
