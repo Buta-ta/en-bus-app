@@ -204,6 +204,37 @@ const translations = {
     payment_agency_desc_countdown: (h, m) => `⏰ Payez dans les ${h}h ${String(m).padStart(2, '0')}m`,
 
 
+    // --- Page Instructions de Paiement ---
+    payment_instructions_title_agency: "Paiement à l'agence",
+    payment_instructions_title_mm: (method) => `${method} Mobile Money`,
+    payment_instructions_subtitle: "Finalisez votre réservation en effectuant le paiement",
+    booking_ref_label: "Numéro de réservation",
+    amount_to_pay_label: "💰 Montant à payer",
+    agency_to_pay_label: "🏢 Agence de paiement",
+    your_phone_label: (method) => `📞 Votre numéro ${method}`,
+    your_phone_warning: "⚠️ Utilisez CE numéro pour effectuer le paiement",
+    merchant_phone_label: (method) => `📞 Numéro marchand ${method}`,
+    payment_ref_label_important: "🔖 Référence (IMPORTANT)",
+    payment_ref_warning: "⚠️ Inscrivez cette référence dans le message du transfert",
+    payment_deadline_label: "⏰ Date limite de paiement",
+    payment_steps_title: (method) => `📱 Étapes de paiement ${method}`,
+    payment_steps_1: (code) => `Composez <strong>${code}</strong> sur votre téléphone.`,
+    payment_steps_2: "Sélectionnez <strong>\"Transfert d'argent\"</strong>.",
+    payment_steps_3: (number) => `Entrez le numéro marchand : <strong>${number}</strong>`,
+    payment_steps_4: (amount) => `Montant : <strong>${amount}</strong>`,
+    payment_steps_5: (ref) => `Message/Référence : <strong>${ref}</strong>`,
+    payment_steps_6: "Validez avec votre code PIN.",
+    final_step_title: "🚀 Étape Finale : Confirmez votre paiement",
+    final_step_desc: (method) => `Après avoir reçu le SMS de confirmation de ${method}, copiez l'ID de la transaction et collez-le ici pour accélérer la validation.`,
+    transaction_id_label: "ID de Transaction",
+    transaction_id_placeholder: "Collez la référence de la transaction ici",
+    submit_proof_button: "✔ J'ai payé, soumettre la référence",
+    deadline_warning_title: "Important : Délai de paiement",
+    deadline_warning_desc: (date, time) => `Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué avant le <strong>${date} à ${time}</strong>.`,
+    check_status_button: "🔄 Vérifier le statut du paiement",
+    back_home_button: "🏠 Retour à l'accueil",
+
+
 
     // --- Messages d'erreur & Info ---
     error_missing_departure_date: "Veuillez sélectionner une date de départ",
@@ -394,6 +425,41 @@ const translations = {
     summary_baggage_fees: "Baggage Fees",
     summary_total_price: "TOTAL PRICE",
     payment_agency_desc_countdown: (h, m) => `⏰ Pay within ${h}h ${String(m).padStart(2, '0')}m`,
+
+
+    // --- Payment Instructions Page ---
+    payment_instructions_title_agency: "Pay at Agency",
+    payment_instructions_title_mm: (method) => `${method} Mobile Money`,
+    payment_instructions_subtitle: "Finalize your booking by making the payment",
+    booking_ref_label: "Booking Reference",
+    amount_to_pay_label: "💰 Amount to Pay",
+    agency_to_pay_label: "🏢 Payment Agency",
+    your_phone_label: (method) => `📞 Your ${method} Number`,
+    your_phone_warning: "⚠️ Use THIS number to make the payment",
+    merchant_phone_label: (method) => `📞 Merchant Number ${method}`,
+    payment_ref_label_important: "🔖 Reference (IMPORTANT)",
+    payment_ref_warning: "⚠️ Enter this reference in the transfer message",
+    payment_deadline_label: "⏰ Payment Deadline",
+    payment_steps_title: (method) => `📱 ${method} Payment Steps`,
+    payment_steps_1: (code) => `Dial <strong>${code}</strong> on your phone.`,
+    payment_steps_2: "Select <strong>\"Send Money\"</strong>.",
+    payment_steps_3: (number) => `Enter the merchant number: <strong>${number}</strong>`,
+    payment_steps_4: (amount) => `Amount: <strong>${amount}</strong>`,
+    payment_steps_5: (ref) => `Message/Reference: <strong>${ref}</strong>`,
+    payment_steps_6: "Confirm with your PIN code.",
+    final_step_title: "🚀 Final Step: Confirm Your Payment",
+    final_step_desc: (method) => `After receiving the confirmation SMS from ${method}, copy the Transaction ID and paste it here to speed up validation.`,
+    transaction_id_label: "Transaction ID",
+    transaction_id_placeholder: "Paste the transaction reference here",
+    submit_proof_button: "✔ I have paid, submit reference",
+    deadline_warning_title: "Important: Payment Deadline",
+    deadline_warning_desc: (date, time) => `This booking will be <strong>automatically cancelled</strong> if payment is not made before <strong>${date} at ${time}</strong>.`,
+    check_status_button: "🔄 Check Payment Status",
+    back_home_button: "🏠 Back to Home",
+
+
+
+    
 
 
 
