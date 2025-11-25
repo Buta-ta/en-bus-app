@@ -270,6 +270,11 @@ const translations = {
     seats_summary_price: "Prix :",
     seats_summary_none: "Aucun",
     continue_button: "Continuer",
+    seats_driver: "Chauffeur",
+    seats_entrance: "Entrée",
+    seats_back_row: "Rangée arrière",
+    seats_restroom: "Toilettes",
+
 
 
     // --- Passengers & Baggage Page ---
@@ -317,7 +322,7 @@ const translations = {
     error_search_failed: "Error during search",
 
     // --- Seat Selection Page ---
-    
+
     seats_title: "Seat Selection",
     seats_back_button: "← Back",
     seats_price_info_adult: "Adult",
@@ -334,5 +339,9 @@ const translations = {
     seats_summary_price: "Price:",
     seats_summary_none: "None",
     continue_button: "Continue",
+    seats_driver: "Driver",
+    seats_entrance: "Entrance",
+    seats_back_row: "Back row",
+    seats_restroom: "Restroom",
   }
 };
