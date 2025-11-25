@@ -126,6 +126,8 @@ const translations = {
     seats_restroom: "Toilettes",
 
     // --- Page Passagers & Bagages ---
+    passengers_page_title: "Informations Passagers",
+    passengers_page_back_button: "← Retour",
     passengers_name_placeholder: "Nom complet",
     passengers_phone_placeholder: "Ex: +242 06 123 4567",
     passengers_email_placeholder: "exemple@email.com",
@@ -290,6 +292,8 @@ const translations = {
     seats_restroom: "Restroom",
 
     // --- Passengers & Baggage Page ---
+    passengers_page_title: "Passenger Information",
+    passengers_page_back_button: "← Back",
     passengers_name_placeholder: "Full name",
     passengers_phone_placeholder: "E.g. +242 06 123 4567",
     passengers_email_placeholder: "example@email.com",
