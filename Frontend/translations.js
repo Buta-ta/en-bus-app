@@ -92,7 +92,7 @@ const translations = {
     filter_amenities: "Équipements :",
     filter_reset_button: "Réinitialiser",
     results_title: "Résultats de recherche",
-    results_back_button: "← Modifier la recherche",
+    results_back_button: "← Retour",
       
 
 
@@ -234,7 +234,7 @@ const translations = {
     filter_amenities: "Amenities:",
     filter_reset_button: "Reset",
     results_title: "Search Results",
-    results_back_button: "← Modify Search",
+    results_back_button: "← Return",
     
 
 
