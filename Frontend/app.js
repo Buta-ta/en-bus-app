@@ -708,26 +708,25 @@ function getLanguage() {
 }
 
 function applyLanguage(lang = getLanguage()) {
-    if (typeof translations === 'undefined') {
-        console.error("ERREUR : Le fichier translations.js est introuvable.");
-        return;
-    }
+    if (typeof translations === 'undefined') return;
 
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
-    // Traduit les éléments statiques qui ont un data-i18n
+    // Cette boucle va trouver et traduire "Sièges :" et "Prix :"
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translation[key]) {
-            if (el.placeholder !== undefined) {
-                // Les placeholders sont gérés par les fonctions spécifiques (comme setupDatePickers)
-            } else {
-                el.innerHTML = translation[key];
-            }
+            el.innerHTML = translation[key];
         }
     });
+
+    // On rafraîchit les composants dynamiques
+    updateDynamicTexts(lang); // Met à jour le "1 Adulte..."
+    populatePopularDestinations(); // Met à jour "À partir de..."
+    setupDatePickers(); // Met à jour le placeholder du calendrier
+}
     
     // ====================================================
     // ✅ LA MODIFICATION EST ICI
@@ -748,7 +747,7 @@ function applyLanguage(lang = getLanguage()) {
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
-}
+
 // Mettez cette fonction avec vos autres fonctions globales
 
 function updateDynamicTexts(lang) {
