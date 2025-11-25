@@ -3360,21 +3360,16 @@ function displayBookingSummary() {
 window.confirmBooking = async function(buttonElement) {
     console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION');
     
-    // ... (le début de la fonction : showLoading, etc. reste inchangé) ...
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    const showLoading = (message) => { buttonElement.innerHTML = `
-            <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;"></span>
-            <span style="margin-left: 10px;">${message}</span>
-        `; };
-    showLoading('Création de la réservation...');
+    const showLoading = (message) => { buttonElement.innerHTML = `<span style="animation: spin 1s linear infinite; display: inline-block; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; margin-right: 10px;"></span>${message}`; };
+    showLoading('Création en cours...');
 
     try {
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
         if (!paymentMethod) throw new Error('Veuillez sélectionner un mode de paiement.');
 
         let customerPhone;
-        // ... (logique pour récupérer customerPhone inchangée) ...
         const phoneInputId = `${paymentMethod}-phone`;
         const phoneInput = document.getElementById(phoneInputId);
         if (paymentMethod === 'agency') {
@@ -3386,17 +3381,12 @@ window.confirmBooking = async function(buttonElement) {
             throw new Error(`Numéro de téléphone ${paymentMethod.toUpperCase()} invalide ou manquant.`);
         }
 
-        // ✅ CORRECTION : Utilisation de la nouvelle fonction de calcul
         const priceDetails = Utils.calculateTotalPrice(appState);
         const finalTotalPriceNumeric = priceDetails.total;
-        
-        if (finalTotalPriceNumeric <= 0) {
-            throw new Error("Erreur de calcul du prix. Le total ne peut pas être zéro.");
-        }
+        if (finalTotalPriceNumeric <= 0) throw new Error("Erreur de calcul du prix.");
 
         const bookingNumber = Utils.generateBookingNumber();
         let paymentDeadline;
-        // ... (logique du délai de paiement inchangée) ...
         if (paymentMethod === 'agency') {
             if (!canPayAtAgency()) throw new Error("Paiement en agence non disponible (délai insuffisant).");
             paymentDeadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
@@ -3410,7 +3400,6 @@ window.confirmBooking = async function(buttonElement) {
             date: appState.currentSearch.date,
             passengers: appState.passengerInfo,
             seats: appState.selectedSeats,
-            // ✅ CORRECTION : Utilisation du prix total calculé
             totalPrice: `${Utils.formatPrice(finalTotalPriceNumeric)} FCFA`,
             totalPriceNumeric: finalTotalPriceNumeric,
             paymentMethod: paymentMethod.toUpperCase(),
@@ -3432,14 +3421,29 @@ window.confirmBooking = async function(buttonElement) {
             reservation.agency = getNearestAgency(appState.selectedBus.from);
         }
 
-        const savedReservation = await saveReservationToBackend(reservation);
+        // On envoie la réservation au backend
+        const savedReservationResponse = await saveReservationToBackend(reservation);
         
-        if (savedReservation && savedReservation.success) {
+        if (savedReservationResponse && savedReservationResponse.success) {
+            
+            // ===========================================
+            // ✅ CORRECTION CRUCIALE : On récupère le code agence
+            // ===========================================
+            if (savedReservationResponse.agencyPaymentCode) {
+                reservation.agencyPaymentCode = savedReservationResponse.agencyPaymentCode;
+                console.log(`Code agence ${savedReservationResponse.agencyPaymentCode} reçu du serveur et ajouté.`);
+            }
+            // ===========================================
+            
             appState.currentReservation = reservation;
-            displayPaymentInstructions(reservation);
+            addBookingToLocalHistory(reservation.bookingNumber); // Sauvegarde dans l'historique local
+            
+            displayPaymentInstructions(reservation); // Maintenant, 'reservation' contient le code
+            
             Utils.showToast('✅ Réservation enregistrée !', 'success');
+
         } else {
-            throw new Error(savedReservation?.error || "La sauvegarde a échoué.");
+            throw new Error(savedReservationResponse?.error || "La sauvegarde a échoué.");
         }
 
     } catch (error) {

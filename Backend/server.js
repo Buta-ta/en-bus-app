@@ -398,56 +398,52 @@ app.post(
       });
       if (!trip)
         return res.status(404).json({ error: "Voyage aller introuvable." });
+        
       const seatNumbersToOccupy = reservationData.seats.map((s) => parseInt(s));
       const alreadyTaken = trip.seats.filter(
         (s) =>
           seatNumbersToOccupy.includes(s.number) && s.status !== "available"
       );
       if (alreadyTaken.length > 0)
-        return res
-          .status(409)
-          .json({
-            error: `Conflit : Sièges aller ${alreadyTaken
-              .map((s) => s.number)
-              .join(", ")} indisponibles.`,
-          });
+        return res.status(409).json({
+            error: `Conflit : Sièges ${alreadyTaken.map((s) => s.number).join(", ")} indisponibles.`,
+        });
 
       await tripsCollection.updateOne(
         { _id: trip._id },
         { $set: { "seats.$[elem].status": "occupied" } },
         { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
       );
-
+      
+      // Votre logique de génération de code est correcte
       if (reservationData.paymentMethod === "AGENCY") {
-        reservationData.agencyPaymentCode = `AG-${Math.floor(
-          10000 + Math.random() * 90000
-        )}`;
-        console.log(
-          `📠 Code agence généré: ${reservationData.agencyPaymentCode}`
-        );
+        reservationData.agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
+        console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
       }
 
       const result = await reservationsCollection.insertOne(reservationData);
 
       if (reservationData.status === "En attente de paiement") {
-        console.log("-> Envoi de l'email de paiement en attente...");
         sendPendingPaymentEmail(reservationData);
       }
 
-      res
-        .status(201)
-        .json({
+      // ===================================
+      // ✅ CORRECTION ICI
+      // ===================================
+      res.status(201).json({
           success: true,
           message: "Réservation créée.",
           reservationId: result.insertedId,
-        });
+          // On renvoie le code au frontend pour qu'il puisse l'afficher
+          agencyPaymentCode: reservationData.agencyPaymentCode || null 
+      });
+
     } catch (error) {
       console.error("❌ Erreur réservation:", error);
       res.status(500).json({ error: "Erreur serveur." });
     }
   }
 );
-
 
 app.get("/api/reservations/details", async (req, res) => {
     try {
