@@ -2674,8 +2674,12 @@ window.toggleSeat = function(seatNumber) {
 // Dans app.js
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction displaySeats par celle-ci
-
 function displaySeats() {
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // --- 2. Récupération des données et des éléments DOM ---
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     const currentOccupied = appState.isSelectingReturn ? appState.occupiedReturnSeats : appState.occupiedSeats;
@@ -2683,53 +2687,46 @@ function displaySeats() {
     const busInfo = document.getElementById("bus-info");
     const seatGrid = document.getElementById("pro-seat-grid");
     const occupancyInfo = document.getElementById("trip-occupancy-info");
+
+    if (!busInfo || !seatGrid || !occupancyInfo) return;
     
-    const tripLabel = appState.isSelectingReturn ? "🔙 RETOUR" : "🚌 ALLER";
+    // --- 3. Traduction des textes dans l'en-tête du bus ---
+    const tripLabel = appState.isSelectingReturn ? translation.trip_badge_return : translation.trip_badge_outbound;
     
     busInfo.innerHTML = `
         <div class="bus-info-header">
             <div class="trip-badge ${appState.isSelectingReturn ? 'return' : 'outbound'}">${tripLabel}</div>
             <h3>${currentBus.company} - ${currentBus.from} → ${currentBus.to}</h3>
             <div class="price-info">
-                <span class="price-item"><strong>Adulte:</strong> ${Utils.formatPrice(currentBus.price)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_adult}:</strong> ${Utils.formatPrice(currentBus.price)} FCFA</span>
                 <span class="price-divider">|</span>
-                <span class="price-item"><strong>Enfant:</strong> ${Utils.formatPrice(CONFIG.CHILD_TICKET_PRICE)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_child}:</strong> ${Utils.formatPrice(CONFIG.CHILD_TICKET_PRICE)} FCFA</span>
             </div>
         </div>
     `;
     
-    // ✅ LOGIQUE D'AFFICHAGE DE L'OCCUPATION CORRIGÉE
-    (async () => {
-        try {
-            if (occupancyInfo) {
-                const totalSeats = currentBus.totalSeats;
-                // On utilise 'currentSeats' qui pointe vers la bonne variable (aller ou retour)
-                const availableSeats = currentBus.availableSeats - currentSeats.length;
+    // --- 4. Traduction des informations d'occupation du bus ---
+    const totalSeats = currentBus.totalSeats;
+    const availableSeats = currentBus.availableSeats - currentSeats.length;
 
-                if (totalSeats && availableSeats >= 0) {
-                    const occupiedSeats = totalSeats - availableSeats;
-                    let message = `👨‍👩‍👧‍👦 <strong>${occupiedSeats}</strong> voyageurs à bord`;
-                    let seatsLeftMessage = `💺 <strong>${availableSeats}</strong> sièges restants`;
+    if (totalSeats && availableSeats >= 0) {
+        const occupiedSeats = totalSeats - availableSeats;
+        let message = translation.seats_occupancy_info_travelers(occupiedSeats);
+        let seatsLeftMessage = translation.seats_occupancy_info_seats_left(availableSeats);
 
-                    if (availableSeats < 10) {
-                        seatsLeftMessage = `<span class="danger">🔥 <strong>${availableSeats}</strong> sièges restants !</span>`;
-                    }
-
-                    occupancyInfo.innerHTML = `<span>${message}</span> | <span>${seatsLeftMessage}</span>`;
-                    occupancyInfo.style.display = 'flex';
-                } else {
-                    occupancyInfo.style.display = 'none';
-                }
-            }
-        } catch (e) {
-            console.error("Erreur affichage occupation:", e);
-            if (occupancyInfo) occupancyInfo.style.display = 'none';
+        if (availableSeats < 10) {
+            seatsLeftMessage = translation.seats_occupancy_info_few_left(availableSeats);
         }
-    })();
 
+        occupancyInfo.innerHTML = `<span>${message}</span> | <span>${seatsLeftMessage}</span>`;
+        occupancyInfo.style.display = 'flex';
+    } else {
+        occupancyInfo.style.display = 'none';
+    }
 
-    // --- Le reste de la fonction pour générer la grille de sièges est inchangé ---
-    const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
+    // ==========================================================
+    // --- 5. Génération de la grille des sièges (PARTIE MANQUANTE RÉINTÉGRÉE) ---
+    // ==========================================================
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
     const backRowSeatsCount = 5;
@@ -2747,11 +2744,7 @@ function displaySeats() {
                     <span class="driver-label">Chauffeur</span>
                 </div>
                 <div class="front-door-section">
-                    <div class="bus-steps">
-                        <div class="step"></div>
-                        <div class="step"></div>
-                        <div class="step"></div>
-                    </div>
+                    <div class="bus-steps"><div class="step"></div><div class="step"></div><div class="step"></div></div>
                     <div class="door-icon">🚪</div>
                     <span class="door-label">Entrée</span>
                 </div>
@@ -2800,6 +2793,9 @@ function displaySeats() {
     seatHTML += `</div></div></div>`;
     
     seatGrid.innerHTML = seatHTML;
+    // ==========================================================
+
+    // --- 6. Appel final pour mettre à jour le résumé ---
     updateSeatSummary();
 }
 // ✅ Fonction auxiliaire pour générer un siège moderne
@@ -2862,22 +2858,34 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
         </div>
     `;
 }
-
 function updateSeatSummary() {
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // --- 2. Récupération des données et éléments (inchangé) ---
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
+
+    if (!seatsDisplay || !priceDisplay) return;
+
+    // --- 3. Logique d'affichage avec traduction ---
     if (currentSeats.length === 0) {
-        seatsDisplay.textContent = "Aucun";
+        // ✅ On utilise la clé de traduction pour "Aucun"
+        seatsDisplay.textContent = translation.seats_summary_none;
         priceDisplay.textContent = "0 FCFA";
     } else {
         seatsDisplay.textContent = currentSeats.join(", ");
+        
+        // La logique de calcul du prix reste la même
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
         let adultsSelected = 0;
         let childrenSelected = 0;
+        
         if (numSeats <= numAdults) {
             adultsSelected = numSeats;
             childrenSelected = 0;
@@ -2885,9 +2893,11 @@ function updateSeatSummary() {
             adultsSelected = numAdults;
             childrenSelected = numSeats - numAdults;
         }
+        
         const adultPrice = adultsSelected * currentBus.price;
         const childPrice = childrenSelected * CONFIG.CHILD_TICKET_PRICE;
         const totalPrice = adultPrice + childPrice;
+        
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
 }

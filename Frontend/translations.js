@@ -252,6 +252,24 @@ const translations = {
     amenity_ac: "AC",
 
     
+    // --- Page Sélection des Sièges ---
+
+    seats_title: "Sélection des sièges",
+    seats_back_button: "← Retour",
+    seats_price_info_adult: "Adulte",
+    seats_price_info_child: "Enfant",
+    trip_badge_outbound: "ALLER",
+    trip_badge_return: "RETOUR",
+    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> voyageurs à bord`,
+    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> sièges restants`,
+    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 <strong>${count}</strong> sièges restants !</span>`,
+    seats_legend_available: "Disponible",
+    seats_legend_selected: "Sélectionné",
+    seats_legend_occupied: "Occupé",
+    seats_summary_seats: "Sièges :",
+    seats_summary_price: "Prix :",
+    seats_summary_none: "Aucun",
+    continue_button: "Continuer",
 
 
     // --- Passengers & Baggage Page ---
@@ -297,5 +315,24 @@ const translations = {
     info_no_trips_found: "No trips available for this route on this date",
     success_trips_found: (count) => `${count} trip(s) found`,
     error_search_failed: "Error during search",
+
+    // --- Seat Selection Page ---
+    
+    seats_title: "Seat Selection",
+    seats_back_button: "← Back",
+    seats_price_info_adult: "Adult",
+    seats_price_info_child: "Child",
+    trip_badge_outbound: "OUTBOUND",
+    trip_badge_return: "RETURN",
+    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> travelers on board`,
+    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> seats left`,
+    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 Only <strong>${count}</strong> seats left!</span>`,
+    seats_legend_available: "Available",
+    seats_legend_selected: "Selected",
+    seats_legend_occupied: "Occupied",
+    seats_summary_seats: "Seats:",
+    seats_summary_price: "Price:",
+    seats_summary_none: "None",
+    continue_button: "Continue",
   }
 };
