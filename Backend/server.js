@@ -427,7 +427,7 @@ app.post(
         sendPendingPaymentEmail(reservationData);
       }
 
-      
+
       // ===================================
       // ✅ CORRECTION ICI
       // ===================================
@@ -438,6 +438,7 @@ app.post(
           // On renvoie le code au frontend pour qu'il puisse l'afficher
           agencyPaymentCode: reservationData.agencyPaymentCode || null 
       });
+      
 
     } catch (error) {
       console.error("❌ Erreur réservation:", error);
