@@ -61,6 +61,8 @@ const translations = {
     seats_available: "sièges dispo.",
     button_select: "Sélectionner",
     amenity_labels: { "wifi": "Wi-Fi", "wc": "Toilettes", "prise": "Prises", "clim": "Clim", "pause": "Pause", "direct": "Direct" },
+    filter_reset_button: "Réinitialiser",
+    details_connections: "Correspondance :",
 
     // --- Page Passagers & Bagages ---
     passengers_name_placeholder: "Nom complet",
@@ -169,6 +171,8 @@ const translations = {
     seats_available: "seats left",
     button_select: "Select",
     amenity_labels: { "wifi": "Wi-Fi", "wc": "Restroom", "prise": "Outlets", "clim": "AC", "pause": "Break", "direct": "Direct" },
+    filter_reset_button: "Reset",
+    details_connections: "Connection:",
 
     // --- Passengers & Baggage Page ---
     passengers_name_placeholder: "Full name",
