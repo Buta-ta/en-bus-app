@@ -597,13 +597,18 @@
             </div>
             <div class="w-full md:w-auto flex flex-col items-center gap-4">
               <div class="text-white text-center">
-                <span data-i18n="seats_summary_seats">Sièges :
-                  <strong id="selected-seats-display" class="text-blue-400"
-                    data-i18n="seats_summary_none">Aucun</strong>
-                </span>
-                <span data-i18n="seats_summary_price">Prix :
-                  <strong id="total-price-display" class="text-green-400">0 FCFA</strong>
-                </span>
+                <!-- Label pour "Sièges" -->
+    <span data-i18n="seats_summary_seats">Sièges :</span>
+    <!-- Valeur pour les numéros de sièges -->
+    <strong id="selected-seats-display" class="text-blue-400"></strong>
+
+    <span class="mx-2">|</span>
+
+    <!-- Label pour "Prix" -->
+    <span data-i18n="seats_summary_price">Prix :</span>
+    <!-- Valeur pour le montant -->
+    <strong id="total-price-display" class="text-green-400"></strong>
+
 
               </div>
               <button class="btn btn-primary btn-large w-full" onclick="proceedToPassengerInfo()"
