@@ -445,7 +445,7 @@ app.post(
       res.status(500).json({ error: "Erreur serveur." });
     }
   }
-  
+
 
 );
 
@@ -488,6 +488,7 @@ app.get("/api/reservations/details", async (req, res) => {
         res.status(500).json({ success: false, error: "Erreur serveur." });
     }
 });
+
 
 
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
