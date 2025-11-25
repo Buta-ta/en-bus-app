@@ -63,6 +63,36 @@ const translations = {
     amenity_labels: { "wifi": "Wi-Fi", "wc": "Toilettes", "prise": "Prises", "clim": "Clim", "pause": "Pause", "direct": "Direct" },
     filter_reset_button: "Réinitialiser",
     details_connections: "Correspondance :",
+    // --- Page Résultats : Filtres & Tri ---
+    filter_sort_by: "Trier par :",
+    sort_by_departure: "Heure de départ",
+    sort_by_price: "Prix croissant",
+    sort_by_duration: "Durée du trajet",
+    sort_by_company: "Compagnie (A-Z)",
+
+    filter_company: "Compagnie :",
+    filter_all: "Toutes",
+
+    filter_trip_type: "Type :",
+    filter_type_direct: "Direct uniquement",
+    filter_type_stops: "Avec arrêts",
+    filter_type_connections: "Avec correspondances",
+
+    filter_departure_time: "Départ :",
+    filter_time_all: "Toute la journée",
+    filter_time_morning: "Matin (5h-12h)",
+    filter_time_afternoon: "Après-midi (12h-17h)",
+    filter_time_evening: "Soirée (17h-21h)",
+    filter_time_night: "Nuit (21h-5h)",
+
+    filter_price: "Prix :",
+    filter_price_min: "Min",
+    filter_price_max: "Max",
+
+    filter_amenities: "Équipements :",
+    filter_reset_button: "Réinitialiser",
+      
+
 
     // --- Page Passagers & Bagages ---
     passengers_name_placeholder: "Nom complet",
@@ -173,6 +203,35 @@ const translations = {
     amenity_labels: { "wifi": "Wi-Fi", "wc": "Restroom", "prise": "Outlets", "clim": "AC", "pause": "Break", "direct": "Direct" },
     filter_reset_button: "Reset",
     details_connections: "Connection:",
+
+    filter_sort_by: "Sort by:",
+    sort_by_departure: "Departure time",
+    sort_by_price: "Price (Low to High)",
+    sort_by_duration: "Trip duration",
+    sort_by_company: "Company (A-Z)",
+
+    filter_company: "Company:",
+    filter_all: "All",
+
+    filter_trip_type: "Type:",
+    filter_type_direct: "Direct only",
+    filter_type_stops: "With stops",
+    filter_type_connections: "With connections",
+
+    filter_departure_time: "Departure:",
+    filter_time_all: "All day",
+    filter_time_morning: "Morning (5am-12pm)",
+    filter_time_afternoon: "Afternoon (12pm-5pm)",
+    filter_time_evening: "Evening (5pm-9pm)",
+    filter_time_night: "Night (9pm-5am)",
+
+    filter_price: "Price:",
+    filter_price_min: "Min",
+    filter_price_max: "Max",
+
+    filter_amenities: "Amenities:",
+    filter_reset_button: "Reset",
+
 
     // --- Passengers & Baggage Page ---
     passengers_name_placeholder: "Full name",
