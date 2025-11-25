@@ -143,6 +143,9 @@ const translations = {
     baggage_options_for: (num, seat) => `Options pour Passager ${num} (Siège ${seat})`,
     baggage_standard_label: (price) => `Bagage standard suppl. (+${price} FCFA/pce)`,
     baggage_oversized_label: (price) => `Bagage hors format (+${price} FCFA/pce)`,
+    passengers_back_button: "← Retour", // Une seule clé pour tous les boutons "Retour"
+    passengers_continue_button: "Continuer vers Paiement",
+
 
     // --- Page Mes Réservations ---
     my_bookings_title: "Mes Réservations",
@@ -350,8 +353,11 @@ const translations = {
     baggage_options_for: (num, seat) => `Options for Passenger ${num} (Seat ${seat})`,
     baggage_standard_label: (price) => `Extra standard bag (+${price} FCFA/pc)`,
     baggage_oversized_label: (price) => `Oversized bag (+${price} FCFA/pc)`,
+    passengers_back_button: "← Back",
+    passengers_continue_button: "Continue to Payment",
+    
 
-
+    
     // --- Payment Page ---
     payment_page_title: "Payment",
     payment_page_back_button: "← Back",
