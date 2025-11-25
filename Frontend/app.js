@@ -1609,6 +1609,12 @@ window.checkPaymentStatus = async function(bookingNumber) {
 
 async function generateTicketPDF(reservation, isReturn = false) {
     try {
+        // ===================================
+        // ✅ CORRECTION : ON DÉCLARE 'lang' ET 'translation'
+        // ===================================
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        // ===================================
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150);
         
