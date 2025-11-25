@@ -2118,28 +2118,37 @@ function setupPaymentMethodToggle() {
 function setupAmenitiesFilters() {
     const container = document.getElementById('amenities-filter-container');
     if (!container) return;
-    
+
+    // --- Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const amenities = [
-        { value: 'wifi', label: 'Wi-Fi' },
-        { value: 'wc', label: 'WC' },
-        { value: 'prise', label: 'Prises' },
-        { value: 'clim', label: 'Clim' }
+        { value: 'wifi', labelKey: 'amenity_wifi' },
+        { value: 'wc', labelKey: 'amenity_wc' },
+        { value: 'prise', labelKey: 'amenity_plugs' },
+        { value: 'clim', labelKey: 'amenity_ac' }
     ];
     
-    container.innerHTML = amenities.map(amenity => `
-        <label class="amenity-checkbox-label">
-            <input 
-                type="checkbox" 
-                class="amenity-checkbox" 
-                value="${amenity.value}" 
-                onchange="updateFilter('amenity', '${amenity.value}')"
-            >
-            <span>
-                ${Utils.getAmenityIcon(amenity.value)}
-                ${amenity.label}
-            </span>
-        </label>
-    `).join('');
+    container.innerHTML = amenities.map(amenity => {
+        // On va chercher la traduction correspondante
+        const labelText = translation[amenity.labelKey] || amenity.value;
+
+        return `
+            <label class="amenity-checkbox-label">
+                <input 
+                    type="checkbox" 
+                    class="amenity-checkbox" 
+                    value="${amenity.value}" 
+                    onchange="updateFilter('amenity', '${amenity.value}')"
+                >
+                <span>
+                    ${Utils.getAmenityIcon(amenity.value)}
+                    ${labelText}
+                </span>
+            </label>
+        `;
+    }).join('');
 }
 
 window.searchBuses = async function() {
@@ -2341,6 +2350,7 @@ window.updateFilter = function(filterType, value) {
     }
 };
 window.resetFilters = function() {
+    // 1. Réinitialiser l'objet des filtres actifs
     activeFilters = {
         company: 'all',
         tripType: 'all',
@@ -2348,35 +2358,44 @@ window.resetFilters = function() {
         departureTime: 'all',
         amenities: [],
         sortBy: 'departure',
-                // ✅ AJOUTER CETTE LIGNE
         departureLocation: 'all'
-    
-    
-
     };
 
-     // ✅ AJOUTER CETTE LIGNE
+    // 2. Réinitialiser les champs de formulaire dans l'interface utilisateur
     const locationSelect = document.getElementById('filter-departure-location');
     if (locationSelect) locationSelect.value = 'all';
-
     
-    // Réinitialiser l'UI
     document.getElementById('filter-company').value = 'all';
     document.getElementById('filter-trip-type').value = 'all';
     document.getElementById('filter-time').value = 'all';
     document.getElementById('sort-by').value = 'departure';
-    document.getElementById('price-min').value = 0;
-    document.getElementById('price-max').value = 100000;
-    document.getElementById('price-min-display').textContent = '0';
-    document.getElementById('price-max-display').textContent = '100 000';
     
-    // Décocher toutes les cases équipements
+    const priceMinInput = document.getElementById('price-min');
+    if (priceMinInput) priceMinInput.value = 0;
+    
+    const priceMaxInput = document.getElementById('price-max');
+    if (priceMaxInput) priceMaxInput.value = 100000;
+    
+    const priceMinDisplay = document.getElementById('price-min-display');
+    if (priceMinDisplay) priceMinDisplay.textContent = '0';
+    
+    const priceMaxDisplay = document.getElementById('price-max-display');
+    if (priceMaxDisplay) priceMaxDisplay.textContent = '100 000';
+    
     document.querySelectorAll('.amenity-checkbox').forEach(cb => {
         cb.checked = false;
     });
     
+    // 3. Rafraîchir l'affichage des résultats
     displayResults(appState.currentResults, appState.isSelectingReturn);
-    Utils.showToast('Filtres réinitialisés', 'success');
+    
+    // ===================================
+    // ✅ TRADUCTION DU MESSAGE DE SUCCÈS
+    // ===================================
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    Utils.showToast(translation.success_filters_reset, 'success');
+    // ===================================
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
