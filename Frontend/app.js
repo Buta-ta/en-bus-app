@@ -2659,11 +2659,17 @@ window.toggleSeat = function(seatNumber) {
     const index = currentSeats.indexOf(seatNumber);
     const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
+    // Logique pour ajouter/retirer le siège (votre code est correct)
     if (index > -1) {
         currentSeats.splice(index, 1);
     } else {
         if (currentSeats.length >= maxSeats) {
-            Utils.showToast(`Vous pouvez sélectionner au maximum ${maxSeats} siège(s)`, 'error');
+            // ===================================
+            // ✅ CORRECTION 1 : TRADUCTION DU MESSAGE
+            // ===================================
+            const lang = getLanguage();
+            const translation = translations[lang] || translations.fr;
+            Utils.showToast(translation.error_max_seats(maxSeats), 'error');
             return;
         }
         currentSeats.push(seatNumber);
@@ -2677,9 +2683,21 @@ window.toggleSeat = function(seatNumber) {
         appState.selectedSeats = currentSeats;
     }
     
-    displaySeats();
-}
+    // ===================================
+    // ✅ CORRECTION 2 : OPTIMISATION DE L'AFFICHAGE
+    // ===================================
+    // Au lieu de redessiner toute la grille avec displaySeats(),
+    // on met à jour uniquement le siège cliqué et le résumé.
 
+    // 1. Mettre à jour le style du siège
+    const seatElement = document.querySelector(`.modern-seat[data-seat="${seatNumber}"]`);
+    if (seatElement) {
+        seatElement.classList.toggle('selected');
+    }
+
+    // 2. Mettre à jour le résumé (prix et numéros)
+    updateSeatSummary();
+};
 // ============================================
 // ✅ AFFICHAGE DES SIÈGES - DESIGN IMMERSIF FLIXBUS
 // ============================================
