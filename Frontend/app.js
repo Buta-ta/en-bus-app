@@ -1795,7 +1795,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
                 }
             }
 
-            
+
         } catch (downloadError) {
             console.error("Erreur de téléchargement du billet:", downloadError);
             Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
@@ -3544,6 +3544,12 @@ async function displayConfirmation(reservation) {
                 ${tripTypeLabel}
             </h2>
             <div class="journey-card">
+
+                    <div class="journey-card" style="position: relative;">
+                <!-- ✅ DATE DÉPLACÉE ICI -->
+                <div class="journey-date-top" data-i18n="details_label_date">
+                    ${Utils.formatDate(tripData.date, lang)}
+                </div>
                 <div class="journey-route">
                     <div class="route-point route-origin">
                         <div class="point-icon">📍</div>

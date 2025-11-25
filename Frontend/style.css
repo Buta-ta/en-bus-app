@@ -4304,6 +4304,44 @@ body.pwa-installed textarea {
 
 
 
+
+/* Dans style.css */
+
+.journey-route {
+    display: flex;
+    justify-content: space-between;
+    
+    /* ✅ CORRECTION : On aligne verticalement au centre */
+    align-items: center; 
+    
+    position: relative; /* Nécessaire pour positionner la date */
+    padding-top: 30px; /* Espace pour la date au-dessus */
+}
+
+/* On retire la marge du haut de la flèche, car on gère l'alignement central */
+.route-arrow {
+    font-size: 24px;
+    color: var(--color-accent-glow);
+    padding: 0 20px;
+    margin-top: 0; /* On retire l'ancienne marge */
+}
+
+
+.journey-date-top {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-surface);
+    padding: 4px 12px;
+    border-radius: 0 0 var(--radius-base) var(--radius-base);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
 /* Correction orientation flèche mobile */
 @media (max-width: 768px) {
     
