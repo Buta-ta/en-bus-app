@@ -438,13 +438,14 @@ app.post(
           // On renvoie le code au frontend pour qu'il puisse l'afficher
           agencyPaymentCode: reservationData.agencyPaymentCode || null 
       });
-      
+
 
     } catch (error) {
       console.error("❌ Erreur réservation:", error);
       res.status(500).json({ error: "Erreur serveur." });
     }
   }
+  
 );
 
 app.get("/api/reservations/details", async (req, res) => {
