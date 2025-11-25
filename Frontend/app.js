@@ -954,54 +954,60 @@ let agencyCountdownInterval = null;
  * Démarre le décompteur dynamique pour l'option de paiement à l'agence.
  */
 function startAgencyCountdown() {
-    // On nettoie un éventuel ancien décompteur pour éviter les bugs
     if (agencyCountdownInterval) {
         clearInterval(agencyCountdownInterval);
     }
 
-    // On cible les deux éléments HTML à mettre à jour
+    // --- 1. Récupération des éléments et des traductions ---
     const subtitleElement = document.getElementById('agency-payment-subtitle');
     const deadlineInputElement = document.getElementById('agency-deadline');
+    const rule1Element = document.getElementById('agency-rule1-placeholder'); // La règle d'annulation
 
-    // Si les éléments n'existent pas ou s'il n'y a pas de délai, on ne fait rien
-    if (!subtitleElement || !deadlineInputElement || !appState.currentReservation?.paymentDeadline) {
+    if (!subtitleElement || !deadlineInputElement || !rule1Element) {
         return;
     }
-
-    // ✅ CORRECTION MAJEURE : On calcule la date limite ICI, sans dépendre de appState
+    
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // --- 2. Calcul du délai (votre logique est conservée) ---
     const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
     console.log(`⏱️ Décompteur AGENCE démarré. Cible : ${deadline.toISOString()}`);
     
+    // --- 3. Traduire la règle d'annulation immédiatement ---
+    if (typeof translation.payment_agency_rule1 === 'function') {
+        rule1Element.innerHTML = translation.payment_agency_rule1(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
+    }
 
-    // On lance la boucle qui se met à jour toutes les secondes
+    // --- 4. Boucle du décompteur avec traduction ---
     agencyCountdownInterval = setInterval(() => {
         const now = new Date();
         const timeLeft = deadline - now;
 
-        // Si le temps est écoulé
         if (timeLeft <= 0) {
             clearInterval(agencyCountdownInterval);
-            const expiredText = "Délai expiré";
+            const expiredText = translation.payment_agency_deadline_expired || "Délai expiré";
             subtitleElement.textContent = expiredText;
             deadlineInputElement.value = expiredText;
             return;
         }
 
-        // Calcul des heures, minutes et secondes
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         
-        // Formatage des textes pour l'affichage
-        const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
-        const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-
-        // Mise à jour de l'interface
-        subtitleElement.textContent = countdownText;
+        // On utilise la fonction de traduction pour le décompte
+        if (typeof translation.payment_agency_desc_countdown === 'function') {
+            subtitleElement.textContent = translation.payment_agency_desc_countdown(hours, minutes);
+        }
+        
+        // On formate la date de fin en fonction de la langue
+        const fullDeadlineText = deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`, {
+            weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        });
         deadlineInputElement.value = fullDeadlineText;
 
     }, 1000);
 }
-
 /**
  * Arrête le décompteur lorsque l'on quitte la page de paiement.
  */
@@ -2075,7 +2081,6 @@ function setupPassengerSelector() {
     updateDisplay();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
-
 function setupPaymentMethodToggle() {
     const radios = document.querySelectorAll('input[name="payment"]');
     const mtnDetails = document.getElementById("mtn-details");
@@ -2084,29 +2089,41 @@ function setupPaymentMethodToggle() {
     
     if (!radios.length) return;
     
+    // --- 1. Traduire le texte initial pour l'option agence ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    const agencySubtitle = document.getElementById('agency-payment-subtitle');
+    if (agencySubtitle && typeof translation.payment_agency_desc === 'function') {
+        agencySubtitle.textContent = translation.payment_agency_desc(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
+    }
+    
+    // --- 2. Gérer les changements de sélection ---
     radios.forEach(radio => {
         radio.addEventListener("change", () => {
-            // --- Votre code existant (INCHANGÉ) ---
+            // Cacher tous les détails
             if (mtnDetails) mtnDetails.style.display = "none";
             if (airtelDetails) airtelDetails.style.display = "none";
             if (agencyDetails) agencyDetails.style.display = "none";
             
-            if (radio.value === "mtn" && radio.checked && mtnDetails) {
-                mtnDetails.style.display = "flex";
-            } else if (radio.value === "airtel" && radio.checked && airtelDetails) {
-                airtelDetails.style.display = "flex";
-            } else if (radio.value === "agency" && radio.checked && agencyDetails) {
-                agencyDetails.style.display = "flex";
+            // Afficher le bon détail
+            if (radio.checked) {
+                if (radio.value === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
+                else if (radio.value === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
+                else if (radio.value === "agency" && agencyDetails) agencyDetails.style.display = "flex";
             }
 
-            // --- ✅ AJOUT DE LA LOGIQUE CIBLÉE ---
+            // ===================================
+            // ✅ LOGIQUE DU DÉCOMPTEUR CORRIGÉE
+            // ===================================
+            // Si on sélectionne "Agence", on démarre le décompteur.
             if (radio.value === 'agency' && radio.checked) {
-                // Si on sélectionne "Agence", on démarre SON décompteur.
-                startAgencySpecificCountdown();
-            } else {
-                // Si on sélectionne n'importe quelle autre option, on arrête le décompteur de l'agence.
-                stopAgencySpecificCountdown();
+                startAgencyCountdown();
+            } 
+            // Si on sélectionne une autre option, on arrête le décompteur.
+            else {
+                stopAgencyCountdown();
             }
+            // ===================================
         });
     });
 }

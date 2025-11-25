@@ -198,6 +198,8 @@ const translations = {
     summary_tickets_price: "Prix des billets",
     summary_baggage_fees: "Frais de bagages",
     summary_total_price: "PRIX TOTAL",
+    payment_agency_desc_countdown: (h, m) => `⏰ Payez dans les ${h}h ${String(m).padStart(2, '0')}m`,
+
 
 
     // --- Messages d'erreur & Info ---
@@ -385,6 +387,9 @@ const translations = {
     summary_tickets_price: "Tickets Price",
     summary_baggage_fees: "Baggage Fees",
     summary_total_price: "TOTAL PRICE",
+    payment_agency_desc_countdown: (h, m) => `⏰ Pay within ${h}h ${String(m).padStart(2, '0')}m`,
+
+
 
     // --- My Bookings Page ---
     my_bookings_title: "My Bookings",
