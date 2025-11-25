@@ -190,111 +190,140 @@ async function sendEmail(to, subject, htmlContent) {
 }
 
 function sendPendingPaymentEmail(reservation) {
-  const client = reservation.passengers?.[0];
-  if (!client?.email) return;
+    const client = reservation.passengers?.[0];
+    if (!client?.email) {
+        console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
+        return;
+    }
 
-  const subject = `⏳ Action requise pour votre réservation En-Bus #${reservation.bookingNumber}`;
-  const deadline = new Date(reservation.paymentDeadline).toLocaleString(
-    "fr-FR",
-    { dateStyle: "full", timeStyle: "short" }
-  );
+    // On suppose 'fr' par défaut. Idéalement, cette info viendrait de la réservation.
+    const lang = reservation.lang || 'fr'; 
+    const translation = translations[lang] || translations.fr;
 
-  let paymentInstructions;
-  if (reservation.paymentMethod === "AGENCY") {
-    paymentInstructions = `
-            <h3>Finalisez en agence</h3>
-            <p>Pour confirmer votre voyage, veuillez vous rendre dans l'une de nos agences et présenter le code de paiement ci-dessous :</p>
+    const subject = translation.email_pending_subject(reservation.bookingNumber);
+    const headerTitle = translation.email_pending_title;
+    const deadline = new Date(reservation.paymentDeadline).toLocaleString(`${lang}-${lang.toUpperCase()}`, { dateStyle: 'full', timeStyle: 'short' });
+    
+    let paymentInstructions = '';
+    if (reservation.paymentMethod === 'AGENCY') {
+        paymentInstructions = `
+            <h3>${translation.email_pending_agency_cta}</h3>
             <div class="code-box">
-                <h4 class="code-box-title">Votre Code de Paiement</h4>
+                <h4 class="code-box-title">${translation.email_pending_agency_code_label}</h4>
                 <p class="code-box-code">${reservation.agencyPaymentCode}</p>
             </div>
         `;
-  } else {
-    paymentInstructions = `
-            <h3>Finalisez votre paiement Mobile Money</h3>
-            <div class="info-box">
-                <strong>Montant à payer :</strong>
-                <span>${reservation.totalPrice}</span>
-            </div>
-            <div class="info-box">
-                <strong>Référence de paiement (obligatoire) :</strong>
-                <span>${reservation.bookingNumber}</span>
-            </div>
-            <p>Veuillez utiliser cette référence lors de votre transfert pour que nous puissions identifier votre paiement.</p>
+    } else {
+        paymentInstructions = `
+            <h3>${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</h3>
         `;
-  }
+    }
 
-  const htmlContent = `
-        <h2>Bonjour ${client.name},</h2>
-        <p>Votre réservation pour le trajet <strong>${reservation.route.from} → ${reservation.route.to}</strong> est presque prête !</p>
+    const htmlContent = `
+        <h2>${translation.email_greeting(client.name)}</h2>
+        <p>${translation.email_pending_intro(reservation.route.from, reservation.route.to)}</p>
         ${paymentInstructions}
-        <p style="color: #c62828; font-weight: bold;">Attention, cette réservation expirera automatiquement si le paiement n'est pas reçu avant le ${deadline}.</p>
+        <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
     `;
 
-  sendEmail(client.email, subject, htmlContent);
+    // On appelle la fonction principale avec le template
+    sendEmail(client.email, subject, htmlContent, headerTitle);
 }
 function sendPaymentConfirmedEmail(reservation) {
-  const client = reservation.passengers?.[0];
-  if (!client?.email) return;
+    const client = reservation.passengers?.[0];
+    if (!client?.email) {
+        console.log(`(Email de confirmation non envoyé à ${client?.name}, adresse manquante)`);
+        return;
+    }
 
-  const subject = `✅ Confirmé ! Votre billet En-Bus #${reservation.bookingNumber}`;
-  const htmlContent = `
-        <h2>Bonjour ${client.name},</h2>
-        <p>Excellente nouvelle ! Votre paiement a été confirmé. Votre voyage est officiellement réservé.</p>
+    const lang = reservation.lang || 'fr';
+    const translation = translations[lang] || translations.fr;
+
+    const subject = translation.email_confirmed_subject(reservation.bookingNumber);
+    const headerTitle = translation.email_confirmed_title;
+    
+    // On formate la date dans la bonne langue
+    const departureDate = new Date(reservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    const htmlContent = `
+        <h2>${translation.email_greeting(client.name)}</h2>
+        <p>${translation.email_confirmed_intro}</p>
         <div class="info-box">
-            <strong>Trajet :</strong>
+            <strong>${translation.email_confirmed_details_trip}</strong>
             <span>${reservation.route.from} → ${reservation.route.to}</span>
         </div>
         <div class="info-box">
-            <strong>Date de départ :</strong>
-            <span>${new Date(reservation.date).toLocaleDateString("fr-FR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })} à ${reservation.route.departure}</span>
+            <strong>${translation.email_confirmed_details_date}</strong>
+            <span>${departureDate} à ${reservation.route.departure}</span>
         </div>
-        <p>Vous pouvez accéder à votre billet électronique, le télécharger et suivre votre bus à tout moment depuis la section "Mes Réservations" de notre application.</p>
-        <a href="#" class="button">Accéder à mes réservations</a>
-        <p>Nous vous souhaitons un excellent voyage !</p>
+        <p>${translation.email_confirmed_cta}</p>
+        <div style="text-align: center;">
+            <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
+        </div>
+        <p>${translation.email_confirmed_outro}</p>
     `;
 
-  sendEmail(client.email, subject, htmlContent);
+    sendEmail(client.email, subject, htmlContent, headerTitle);
 }
 function sendReportConfirmedEmail(oldReservation, newReservation) {
-  const client = newReservation.passengers?.[0];
-  if (!client?.email) return;
+    const client = newReservation.passengers?.[0];
+    if (!client?.email) {
+        console.log(`(Email de report non envoyé, adresse manquante)`);
+        return;
+    }
 
-  const subject = `🔄 Voyage reporté - Votre nouveau billet #${newReservation.bookingNumber}`;
-  const htmlContent = `
-        <h2>Bonjour ${client.name},</h2>
-        <p>Votre demande de report a été acceptée. Voici les détails de votre nouveau voyage :</p>
-        <div class="info-box">
-            <strong>Nouveau Trajet :</strong>
-            <span>${newReservation.route.from} → ${
-    newReservation.route.to
-  }</span>
+    const lang = newReservation.lang || 'fr';
+    const translation = translations[lang] || translations.fr;
+
+    const subject = translation.email_report_subject(newReservation.bookingNumber);
+    const headerTitle = translation.email_report_title;
+    
+    const oldDate = new Date(oldReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+    const newDate = new Date(newReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    });
+
+    const htmlContent = `
+        <h2>${translation.email_greeting(client.name)}</h2>
+        <p>${translation.email_report_intro}</p>
+        
+        <div class="info-box" style="background-color: #ffebee; border-left-color: #e57373;">
+            <strong style="color: #c62828;">${translation.email_report_old_trip_label}</strong>
+            ${translation.email_report_old_trip_date(oldDate)} - Billet ${oldReservation.bookingNumber} <em>${translation.email_report_old_trip_invalid}</em>
         </div>
-        <div class="info-box">
-            <strong>Nouvelle Date de départ :</strong>
-            <span>${new Date(newReservation.date).toLocaleDateString("fr-FR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })} à ${newReservation.route.departure}</span>
+
+        <div class="booking-number">
+            <div class="booking-label">${translation.email_report_new_trip_label}</div>
+            <div class="booking-value">${newReservation.bookingNumber}</div>
         </div>
-        <p>Votre ancien billet (${
-          oldReservation.bookingNumber
-        }) n'est plus valide. Votre nouveau numéro de réservation est <strong>${
-    newReservation.bookingNumber
-  }</strong>.</p>
-        <a href="#" class="button">Voir mon nouveau billet</a>
+        
+        <div class="details">
+            <div class="detail-row">
+                <span class="detail-label">${translation.email_confirmed_details_trip}</span>
+                <span class="detail-value">${newReservation.route.from} → ${newReservation.route.to}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">${translation.email_confirmed_details_date}</span>
+                <span class="detail-value">${newDate} à ${newReservation.route.departure}</span>
+            </div>
+        </div>
+        
+        <p>${translation.email_report_outro}</p>
+        
+        <div style="text-align: center;">
+            <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
+        </div>
     `;
 
-  sendEmail(client.email, subject, htmlContent);
+    sendEmail(client.email, subject, htmlContent, headerTitle);
 }
-
 // --- Middleware & Utilitaires ---
 function authenticateToken(req, res, next) {
   const token = req.headers["authorization"]?.split(" ")[1];
