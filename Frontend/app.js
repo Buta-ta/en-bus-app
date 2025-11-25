@@ -2645,7 +2645,7 @@ window.toggleSeat = function(seatNumber) {
     const index = currentSeats.indexOf(seatNumber);
     const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
-    // Logique pour ajouter ou retirer le siège de la liste (votre code est correct)
+    // Logique pour ajouter/retirer le siège de la liste
     if (index > -1) {
         currentSeats.splice(index, 1);
     } else {
@@ -2660,34 +2660,30 @@ window.toggleSeat = function(seatNumber) {
     
     currentSeats.sort((a, b) => a - b);
     
-    // Affecter la liste mise à jour à l'état de l'application (votre code est correct)
+    // Mettre à jour l'état global
     if (appState.isSelectingReturn) {
         appState.selectedReturnSeats = currentSeats;
     } else {
         appState.selectedSeats = currentSeats;
     }
     
-    // ===================================
-    // ✅ CORRECTION ET OPTIMISATION
-    // ===================================
+    // --- MISE À JOUR VISUELLE ---
     
-    // 1. Mettre à jour visuellement UNIQUEMENT le siège cliqué
-    // C'est beaucoup plus rapide que de redessiner toute la grille avec displaySeats()
+    // 1. Mettre à jour le style du siège cliqué (plus performant)
     const seatElement = document.querySelector(`.modern-seat[data-seat="${seatNumber}"]`);
     if (seatElement) {
         seatElement.classList.toggle('selected');
-        // Ajoute une petite animation pour un effet plus agréable
         seatElement.classList.remove('seat-pulse');
-        void seatElement.offsetWidth; // Force le navigateur à recalculer le style
+        void seatElement.offsetWidth; // Force le recalcul du style par le navigateur
         seatElement.classList.add('seat-pulse');
     }
 
-    // 2. Appeler la fonction qui met à jour le résumé du prix et des numéros
-    // C'est l'étape qui manquait et qui résout votre problème.
-    updateSeatSummary();
     // ===================================
+    // ✅ 2. APPEL CRUCIAL À LA MISE À JOUR DU RÉSUMÉ
+    // ===================================
+    // C'est cette ligne qui met à jour le texte "Sièges: 1, 2" et "Prix: X FCFA"
+    updateSeatSummary();
 }
-
 // ============================================
 // ✅ AFFICHAGE DES SIÈGES - DESIGN IMMERSIF FLIXBUS
 // ============================================
