@@ -1625,7 +1625,9 @@ async function generateTicketPDF(reservation, isReturn = false) {
         
             const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
 
-        const ticketType = isReturn ? 'BILLET RETOUR' : 'BILLET ALLER';
+        const ticketType = isReturn 
+    ? translation.confirmation_ticket_return 
+    : translation.confirmation_ticket_outbound;
 
         // --- 2. CONSTRUCTION DES SECTIONS DYNAMIQUES ---
         let agencyInfoHTML = '';

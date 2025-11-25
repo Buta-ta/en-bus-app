@@ -310,6 +310,9 @@ const translations = {
     stub_label_booking: "Réservation",
     stub_label_passenger: "Passager",
     stub_label_total_paid: "Total Payé",
+    details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
+    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+    details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
 
 
   },
@@ -619,7 +622,10 @@ const translations = {
     stub_label_booking: "Booking",
     stub_label_passenger: "Passenger",
     stub_label_total_paid: "Total Paid",
+    details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
+    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+    details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
 
-    
+        
   }
 }
