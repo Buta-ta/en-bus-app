@@ -2640,17 +2640,19 @@ async function loadRealSeats() {
         Utils.showToast('Erreur de chargement des sièges', 'error');
     }
 }
-
 window.toggleSeat = function(seatNumber) {
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     const index = currentSeats.indexOf(seatNumber);
     const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
+    // Logique pour ajouter ou retirer le siège de la liste (votre code est correct)
     if (index > -1) {
         currentSeats.splice(index, 1);
     } else {
         if (currentSeats.length >= maxSeats) {
-            Utils.showToast(`Vous pouvez sélectionner au maximum ${maxSeats} siège(s)`, 'error');
+            const lang = getLanguage();
+            const translation = translations[lang] || translations.fr;
+            Utils.showToast(translation.error_max_seats(maxSeats), 'error');
             return;
         }
         currentSeats.push(seatNumber);
@@ -2658,13 +2660,32 @@ window.toggleSeat = function(seatNumber) {
     
     currentSeats.sort((a, b) => a - b);
     
+    // Affecter la liste mise à jour à l'état de l'application (votre code est correct)
     if (appState.isSelectingReturn) {
         appState.selectedReturnSeats = currentSeats;
     } else {
         appState.selectedSeats = currentSeats;
     }
     
-    displaySeats();
+    // ===================================
+    // ✅ CORRECTION ET OPTIMISATION
+    // ===================================
+    
+    // 1. Mettre à jour visuellement UNIQUEMENT le siège cliqué
+    // C'est beaucoup plus rapide que de redessiner toute la grille avec displaySeats()
+    const seatElement = document.querySelector(`.modern-seat[data-seat="${seatNumber}"]`);
+    if (seatElement) {
+        seatElement.classList.toggle('selected');
+        // Ajoute une petite animation pour un effet plus agréable
+        seatElement.classList.remove('seat-pulse');
+        void seatElement.offsetWidth; // Force le navigateur à recalculer le style
+        seatElement.classList.add('seat-pulse');
+    }
+
+    // 2. Appeler la fonction qui met à jour le résumé du prix et des numéros
+    // C'est l'étape qui manquait et qui résout votre problème.
+    updateSeatSummary();
+    // ===================================
 }
 
 // ============================================
