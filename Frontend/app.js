@@ -418,6 +418,11 @@ let activeFilters = {
     departureLocation: 'all'
 };
 
+
+// ✅ AJOUTEZ CETTE LIGNE
+let refreshPassengerSelectorUI = () => {}; // Variable globale initialisée avec une fonction vide
+
+
 // ============================================
 // UTILITAIRES
 // ============================================
@@ -702,43 +707,47 @@ function getLanguage() {
     return localStorage.getItem('enbus_language') || navigator.language.split('-')[0] || 'fr';
 }
 
-// Dans app.js
 function applyLanguage(lang = getLanguage()) {
-    // Sécurité : ne pas exécuter si les traductions ne sont pas chargées
     if (typeof translations === 'undefined') {
-        console.error("ERREUR: La variable 'translations' est introuvable.");
+        console.error("ERREUR : Le fichier translations.js est introuvable.");
         return;
     }
 
-    // Mettre à jour la langue sauvegardée et sur la page
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
-    // Traduire les éléments statiques
+    // Traduit les éléments statiques qui ont un data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translation[key]) {
-            el.innerHTML = translation[key];
+            if (el.placeholder !== undefined) {
+                // Les placeholders sont gérés par les fonctions spécifiques (comme setupDatePickers)
+            } else {
+                el.innerHTML = translation[key];
+            }
         }
     });
-
-    // Mettre à jour les textes générés par JavaScript
-    updateDynamicTexts(lang);
     
-    // ================================================
-    // ✅ CORRECTION : RAFRAÎCHIR LES ÉLÉMENTS DYNAMIQUES
-    // ================================================
-    // On doit regénérer les destinations populaires pour qu'elles prennent la nouvelle langue.
+    // ====================================================
+    // ✅ LA MODIFICATION EST ICI
+    // ====================================================
+    // Met à jour tous les composants dont l'affichage dépend de la langue
+
+    // 1. Met à jour le sélecteur de passagers
+    if (typeof refreshPassengerSelectorUI === 'function') {
+        refreshPassengerSelectorUI();
+    }
+    
+    // 2. Met à jour les destinations populaires
     if (typeof populatePopularDestinations === 'function') {
         populatePopularDestinations();
     }
     
-    // On doit aussi mettre à jour le calendrier Flatpickr.
+    // 3. Met à jour le calendrier
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
-    // ================================================
 }
 // Mettez cette fonction avec vos autres fonctions globales
 
@@ -781,6 +790,50 @@ window.changeLanguage = function(lang) {
     }
 };
 
+
+
+/**
+ * Met à jour l'interface du sélecteur de passagers (chiffres et textes traduits).
+ */
+function updatePassengerSelectorUI() {
+    const adultsCount = document.getElementById("adults-count");
+    const childrenCount = document.getElementById("children-count");
+    const summary = document.getElementById("passenger-summary");
+    const dropdown = document.getElementById("passenger-dropdown");
+    
+    // Sécurité pour éviter les erreurs si les éléments n'existent pas
+    if (!adultsCount || !childrenCount || !summary || !dropdown) {
+        return;
+    }
+
+    const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
+    const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
+    
+    // Mettre à jour les compteurs numériques
+    adultsCount.textContent = appState.passengerCounts.adults;
+    childrenCount.textContent = appState.passengerCounts.children;
+    
+    // Gérer l'état des boutons de décrémentation
+    dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
+    dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
+    
+    // --- Traduction des textes ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // 1. Traduire le résumé principal (ex: "1 Adulte, 2 Enfants")
+    if (typeof translation.passenger_summary === 'function') {
+        summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
+    }
+    
+    // 2. Traduire les labels dans le dropdown
+    if (adultsLabel && translation.search_form_adults) {
+        adultsLabel.innerHTML = translation.search_form_adults;
+    }
+    if (childrenLabel && translation.search_form_children) {
+        childrenLabel.innerHTML = translation.search_form_children;
+    }
+}
 
 
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
@@ -1961,42 +2014,34 @@ function setupPassengerSelector() {
     const summary = document.getElementById("passenger-summary");
     
     if (!input || !dropdown || !adultsCount || !childrenCount || !summary) {
-        console.warn("Un ou plusieurs éléments du sélecteur de passagers sont manquants.");
         return;
     }
     
     function updateDisplay() {
+        // Logique pour s'assurer que les valeurs sont correctes
         appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
         appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
         
+        // Mettre à jour les chiffres dans le dropdown
         adultsCount.textContent = appState.passengerCounts.adults;
         childrenCount.textContent = appState.passengerCounts.children;
         
+        // Gérer l'état des boutons
         dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
         dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
         
-        // ===================================
-        // ✅ CORRECTION DE LA TRADUCTION DU RÉSUMÉ
-        // ===================================
+        // Traduire le résumé principal (ex: "1 Adulte")
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
-        
         if (typeof translation.passenger_summary === 'function') {
             summary.textContent = translation.passenger_summary(
                 appState.passengerCounts.adults, 
                 appState.passengerCounts.children
             );
-        } else {
-            // Solution de secours si la traduction n'est pas trouvée
-            let summaryText = `${appState.passengerCounts.adults} Adulte(s)`;
-            if (appState.passengerCounts.children > 0) {
-                summaryText += `, ${appState.passengerCounts.children} Enfant(s)`;
-            }
-            summary.textContent = summaryText;
         }
-        // ===================================
     }
     
+    // Gérer les clics (inchangé)
     input.addEventListener("click", (e) => {
         e.stopPropagation();
         dropdown.classList.toggle("open");
@@ -2007,25 +2052,27 @@ function setupPassengerSelector() {
         if (target) {
             const type = target.dataset.type;
             const action = target.dataset.action;
-            
-            if (action === "increment") {
-                appState.passengerCounts[type]++;
-            } else if (action === "decrement") {
-                appState.passengerCounts[type]--;
-            }
-            
-            updateDisplay(); // Met à jour les compteurs ET le texte du résumé
+            if (action === "increment") appState.passengerCounts[type]++;
+            else if (action === "decrement") appState.passengerCounts[type]--;
+            updateDisplay();
         }
     });
     
     document.addEventListener("click", (e) => {
-        // Ferme le dropdown si on clique en dehors
         if (!dropdown.contains(e.target) && !input.contains(e.target)) {
             dropdown.classList.remove("open");
         }
     });
+
+    // ===========================================
+    // ✅ LA MODIFICATION EST ICI
+    // ===========================================
+    // On rend la fonction 'updateDisplay' accessible depuis l'extérieur
+    // en l'assignant à notre variable globale.
+    refreshPassengerSelectorUI = updateDisplay;
+    // ===========================================
     
-    // Appel initial pour afficher les bonnes valeurs au chargement
+    // Appel initial pour que tout soit correct au chargement
     updateDisplay();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
