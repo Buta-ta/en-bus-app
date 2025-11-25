@@ -199,7 +199,7 @@ const translations = {
     details_departure: "Departure",
     details_direct_trip: "Direct trip",
     // ✅ CORRECT
-    seats_available: (count) => `<strong>${count}</strong> seat(s) left`,
+    seats_available: "seat(s) left",
     button_select: "Select",
     amenity_labels: { wifi: "Wi-Fi", wc: "Restroom", prise: "Plugs", clim: "AC" },
     filter_reset_button: "Reset",

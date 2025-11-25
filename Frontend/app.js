@@ -2490,7 +2490,6 @@ function displayResults(results, isReturn = false) {
                         ${tripDetailsHTML}
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
-                            // DANS displayResults
 <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
                         
                         </div>
