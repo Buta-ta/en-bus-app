@@ -233,6 +233,11 @@ const translations = {
     deadline_warning_desc: (date, time) => `Cette réservation sera <strong>automatiquement annulée</strong> si le paiement n'est pas effectué avant le <strong>${date} à ${time}</strong>.`,
     check_status_button: "🔄 Vérifier le statut du paiement",
     back_home_button: "🏠 Retour à l'accueil",
+    countdown_time_left: "Temps restant :",
+    countdown_calculating: "Calcul...",
+    countdown_expired: "EXPIRÉ",
+
+
 
 
 
@@ -456,6 +461,10 @@ const translations = {
     deadline_warning_desc: (date, time) => `This booking will be <strong>automatically cancelled</strong> if payment is not made before <strong>${date} at ${time}</strong>.`,
     check_status_button: "🔄 Check Payment Status",
     back_home_button: "🏠 Back to Home",
+    countdown_time_left: "Time left:",
+    countdown_calculating: "Calculating...",
+    countdown_expired: "EXPIRED",
+ 
 
 
 

@@ -836,7 +836,6 @@ function updatePassengerSelectorUI() {
 
 
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
-
 function startFrontendCountdown() {
     // S'assurer qu'aucun autre minuteur ne tourne
     if (frontendCountdownInterval) {
@@ -846,9 +845,19 @@ function startFrontendCountdown() {
     const timerElement = document.getElementById('payment-countdown-timer');
     const containerElement = document.getElementById('payment-countdown-container');
 
-    if (!timerElement || !containerElement?.dataset.deadline) return;
+    if (!timerElement || !containerElement?.dataset.deadline) {
+        console.warn("Éléments du décompteur manquants ou deadline non définie.");
+        return;
+    }
 
     const deadline = new Date(containerElement.dataset.deadline);
+    
+    // Récupérer la langue pour les traductions
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // Traduire le texte initial "Calcul..."
+    timerElement.textContent = translation.countdown_calculating || "Calcul...";
 
     frontendCountdownInterval = setInterval(() => {
         const now = new Date();
@@ -856,8 +865,9 @@ function startFrontendCountdown() {
 
         if (timeLeft <= 0) {
             clearInterval(frontendCountdownInterval);
-            timerElement.textContent = "EXPIRÉ";
-            containerElement.style.color = "#f44336"; // Rouge
+            // ✅ TRADUCTION DU MESSAGE "EXPIRÉ"
+            timerElement.textContent = translation.countdown_expired || "EXPIRÉ";
+            if (containerElement) containerElement.style.color = "#f44336"; // Rouge
             return;
         }
 
@@ -866,7 +876,7 @@ function startFrontendCountdown() {
         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
         timerElement.textContent = 
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         
     }, 1000);
 }
@@ -1442,11 +1452,17 @@ function displayPaymentInstructions(reservation) {
                     <span class="detail-label">${translation.payment_deadline_label}</span>
                     <span class="detail-value">${deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <!-- ✅ BLOC POUR LE DÉCOMPTEUR DYNAMIQUE -->
-                <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}" style="text-align: center; margin-top: 10px;">
-                    Temps restant : 
-                    <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">Calcul...</span>
-                </div>
+                <!-- ✅ BLOC POUR LE DÉCOMPTEUR DYNAMIQUE (TRADUIT) -->
+<div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}" style="text-align: center; margin-top: 10px;">
+    
+    <!-- Ce span sera traduit par la fonction applyLanguage -->
+    <span data-i18n="countdown_time_left">Temps restant :</span> 
+    
+    <!-- Ce span sera mis à jour par la fonction startFrontendCountdown -->
+    <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">
+        ${translation.countdown_calculating || 'Calcul...'}
+    </span>
+</div>
             </div>
             ${paymentStepsContent}
             ${transactionSubmissionHTML}
@@ -1472,6 +1488,9 @@ function displayPaymentInstructions(reservation) {
     }
     
     instructionsPage.innerHTML = instructionsHTML;
+
+    // ✅ On force la traduction des nouveaux éléments injectés
+    applyLanguage();
     showPage('payment-instructions');
     
     // On appelle la fonction qui va trouver les éléments du décompteur et le lancer
