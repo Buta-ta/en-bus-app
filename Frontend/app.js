@@ -2840,14 +2840,27 @@ function updateSeatSummary() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // --- 2. Récupération des données et éléments (inchangé) ---
-    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
-    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-    
+        // --- 2. Récupération des éléments DOM ---
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
+    const seatsLabel = document.querySelector('span[data-i18n="seats_summary_seats"]');
+    const priceLabel = document.querySelector('span[data-i18n="seats_summary_price"]');
 
-    if (!seatsDisplay || !priceDisplay) return;
+    if (!seatsDisplay || !priceDisplay || !seatsLabel || !priceLabel) return;
+
+
+    // ===========================================
+    // ✅ TRADUCTION DES LABELS STATIQUES
+    // ===========================================
+    seatsLabel.textContent = translation.seats_summary_seats || "Sièges :";
+    priceLabel.textContent = translation.seats_summary_price || "Prix :";
+    // ===========================================
+
+    // --- 3. Mise à jour des valeurs dynamiques ---
+    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
+    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+
+    if (!currentBus) return;
 
     // --- 3. Logique d'affichage avec traduction ---
     if (currentSeats.length === 0) {
