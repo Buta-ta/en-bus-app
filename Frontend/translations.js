@@ -239,6 +239,28 @@ const translations = {
     payment_ref_warning_agency: "⚠️ Présentez ce code unique à l'agent de caisse.",
 
 
+          // --- Toasts de la page de paiement ---
+    toast_booking_creation: "Création de la réservation en cours...",
+    toast_select_payment_method: "Veuillez sélectionner un mode de paiement.",
+    toast_invalid_phone: (method) => `Numéro de téléphone ${method} invalide ou manquant.`,
+    toast_price_error: "Erreur de calcul du prix. Le total ne peut pas être zéro.",
+    toast_agency_unavailable: "Paiement en agence non disponible (délai insuffisant).",
+    toast_booking_saved_success: "✅ Réservation enregistrée !",
+    toast_booking_saved_fail: "La sauvegarde a échoué.",
+    toast_sending_proof: "Envoi de votre référence...",
+    toast_proof_received: "Référence reçue ! Notre équipe va vérifier votre paiement.",
+    toast_proof_submit_error: "Erreur lors de la soumission.",
+    toast_enter_transaction_id: "Veuillez saisir l'ID de la transaction.",
+    toast_checking_status: "Vérification du statut...",
+    toast_payment_confirmed_redirect: "✅ Paiement confirmé ! Redirection vers votre billet...",
+    toast_payment_pending_check: "⏳ Paiement en cours de vérification. Veuillez patienter...",
+    toast_booking_cancelled_status: (status) => `❌ Cette réservation a été ${status}.`,
+    error_booking_not_found: "Réservation introuvable",
+    toast_current_status: "Statut actuel :",
+    error_check_status: "Erreur lors de la vérification. Réessayez.",
+
+
+
 
 
 
@@ -466,7 +488,29 @@ const translations = {
     countdown_calculating: "Calculating...",
     countdown_expired: "EXPIRED",
     payment_ref_warning_agency: "⚠️ Show this unique code to the agency cashier.",
- 
+
+
+  
+        // --- Payment Page Toasts ---
+    toast_booking_creation: "Creating your booking...",
+    toast_select_payment_method: "Please select a payment method.",
+    toast_invalid_phone: (method) => `Invalid or missing ${method} phone number.`,
+    toast_price_error: "Price calculation error. Total cannot be zero.",
+    toast_agency_unavailable: "Payment at agency is not available (not enough time).",
+    toast_booking_saved_success: "✅ Booking saved!",
+    toast_booking_saved_fail: "Save failed.",
+    toast_sending_proof: "Submitting your reference...",
+    toast_proof_received: "Reference received! Our team will verify your payment.",
+    toast_proof_submit_error: "Error during submission.",
+    toast_enter_transaction_id: "Please enter the transaction ID.",
+    toast_checking_status: "Checking status...",
+    toast_payment_confirmed_redirect: "✅ Payment confirmed! Redirecting to your ticket...",
+    toast_payment_pending_check: "⏳ Payment is being verified. Please wait...",
+    toast_booking_cancelled_status: (status) => `❌ This booking was ${status}.`,
+    error_booking_not_found: "Booking not found",
+    toast_current_status: "Current status:",
+    error_check_status: "Error while checking status. Please try again.",
+
 
 
 

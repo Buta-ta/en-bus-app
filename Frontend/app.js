@@ -1504,15 +1504,21 @@ function displayPaymentInstructions(reservation) {
 // DANS app.js, à ajouter avec vos autres fonctions
 
 async function submitTransactionId(bookingNumber) {
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const transactionIdInput = document.getElementById('transaction-id-input');
     const transactionId = transactionIdInput.value.trim();
 
+    // Utilisation de la traduction pour le message d'erreur
     if (!transactionId) {
-        Utils.showToast("Veuillez saisir l'ID de la transaction.", "warning");
+        Utils.showToast(translation.toast_enter_transaction_id, "warning");
         return;
     }
 
-    Utils.showToast("Envoi de votre référence...", "info");
+    // Utilisation de la traduction pour le message d'envoi
+    Utils.showToast(translation.toast_sending_proof, "info");
 
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/transaction-id`, {
@@ -1524,13 +1530,19 @@ async function submitTransactionId(bookingNumber) {
         const result = await response.json();
 
         if (!response.ok) {
-            throw new Error(result.error || 'Erreur lors de la soumission.');
+            // Utilisation de la traduction pour l'erreur de soumission
+            throw new Error(result.error || translation.toast_proof_submit_error);
         }
 
-        Utils.showToast("Référence reçue ! Notre équipe va vérifier votre paiement.", 'success');
-        // On peut désactiver le champ et le bouton pour éviter une double soumission
+        // Utilisation de la traduction pour le message de succès
+        Utils.showToast(translation.toast_proof_received, 'success');
+        
+        // La logique pour désactiver les champs reste la même
         transactionIdInput.disabled = true;
-        document.querySelector('.transaction-submission-box button').disabled = true;
+        const submitButton = document.querySelector('.transaction-submission-box button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
 
     } catch (error) {
         console.error('Erreur soumission ID transaction:', error);
@@ -1538,57 +1550,56 @@ async function submitTransactionId(bookingNumber) {
     }
 }
 
-
 // ============================================
 // 🔍 VÉRIFICATION DU STATUT DE PAIEMENT
 // ============================================
 // Dans app.js - REMPLACER la fonction checkPaymentStatus()
 
 window.checkPaymentStatus = async function(bookingNumber) {
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
     console.log(`🔍 Vérification du statut pour : ${bookingNumber}`);
+    Utils.showToast(translation.toast_checking_status, 'info'); // Message de début
     
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${bookingNumber}`);
         const data = await response.json();
         
         if (!data.success) {
-            Utils.showToast('Réservation introuvable', 'error');
+            Utils.showToast(translation.error_booking_not_found || 'Réservation introuvable', 'error');
             return;
         }
         
         console.log('📊 Statut actuel :', data.status);
         
         if (data.status === 'Confirmé') {
-            // ✅ PAIEMENT VALIDÉ PAR L'ADMIN
-            Utils.showToast('✅ Paiement confirmé ! Redirection vers votre billet...', 'success');
+            Utils.showToast(translation.toast_payment_confirmed_redirect, 'success');
             
-            // Récupérer la réservation complète depuis le backend
+            // La logique pour récupérer et afficher la confirmation est correcte
             const reservationResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
             const reservationData = await reservationResponse.json();
             
             if (reservationData.success) {
                 appState.currentReservation = reservationData.reservation;
-                appState.currentReservation.status = 'Confirmé';
-                
-                // ✅ AFFICHER LA PAGE DE CONFIRMATION (avec QR code + téléchargement)
                 displayConfirmation(appState.currentReservation);
                 showPage('confirmation');
             }
             
         } else if (data.status === 'En attente de paiement') {
-            Utils.showToast('⏳ Paiement en cours de vérification. Veuillez patienter...', 'info');
+            Utils.showToast(translation.toast_payment_pending_check, 'info');
         } else if (data.status === 'Annulé' || data.status === 'Expiré') {
-            Utils.showToast(`❌ Cette réservation a été ${data.status.toLowerCase()}.`, 'error');
+            Utils.showToast(translation.toast_booking_cancelled_status(data.status.toLowerCase()), 'error');
         } else {
-            Utils.showToast(`Statut actuel : ${data.status}`, 'info');
+            Utils.showToast(`${translation.toast_current_status || 'Statut actuel :'} ${data.status}`, 'info');
         }
         
     } catch (error) {
         console.error('❌ Erreur vérification statut:', error);
-        Utils.showToast('Erreur lors de la vérification. Réessayez dans quelques instants.', 'error');
+        Utils.showToast(translation.error_check_status || 'Erreur lors de la vérification.', 'error');
     }
 };
-
 
 // Dans app.js
 // Dans app.js
@@ -3360,14 +3371,20 @@ function displayBookingSummary() {
 window.confirmBooking = async function(buttonElement) {
     console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION');
     
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
-    const showLoading = (message) => { buttonElement.innerHTML = `<span style="animation: spin 1s linear infinite; display: inline-block; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; width: 20px; height: 20px; margin-right: 10px;"></span>${message}`; };
-    showLoading('Création en cours...');
+    const showLoading = (message) => { buttonElement.innerHTML = `<span style="animation: spin 1s linear infinite; ..."></span>${message}`; };
+    
+    // Utilisation de la traduction pour le message de chargement
+    showLoading(translation.toast_booking_creation);
 
     try {
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
-        if (!paymentMethod) throw new Error('Veuillez sélectionner un mode de paiement.');
+        if (!paymentMethod) throw new Error(translation.toast_select_payment_method);
 
         let customerPhone;
         const phoneInputId = `${paymentMethod}-phone`;
@@ -3378,17 +3395,17 @@ window.confirmBooking = async function(buttonElement) {
             customerPhone = phoneInput ? phoneInput.value.trim() : '';
         }
         if (!customerPhone || !Utils.validatePhone(customerPhone)) {
-            throw new Error(`Numéro de téléphone ${paymentMethod.toUpperCase()} invalide ou manquant.`);
+            throw new Error(translation.toast_invalid_phone(paymentMethod.toUpperCase()));
         }
 
         const priceDetails = Utils.calculateTotalPrice(appState);
         const finalTotalPriceNumeric = priceDetails.total;
-        if (finalTotalPriceNumeric <= 0) throw new Error("Erreur de calcul du prix.");
+        if (finalTotalPriceNumeric <= 0) throw new Error(translation.toast_price_error);
 
         const bookingNumber = Utils.generateBookingNumber();
         let paymentDeadline;
         if (paymentMethod === 'agency') {
-            if (!canPayAtAgency()) throw new Error("Paiement en agence non disponible (délai insuffisant).");
+            if (!canPayAtAgency()) throw new Error(translation.toast_agency_unavailable);
             paymentDeadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000).toISOString();
         } else {
             paymentDeadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000).toISOString();
@@ -3421,29 +3438,22 @@ window.confirmBooking = async function(buttonElement) {
             reservation.agency = getNearestAgency(appState.selectedBus.from);
         }
 
-        // On envoie la réservation au backend
         const savedReservationResponse = await saveReservationToBackend(reservation);
         
         if (savedReservationResponse && savedReservationResponse.success) {
-            
-            // ===========================================
-            // ✅ CORRECTION CRUCIALE : On récupère le code agence
-            // ===========================================
             if (savedReservationResponse.agencyPaymentCode) {
                 reservation.agencyPaymentCode = savedReservationResponse.agencyPaymentCode;
-                console.log(`Code agence ${savedReservationResponse.agencyPaymentCode} reçu du serveur et ajouté.`);
             }
-            // ===========================================
             
             appState.currentReservation = reservation;
-            addBookingToLocalHistory(reservation.bookingNumber); // Sauvegarde dans l'historique local
+            addBookingToLocalHistory(reservation.bookingNumber);
             
-            displayPaymentInstructions(reservation); // Maintenant, 'reservation' contient le code
+            displayPaymentInstructions(reservation);
             
-            Utils.showToast('✅ Réservation enregistrée !', 'success');
+            Utils.showToast(translation.toast_booking_saved_success, 'success');
 
         } else {
-            throw new Error(savedReservationResponse?.error || "La sauvegarde a échoué.");
+            throw new Error(savedReservationResponse?.error || translation.toast_booking_saved_fail);
         }
 
     } catch (error) {
