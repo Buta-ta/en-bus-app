@@ -2149,12 +2149,10 @@ function setupAmenitiesFilters() {
         `;
     }).join('');
 }
-
 window.searchBuses = async function() {
     resetBookingState();
     appState.isSelectingReturn = false;
     
-    // --- Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
@@ -2163,17 +2161,26 @@ window.searchBuses = async function() {
     const travelDates = document.getElementById("travel-date").value;
     
     let departureDate, returnDate;
-    if (travelDates.includes(" au ")) {
-        [departureDate, returnDate] = travelDates.split(" au ");
+
+    // ==========================================================
+    // ✅ CORRECTION DE LA DÉTECTION DE LA PLAGE DE DATES
+    // ==========================================================
+    // Flatpickr utilise " to " en anglais et " au " en français.
+    const separator = (lang === 'en') ? " to " : " au ";
+    
+    if (travelDates.includes(separator)) {
+        [departureDate, returnDate] = travelDates.split(separator).map(date => date.trim());
     } else {
+        // Sécurité : si le séparateur est incorrect, on considère une date unique
         departureDate = travelDates;
         returnDate = null;
     }
+    // ==========================================================
     
     const totalPassengers = appState.passengerCounts.adults + appState.passengerCounts.children;
     const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode") || "one-way";
     
-    // --- Validation avec traductions ---
+    // --- Validation (votre code est conservé) ---
     if (!origin || !destination) {
         Utils.showToast(translation.error_missing_origin_destination, 'error');
         return;
@@ -2208,11 +2215,11 @@ window.searchBuses = async function() {
         if (data.count === 0) {
             Utils.showToast(translation.info_no_trips_found, 'info');
             appState.currentResults = [];
-            displayResults([], false, translation); // Passer la traduction
+            displayResults([]);
             showPage("results");
         } else {
             appState.currentResults = data.results;
-            displayResults(data.results, false, translation); // Passer la traduction
+            displayResults(data.results);
             showPage("results");
             Utils.showToast(translation.success_trips_found(data.count), 'success');
         }
