@@ -405,10 +405,9 @@ app.get("/api/trips/:id/seats", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
 app.post(
   "/api/reservations",
-  loginLimiter,
+  loginLimiter, // Utilise un rate limiter plus strict pour la création
   [
     body("bookingNumber").notEmpty(),
     body("route").isObject(),
@@ -418,71 +417,69 @@ app.post(
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty())
+    if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+    
     try {
       const reservationData = req.body;
-
-       // ✅ SÉCURITÉ : Vérifier que la route et son ID existent
-        if (!reservationData.route || !reservationData.route.id) {
-            return res.status(400).json({ error: "Données de route invalides." });
-        }
-
-
-      const trip = await tripsCollection.findOne({
-        _id: new ObjectId(reservationData.route.id),
-      });
-      if (!trip)
-        return res.status(404).json({ error: "Voyage aller introuvable." });
-        
-      const seatNumbersToOccupy = reservationData.seats.map((s) => parseInt(s));
-      const alreadyTaken = trip.seats.filter(
-        (s) =>
-          seatNumbersToOccupy.includes(s.number) && s.status !== "available"
-      );
-      if (alreadyTaken.length > 0)
-        return res.status(409).json({
-            error: `Conflit : Sièges ${alreadyTaken.map((s) => s.number).join(", ")} indisponibles.`,
-        });
-
-      await tripsCollection.updateOne(
-        { _id: trip._id },
-        { $set: { "seats.$[elem].status": "occupied" } },
-        { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
-      );
       
-      // Votre logique de génération de code est correcte
+      // --- Vérification et réservation du trajet ALLER ---
+      if (!reservationData.route || !reservationData.route.id) {
+          return res.status(400).json({ error: "Données de route aller invalides." });
+      }
+      const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
+      if (!trip) return res.status(404).json({ error: "Voyage aller introuvable." });
+        
+      const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
+      const alreadyTaken = trip.seats.filter(s => seatNumbersToOccupy.includes(s.number) && s.status !== "available");
+      if (alreadyTaken.length > 0) return res.status(409).json({ error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+
+      await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+      
+      // --- Vérification et réservation du trajet RETOUR (si applicable) ---
+      if (reservationData.returnRoute) {
+          if (!reservationData.returnRoute.id) return res.status(400).json({ error: "Données de route retour invalides." });
+          const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
+          if (!returnTrip) {
+              // Annuler l'occupation des sièges aller en cas d'erreur
+              await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+              return res.status(404).json({ error: "Voyage retour introuvable." });
+          }
+          const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
+          const returnAlreadyTaken = returnTrip.seats.filter(s => returnSeatNumbers.includes(s.number) && s.status !== "available");
+          if (returnAlreadyTaken.length > 0) {
+              await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+              return res.status(409).json({ error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+          }
+          await tripsCollection.updateOne({ _id: returnTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] });
+      }
+
+      // --- Génération du code agence ---
       if (reservationData.paymentMethod === "AGENCY") {
         reservationData.agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
         console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
       }
 
+      // --- Insertion en base de données et envoi de l'email ---
       const result = await reservationsCollection.insertOne(reservationData);
-
       if (reservationData.status === "En attente de paiement") {
         sendPendingPaymentEmail(reservationData);
       }
 
-
-      // ===================================
-      // ✅ CORRECTION ICI
-      // ===================================
+      // --- Réponse au client ---
       res.status(201).json({
           success: true,
           message: "Réservation créée.",
           reservationId: result.insertedId,
-          // On renvoie le code au frontend pour qu'il puisse l'afficher
-          agencyPaymentCode: reservationData.agencyPaymentCode || null 
+          agencyPaymentCode: reservationData.agencyPaymentCode || null
       });
-
 
     } catch (error) {
       console.error("❌ Erreur réservation:", error);
       res.status(500).json({ error: "Erreur serveur." });
     }
   }
-
-
 );
 
 app.get("/api/reservations/details", async (req, res) => {

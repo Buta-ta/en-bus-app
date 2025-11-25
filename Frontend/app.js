@@ -3278,13 +3278,14 @@ window.proceedToPayment = function() {
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
 
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
-
 function displayBookingSummary() {
     console.log("📊 Affichage du récapitulatif de réservation...");
     
+    // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
+    // --- 2. Cibles DOM et vérifications ---
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
         console.error("❌ Élément #booking-summary introuvable.");
@@ -3292,24 +3293,25 @@ function displayBookingSummary() {
     }
 
     if (!appState.selectedBus || !appState.currentSearch || !appState.passengerInfo) {
-        Utils.showToast("Une erreur critique est survenue.", "error"); // Pensez à traduire ce message aussi
+        Utils.showToast(translation.error_critical || "Une erreur critique est survenue. Veuillez recommencer.", "error");
         showPage('home');
         return;
     }
 
+    // --- 3. Calcul du prix ---
     const priceDetails = Utils.calculateTotalPrice(appState);
     const finalTotalPrice = priceDetails.total;
     const totalTicketsPrice = priceDetails.tickets + priceDetails.returnTickets;
 
-    // --- Construction du récapitulatif HTML avec traductions ---
+    // --- 4. Construction du récapitulatif HTML ---
     let summaryHTML = `
         <div class="detail-row"><span>${translation.summary_outbound_route}:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
-        <div class="detail-row"><span>${translation.summary_outbound_date}:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
+        <div class="detail-row"><span>${translation.summary_outbound_date}:</span><strong>${Utils.formatDate(appState.currentSearch.date, lang)}</strong></div>
     `;
     if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
         summaryHTML += `
             <div class="detail-row"><span>${translation.summary_return_route}:</span><strong>${appState.selectedReturnBus.from} → ${appState.selectedReturnBus.to}</strong></div>
-            <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate)}</strong></div>
+            <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate, lang)}</strong></div>
         `;
     }
     summaryHTML += `
@@ -3321,14 +3323,14 @@ function displayBookingSummary() {
     `;
     summaryContainer.innerHTML = summaryHTML;
 
-    // --- Mise à jour des champs de paiement (inchangé) ---
+    // --- 5. Mise à jour des champs de paiement ---
     const amountStr = `${Utils.formatPrice(finalTotalPrice)} FCFA`;
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
         if (amountInput) amountInput.value = amountStr;
     });
 
-    // --- Traduction de la boîte d'urgence ---
+    // --- 6. Boîte d'urgence et décompteur ---
     const urgencyBox = document.getElementById('urgency-box');
     (async () => {
         if (!urgencyBox) return;
@@ -3343,18 +3345,23 @@ function displayBookingSummary() {
                     seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
                 }
                 
+                // On s'assure que le conteneur du timer existe avant de le démarrer
+                const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
+                
                 urgencyBox.innerHTML = `
                     <div class="urgency-item">
                         <span class="urgency-label">${translation.urgency_seats_left}</span>
                         ${seatsLeftHTML}
                     </div>
-                    <div class="urgency-item">
+                    <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
                         <span class="urgency-label">${translation.urgency_deadline}</span>
-                        <span id="payment-countdown-timer-box" class="urgency-value">--:--</span>
+                        <span id="payment-countdown-timer" class="urgency-value">--:--</span>
                     </div>
                 `;
                 urgencyBox.style.display = 'grid';
-                startUrgencyCountdown(); // Vous devez aussi avoir cette fonction
+                
+                // On démarre le décompteur APRÈS avoir ajouté le HTML
+                startFrontendCountdown();
             } else {
                  urgencyBox.style.display = 'none';
             }
@@ -3364,22 +3371,20 @@ function displayBookingSummary() {
         }
     })();
     
-    // --- GESTION DYNAMIQUE DU PAIEMENT À L'AGENCE (inchangée) ---
+    // --- 7. Gestion du paiement à l'agence ---
     const agencyOption = document.getElementById('agency-payment-option');
     if (agencyOption) {
         if (canPayAtAgency()) {
             agencyOption.style.opacity = '1';
-            // ... (logique existante correcte)
+            agencyOption.querySelector('input').disabled = false;
         } else {
             agencyOption.style.opacity = '0.5';
-            // ... (logique existante correcte)
+            agencyOption.querySelector('input').disabled = true;
+            agencyOption.title = "Paiement en agence non disponible (trop proche du départ)";
         }
     }
     
-    console.log("✅ Récapitulatif affiché et mis à jour avec succès.");
-
-    // ✅ NOUVEAU CODE (on réutilise la fonction existante)
-startFrontendCountdown(); 
+    console.log("✅ Récapitulatif affiché et mis à jour.");
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking
 
