@@ -2721,6 +2721,19 @@ function displaySeats() {
         occupancyInfo.style.display = 'none';
     }
 
+    // ✅ CORRECTION : TRADUIRE LES LABELS DU RÉSUMÉ
+    // =============================================
+    // On cible les <span> qui contiennent "Sièges :" et "Prix :"
+    const seatsLabelSpan = document.querySelector('span[data-i18n="seats_summary_seats"]');
+    if (seatsLabelSpan) {
+        seatsLabelSpan.textContent = translation.seats_summary_seats;
+    }
+    
+    const priceLabelSpan = document.querySelector('span[data-i18n="seats_summary_price"]');
+    if (priceLabelSpan) {
+        priceLabelSpan.textContent = translation.seats_summary_price;
+    }
+
     // 5. Génération de la grille des sièges (avec labels traduits et fallback)
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
@@ -2772,6 +2785,7 @@ function displaySeats() {
     // 6. Appel final pour mettre à jour le résumé
     updateSeatSummary();
 }
+
 // ✅ Fonction auxiliaire pour générer un siège moderne
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     const isOccupied = occupiedSeats.includes(seatNumber);
