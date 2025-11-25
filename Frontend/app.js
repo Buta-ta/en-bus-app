@@ -1670,107 +1670,101 @@ async function generateTicketPDF(reservation, isReturn = false) {
         }
 
         // --- 3. TEMPLATE HTML COMPLET ---
-        const ticketHTML = `
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head>
-                <meta charset="UTF-8">
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
-                <style>
-                    :root { --primary-color: #73d700; --dark-color: #10101A; --text-color: #1a1a1a; --text-light: #555; --bg-light: #f4f7f9; }
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-color); display: flex; justify-content: center; padding: 20px; }
-                    .ticket-container { width: 850px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; }
-                    .ticket-main { flex: 3; padding: 30px; }
-                    .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
-                    .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
-                    .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
-                    .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #2e7d32; }
-                    .payment-warning { display: flex; gap: 15px; background-color: #fff3e0; border: 1px solid #ffe0b2; padding: 15px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
-                    .warning-icon { font-size: 24px; }
-                    .warning-text strong { display: block; font-size: 14px; color: #e65100; margin-bottom: 4px; }
-                    .warning-text span { font-size: 12px; color: #ef6c00; }
-                    .route-info { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 25px; }
-                    .route-point { flex: 1; }
-                    .route-point .city { font-size: 24px; font-weight: 700; }
-                    .route-point .location-detail { font-size: 13px; font-weight: 600; color: var(--text-light); margin-top: 4px; }
-                    .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); margin-top: 8px; }
-                    .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; margin-top: 20px; }
-                    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
-                    .detail-item .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-                    .detail-item .detail-value { font-size: 15px; font-weight: 600; }
-                    .passengers-section { margin-bottom: 25px; }
-                    .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
-                    .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
-                    .passenger-list .item:last-child { border-bottom: none; }
-                    .passenger-name { font-weight: 600; }
-                    .seat-number { background-color: var(--bg-light); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
-                    .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
-                    .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-                    .stub-qr-code img { display: block; }
-                    .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
-                    .stub-value { font-size: 14px; font-weight: 700; margin-bottom: 15px; word-break: break-all; }
-                    .stub-value.booking-no { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary-color); }
-                    @media print { body { padding: 0; background: white; } .ticket-container { width: 100%; box-shadow: none; border-radius: 0; } }
-                </style>
-            </head>
-            <body>
-                <div class="ticket-container">
-                    <div class="ticket-main">
-                        <div class="ticket-header">
-                            <div class="logo">EN-BUS</div>
-                            <div class="booking-status">${ticketType}</div>
-                        </div>
-                        ${agencyInfoHTML}
-                        <div class="route-info">
-                            <div class="route-point">
-                                <div class="city">${route.from}</div>
-                                <div class="location-detail">${route.departureLocation || ''}</div>
-                                <div class="time">${route.departure}</div>
-                            </div>
-                            <div class="route-arrow">➔</div>
-                            <div class="route-point" style="text-align: right;">
-                                <div class="city">${route.to}</div>
-                                <div class="location-detail">${route.arrivalLocation || ''}</div>
-                                <div class="time">${route.arrival}</div>
-                            </div>
-                        </div>
-                        <div class="details-grid">
-                            <div class="detail-item"><div class="detail-label">Date</div><div class="detail-value">${Utils.formatDate(date)}</div></div>
-                            <div class="detail-item"><div class="detail-label">Durée</div><div class="detail-value">${route.duration || 'N/A'}</div></div>
-                            <div class="detail-item"><div class="detail-label">Compagnie</div><div class="detail-value">${route.company}</div></div>
-                            <div class="detail-item"><div class="detail-label">Bus N°</div><div class="detail-value">${busIdentifier}</div></div>
-                        </div>
-                        <div class="passengers-section">
-                            <div class="passengers-title">Passager(s)</div>
-                            <div class="passenger-list">
-                                ${reservation.passengers.map((p, i) => `
-                                    <div class="item">
-                                        <span class="passenger-name">${p.name}</span>
-                                        <span class="seat-number">Siège ${seats[i]}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ${stopsHTML}
-                        ${connectionsHTML}
-                        <div class="ticket-footer">
-                            Présentez-vous 30 minutes avant le départ.
-                        </div>
+        // DANS la fonction generateTicketPDF, après avoir défini les variables
+
+const ticketHTML = `
+    <!DOCTYPE html>
+    <html lang="${lang}">
+    <head>
+        <meta charset="UTF-8">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+        <style>
+            :root { --primary-color: #73d700; --dark-color: #10101A; --text-color: #1a1a1a; --text-light: #555; --bg-light: #f4f7f9; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-color); display: flex; justify-content: center; padding: 20px; }
+            .ticket-container { width: 850px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; }
+            .ticket-main { flex: 3; padding: 30px; }
+            .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
+            .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
+            .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
+            .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #2e7d32; }
+            .route-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; } /* Correction: align-items: center */
+            .route-point { flex: 1; }
+            .route-point .city { font-size: 24px; font-weight: 700; }
+            .route-point .location-detail { font-size: 13px; font-weight: 600; color: var(--text-light); margin-top: 4px; }
+            .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); margin-top: 8px; }
+            .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; }
+            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
+            .detail-item .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+            .detail-item .detail-value { font-size: 15px; font-weight: 600; }
+            .passengers-section { margin-bottom: 25px; }
+            .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
+            .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
+            .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
+            .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+            .stub-qr-code img { display: block; }
+            .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
+            .stub-value { font-size: 14px; font-weight: 700; margin-bottom: 15px; word-break: break-all; }
+            .stub-value.booking-no { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary-color); }
+        </style>
+    </head>
+    <body>
+        <div class="ticket-container">
+            <div class="ticket-main">
+                <div class="ticket-header">
+                    <div class="logo">EN-BUS</div>
+                    <div class="booking-status">${ticketType}</div>
+                </div>
+                ${agencyInfoHTML}
+                <div class="route-info">
+                    <div class="route-point">
+                        <div class="city">${route.from}</div>
+                        <div class="location-detail">${route.departureLocation || ''}</div>
+                        <div class="time">${route.departure}</div>
                     </div>
-                    <div class="ticket-stub">
-                        <div class="stub-qr-code"><img src="${qrCodeBase64}"></div>
-                        <div class="stub-label">Réservation</div>
-                        <div class="stub-value booking-no">${reservation.bookingNumber}</div>
-                        <div class="stub-label">Passager</div>
-                        <div class="stub-value">${reservation.passengers[0].name}</div>
-                        <div class="stub-label">Total Payé</div>
-                        <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
+                    <div class="route-arrow">➔</div>
+                    <div class="route-point" style="text-align: right;">
+                        <div class="city">${route.to}</div>
+                        <div class="location-detail">${route.arrivalLocation || ''}</div>
+                        <div class="time">${route.arrival}</div>
                     </div>
                 </div>
-            </body>
-            </html>
-        `;
+                <div class="details-grid">
+                    <div class="detail-item"><div class="detail-label">${translation.details_label_date}</div><div class="detail-value">${Utils.formatDate(date, lang)}</div></div>
+                    <div class="detail-item"><div class="detail-label">${translation.details_label_duration}</div><div class="detail-value">${route.duration || 'N/A'}</div></div>
+                    <div class="detail-item"><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
+                    <div class="detail-item"><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busIdentifier}</div></div>
+                </div>
+                <div class="passengers-section">
+                    <div class="passengers-title">${translation.details_label_passengers}</div>
+                    <div class="passenger-list">
+                        ${reservation.passengers.map((p, i) => `
+                            <div class="item">
+                                <span class="passenger-name">${p.name}</span>
+                                <span class="seat-number">${translation.details_label_seat} ${seats[i]}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ${stopsHTML}
+                ${connectionsHTML}
+                <div class="ticket-footer">
+                    ${translation.ticket_footer_instruction}
+                </div>
+            </div>
+            <div class="ticket-stub">
+                <div class="stub-qr-code"><img src="${qrCodeBase64}" alt="QR Code"></div>
+                <div class="stub-label">${translation.stub_label_booking}</div>
+                <div class="stub-value booking-no">${reservation.bookingNumber}</div>
+                <div class="stub-label">${translation.stub_label_passenger}</div>
+                <div class="stub-value">${reservation.passengers[0].name}</div>
+                <div class="stub-label">${translation.stub_label_total_paid}</div>
+                <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
+            </div>
+        </div>
+    </body>
+    </html>
+`;
 
         // --- 4. LOGIQUE DE TÉLÉCHARGEMENT ET D'IMPRESSION ---
         try {

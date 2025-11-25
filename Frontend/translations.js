@@ -303,6 +303,15 @@ const translations = {
     details_label_departure: "Départ",
     details_label_arrival: "Arrivée",
 
+    details_label_date: "Date",
+    details_label_duration: "Durée",
+    details_label_seat: "Siège",
+    ticket_footer_instruction: "Présentez-vous 30 minutes avant le départ.",
+    stub_label_booking: "Réservation",
+    stub_label_passenger: "Passager",
+    stub_label_total_paid: "Total Payé",
+
+
   },
   // ===================================
   // LANGUE ANGLAISE (EN)
@@ -602,6 +611,15 @@ const translations = {
     confirmation_help: "Need help? Contact us:",
     details_label_departure: "Departure",
     details_label_arrival: "Arrival",
+
+    details_label_date: "Date",
+    details_label_duration: "Duration",
+    details_label_seat: "Seat",
+    ticket_footer_instruction: "Please arrive 30 minutes before departure.",
+    stub_label_booking: "Booking",
+    stub_label_passenger: "Passenger",
+    stub_label_total_paid: "Total Paid",
+
     
   }
 }
