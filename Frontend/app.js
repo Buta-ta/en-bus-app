@@ -2742,6 +2742,15 @@ function displaySeats() {
         occupancyInfo.style.display = 'none';
     }
 
+    // =============================================
+    // ✅ CORRECTION : TRADUIRE LES LABELS DU RÉSUMÉ
+    // =============================================
+    const seatsLabel = document.querySelector('[data-i18n="seats_summary_seats"]');
+    if (seatsLabel) seatsLabel.textContent = translation.seats_summary_seats;
+    
+    const priceLabel = document.querySelector('[data-i18n="seats_summary_price"]');
+    if (priceLabel) priceLabel.textContent = translation.seats_summary_price;
+
     // 5. Génération de la grille des sièges (avec labels traduits et fallback)
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
@@ -2854,49 +2863,49 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     `;
 }
 function updateSeatSummary() {
-    // --- 1. Récupération des traductions ---
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-
-    // --- 2. Récupération des données et éléments (inchangé) ---
+    // 1. Récupération des données et des éléments DOM
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
 
-    if (!seatsDisplay || !priceDisplay) return;
+    // Sécurité : si les éléments n'existent pas ou si le bus n'est pas sélectionné, on arrête.
+    if (!seatsDisplay || !priceDisplay || !currentBus) {
+        return;
+    }
 
-    // --- 3. Logique d'affichage avec traduction ---
+    // --- 2. Logique d'affichage ---
     if (currentSeats.length === 0) {
-        // ✅ On utilise la clé de traduction pour "Aucun"
-        seatsDisplay.textContent = translation.seats_summary_none;
+        // --- CAS : AUCUN SIÈGE SÉLECTIONNÉ ---
+
+        // On récupère la traduction pour "Aucun"
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
+        
         priceDisplay.textContent = "0 FCFA";
+
     } else {
+        // --- CAS : AU MOINS UN SIÈGE SÉLECTIONNÉ ---
+
+        // Affiche les numéros de sièges
         seatsDisplay.textContent = currentSeats.join(", ");
         
-        // La logique de calcul du prix reste la même
+        // Calcul du prix (votre logique est conservée)
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
-        let adultsSelected = 0;
-        let childrenSelected = 0;
-        
-        if (numSeats <= numAdults) {
-            adultsSelected = numSeats;
-            childrenSelected = 0;
-        } else {
-            adultsSelected = numAdults;
-            childrenSelected = numSeats - numAdults;
-        }
+        let adultsSelected = Math.min(numSeats, numAdults);
+        let childrenSelected = numSeats - adultsSelected;
         
         const adultPrice = adultsSelected * currentBus.price;
         const childPrice = childrenSelected * CONFIG.CHILD_TICKET_PRICE;
         const totalPrice = adultPrice + childPrice;
         
+        // Affiche le prix calculé
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
 }
-
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
