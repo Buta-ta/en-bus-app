@@ -2840,15 +2840,14 @@ function updateSeatSummary() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-        // --- 2. Récupération des éléments DOM ---
+    // --- 2. Récupération des éléments DOM ---
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
     const seatsLabel = document.querySelector('span[data-i18n="seats_summary_seats"]');
     const priceLabel = document.querySelector('span[data-i18n="seats_summary_price"]');
 
     if (!seatsDisplay || !priceDisplay || !seatsLabel || !priceLabel) return;
-
-
+    
     // ===========================================
     // ✅ TRADUCTION DES LABELS STATIQUES
     // ===========================================
@@ -2862,31 +2861,18 @@ function updateSeatSummary() {
 
     if (!currentBus) return;
 
-    // --- 3. Logique d'affichage avec traduction ---
     if (currentSeats.length === 0) {
-        // ✅ On utilise la clé de traduction pour "Aucun"
-        seatsDisplay.textContent = translation.seats_summary_none;
+        seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
     } else {
         seatsDisplay.textContent = currentSeats.join(", ");
         
-        // La logique de calcul du prix reste la même
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
-        let adultsSelected = 0;
-        let childrenSelected = 0;
+        const adultsSelected = Math.min(numSeats, numAdults);
+        const childrenSelected = numSeats - adultsSelected;
         
-        if (numSeats <= numAdults) {
-            adultsSelected = numSeats;
-            childrenSelected = 0;
-        } else {
-            adultsSelected = numAdults;
-            childrenSelected = numSeats - numAdults;
-        }
-        
-        const adultPrice = adultsSelected * currentBus.price;
-        const childPrice = childrenSelected * CONFIG.CHILD_TICKET_PRICE;
-        const totalPrice = adultPrice + childPrice;
+        const totalPrice = (adultsSelected * currentBus.price) + (childrenSelected * CONFIG.CHILD_TICKET_PRICE);
         
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
