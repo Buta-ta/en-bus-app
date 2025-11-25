@@ -2555,7 +2555,9 @@ window.selectBus = async function(busId) {
         appState.selectedReturnBus = selectedRoute;
         appState.selectedReturnSeats = []; // Réinitialiser les sièges retour
         
-        Utils.showToast("Sélectionnez vos sièges pour le retour", "info");
+         // ✅ Message traduit
+        Utils.showToast(translation.toast_select_return_seats, "info");
+        
         await loadRealSeats();
         displaySeats();
         showPage("seats");
@@ -2565,7 +2567,9 @@ window.selectBus = async function(busId) {
         appState.selectedBus = selectedRoute;
         appState.selectedSeats = [];
         
-        Utils.showToast("Sélectionnez vos sièges pour l'aller", "info");
+        // ✅ Message traduit
+        Utils.showToast(translation.toast_select_outbound_seats, "info");
+        
         await loadRealSeats();
         displaySeats();
         showPage("seats");
@@ -2896,7 +2900,8 @@ window.proceedToPassengerInfo = async function() {
         
         appState.isSelectingReturn = true; // On passe en mode sélection RETOUR
         
-        Utils.showToast('Sélectionnez maintenant votre bus de RETOUR', 'info');
+         // ✅ Message traduit
+        Utils.showToast(translation.toast_select_return_bus, 'info');
         await searchReturnTrips(); // Affiche la liste des bus pour le retour
         return; // On s'arrête ici, l'utilisateur doit choisir son bus retour
     }

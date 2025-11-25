@@ -92,6 +92,36 @@ const translations = {
     amenity_plugs: "Prises",
     amenity_ac: "Clim",
 
+
+
+    // --- Page Sélection des Sièges ---
+
+
+    toast_select_outbound_seats: "Sélectionnez vos sièges pour l'aller",
+    toast_select_return_seats: "Sélectionnez vos sièges pour le retour",
+    toast_select_return_bus: "Sélectionnez maintenant votre bus de RETOUR",
+
+    seats_title: "Sélection des sièges",
+    seats_back_button: "← Retour",
+    seats_price_info_adult: "Adulte",
+    seats_price_info_child: "Enfant",
+    trip_badge_outbound: "ALLER",
+    trip_badge_return: "RETOUR",
+    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> voyageurs à bord`,
+    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> sièges restants`,
+    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 Plus que <strong>${count}</strong> sièges !</span>`,
+    seats_legend_available: "Disponible",
+    seats_legend_selected: "Sélectionné",
+    seats_legend_occupied: "Occupé",
+    seats_summary_seats: "Sièges :",
+    seats_summary_price: "Prix :",
+    seats_summary_none: "Aucun",
+    continue_button: "Continuer",
+    seats_driver: "Chauffeur",
+    seats_entrance: "Entrée",
+    seats_back_row: "Rangée arrière",
+    seats_restroom: "Toilettes",
+
     // --- Page Passagers & Bagages ---
     passengers_name_placeholder: "Nom complet",
     passengers_phone_placeholder: "Ex: +242 06 123 4567",
@@ -230,6 +260,7 @@ const translations = {
     amenity_ac: "AC",
 
     // --- Seat Selection Page ---
+    
     seats_title: "Seat Selection",
     seats_back_button: "← Back",
     seats_price_info_adult: "Adult",
