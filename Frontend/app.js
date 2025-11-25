@@ -2645,7 +2645,7 @@ window.toggleSeat = function(seatNumber) {
     const index = currentSeats.indexOf(seatNumber);
     const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
-    // Logique pour ajouter/retirer le siège de la liste
+    // Logique pour ajouter ou retirer le siège de la liste (votre code est correct)
     if (index > -1) {
         currentSeats.splice(index, 1);
     } else {
@@ -2660,30 +2660,34 @@ window.toggleSeat = function(seatNumber) {
     
     currentSeats.sort((a, b) => a - b);
     
-    // Mettre à jour l'état global
+    // Affecter la liste mise à jour à l'état de l'application (votre code est correct)
     if (appState.isSelectingReturn) {
         appState.selectedReturnSeats = currentSeats;
     } else {
         appState.selectedSeats = currentSeats;
     }
     
-    // --- MISE À JOUR VISUELLE ---
+    // ===================================
+    // ✅ CORRECTION ET OPTIMISATION
+    // ===================================
     
-    // 1. Mettre à jour le style du siège cliqué (plus performant)
+    // 1. Mettre à jour visuellement UNIQUEMENT le siège cliqué
+    // C'est beaucoup plus rapide que de redessiner toute la grille avec displaySeats()
     const seatElement = document.querySelector(`.modern-seat[data-seat="${seatNumber}"]`);
     if (seatElement) {
         seatElement.classList.toggle('selected');
+        // Ajoute une petite animation pour un effet plus agréable
         seatElement.classList.remove('seat-pulse');
-        void seatElement.offsetWidth; // Force le recalcul du style par le navigateur
+        void seatElement.offsetWidth; // Force le navigateur à recalculer le style
         seatElement.classList.add('seat-pulse');
     }
 
-    // ===================================
-    // ✅ 2. APPEL CRUCIAL À LA MISE À JOUR DU RÉSUMÉ
-    // ===================================
-    // C'est cette ligne qui met à jour le texte "Sièges: 1, 2" et "Prix: X FCFA"
+    // 2. Appeler la fonction qui met à jour le résumé du prix et des numéros
+    // C'est l'étape qui manquait et qui résout votre problème.
     updateSeatSummary();
+    // ===================================
 }
+
 // ============================================
 // ✅ AFFICHAGE DES SIÈGES - DESIGN IMMERSIF FLIXBUS
 // ============================================
@@ -2737,15 +2741,6 @@ function displaySeats() {
     } else {
         occupancyInfo.style.display = 'none';
     }
-
-    // =============================================
-    // ✅ CORRECTION : TRADUIRE LES LABELS DU RÉSUMÉ
-    // =============================================
-    const seatsLabel = document.querySelector('[data-i18n="seats_summary_seats"]');
-    if (seatsLabel) seatsLabel.textContent = translation.seats_summary_seats;
-    
-    const priceLabel = document.querySelector('[data-i18n="seats_summary_price"]');
-    if (priceLabel) priceLabel.textContent = translation.seats_summary_price;
 
     // 5. Génération de la grille des sièges (avec labels traduits et fallback)
     const hasWC = currentBus.amenities.includes("wc");
@@ -2859,49 +2854,49 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     `;
 }
 function updateSeatSummary() {
-    // 1. Récupération des données et des éléments DOM
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // --- 2. Récupération des données et éléments (inchangé) ---
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
 
-    // Sécurité : si les éléments n'existent pas ou si le bus n'est pas sélectionné, on arrête.
-    if (!seatsDisplay || !priceDisplay || !currentBus) {
-        return;
-    }
+    if (!seatsDisplay || !priceDisplay) return;
 
-    // --- 2. Logique d'affichage ---
+    // --- 3. Logique d'affichage avec traduction ---
     if (currentSeats.length === 0) {
-        // --- CAS : AUCUN SIÈGE SÉLECTIONNÉ ---
-
-        // On récupère la traduction pour "Aucun"
-        const lang = getLanguage();
-        const translation = translations[lang] || translations.fr;
-        seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
-        
+        // ✅ On utilise la clé de traduction pour "Aucun"
+        seatsDisplay.textContent = translation.seats_summary_none;
         priceDisplay.textContent = "0 FCFA";
-
     } else {
-        // --- CAS : AU MOINS UN SIÈGE SÉLECTIONNÉ ---
-
-        // Affiche les numéros de sièges
         seatsDisplay.textContent = currentSeats.join(", ");
         
-        // Calcul du prix (votre logique est conservée)
+        // La logique de calcul du prix reste la même
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
-        let adultsSelected = Math.min(numSeats, numAdults);
-        let childrenSelected = numSeats - adultsSelected;
+        let adultsSelected = 0;
+        let childrenSelected = 0;
+        
+        if (numSeats <= numAdults) {
+            adultsSelected = numSeats;
+            childrenSelected = 0;
+        } else {
+            adultsSelected = numAdults;
+            childrenSelected = numSeats - numAdults;
+        }
         
         const adultPrice = adultsSelected * currentBus.price;
         const childPrice = childrenSelected * CONFIG.CHILD_TICKET_PRICE;
         const totalPrice = adultPrice + childPrice;
         
-        // Affiche le prix calculé
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
 }
+
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
