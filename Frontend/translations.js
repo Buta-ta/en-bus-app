@@ -16,6 +16,7 @@ const translations = {
     hero_title: "Voyagez à travers l'Afrique",
     hero_subtitle: "Réservez vos billets de bus en ligne facilement et rapidement",
     popular_destinations_title: "Destinations populaires",
+    destination_price_from: (price) => `À partir de ${price} FCFA`,
     why_en_bus_title: "Pourquoi choisir En-Bus ?",
     feature_easy_booking: "Réservation facile",
     feature_easy_booking_desc: "Réservez vos billets en quelques clics",
@@ -25,7 +26,6 @@ const translations = {
     feature_comfort_desc: "Voyagez avec les meilleures compagnies",
     feature_security: "Sécurité maximale",
     feature_security_desc: "Vos informations sont sécurisées",
-    destination_price_from: (price) => `À partir de ${price} FCFA`,
 
     // --- Formulaire de recherche ---
     search_form_origin: "Ville de départ",
@@ -34,11 +34,11 @@ const translations = {
     search_form_one_way: "Aller simple",
     search_form_round_trip: "Aller-retour",
     search_form_dates: "Dates du voyage",
+    search_form_dates_placeholder: "Sélectionnez vos dates",
     search_form_passengers: "Passagers",
     search_form_adults: "Adultes",
     search_form_children: "Enfants <small>(0-6 ans)</small>",
     search_form_button: "Rechercher",
-    search_form_dates_placeholder: "Sélectionnez vos dates",
     passenger_summary: (adults, children) => {
         let text = `${adults} Adulte(s)`;
         if (children > 0) text += `, ${children} Enfant(s)`;
@@ -46,6 +46,8 @@ const translations = {
     },
     
     // --- Page Résultats ---
+    results_title: "Résultats de recherche",
+    results_back_button: "← Modifier la recherche",
     results_summary_outbound: (count, from, to) => `Sélectionnez votre <strong>ALLER</strong> : <strong>${from}</strong> → <strong>${to}</strong> (${count} résultat(s))`,
     results_summary_return: (count, from, to) => `Sélectionnez votre <strong>RETOUR</strong> : <strong>${from}</strong> → <strong>${to}</strong> (${count} résultat(s))`,
     results_no_results_title: "Aucun trajet ne correspond à vos filtres",
@@ -55,54 +57,40 @@ const translations = {
     departure_location_label: (location) => `📍 Départ : ${location}`,
     details_stops_planned: "Arrêts prévus :",
     details_stops_count: (count) => `${count} arrêt(s)`,
+    details_connections: "Correspondance :",
     details_arrival: "Arrivée",
     details_departure: "Départ",
     details_direct_trip: "Trajet direct",
     seats_available: "sièges dispo.",
     button_select: "Sélectionner",
-    amenity_labels: { "wifi": "Wi-Fi", "wc": "Toilettes", "prise": "Prises", "clim": "Clim", "pause": "Pause", "direct": "Direct" },
-    filter_reset_button: "Réinitialiser",
-    details_connections: "Correspondance :",
-    // --- Page Résultats : Filtres & Tri ---
     filter_sort_by: "Trier par :",
     sort_by_departure: "Heure de départ",
     sort_by_price: "Prix croissant",
     sort_by_duration: "Durée du trajet",
     sort_by_company: "Compagnie (A-Z)",
-
     filter_company: "Compagnie :",
     filter_all: "Toutes",
-
     filter_trip_type: "Type :",
     filter_type_direct: "Direct uniquement",
     filter_type_stops: "Avec arrêts",
     filter_type_connections: "Avec correspondances",
-
     filter_departure_time: "Départ :",
     filter_time_all: "Toute la journée",
     filter_time_morning: "Matin (5h-12h)",
     filter_time_afternoon: "Après-midi (12h-17h)",
     filter_time_evening: "Soirée (17h-21h)",
     filter_time_night: "Nuit (21h-5h)",
-
     filter_price: "Prix :",
     filter_price_min: "Min",
     filter_price_max: "Max",
-
     filter_amenities: "Équipements :",
+    amenity_labels: { wifi: "Wi-Fi", wc: "Toilettes", prise: "Prises", clim: "Clim" },
     filter_reset_button: "Réinitialiser",
     success_filters_reset: "Filtres réinitialisés",
-
-    results_title: "Résultats de recherche",
-    results_back_button: "← Retour",
-    filter_amenities: "Équipements :",
     amenity_wifi: "Wi-Fi",
     amenity_wc: "WC",
     amenity_plugs: "Prises",
     amenity_ac: "Clim",
-
-      
-
 
     // --- Page Passagers & Bagages ---
     passengers_name_placeholder: "Nom complet",
@@ -138,17 +126,16 @@ const translations = {
     button_new_booking: "Nouvelle réservation",
     passenger_count: (count) => `${count} passager(s)`,
 
-    // --- Messages d'erreur ---
+    // --- Messages d'erreur & Info ---
     error_missing_departure_date: "Veuillez sélectionner une date de départ",
     error_missing_origin_destination: "Veuillez sélectionner la ville de départ et d'arrivée",
-    error_same_origin_destination: "La ville de départ et d'arrivée doivent être différentes",
+    error_same_origin_destination: "Le départ et l'arrivée doivent être différents",
     error_missing_return_date: "Veuillez sélectionner une date de départ ET de retour",
     info_searching: "Recherche en cours...",
     info_no_trips_found: "Aucun trajet disponible pour cet itinéraire à cette date",
     success_trips_found: (count) => `${count} trajet(s) trouvé(s)`,
     error_search_failed: "Erreur lors de la recherche",
   },
-
   // ===================================
   // LANGUE ANGLAISE (EN)
   // ===================================
@@ -166,6 +153,7 @@ const translations = {
     hero_title: "Travel across Africa",
     hero_subtitle: "Book your bus tickets online easily and quickly",
     popular_destinations_title: "Popular Destinations",
+    destination_price_from: (price) => `From ${price} FCFA`,
     why_en_bus_title: "Why choose En-Bus?",
     feature_easy_booking: "Easy Booking",
     feature_easy_booking_desc: "Book your tickets in just a few clicks",
@@ -175,7 +163,6 @@ const translations = {
     feature_comfort_desc: "Travel with the best companies",
     feature_security: "Maximum Security",
     feature_security_desc: "Your information is secure",
-    destination_price_from: (price) => `From ${price} FCFA`,
 
     // --- Search Form ---
     search_form_origin: "From",
@@ -196,6 +183,8 @@ const translations = {
     },
 
     // --- Results Page ---
+    results_title: "Search Results",
+    results_back_button: "← Modify Search",
     results_summary_outbound: (count, from, to) => `Select your <strong>OUTBOUND</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
     results_summary_return: (count, from, to) => `Select your <strong>RETURN</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
     results_no_results_title: "No trips match your filters",
@@ -205,77 +194,62 @@ const translations = {
     departure_location_label: (location) => `📍 Departs from: ${location}`,
     details_stops_planned: "Scheduled stops:",
     details_stops_count: (count) => `${count} stop(s)`,
+    details_connections: "Connection:",
     details_arrival: "Arrival",
     details_departure: "Departure",
     details_direct_trip: "Direct trip",
-    seats_available: "seats left",
+    seats_available: (count) => `<strong>${count}</strong> seat(s) left`,
     button_select: "Select",
-    amenity_labels: { "wifi": "Wi-Fi", "wc": "Restroom", "prise": "Outlets", "clim": "AC", "pause": "Break", "direct": "Direct" },
+    amenity_labels: { wifi: "Wi-Fi", wc: "Restroom", prise: "Plugs", clim: "AC" },
     filter_reset_button: "Reset",
-    details_connections: "Connection:",
     success_filters_reset: "Filters reset",
-
-
     filter_sort_by: "Sort by:",
     sort_by_departure: "Departure time",
     sort_by_price: "Price (Low to High)",
     sort_by_duration: "Trip duration",
     sort_by_company: "Company (A-Z)",
-
     filter_company: "Company:",
     filter_all: "All",
-
     filter_trip_type: "Type:",
     filter_type_direct: "Direct only",
     filter_type_stops: "With stops",
     filter_type_connections: "With connections",
-
     filter_departure_time: "Departure:",
     filter_time_all: "All day",
     filter_time_morning: "Morning (5am-12pm)",
     filter_time_afternoon: "Afternoon (12pm-5pm)",
     filter_time_evening: "Evening (5pm-9pm)",
     filter_time_night: "Night (9pm-5am)",
-
     filter_price: "Price:",
     filter_price_min: "Min",
     filter_price_max: "Max",
-
-    filter_amenities: "Amenities:",
-    filter_reset_button: "Reset",
-    results_title: "Search Results",
-    results_back_button: "← Return",
     filter_amenities: "Amenities:",
     amenity_wifi: "Wi-Fi",
     amenity_wc: "Restroom",
     amenity_plugs: "Plugs",
     amenity_ac: "AC",
 
-    
-    // --- Page Sélection des Sièges ---
-
-    seats_title: "Sélection des sièges",
-    seats_back_button: "← Retour",
-    seats_price_info_adult: "Adulte",
-    seats_price_info_child: "Enfant",
-    trip_badge_outbound: "ALLER",
-    trip_badge_return: "RETOUR",
-    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> voyageurs à bord`,
-    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> sièges restants`,
-    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 <strong>${count}</strong> sièges restants !</span>`,
-    seats_legend_available: "Disponible",
-    seats_legend_selected: "Sélectionné",
-    seats_legend_occupied: "Occupé",
-    seats_summary_seats: "Sièges :",
-    seats_summary_price: "Prix :",
-    seats_summary_none: "Aucun",
-    continue_button: "Continuer",
-    seats_driver: "Chauffeur",
-    seats_entrance: "Entrée",
-    seats_back_row: "Rangée arrière",
-    seats_restroom: "Toilettes",
-
-
+    // --- Seat Selection Page ---
+    seats_title: "Seat Selection",
+    seats_back_button: "← Back",
+    seats_price_info_adult: "Adult",
+    seats_price_info_child: "Child",
+    trip_badge_outbound: "OUTBOUND",
+    trip_badge_return: "RETURN",
+    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> travelers on board`,
+    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> seats left`,
+    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 Only <strong>${count}</strong> seats left!</span>`,
+    seats_legend_available: "Available",
+    seats_legend_selected: "Selected",
+    seats_legend_occupied: "Occupied",
+    seats_summary_seats: "Seats:",
+    seats_summary_price: "Price:",
+    seats_summary_none: "None",
+    continue_button: "Continue",
+    seats_driver: "Driver",
+    seats_entrance: "Entrance",
+    seats_back_row: "Back row",
+    seats_restroom: "Restroom",
 
     // --- Passengers & Baggage Page ---
     passengers_name_placeholder: "Full name",
@@ -320,28 +294,5 @@ const translations = {
     info_no_trips_found: "No trips available for this route on this date",
     success_trips_found: (count) => `${count} trip(s) found`,
     error_search_failed: "Error during search",
-
-    // --- Seat Selection Page ---
-
-    seats_title: "Seat Selection",
-    seats_back_button: "← Back",
-    seats_price_info_adult: "Adult",
-    seats_price_info_child: "Child",
-    trip_badge_outbound: "OUTBOUND",
-    trip_badge_return: "RETURN",
-    seats_occupancy_info_travelers: (count) => `<strong>${count}</strong> travelers on board`,
-    seats_occupancy_info_seats_left: (count) => `<strong>${count}</strong> seats left`,
-    seats_occupancy_info_few_left: (count) => `<span class="danger">🔥 Only <strong>${count}</strong> seats left!</span>`,
-    seats_legend_available: "Available",
-    seats_legend_selected: "Selected",
-    seats_legend_occupied: "Occupied",
-    seats_summary_seats: "Seats:",
-    seats_summary_price: "Price:",
-    seats_summary_none: "None",
-    continue_button: "Continue",
-    seats_driver: "Driver",
-    seats_entrance: "Entrance",
-    seats_back_row: "Back row",
-    seats_restroom: "Restroom",
   }
-};
+}
