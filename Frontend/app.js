@@ -2490,11 +2490,12 @@ function displayResults(results, isReturn = false) {
                         ${tripDetailsHTML}
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
-                            <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
+                        
                         </div>
                     </div>
                     <div class="bus-card-pricing">
                         <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                        
                         <button class="btn btn-primary" onclick="selectBus('${route.id}')" data-i18n="button_select">${translation.button_select}</button>
                     </div>
                 </div>
