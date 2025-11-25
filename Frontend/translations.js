@@ -198,7 +198,6 @@ const translations = {
     details_arrival: "Arrival",
     details_departure: "Departure",
     details_direct_trip: "Direct trip",
-    // ✅ CORRECT
     seats_available: "seat(s) left",
     button_select: "Select",
     amenity_labels: { wifi: "Wi-Fi", wc: "Restroom", prise: "Plugs", clim: "AC" },
