@@ -2544,6 +2544,12 @@ window.toggleTripDetails = function(element) {
 window.selectBus = async function(busId) {
     console.log('🚌 Sélection du bus ID :', busId);
     
+    // ===================================
+    // ✅ CORRECTION : On récupère les traductions
+    // ===================================
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const selectedRoute = appState.currentResults.find(r => r.id === busId.toString());
     if (!selectedRoute) {
         Utils.showToast('Erreur : voyage introuvable.', 'error');
@@ -2551,11 +2557,9 @@ window.selectBus = async function(busId) {
     }
 
     if (appState.isSelectingReturn) {
-        // --- ÉTAPE 2 : SÉLECTION DU BUS RETOUR ---
         appState.selectedReturnBus = selectedRoute;
-        appState.selectedReturnSeats = []; // Réinitialiser les sièges retour
+        appState.selectedReturnSeats = [];
         
-         // ✅ Message traduit
         Utils.showToast(translation.toast_select_return_seats, "info");
         
         await loadRealSeats();
@@ -2563,11 +2567,9 @@ window.selectBus = async function(busId) {
         showPage("seats");
         
     } else {
-        // --- ÉTAPE 1 : SÉLECTION DU BUS ALLER ---
         appState.selectedBus = selectedRoute;
         appState.selectedSeats = [];
         
-        // ✅ Message traduit
         Utils.showToast(translation.toast_select_outbound_seats, "info");
         
         await loadRealSeats();
@@ -2575,7 +2577,6 @@ window.selectBus = async function(busId) {
         showPage("seats");
     }
 };
-
 // ✅ NOUVELLE FONCTION : Recherche des trajets retour
 async function searchReturnTrips() {
     try {
@@ -2889,37 +2890,33 @@ function updateSeatSummary() {
 }
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
+    // ===================================
+    // ✅ CORRECTION : On récupère les traductions
+    // ===================================
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
     
-    // CAS 1 : On vient de finir la sélection des sièges ALLER d'un aller-retour
     if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
         if (appState.selectedSeats.length !== expectedSeats) {
-            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour l'ALLER`, 'error');
+            Utils.showToast(translation.error_max_seats(expectedSeats), 'error');
             return;
         }
         
-        appState.isSelectingReturn = true; // On passe en mode sélection RETOUR
+        appState.isSelectingReturn = true;
         
-         // ✅ Message traduit
         Utils.showToast(translation.toast_select_return_bus, 'info');
-        await searchReturnTrips(); // Affiche la liste des bus pour le retour
-        return; // On s'arrête ici, l'utilisateur doit choisir son bus retour
+        await searchReturnTrips();
+        return;
     }
     
-    // CAS 2 : On vient de finir la sélection des sièges RETOUR (ou c'est un aller simple)
-    if (appState.isSelectingReturn) { // S'applique au retour d'un A/R
-        if (appState.selectedReturnSeats.length !== expectedSeats) {
-            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s) pour le RETOUR`, 'error');
-            return;
-        }
-    } else { // S'applique à l'aller simple
-        if (appState.selectedSeats.length !== expectedSeats) {
-            Utils.showToast(`Veuillez sélectionner ${expectedSeats} siège(s)`, 'error');
-            return;
-        }
+    const seatsToCheck = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+    if (seatsToCheck.length !== expectedSeats) {
+        Utils.showToast(translation.error_max_seats(expectedSeats), 'error');
+        return;
     }
     
-    // Si toutes les sélections sont faites, on passe au formulaire passagers
     displayPassengerForms();
     showPage("passengers");
 };
