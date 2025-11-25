@@ -273,6 +273,32 @@ const translations = {
     info_no_trips_found: "Aucun trajet disponible pour cet itinéraire à cette date",
     success_trips_found: (count) => `${count} trajet(s) trouvé(s)`,
     error_search_failed: "Erreur lors de la recherche",
+
+
+
+    // --- Page de Confirmation ---
+    confirmation_page_title: "Réservation Confirmée !",
+    confirmation_page_subtitle: "Votre voyage est prêt. Bon voyage !",
+    confirmation_booking_number_label: "N° de réservation",
+    confirmation_status_confirmed: "Confirmé",
+    confirmation_ticket_outbound: "Billet ALLER",
+    confirmation_ticket_return: "Billet RETOUR",
+    details_label_passengers: "Passagers",
+    details_label_seats: "Sièges",
+    details_label_company: "Compagnie",
+    details_label_bus_no: "Bus N°",
+    qr_code_title: "🎫 Billet électronique",
+    qr_code_instruction: "Présentez ce code à l'embarquement",
+    info_arrive_early_title: "Arrivez à l'avance",
+    info_arrive_early_desc: "Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide",
+    info_baggage_title: "Bagages inclus",
+    info_baggage_desc: "1 bagage en soute (20kg) + 1 bagage à main",
+    button_download_outbound: "📥 Télécharger Billet Aller",
+    button_download_return: "📥 Télécharger Billet Retour",
+    button_track_outbound: "🛰️ Suivre Bus Aller",
+    button_track_return: "🛰️ Suivre Bus Retour",
+    button_new_booking_alt: "🏠 Nouvelle Réservation",
+    confirmation_help: "Besoin d'aide ? Contactez-nous :",
   },
   // ===================================
   // LANGUE ANGLAISE (EN)
@@ -544,5 +570,32 @@ const translations = {
     info_no_trips_found: "No trips available for this route on this date",
     success_trips_found: (count) => `${count} trip(s) found`,
     error_search_failed: "Error during search",
+
+
+
+        // --- Confirmation Page ---
+    confirmation_page_title: "Booking Confirmed!",
+    confirmation_page_subtitle: "Your trip is ready. Have a great journey!",
+    confirmation_booking_number_label: "Booking Ref",
+    confirmation_status_confirmed: "Confirmed",
+    confirmation_ticket_outbound: "OUTBOUND Ticket",
+    confirmation_ticket_return: "RETURN Ticket",
+    details_label_passengers: "Passengers",
+    details_label_seats: "Seats",
+    details_label_company: "Company",
+    details_label_bus_no: "Bus No.",
+    qr_code_title: "🎫 E-Ticket",
+    qr_code_instruction: "Present this code upon boarding",
+    info_arrive_early_title: "Arrive Early",
+    info_arrive_early_desc: "Please arrive <strong>30 minutes before departure</strong> with a valid ID",
+    info_baggage_title: "Baggage Included",
+    info_baggage_desc: "1 checked bag (20kg) + 1 carry-on bag",
+    button_download_outbound: "📥 Download Outbound Ticket",
+    button_download_return: "📥 Download Return Ticket",
+    button_track_outbound: "🛰️ Track Outbound Bus",
+    button_track_return: "🛰️ Track Return Bus",
+    button_new_booking_alt: "🏠 New Booking",
+    confirmation_help: "Need help? Contact us:",
+    
   }
 }
