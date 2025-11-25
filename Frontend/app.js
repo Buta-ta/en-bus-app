@@ -2840,27 +2840,32 @@ function updateSeatSummary() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // --- 2. Récupération des éléments DOM ---
+    // --- 2. Récupération des données et éléments DOM ---
+    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
+    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
+    
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
     const seatsLabel = document.querySelector('span[data-i18n="seats_summary_seats"]');
     const priceLabel = document.querySelector('span[data-i18n="seats_summary_price"]');
 
-    if (!seatsDisplay || !priceDisplay || !seatsLabel || !priceLabel) return;
+    // Sécurité : si les éléments de base n'existent pas, on arrête
+    if (!seatsDisplay || !priceDisplay || !seatsLabel || !priceLabel) {
+        return;
+    }
     
-    // ===========================================
-    // ✅ TRADUCTION DES LABELS STATIQUES
-    // ===========================================
+    // --- 3. Traduction des labels statiques ---
     seatsLabel.textContent = translation.seats_summary_seats || "Sièges :";
     priceLabel.textContent = translation.seats_summary_price || "Prix :";
-    // ===========================================
 
-    // --- 3. Mise à jour des valeurs dynamiques ---
-    const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
-    const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-
-    if (!currentBus) return;
-
+    // Sécurité : si le bus n'est pas encore sélectionné, on ne peut pas calculer le prix
+    if (!currentBus) {
+        seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
+        priceDisplay.textContent = "0 FCFA";
+        return;
+    }
+    
+    // --- 4. Mise à jour des valeurs dynamiques ---
     if (currentSeats.length === 0) {
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
@@ -2877,7 +2882,6 @@ function updateSeatSummary() {
         priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
     }
 }
-
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
