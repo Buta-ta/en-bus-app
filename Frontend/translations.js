@@ -91,6 +91,8 @@ const translations = {
 
     filter_amenities: "Équipements :",
     filter_reset_button: "Réinitialiser",
+    results_title: "Résultats de recherche",
+    results_back_button: "← Modifier la recherche",
       
 
 
@@ -231,6 +233,9 @@ const translations = {
 
     filter_amenities: "Amenities:",
     filter_reset_button: "Reset",
+    results_title: "Search Results",
+    results_back_button: "← Modify Search",
+    
 
 
     // --- Passengers & Baggage Page ---
