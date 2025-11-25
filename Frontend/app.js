@@ -1344,10 +1344,9 @@ window.downloadTicket = async function(isReturn = false) {
 function displayPaymentInstructions(reservation) {
     console.log('📄 Affichage des instructions de paiement pour:', reservation.bookingNumber);
     
-    // --- 1. Récupération des traductions ---
+    // --- 1. Récupération des traductions et des données ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-
     const paymentMethod = reservation.paymentMethod;
     const isAgencyPayment = paymentMethod === 'AGENCY';
     const merchantNumber = paymentMethod === 'MTN' ? CONFIG.MTN_MERCHANT_NUMBER : CONFIG.AIRTEL_MERCHANT_NUMBER;
@@ -1370,7 +1369,7 @@ function displayPaymentInstructions(reservation) {
             <div class="detail-row">
                 <span class="detail-label">${translation.payment_ref_label_important}</span>
                 <span class="detail-value highlight">${reservation.agencyPaymentCode}</span>
-                <div class="detail-warning">${translation.payment_ref_warning_agency}</div>
+                <div class="detail-warning">${translation.payment_ref_warning_agency || "Présentez ce code à l'agence."}</div>
             </div>
         `;
     } else { // Mobile Money
@@ -1419,6 +1418,7 @@ function displayPaymentInstructions(reservation) {
         </div>
     ` : '';
 
+    // --- 3. Template HTML final avec le décompteur ---
     const instructionsHTML = `
         <div class="payment-instructions-card">
             <div class="instruction-header">
@@ -1428,12 +1428,10 @@ function displayPaymentInstructions(reservation) {
                     <p class="instruction-subtitle">${translation.payment_instructions_subtitle}</p>
                 </div>
             </div>
-            
             <div class="booking-reference">
                 <div class="reference-label">${translation.booking_ref_label}</div>
                 <div class="reference-number">${reservation.bookingNumber}</div>
             </div>
-            
             <div class="payment-details">
                 <div class="detail-row">
                     <span class="detail-label">${translation.amount_to_pay_label}</span>
@@ -1442,13 +1440,16 @@ function displayPaymentInstructions(reservation) {
                 ${paymentDetailsContent}
                 <div class="detail-row">
                     <span class="detail-label">${translation.payment_deadline_label}</span>
-                    <span class="detail-value">${deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`)}</span>
+                    <span class="detail-value">${deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <!-- ✅ BLOC POUR LE DÉCOMPTEUR DYNAMIQUE -->
+                <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}" style="text-align: center; margin-top: 10px;">
+                    Temps restant : 
+                    <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">Calcul...</span>
                 </div>
             </div>
-            
             ${paymentStepsContent}
             ${transactionSubmissionHTML}
-            
             <div class="deadline-warning">
                 <div class="warning-icon">⚠️</div>
                 <div>
@@ -1456,7 +1457,6 @@ function displayPaymentInstructions(reservation) {
                     <p>${translation.deadline_warning_desc(deadline.toLocaleDateString(lang), deadline.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }))}</p>
                 </div>
             </div>
-            
             <div class="action-buttons">
                 ${!isAgencyPayment ? `<button class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')">${translation.check_status_button}</button>` : ''}
                 <button class="btn btn-secondary" onclick="showPage('home')">${translation.back_home_button}</button>
@@ -1464,6 +1464,7 @@ function displayPaymentInstructions(reservation) {
         </div>
     `;
     
+    // --- 4. Affichage et démarrage du décompteur ---
     const instructionsPage = document.getElementById('payment-instructions-page');
     if (!instructionsPage) {
         console.error('❌ Élément #payment-instructions-page introuvable.');
@@ -1472,7 +1473,10 @@ function displayPaymentInstructions(reservation) {
     
     instructionsPage.innerHTML = instructionsHTML;
     showPage('payment-instructions');
+    
+    // On appelle la fonction qui va trouver les éléments du décompteur et le lancer
     startFrontendCountdown();
+    
     appState.currentReservation = reservation;
 }
 
