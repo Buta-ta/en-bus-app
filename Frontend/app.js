@@ -3479,40 +3479,51 @@ async function displayConfirmation(reservation) {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // --- 2. Cibles DOM (inchangé) ---
+    // --- 2. Cibles DOM ---
     const outboundSection = document.getElementById('outbound-ticket-section');
     const returnSection = document.getElementById('return-ticket-section');
     const actionsContainer = document.getElementById('confirmation-actions-container');
     const confirmationTitle = document.querySelector('#confirmation-page .confirmation-title');
     const confirmationSubtitle = document.querySelector('#confirmation-page .confirmation-subtitle');
     const bookingNumberDisplay = document.getElementById('booking-number-display');
-    const statusBadge = document.querySelector('#confirmation-page .status-badge');
+    const statusBadge = document.querySelector('#confirmation-page .status-badge span:last-child'); // Cible le texte
+    const bookingBadgeLabel = document.querySelector('#confirmation-page .booking-badge .badge-label');
+    const infoArriveEarlyTitle = document.querySelector('[data-i18n-key="info_arrive_early_title"] h4'); // Cible précise
+    const infoArriveEarlyDesc = document.querySelector('[data-i18n-key="info_arrive_early_desc"] p');
+    const infoBaggageTitle = document.querySelector('[data-i18n-key="info_baggage_title"] h4');
+    const infoBaggageDesc = document.querySelector('[data-i18n-key="info_baggage_desc"] p');
+    const helpText = document.querySelector('.confirmation-footer p');
 
-    // --- 3. Nettoyage initial (inchangé) ---
-    outboundSection.innerHTML = '<div class="loading-spinner">Chargement...</div>';
+    // --- 3. Nettoyage initial ---
+    outboundSection.innerHTML = `<div class="loading-spinner">${translation.loading_ticket || 'Chargement...'}</div>`;
     returnSection.innerHTML = '';
     returnSection.style.display = 'none';
     actionsContainer.innerHTML = '';
     document.querySelectorAll('.info-card-warning.payment-notice').forEach(el => el.remove());
 
-    // --- 4. Mise à jour des infos de base (inchangé) ---
+    // --- 4. Traduction des éléments statiques ---
     bookingNumberDisplay.textContent = reservation.bookingNumber;
+    if (bookingBadgeLabel) bookingBadgeLabel.textContent = translation.confirmation_booking_number_label;
+    if (infoArriveEarlyTitle) infoArriveEarlyTitle.textContent = translation.info_arrive_early_title;
+    if (infoArriveEarlyDesc) infoArriveEarlyDesc.innerHTML = translation.info_arrive_early_desc;
+    if (infoBaggageTitle) infoBaggageTitle.textContent = translation.info_baggage_title;
+    if (infoBaggageDesc) infoBaggageDesc.innerHTML = translation.info_baggage_desc;
+    if (helpText) helpText.textContent = translation.confirmation_help;
 
-    // --- 5. Gestion du cas "En attente de paiement" (traduit) ---
+    // --- 5. Logique par statut ---
     if (reservation.status === 'En attente de paiement') {
         confirmationTitle.textContent = translation.confirmation_title_pending || "Finalisez votre paiement";
-        confirmationSubtitle.textContent = translation.confirmation_subtitle_pending || "Votre réservation est en attente";
-        statusBadge.innerHTML = `<span class="status-icon">⏳</span><span>${translation.status_pending}</span>`;
-        // ... (le reste de la logique est correct)
+        confirmationSubtitle.textContent = translation.confirmation_subtitle_pending || "Réservation en attente";
+        if (statusBadge) statusBadge.textContent = translation.status_pending;
+        outboundSection.innerHTML = ''; 
+        // ... (votre logique pour afficher les instructions de paiement est correcte)
         return;
     }
 
-    // --- 6. Cas "Confirmé" (traduit) ---
     confirmationTitle.textContent = translation.confirmation_page_title;
     confirmationSubtitle.textContent = translation.confirmation_page_subtitle;
-    statusBadge.innerHTML = `<span class="status-icon">✓</span><span>${translation.confirmation_status_confirmed}</span>`;
+    if (statusBadge) statusBadge.textContent = translation.confirmation_status_confirmed;
 
-    // --- Fonction Helper pour créer le billet (traduite) ---
     const createTicketHTML = async (tripData, isReturn = false) => {
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150).catch(err => '');
@@ -3521,13 +3532,13 @@ async function displayConfirmation(reservation) {
         const route = tripData.route;
 
         return `
-            <h2>${tripTypeLabel}</h2>
+            <h2 style="font-family: var(--font-logo); ...">${tripTypeLabel}</h2>
             <div class="journey-card">...</div>
             <div class="details-grid-modern">
-                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_passengers}</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_seats}</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
-                <div class="detail-item-modern"><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busId || 'N/A'}</div></div>
+                <div><div class="detail-label">${translation.details_label_passengers}</div><div class="detail-value">${reservation.passengers.map(p => p.name).join(', ')}</div></div>
+                <div><div class="detail-label">${translation.details_label_seats}</div><div class="detail-value">${tripData.seats.join(', ')}</div></div>
+                <div><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
+                <div><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busId || 'N/A'}</div></div>
             </div>
             <div class="qr-section-modern">
                 <div class="qr-info">
@@ -3539,26 +3550,28 @@ async function displayConfirmation(reservation) {
     };
 
     try {
-        // ... (génération des billets, inchangée) ...
+        outboundSection.innerHTML = await createTicketHTML({ route: reservation.route, date: reservation.date, seats: reservation.seats }, false);
+        if (reservation.returnRoute) {
+            returnSection.style.display = 'block';
+            returnSection.innerHTML = await createTicketHTML({ route: reservation.returnRoute, date: reservation.returnDate, seats: reservation.returnSeats }, true);
+        }
 
-        // --- Génération des boutons d'action (traduits) ---
         let actionsHTML = `<button class="btn-modern btn-download" onclick="downloadTicket(false)"><span class="btn-icon">📥</span><span class="btn-text">${translation.button_download_outbound}</span></button>`;
         if (reservation.busIdentifier) {
-            actionsHTML += `<a class="btn-modern btn-track" href="..."><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
+            actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }
         if (reservation.returnRoute) {
             actionsHTML += `<button class="btn-modern btn-download" onclick="downloadTicket(true)"><span class="btn-icon">📥</span><span class="btn-text">${translation.button_download_return}</span></button>`;
             if (reservation.returnBusIdentifier) {
-                actionsHTML += `<a class="btn-modern btn-track" href="..."><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_return}</span></a>`;
+                actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.returnBusIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_return}</span></a>`;
             }
         }
         actionsHTML += `<button class="btn-modern btn-home" onclick="resetAndGoHome()"><span class="btn-icon">🏠</span><span class="btn-text">${translation.button_new_booking_alt}</span></button>`;
         
         actionsContainer.innerHTML = actionsHTML;
-
     } catch (err) {
         console.error("❌ Erreur affichage confirmation:", err);
-        Utils.showToast("Erreur lors de l'affichage des détails.", "error");
+        Utils.showToast("Erreur d'affichage.", 'error');
     }
 }
 async function displayReservations() {
