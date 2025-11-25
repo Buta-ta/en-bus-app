@@ -91,8 +91,16 @@ const translations = {
 
     filter_amenities: "Équipements :",
     filter_reset_button: "Réinitialiser",
+    success_filters_reset: "Filtres réinitialisés",
+
     results_title: "Résultats de recherche",
     results_back_button: "← Retour",
+    filter_amenities: "Équipements :",
+    amenity_wifi: "Wi-Fi",
+    amenity_wc: "WC",
+    amenity_plugs: "Prises",
+    amenity_ac: "Clim",
+
       
 
 
@@ -205,6 +213,8 @@ const translations = {
     amenity_labels: { "wifi": "Wi-Fi", "wc": "Restroom", "prise": "Outlets", "clim": "AC", "pause": "Break", "direct": "Direct" },
     filter_reset_button: "Reset",
     details_connections: "Connection:",
+    success_filters_reset: "Filters reset",
+
 
     filter_sort_by: "Sort by:",
     sort_by_departure: "Departure time",
@@ -235,6 +245,12 @@ const translations = {
     filter_reset_button: "Reset",
     results_title: "Search Results",
     results_back_button: "← Return",
+    filter_amenities: "Amenities:",
+    amenity_wifi: "Wi-Fi",
+    amenity_wc: "Restroom",
+    amenity_plugs: "Plugs",
+    amenity_ac: "AC",
+
     
 
 
