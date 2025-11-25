@@ -3222,6 +3222,9 @@ window.proceedToPayment = function() {
 
 function displayBookingSummary() {
     console.log("📊 Affichage du récapitulatif de réservation...");
+    
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
@@ -3230,44 +3233,43 @@ function displayBookingSummary() {
     }
 
     if (!appState.selectedBus || !appState.currentSearch || !appState.passengerInfo) {
-        Utils.showToast("Une erreur critique est survenue. Veuillez recommencer.", "error");
+        Utils.showToast("Une erreur critique est survenue.", "error"); // Pensez à traduire ce message aussi
         showPage('home');
         return;
     }
 
-    // --- Calcul du prix (centralisé) ---
     const priceDetails = Utils.calculateTotalPrice(appState);
     const finalTotalPrice = priceDetails.total;
     const totalTicketsPrice = priceDetails.tickets + priceDetails.returnTickets;
 
-    // --- Construction du récapitulatif HTML (amélioré) ---
+    // --- Construction du récapitulatif HTML avec traductions ---
     let summaryHTML = `
-        <div class="detail-row"><span>Itinéraire Aller:</span><strong>${appState.selectedBus.from || 'N/A'} → ${appState.selectedBus.to || 'N/A'}</strong></div>
-        <div class="detail-row"><span>Date Aller:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
+        <div class="detail-row"><span>${translation.summary_outbound_route}:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>${translation.summary_outbound_date}:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
     `;
     if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
         summaryHTML += `
-            <div class="detail-row"><span>Itinéraire Retour:</span><strong>${appState.selectedReturnBus.from || 'N/A'} → ${appState.selectedReturnBus.to || 'N/A'}</strong></div>
-            <div class="detail-row"><span>Date Retour:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate)}</strong></div>
+            <div class="detail-row"><span>${translation.summary_return_route}:</span><strong>${appState.selectedReturnBus.from} → ${appState.selectedReturnBus.to}</strong></div>
+            <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate)}</strong></div>
         `;
     }
     summaryHTML += `
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(totalTicketsPrice)} FCFA</strong></div>
-        <div class="detail-row"><span>Frais de bagages:</span><strong>+ ${Utils.formatPrice(priceDetails.baggage)} FCFA</strong></div>
+        <div class="detail-row"><span>${translation.summary_tickets_price}:</span><strong>${Utils.formatPrice(totalTicketsPrice)} FCFA</strong></div>
+        <div class="detail-row"><span>${translation.summary_baggage_fees}:</span><strong>+ ${Utils.formatPrice(priceDetails.baggage)} FCFA</strong></div>
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(finalTotalPrice)} FCFA</strong></div>
+        <div class="detail-row total-row"><span>${translation.summary_total_price}:</span><strong>${Utils.formatPrice(finalTotalPrice)} FCFA</strong></div>
     `;
     summaryContainer.innerHTML = summaryHTML;
 
-    // --- Mise à jour des champs de paiement ---
+    // --- Mise à jour des champs de paiement (inchangé) ---
     const amountStr = `${Utils.formatPrice(finalTotalPrice)} FCFA`;
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
         if (amountInput) amountInput.value = amountStr;
     });
 
-    // ✅ NOUVELLE LOGIQUE : Afficher l'indicateur d'urgence
+    // --- Traduction de la boîte d'urgence ---
     const urgencyBox = document.getElementById('urgency-box');
     (async () => {
         if (!urgencyBox) return;
@@ -3284,22 +3286,22 @@ function displayBookingSummary() {
                 
                 urgencyBox.innerHTML = `
                     <div class="urgency-item">
-                        <span class="urgency-label">Places restantes</span>
+                        <span class="urgency-label">${translation.urgency_seats_left}</span>
                         ${seatsLeftHTML}
                     </div>
                     <div class="urgency-item">
-                        <span class="urgency-label">Votre réservation expire dans</span>
+                        <span class="urgency-label">${translation.urgency_deadline}</span>
                         <span id="payment-countdown-timer-box" class="urgency-value">--:--</span>
                     </div>
                 `;
                 urgencyBox.style.display = 'grid';
-                startUrgencyCountdown(); // Lance le minuteur
+                startUrgencyCountdown(); // Vous devez aussi avoir cette fonction
             } else {
                  urgencyBox.style.display = 'none';
             }
         } catch (e) {
             console.error("Erreur affichage urgence:", e);
-            urgencyBox.style.display = 'none';
+            if(urgencyBox) urgencyBox.style.display = 'none';
         }
     })();
     
