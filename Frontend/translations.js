@@ -197,7 +197,18 @@ const translations = {
     toast_report_confirming: "Confirmation du report en cours...",
     toast_report_confirmed: "✅ Voyage reporté avec succès !",
     toast_report_request_sent: "✅ Demande de report envoyée !",
-      
+    payment_agency_info_report: "Vous devrez payer la différence à l'agence. Votre demande sera validée par un admin.",
+    info_credit_generated: (amount) => `💰 Un crédit de ${amount} FCFA sera ajouté à votre compte.`,
+    button_confirm_report: "✅ Confirmer le report",
+    toast_searching_available_trips: "Recherche des voyages disponibles...",
+    toast_checking_conditions: "Vérification des conditions de report...",
+    error_report_not_allowed: "Report non autorisé pour ce billet.",
+    info_no_trips_found_report: "Aucun autre voyage disponible pour le report.",
+    error_generic: "Une erreur est survenue.",
+
+
+
+          
 
 
 
@@ -695,6 +706,16 @@ const translations = {
     toast_report_confirming: "Confirming reschedule...",
     toast_report_confirmed: "✅ Trip rescheduled successfully!",
     toast_report_request_sent: "✅ Reschedule request sent!",
+    toast_searching_available_trips: "Searching for available trips...",
+    payment_agency_info_report: "You will need to pay the difference at the agency. Your request will be validated by an admin.",
+    info_credit_generated: (amount) => `💰 A credit of ${amount} FCFA will be added to your account.`,
+    button_confirm_report: "✅ Confirm Reschedule",
+    toast_checking_conditions: "Checking reschedule conditions...",
+    error_report_not_allowed: "Reschedule not allowed for this ticket.",
+    info_no_trips_found_report: "No other trips available for reschedule.",
+    error_generic: "An error occurred.",
+
+
         
     // --- Error Messages ---
     error_missing_departure_date: "Please select a departure date",

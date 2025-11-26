@@ -3815,44 +3815,44 @@ async function viewPaymentInstructions(bookingNumber) {
 window.initiateReport = async function(bookingNumber) {
     console.log('🔄 Initiation du report pour:', bookingNumber);
     
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
     try {
-        // 1️⃣ Vérifier si le report est autorisé
-        Utils.showToast('Vérification des conditions de report...', 'info');
+        // --- 2. Vérifier si le report est autorisé ---
+        Utils.showToast(translation.toast_checking_conditions, 'info');
         
-        const canReportResponse = await fetch(
-            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/can-report`
-        );
+        const canReportResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/can-report`);
         const canReportData = await canReportResponse.json();
         
         if (!canReportData.success || !canReportData.canReport) {
-            const reasons = canReportData.reasons?.join('\n') || 'Report non autorisé.';
+            const reasons = canReportData.reasons?.join('\n') || translation.error_report_not_allowed;
             Utils.showToast(reasons, 'error');
             return;
         }
         
         console.log('✅ Report autorisé. Nombre de reports:', canReportData.currentReportCount);
         
-        // 2️⃣ Récupérer les voyages disponibles
-        Utils.showToast('Recherche des voyages disponibles...', 'info');
+        // --- 3. Récupérer les voyages disponibles ---
+        Utils.showToast(translation.toast_searching_available_trips, 'info');
         
-        const tripsResponse = await fetch(
-            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/available-trips`
-        );
+        const tripsResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/available-trips`);
         const tripsData = await tripsResponse.json();
         
         if (!tripsData.success || tripsData.count === 0) {
-            Utils.showToast('Aucun voyage disponible pour le report pour le moment.', 'warning');
+            Utils.showToast(translation.info_no_trips_found_report, 'warning');
             return;
         }
         
         console.log(`✅ ${tripsData.count} voyage(s) disponible(s)`);
         
-        // 3️⃣ Afficher la modale de sélection
+        // --- 4. Afficher la modale ---
         displayReportModal(bookingNumber, tripsData.currentTrip, tripsData.availableTrips, canReportData.currentReportCount);
         
     } catch (error) {
         console.error('❌ Erreur initiation report:', error);
-        Utils.showToast('Erreur lors de la vérification du report.', 'error');
+        Utils.showToast(error.message || translation.error_generic, 'error');
     }
 };
 
