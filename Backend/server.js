@@ -20,7 +20,8 @@ const { body, validationResult } = require("express-validator");
 
 // ✅ AJOUTEZ CES LIGNES ICI
 const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
-const { fr } = require('date-fns/locale'); // Pour formater en français
+// ✅ Version corrigée
+const { fr, enUS } = require('date-fns/locale');
 
 
 
