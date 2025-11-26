@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi en Temps Réel - En-Bus</title>
+    <!-- Le titre sera mis à jour par JS -->
+    <title data-i18n="page_title">Suivi en Temps Réel - En-Bus</title>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- ✅ Correction du chemin vers le style -->
     <link rel="stylesheet" href="../style.css">
@@ -159,18 +161,28 @@
 <body>
     <div id="map-container"></div>
     <div class="info-panel">
-        <h1>🛰️ Suivi du Bus</h1>
-        <p><strong>Status:</strong> <span id="status-dot"></span><span id="status-text">Connexion...</span></p>
-        <p><strong>Bus ID:</strong> <span id="bus-id-display">Chargement...</span></p>
-        <p><strong>Dernière mise à jour:</strong> <span id="last-update">Jamais</span></p>
-        <hr style="border-color: rgba(115, 215, 0, 0.2); margin: 15px 0;">
-        <!-- ✅ Correction du lien de retour -->
-        <p><a href="../index.html">&larr; Retour au site principal</a></p>
+        <h1 data-i18n="tracking_title">🛰️ Suivi du Bus</h1>
+        <p>
+            <strong data-i18n="status_label">Statut :</strong> 
+            <span id="status-dot"></span>
+            <span id="status-text" data-i18n="status_connecting">Connexion...</span>
+        </p>
+        <p>
+            <strong data-i18n="bus_id_label">Bus ID :</strong> 
+            <span id="bus-id-display" data-i18n="loading_text">Chargement...</span>
+        </p>
+        <p>
+            <strong data-i18n="last_update_label">Dernière mise à jour :</strong> 
+            <span id="last-update" data-i18n="never_updated">Jamais</span>
+        </p>
+        <hr ...>
+        <p><a href="../index.html" data-i18n="back_to_main_site">&larr; Retour au site principal</a></p>
     </div>
 
     <!-- ✅ TOUT LE JAVASCRIPT EST ICI -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
     
     <script>
         // ============================================
@@ -328,5 +340,8 @@ if (reservation.route.trackerId) {
     `;
 }
     </script>
+
+    <script src="suivi-translations.js"></script>
+    <script src="suivi.js"></script>
 </body>
 </html>

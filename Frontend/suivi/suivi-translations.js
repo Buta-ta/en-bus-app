@@ -1,0 +1,30 @@
+const translations = {
+    fr: {
+        page_title: "Suivi de votre bus",
+        loading_bus_info: "Chargement des informations du bus...",
+        booking_ref: "Réservation n°",
+        bus_ref: "Bus n°",
+        status_on_time: "À l'heure",
+        status_delayed: "En retard",
+        status_arrived: "Arrivé",
+        last_update: "Dernière mise à jour",
+        now: "à l'instant",
+        minutes_ago: (min) => `il y a ${min} min`,
+        error_no_bus_id: "Aucun identifiant de bus fourni.",
+        error_tracking_unavailable: "Suivi indisponible pour ce bus.",
+    },
+    en: {
+        page_title: "Track Your Bus",
+        loading_bus_info: "Loading bus information...",
+        booking_ref: "Booking #",
+        bus_ref: "Bus #",
+        status_on_time: "On Time",
+        status_delayed: "Delayed",
+        status_arrived: "Arrived",
+        last_update: "Last update",
+        now: "just now",
+        minutes_ago: (min) => `${min} min ago`,
+        error_no_bus_id: "No bus identifier provided.",
+        error_tracking_unavailable: "Tracking is unavailable for this bus.",
+    }
+};
