@@ -3991,20 +3991,20 @@ window.selectReportTrip = async function(tripId, bookingNumber, currentReportCou
 // 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT (AVEC PAIEMENT)
 // ============================================
 function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     const modalBody = document.getElementById('report-modal-body');
-    
-    // Logique pour l'affichage du paiement
+
+    // --- 2. Construction de la section de paiement (si nécessaire) ---
     let paymentSectionHTML = '';
-    
     if (calculation.isPaymentRequired) {
         paymentSectionHTML = `
             <div class="report-payment-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--color-border);">
-                <h4 style="color: var(--color-text-primary); margin-bottom: 10px;">💳 Paiement de la différence</h4>
-                
+                <h4 style="color: var(--color-text-primary); margin-bottom: 10px;">${translation.report_summary_payment_title}</h4>
                 <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 15px;">
-                    Montant à régler : <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong>
+                    ${translation.report_summary_amount_to_pay(Utils.formatPrice(calculation.totalCost))}
                 </p>
-
                 <div class="payment-methods" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                         <input type="radio" name="report-payment-method" value="MTN" checked onclick="toggleReportAgencyInfo(false)"> 
@@ -4016,84 +4016,66 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
                     </label>
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                         <input type="radio" name="report-payment-method" value="AGENCY" onclick="toggleReportAgencyInfo(true)"> 
-                        <span>🏢 Agence</span>
+                        <span>🏢 ${translation.payment_agency_name}</span>
                     </label>
                 </div>
-
-                <!-- Zone ID Transaction (pour Mobile Money) -->
                 <div id="report-transaction-input">
                     <div class="form-group">
-                        <label for="report-transaction-id" style="display:block; margin-bottom: 5px; font-weight: 600;">ID de Transaction (Preuve) *</label>
-                        <input type="text" id="report-transaction-id" class="form-control" placeholder="Entrez l'ID reçu par SMS" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-primary);">
-                        <small style="color: var(--color-text-secondary); font-size: 0.8rem;">Envoyez au : ${CONFIG.MTN_MERCHANT_NUMBER}</small>
+                        <label for="report-transaction-id" style="display:block; margin-bottom: 5px; font-weight: 600;">${translation.transaction_id_label}</label>
+                        <input type="text" id="report-transaction-id" class="form-control" placeholder="${translation.transaction_id_placeholder}" style="width: 100%; padding: 10px; border-radius: 8px;">
+                        <small style="color: var(--color-text-secondary); font-size: 0.8rem;">${translation.report_summary_payment_info(CONFIG.MTN_MERCHANT_NUMBER)}</small>
                     </div>
                 </div>
-
-                <!-- Zone Info Agence (cachée par défaut) -->
-                <div id="report-agency-info" style="display: none; background: rgba(255, 152, 0, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff9800; margin-bottom: 15px;">
+                <div id="report-agency-info" style="display: none; background: rgba(255, 152, 0, 0.1); padding: 15px; border-radius: 8px;">
                     <p style="color: #ff9800; font-size: 0.9rem; margin: 0;">
-                        <strong>⚠️ Paiement à l'agence requis</strong><br>
-                        Vous devrez payer la différence directement à l'agence avant le départ. Votre demande sera validée par un administrateur.
+                        <strong>${translation.payment_agency_important_title}</strong><br>
+                        ${translation.payment_agency_info_report}
                     </p>
                 </div>
             </div>
         `;
     }
 
-    // Le reste de la fonction est inchangé...
+    // --- 3. Construction du récapitulatif ---
     let summaryHTML = `
         <div class="report-summary">
-            <h3>📊 Récapitulatif du report</h3>
-            
+            <h3>${translation.report_summary_title}</h3>
             <div class="report-summary-line">
-                <span>Prix actuel</span>
+                <span>${translation.report_summary_current_price}</span>
                 <strong>${Utils.formatPrice(calculation.currentPrice)} FCFA</strong>
             </div>
-            
             <div class="report-summary-line">
-                <span>Prix nouveau voyage</span>
+                <span>${translation.report_summary_new_price}</span>
                 <strong>${Utils.formatPrice(calculation.newPrice)} FCFA</strong>
             </div>
-            
             <div class="report-summary-line">
-                <span>Différence de prix</span>
-                <strong style="color: ${calculation.priceDifference >= 0 ? '#ff9800' : 'var(--color-accent-glow)'}">
-                    ${calculation.priceDifference >= 0 ? '+' : ''}${Utils.formatPrice(calculation.priceDifference)} FCFA
-                </strong>
+                <span>${translation.report_summary_price_diff}</span>
+                <strong style="color: ${calculation.priceDifference >= 0 ? '#ff9800' : '#73d700'}">${calculation.priceDifference >= 0 ? '+' : ''}${Utils.formatPrice(calculation.priceDifference)} FCFA</strong>
             </div>
-            
             <div class="report-summary-line">
-                <span>Frais de report (${reportCount + 1}${reportCount === 0 ? 'er' : 'ème'})</span>
-                <strong>${calculation.reportFee === 0 ? 'GRATUIT' : Utils.formatPrice(calculation.reportFee) + ' FCFA'}</strong>
+                <span>${translation.report_summary_fee(reportCount + 1)}</span>
+                <strong>${calculation.reportFee === 0 ? translation.report_summary_fee_free : Utils.formatPrice(calculation.reportFee) + ' FCFA'}</strong>
             </div>
-            
             <div class="report-summary-line total">
-                <span>TOTAL À PAYER</span>
+                <span>${calculation.isPaymentRequired ? translation.report_summary_total_to_pay : translation.report_summary_credit_generated}</span>
                 <strong>${Utils.formatPrice(Math.abs(calculation.totalCost))} FCFA</strong>
             </div>
-            
             ${paymentSectionHTML}
-            
-            ${calculation.isCreditGenerated ? `
-                <div class="report-warning" style="margin-top: var(--space-16); background: rgba(115, 215, 0, 0.1); border-color: var(--color-accent-glow); color: var(--color-accent-glow);">
-                    💰 Un crédit de ${Utils.formatPrice(calculation.creditAmount)} FCFA sera ajouté à votre compte.
-                </div>
-            ` : ''}
+            ${calculation.isCreditGenerated ? `<div class="report-warning" style="margin-top: 1rem; background: rgba(115, 215, 0, 0.1); border-color: #73d700; color: #73d700;">${translation.info_credit_generated(Utils.formatPrice(calculation.creditAmount))}</div>` : ''}
         </div>
-        
         <div class="report-actions">
-            <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
+            <button class="btn btn-secondary" onclick="closeReportModal()">${translation.button_cancel}</button>
             <button class="btn btn-primary" onclick="confirmReport('${bookingNumber}', '${tripId}', ${calculation.isPaymentRequired}, ${calculation.totalCost})">
-                ${calculation.isPaymentRequired ? 'Valider la demande' : '✅ Confirmer le report'}
+                ${calculation.isPaymentRequired ? translation.report_summary_submit_button : translation.button_confirm_report}
             </button>
         </div>
     `;
     
+    // --- 4. Injection du HTML ---
     const existingSummary = modalBody.querySelector('.report-summary');
     if (existingSummary) existingSummary.remove();
     const existingActions = modalBody.querySelector('.report-actions');
     if (existingActions) existingActions.remove();
-    
     modalBody.insertAdjacentHTML('beforeend', summaryHTML);
 }
 
