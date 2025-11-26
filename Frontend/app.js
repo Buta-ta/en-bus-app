@@ -3861,36 +3861,39 @@ window.initiateReport = async function(bookingNumber) {
 // ============================================
 
 function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCount) {
-    const modalBody = document.getElementById('report-modal-body');
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     
-    // Construire le HTML
+    const modalTitle = document.getElementById('report-modal-title');
+    const modalBody = document.getElementById('report-modal-body');
+    if (modalTitle) modalTitle.textContent = translation.report_modal_title;
+
+    // --- 2. Construction du HTML avec les traductions ---
     let html = `
-        <!-- Voyage actuel -->
         <div class="report-current-trip">
-            <h3>📍 Votre voyage actuel</h3>
+            <h3>${translation.report_current_trip_title}</h3>
             <div class="report-trip-info">
                 <div class="info-row">
-                    <span class="info-label">Date</span>
-                    <span class="info-value">${Utils.formatDate(currentTrip.date)}</span>
+                    <span class="info-label">${translation.report_label_date}</span>
+                    <span class="info-value">${Utils.formatDate(currentTrip.date, lang)}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Prix payé</span>
+                    <span class="info-label">${translation.report_label_price_paid}</span>
                     <span class="info-value">${Utils.formatPrice(currentTrip.price)} FCFA</span>
                 </div>
             </div>
         </div>
         
-        <!-- Information sur le nombre de reports -->
         <div class="report-warning">
             ${reportCount === 0 
-                ? '✅ Premier report : <strong>GRATUIT</strong>' 
-                : `⚠️ Ceci sera votre report n°${reportCount + 1}. Des frais peuvent s'appliquer.`
+                ? translation.report_first_free 
+                : (typeof translation.report_fee_applies === 'function' ? translation.report_fee_applies(reportCount + 1) : '')
             }
         </div>
         
-        <!-- Liste des voyages disponibles -->
-        <h3 style="margin-top: var(--space-24); margin-bottom: var(--space-12); color: var(--color-accent-glow);">
-            Sélectionnez une nouvelle date
+        <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--color-accent-glow);">
+            ${translation.report_select_new_date}
         </h3>
         
         <div class="report-trips-list">
@@ -3899,58 +3902,44 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
     availableTrips.forEach(trip => {
         const availabilityClass = trip.availableSeats < 10 ? 'low' : '';
         const priceDiff = trip.route.price - currentTrip.price;
-        let priceDiffHTML = '';
-        let priceDiffClass = 'neutral';
+        let priceDiffHTML = '', priceDiffClass = 'neutral';
         
         if (priceDiff > 0) {
-            priceDiffHTML = `+${Utils.formatPrice(priceDiff)} FCFA à payer`;
+            priceDiffHTML = translation.report_price_diff_positive(Utils.formatPrice(priceDiff));
             priceDiffClass = 'positive';
         } else if (priceDiff < 0) {
-            priceDiffHTML = `${Utils.formatPrice(Math.abs(priceDiff))} FCFA de crédit`;
+            priceDiffHTML = translation.report_price_diff_negative(Utils.formatPrice(Math.abs(priceDiff)));
             priceDiffClass = 'negative';
         } else {
-            priceDiffHTML = 'Même prix';
-            priceDiffClass = 'neutral';
+            priceDiffHTML = translation.report_price_diff_neutral;
         }
         
         html += `
             <div class="report-trip-card" onclick="selectReportTrip('${trip.id}', '${bookingNumber}', ${reportCount})">
                 <div class="report-trip-header">
-                    <div class="report-trip-date">
-                        📅 ${Utils.formatDate(trip.date)}
-                    </div>
-                    <div class="report-trip-availability ${availabilityClass}">
-                        ${trip.availableSeats} place(s) restante(s)
-                    </div>
+                    <div class="report-trip-date">📅 ${Utils.formatDate(trip.date, lang)}</div>
+                    <div class="report-trip-availability ${availabilityClass}">${translation.report_seats_left(trip.availableSeats)}</div>
                 </div>
-                
                 <div class="report-trip-details">
                     <div>🚌 ${trip.route.company}</div>
                     <div>🕐 ${trip.route.departure} → ${trip.route.arrival}</div>
                     <div>💰 ${Utils.formatPrice(trip.route.price)} FCFA</div>
                 </div>
-                
-                <div class="report-price-difference ${priceDiffClass}">
-                    ${priceDiffHTML}
-                </div>
+                <div class="report-price-difference ${priceDiffClass}">${priceDiffHTML}</div>
             </div>
         `;
     });
     
     html += `
         </div>
-        
         <div class="report-actions">
-            <button class="btn btn-secondary" onclick="closeReportModal()">Annuler</button>
+            <button class="btn btn-secondary" onclick="closeReportModal()">${translation.button_cancel}</button>
         </div>
     `;
     
     modalBody.innerHTML = html;
-    
-    // Afficher la modale
     document.getElementById('report-modal').classList.add('active');
 }
-
 // ============================================
 // ✅ SÉLECTION D'UN VOYAGE POUR LE REPORT
 // ============================================

@@ -166,7 +166,38 @@ const translations = {
     button_track: "Suivre",
     button_delete_title: "Masquer de l'historique",
     date_at_time: (date, time) => `${date} à ${time}`,
-    
+
+
+    // --- Modale de Report ---
+    report_modal_title: "Reporter votre voyage",
+    report_current_trip_title: "📍 Votre voyage actuel",
+    report_label_date: "Date",
+    report_label_price_paid: "Prix payé",
+    report_first_free: "✅ Premier report : <strong>GRATUIT</strong>",
+    report_fee_applies: (count) => `⚠️ Ceci sera votre report n°${count}. Des frais peuvent s'appliquer.`,
+    report_select_new_date: "Sélectionnez une nouvelle date",
+    report_seats_left: (count) => `${count} place(s) restante(s)`,
+    report_price_diff_positive: (price) => `+${price} FCFA à payer`,
+    report_price_diff_negative: (price) => `${price} FCFA de crédit`,
+    report_price_diff_neutral: "Même prix",
+    button_cancel: "Annuler",
+    report_summary_title: "📊 Récapitulatif du report",
+    report_summary_current_price: "Prix actuel",
+    report_summary_new_price: "Prix nouveau voyage",
+    report_summary_price_diff: "Différence de prix",
+    report_summary_fee: (count) => `Frais de report (${count}${count === 1 ? 'er' : 'ème'})`,
+    report_summary_fee_free: "GRATUIT",
+    report_summary_total_to_pay: "TOTAL À PAYER",
+    report_summary_credit_generated: "CRÉDIT GÉNÉRÉ",
+    report_summary_payment_title: "💳 Paiement de la différence",
+    report_summary_amount_to_pay: (amount) => `Montant à régler : ${amount} FCFA`,
+    report_summary_payment_info: (number) => `Envoyez au : ${number}`,
+    report_summary_submit_button: "Valider la demande",
+    toast_report_calculating_cost: "Calcul du coût du report...",
+    toast_report_confirming: "Confirmation du report en cours...",
+    toast_report_confirmed: "✅ Voyage reporté avec succès !",
+    toast_report_request_sent: "✅ Demande de report envoyée !",
+      
 
 
 
@@ -632,7 +663,39 @@ const translations = {
     button_track: "Track",
     button_delete_title: "Hide from history",
     date_at_time: (date, time) => `${date} at ${time}`,
-    
+
+
+
+    // --- Reschedule Modal ---
+    report_modal_title: "Reschedule your Trip",
+    report_current_trip_title: "📍 Your Current Trip",
+    report_label_date: "Date",
+    report_label_price_paid: "Price Paid",
+    report_first_free: "✅ First reschedule: <strong>FREE</strong>",
+    report_fee_applies: (count) => `⚠️ This will be your reschedule #${count}. Fees may apply.`,
+    report_select_new_date: "Select a new date",
+    report_seats_left: (count) => `${count} seat(s) left`,
+    report_price_diff_positive: (price) => `+${price} FCFA to pay`,
+    report_price_diff_negative: (price) => `${price} FCFA credit`,
+    report_price_diff_neutral: "Same price",
+    button_cancel: "Cancel",
+    report_summary_title: "📊 Reschedule Summary",
+    report_summary_current_price: "Current Price",
+    report_summary_new_price: "New Trip Price",
+    report_summary_price_diff: "Price Difference",
+    report_summary_fee: (count) => `Reschedule Fee (${count === 1 ? '1st' : (count === 2 ? '2nd' : '3rd')})`,
+    report_summary_fee_free: "FREE",
+    report_summary_total_to_pay: "TOTAL TO PAY",
+    report_summary_credit_generated: "CREDIT GENERATED",
+    report_summary_payment_title: "💳 Pay the Difference",
+    report_summary_amount_to_pay: (amount) => `Amount to settle: ${amount} FCFA`,
+    report_summary_payment_info: (number) => `Send to: ${number}`,
+    report_summary_submit_button: "Submit Request",
+    toast_report_calculating_cost: "Calculating reschedule cost...",
+    toast_report_confirming: "Confirming reschedule...",
+    toast_report_confirmed: "✅ Trip rescheduled successfully!",
+    toast_report_request_sent: "✅ Reschedule request sent!",
+        
     // --- Error Messages ---
     error_missing_departure_date: "Please select a departure date",
     error_missing_origin_destination: "Please select an origin and a destination city",
