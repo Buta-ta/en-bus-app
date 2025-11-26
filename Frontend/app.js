@@ -3658,6 +3658,7 @@ async function displayReservations() {
 
     listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings}</div>`;
 
+    
     // Traduire le titre de la page
     const pageTitle = document.querySelector("#reservations-page .page-header h2");
     if (pageTitle) {
