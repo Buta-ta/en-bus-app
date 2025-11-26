@@ -26,7 +26,12 @@ const translations = {
     email_report_old_trip_invalid: "(n'est plus valide)",
     email_report_new_trip_label: "Votre NOUVEAU billet :",
     email_report_outro: "Veuillez utiliser ce nouveau billet pour votre voyage.",
-  },
+    email_thanks: "Merci de votre confiance,",
+    email_team: "L'équipe En-Bus",
+    footer_copyright: "Tous droits réservés.",
+    nav_contact: "Contact",
+    nav_my_bookings: "Mes Réservations",
+    },
   en: {
 
     // --- Email Content ---
@@ -62,6 +67,12 @@ const translations = {
     email_report_old_trip_invalid: "(is no longer valid)",
     email_report_new_trip_label: "Your NEW Ticket:",
     email_report_outro: "Please use this new ticket for your travel.",
+
+    email_thanks: "Thank you for your trust,",
+    email_team: "The En-Bus Team",
+    footer_copyright: "All rights reserved.",
+    nav_contact: "Contact",
+    nav_my_bookings: "My Bookings",
 
 
     // ... (mettez les traductions anglaises ici)
