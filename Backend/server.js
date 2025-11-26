@@ -18,6 +18,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 
+// ✅ AJOUTEZ CES LIGNES ICI
+const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
+const { fr } = require('date-fns/locale'); // Pour formater en français
+
+
 
 // ✅ IMPORTER LE NOUVEAU FICHIER
 const translations = require("./emailTranslations.js");
@@ -197,16 +202,31 @@ async function sendEmail(to, subject, htmlContent) {
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) {
-        console.log(`(Email non envoyé, adresse manquante)`);
+        console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
         return;
     }
 
     const lang = reservation.lang || 'fr'; 
     const translation = translations[lang] || translations.fr;
+    const locale = lang === 'en' ? enUS : fr; // Choisir la locale pour date-fns
+    const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence
 
     const subject = translation.email_pending_subject(reservation.bookingNumber);
-    const headerTitle = translation.email_pending_title; // Vous définissez bien le titre ici
-    const deadline = new Date(reservation.paymentDeadline).toLocaleString(`${lang}-${lang.toUpperCase()}`, { dateStyle: 'full', timeStyle: 'short' });
+    const headerTitle = translation.email_pending_title;
+    
+    // ===============================================
+    // ✅ CORRECTION DU FUSEAU HORAIRE
+    // ===============================================
+    // 1. On prend la date UTC stockée en base de données
+    const deadlineUTC = new Date(reservation.paymentDeadline);
+    
+    // 2. On la convertit dans le fuseau horaire de l'Afrique Centrale
+    const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
+    
+    // 3. On formate cette date pour l'affichage, en spécifiant la langue
+    const deadline = format(zonedDeadline, "PPPP 'à' HH:mm", { locale: locale });
+    // 'PPPP' donne "mercredi 26 novembre 2025"
+    // ===============================================
     
     let paymentInstructions = '';
     if (reservation.paymentMethod === 'AGENCY') {
@@ -230,7 +250,6 @@ function sendPendingPaymentEmail(reservation) {
         <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
     `;
 
-    // ✅ On passe bien les 4 arguments
     sendEmail(client.email, subject, htmlContent, headerTitle);
 }
 function sendPaymentConfirmedEmail(reservation) {
