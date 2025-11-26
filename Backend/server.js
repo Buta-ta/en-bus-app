@@ -18,6 +18,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 
+
+// ✅ IMPORTER LE NOUVEAU FICHIER
+const translations = require("./emailTranslations.js");
+
+
 // --- Validation des variables d'environnement ---
 const requiredEnvVars = [
   "MONGODB_URI",
