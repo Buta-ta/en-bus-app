@@ -4390,6 +4390,29 @@ body.pwa-installed textarea {
         padding: 0 8px;
     }
 }
+
+
+.journey-card {
+    position: relative;
+    /* On augmente l'espace en haut pour la date */
+    padding-top: 45px; 
+    margin-top: 10px; /* On ajoute une marge pour la séparer de ce qui est au-dessus */
+}
+
+@media (max-width: 480px) {
+    /* ... (vos autres règles responsive) ... */
+
+    .journey-date-top {
+        /* On s'assure qu'elle n'est pas trop collée en haut */
+        top: 5px; 
+        max-width: 90%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+
 }
 
 
