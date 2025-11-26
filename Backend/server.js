@@ -197,16 +197,15 @@ async function sendEmail(to, subject, htmlContent) {
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) {
-        console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
+        console.log(`(Email non envoyé, adresse manquante)`);
         return;
     }
 
-    // On suppose 'fr' par défaut. Idéalement, cette info viendrait de la réservation.
     const lang = reservation.lang || 'fr'; 
     const translation = translations[lang] || translations.fr;
 
     const subject = translation.email_pending_subject(reservation.bookingNumber);
-    const headerTitle = translation.email_pending_title;
+    const headerTitle = translation.email_pending_title; // Vous définissez bien le titre ici
     const deadline = new Date(reservation.paymentDeadline).toLocaleString(`${lang}-${lang.toUpperCase()}`, { dateStyle: 'full', timeStyle: 'short' });
     
     let paymentInstructions = '';
@@ -231,7 +230,7 @@ function sendPendingPaymentEmail(reservation) {
         <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
     `;
 
-    // On appelle la fonction principale avec le template
+    // ✅ On passe bien les 4 arguments
     sendEmail(client.email, subject, htmlContent, headerTitle);
 }
 function sendPaymentConfirmedEmail(reservation) {

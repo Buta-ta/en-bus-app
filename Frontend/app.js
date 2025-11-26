@@ -3341,44 +3341,47 @@ function displayBookingSummary() {
 
     // --- 6. Boîte d'urgence et décompteur ---
     const urgencyBox = document.getElementById('urgency-box');
-    (async () => {
-        if (!urgencyBox) return;
-        try {
-            const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
-            const seatData = await response.json();
+   (async () => {
+    if (!urgencyBox) return;
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
+        const seatData = await response.json();
 
-            if (seatData.success) {
-                const availableSeats = seatData.availableSeats;
-                let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
-                if (availableSeats < 10) {
-                    seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
-                }
-                
-                // On s'assure que le conteneur du timer existe avant de le démarrer
-                const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
-                
-                urgencyBox.innerHTML = `
-                    <div class="urgency-item">
-                        <span class="urgency-label">${translation.urgency_seats_left}</span>
-                        ${seatsLeftHTML}
-                    </div>
-                    <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
-                        <span class="urgency-label">${translation.urgency_deadline}</span>
-                        <span id="payment-countdown-timer" class="urgency-value">--:--</span>
-                    </div>
-                `;
-                urgencyBox.style.display = 'grid';
-                
-                // On démarre le décompteur APRÈS avoir ajouté le HTML
-                startFrontendCountdown();
-            } else {
-                 urgencyBox.style.display = 'none';
+        // ===================================
+        // ✅ CORRECTION ICI
+        // ===================================
+        // On vérifie que la réponse est un succès ET que 'availableSeats' est bien un nombre.
+        if (seatData.success && typeof seatData.availableSeats === 'number') {
+            const availableSeats = seatData.availableSeats;
+            let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
+            if (availableSeats < 10) {
+                seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
             }
-        } catch (e) {
-            console.error("Erreur affichage urgence:", e);
-            if(urgencyBox) urgencyBox.style.display = 'none';
+            
+            const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
+            
+            urgencyBox.innerHTML = `
+                <div class="urgency-item">
+                    <span class="urgency-label">${translation.urgency_seats_left}</span>
+                    ${seatsLeftHTML} <!-- Maintenant, on est sûr que cette variable est définie -->
+                </div>
+                <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
+                    <span class="urgency-label">${translation.urgency_deadline}</span>
+                    <span id="payment-countdown-timer" class="urgency-value">--:--</span>
+                </div>
+            `;
+            urgencyBox.style.display = 'grid';
+            
+            // On peut démarrer le décompteur ici en toute sécurité
+            startFrontendCountdown();
+        } else {
+             urgencyBox.style.display = 'none';
         }
-    })();
+    } catch (e) {
+        console.error("Erreur affichage urgence:", e);
+        if(urgencyBox) urgencyBox.style.display = 'none';
+    }
+})();
     
     // --- 7. Gestion du paiement à l'agence ---
     const agencyOption = document.getElementById('agency-payment-option');
@@ -3453,7 +3456,9 @@ window.confirmBooking = async function(buttonElement) {
             createdAt: new Date().toISOString(),
             status: 'En attente de paiement',
             customerPhone: customerPhone,
-            paymentDeadline: paymentDeadline
+            paymentDeadline: paymentDeadline,
+            lang:getLanguage()
+
         };
 
         if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
