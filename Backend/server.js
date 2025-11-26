@@ -129,12 +129,14 @@ async function connectToDb() {
 // ============================================
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
-const emailTemplate = (
-  content,
-  title = "Notification de votre réservation"
-) => `
+const emailTemplate = (content, headerTitle, lang = 'fr') => {
+    // 1. On récupère le bon bloc de traductions
+    const translation = translations[lang] || translations.fr;
+    
+    // 2. On retourne le même HTML, mais avec les textes remplacés par les clés de traduction
+    return `
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="${lang}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -145,13 +147,6 @@ const emailTemplate = (
         .header { background-color: #0a0e27; padding: 30px; text-align: center; }
         .logo { font-family: 'Audiowide', sans-serif; font-size: 32px; color: #73d700; margin: 0; text-decoration: none; }
         .content { padding: 30px; color: #333; line-height: 1.6; }
-        .content h2 { font-size: 24px; color: #0a0e27; margin-top: 0; }
-        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; }
-        .info-box strong { display: block; color: #495057; font-size: 14px; margin-bottom: 5px; }
-        .info-box span { font-size: 18px; font-weight: 700; color: #0a0e27; }
-        .code-box { background-color: #e8f5e9; border: 2px dashed #73d700; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
-        .code-box-title { margin: 0 0 10px 0; font-size: 16px; color: #388e3c; }
-        .code-box-code { font-size: 32px; font-weight: bold; color: #1b5e20; letter-spacing: 4px; margin: 0; }
         .button { display: inline-block; background-color: #73d700; color: #ffffff !important; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; margin-top: 20px; }
         .footer { background-color: #0a0e27; color: #a2a7c0; padding: 20px; text-align: center; font-size: 12px; }
         .footer a { color: #73d700; text-decoration: none; }
@@ -161,45 +156,61 @@ const emailTemplate = (
     <div class="container">
         <div class="header">
             <a href="#" class="logo">En-Bus</a>
+            <h2 style="color: white; margin-top: 10px;">${headerTitle}</h2>
         </div>
         <div class="content">
             ${content}
-            <p style="margin-top: 30px;">Merci de votre confiance,<br>L'équipe En-Bus</p>
+            <p style="margin-top: 30px;">${translation.email_thanks}<br>${translation.email_team}</p>
         </div>
         <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} En-Bus. Tous droits réservés.</p>
-            <p><a href="#">Contact</a> | <a href="#">Mes Réservations</a></p>
+            <p>${translation.footer_copyright}</p>
+            <p><a href="#">${translation.nav_contact}</a> | <a href="#">${translation.nav_my_bookings}</a></p>
         </div>
     </div>
 </body>
 </html>
 `;
+};
 
-async function sendEmail(to, subject, htmlContent) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("⚠️ Clé API Resend manquante. Envoi d'email SIMULÉ.");
-    console.log(` -> À: ${to}, Sujet: ${subject}`);
-    return { success: true };
-  }
-  try {
-    const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM_ADDRESS,
-      to: [to],
-      subject: subject,
-      html: emailTemplate(htmlContent),
-    });
-    if (error) {
-      console.error(`❌ Erreur Resend à ${to}:`, error.message);
-      return { success: false, error: error.message };
+async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
+    // Sécurité : ne pas planter si la clé API est manquante
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("⚠️ Clé API Resend non configurée. Envoi d'email SIMULÉ.");
+        console.log(`   - À: ${to}, Sujet: ${subject}`);
+        return { success: true, message: "Simulation d'envoi." };
     }
-    console.log(`✅ Email envoyé à ${to}. ID: ${data.id}`);
-    return { success: true, messageId: data.id };
-  } catch (e) {
-    console.error("❌ Erreur critique sendEmail:", e.message);
-    return { success: false, error: e.message };
-  }
-}
 
+    // Sécurité : vérifier que l'expéditeur est configuré
+    if (!process.env.EMAIL_FROM_ADDRESS) {
+        console.error("❌ La variable d'environnement EMAIL_FROM_ADDRESS est manquante.");
+        return { success: false, error: "Configuration de l'expéditeur manquante." };
+    }
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM_ADDRESS,
+            to: [to],
+            subject: subject,
+            // ✅ On passe tous les arguments nécessaires au template
+            html: emailTemplate(htmlContent, headerTitle, lang),
+            headers: {
+                'X-Entity-Ref-ID': 'ENBUS-TRANSACTIONAL',
+            },
+        });
+
+        if (error) {
+            console.error(`❌ Erreur Resend lors de l'envoi à ${to}:`, error.message);
+            return { success: false, error: error.message };
+        }
+
+        console.log(`✅ Email envoyé avec succès à ${to}. ID: ${data.id}`);
+        return { success: true, messageId: data.id };
+
+    } catch (e) {
+        console.error("❌ Erreur critique dans la fonction sendEmail:", e.message);
+        return { success: false, error: e.message };
+    }
+}
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) {
@@ -225,7 +236,8 @@ function sendPendingPaymentEmail(reservation) {
     const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
     
     // 3. On formate cette date pour l'affichage, en spécifiant la langue
-    const deadline = format(zonedDeadline, "PPPP 'à' HH:mm", { locale: locale });
+    // ✅ Version corrigée
+    const deadline = format(zonedDeadline, "PPPP p", { locale: locale });
     // 'PPPP' donne "mercredi 26 novembre 2025"
     // ===============================================
     
@@ -245,13 +257,15 @@ function sendPendingPaymentEmail(reservation) {
     }
 
     const htmlContent = `
+           
+
         <h2>${translation.email_greeting(client.name)}</h2>
         <p>${translation.email_pending_intro(reservation.route.from, reservation.route.to)}</p>
         ${paymentInstructions}
         <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
     `;
 
-    sendEmail(client.email, subject, htmlContent, headerTitle);
+    sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
@@ -346,7 +360,7 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
         </div>
     `;
 
-    sendEmail(client.email, subject, htmlContent, headerTitle);
+    sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 // --- Middleware & Utilitaires ---
 function authenticateToken(req, res, next) {
