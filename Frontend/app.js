@@ -3660,7 +3660,7 @@ async function displayReservations() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // ✅ TRADUCTION DU TITRE DE LA PAGE
+    // Traduire le titre de la page
     const pageTitle = document.querySelector("#reservations-page .page-header h2");
     if (pageTitle) {
         pageTitle.textContent = translation.my_bookings_title;
@@ -3668,7 +3668,12 @@ async function displayReservations() {
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
     if (history.length === 0) {
-        listContainer.innerHTML = `<div class="no-results" style="padding: 48px; text-align: center;"><h3 data-i18n="my_bookings_none_title">${translation.my_bookings_none_title || 'Aucune réservation'}</h3><p data-i18n="my_bookings_none_desc">${translation.my_bookings_none_desc || 'Vos réservations apparaîtront ici.'}</p></div>`;
+        listContainer.innerHTML = `
+            <div class="no-results" style="padding: 48px; text-align: center;">
+                <h3>${translation.my_bookings_none_title}</h3>
+                <p>${translation.my_bookings_none_desc}</p>
+                <button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>
+            </div>`;
         return;
     }
 
@@ -3677,6 +3682,7 @@ async function displayReservations() {
         const data = await response.json();
         if (!data.success || !data.reservations) throw new Error("Données invalides");
 
+        // Logique d'auto-découverte des nouveaux billets
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         data.reservations.forEach(r => {
@@ -3690,6 +3696,7 @@ async function displayReservations() {
             return displayReservations();
         }
 
+        // Affichage de la liste triée
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
@@ -3699,19 +3706,22 @@ async function displayReservations() {
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                let statusHTML = '<span>' + (translation[`status_${res.status.toLowerCase().replace(' ', '_')}`] || res.status) + '</span>';
+                // Traduction du statut
+                let statusHTML = '';
+                if (isConfirmed) statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
+                else if (isPending) statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
+                else if (isReportPending) statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
+                else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
+                else if (isCancelled) statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
 
+                // Traduction des boutons
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
-
                 if (isConfirmed) {
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
-                    if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">Suivre</a>`;
-                    
-                    // ✅ LOGIQUE DE REPORT CORRIGÉE
+                    if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">${translation.button_track || 'Suivre'}</a>`;
                     const reportCount = res.reportCount || 0;
-                    const maxReports = 2; // Limite fixée à 2 pour le moment
-                    if (!res.returnRoute && reportCount < maxReports) {
+                    if (!res.returnRoute && reportCount < 2) { // Limite de 2 reports
                         actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
                     }
                 } else if (isPending) {
@@ -3725,11 +3735,17 @@ async function displayReservations() {
                     actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
                 }
 
-                // ✅ BOUTON DE SUPPRESSION RÉINTÉGRÉ
+                // Bouton de suppression
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
-                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="Masquer de cet appareil">🗑️</button>`;
+                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
                 }
+                
+                // Traduction de la date et de l'heure
+                const formattedDate = Utils.formatDate(res.date, lang);
+                const dateTimeString = (typeof translation.date_at_time === 'function')
+                    ? translation.date_at_time(formattedDate, res.route.departure)
+                    : `${formattedDate} à ${res.route.departure}`;
 
                 return `
                     <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6;' : ''}">
@@ -3740,7 +3756,7 @@ async function displayReservations() {
                         </div>
                         <div class="res-pwa-body">
                             <h4>${res.route.from} → ${res.route.to}</h4>
-                            <p>${Utils.formatDate(res.date)} à ${res.route.departure}</p>
+                            <p>${dateTimeString}</p>
                             <p>${translation.passenger_count(res.passengers.length)} - Total: ${res.totalPrice}</p>
                         </div>
                         <div class="res-pwa-actions">${actionsButtons}</div>

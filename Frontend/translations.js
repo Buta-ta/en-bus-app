@@ -163,6 +163,10 @@ const translations = {
     info_replaced_by: "Remplacé par :",
     button_new_booking: "Nouvelle réservation",
     passenger_count: (count) => `${count} passager(s)`,
+    button_track: "Suivre",
+    button_delete_title: "Masquer de l'historique",
+    date_at_time: (date, time) => `${date} à ${time}`,
+    
 
 
 
@@ -625,6 +629,9 @@ const translations = {
     info_replaced_by: "Replaced by:",
     button_new_booking: "New Booking",
     passenger_count: (count) => `${count} passenger(s)`,
+    button_track: "Track",
+    button_delete_title: "Hide from history",
+    date_at_time: (date, time) => `${date} at ${time}`,
     
     // --- Error Messages ---
     error_missing_departure_date: "Please select a departure date",
@@ -719,3 +726,6 @@ const translations = {
                 
   }
 }
+
+
+
