@@ -270,23 +270,22 @@ function sendPendingPaymentEmail(reservation) {
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) {
-        console.log(`(Email de confirmation non envoyé à ${client?.name}, adresse manquante)`);
+        console.log(`(Email de confirmation non envoyé, adresse manquante)`);
         return;
     }
 
     const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
+    const locale = lang === 'en' ? enUS : fr;
 
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
     const headerTitle = translation.email_confirmed_title;
     
-    // On formate la date dans la bonne langue
-    const departureDate = new Date(reservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    // --- Correction de la date et de l'heure ---
+    const timeZone = 'Africa/Brazzaville';
+    const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
+    const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
+    const formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale }); // Utilise 'at' en anglais
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
@@ -297,7 +296,7 @@ function sendPaymentConfirmedEmail(reservation) {
         </div>
         <div class="info-box">
             <strong>${translation.email_confirmed_details_date}</strong>
-            <span>${departureDate} à ${reservation.route.departure}</span>
+            <span>${formattedDateTime}</span>
         </div>
         <p>${translation.email_confirmed_cta}</p>
         <div style="text-align: center;">
@@ -306,7 +305,8 @@ function sendPaymentConfirmedEmail(reservation) {
         <p>${translation.email_confirmed_outro}</p>
     `;
 
-    sendEmail(client.email, subject, htmlContent, headerTitle);
+    // ✅ On passe bien la langue à la fonction d'envoi principale
+    sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 function sendReportConfirmedEmail(oldReservation, newReservation) {
     const client = newReservation.passengers?.[0];
@@ -317,16 +317,19 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
 
     const lang = newReservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
+    const locale = lang === 'en' ? enUS : fr;
+    const timeZone = 'Africa/Brazzaville';
 
     const subject = translation.email_report_subject(newReservation.bookingNumber);
     const headerTitle = translation.email_report_title;
     
     const oldDate = new Date(oldReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
-    const newDate = new Date(newReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long'
-    });
+    
+    // --- Correction de la date et de l'heure ---
+    const newDepartureDateTimeUTC = new Date(`${newReservation.date}T${newReservation.route.departure}:00`);
+    const newZonedDeparture = utcToZonedTime(newDepartureDateTimeUTC, timeZone);
+    const newFormattedDateTime = format(newZonedDeparture, "PPPP 'à' p", { locale: locale });
+
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
@@ -349,7 +352,7 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
             </div>
             <div class="detail-row">
                 <span class="detail-label">${translation.email_confirmed_details_date}</span>
-                <span class="detail-value">${newDate} à ${newReservation.route.departure}</span>
+                <span class="detail-value">${newFormattedDateTime}</span>
             </div>
         </div>
         
@@ -360,6 +363,7 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
         </div>
     `;
 
+    // ✅ On passe bien la langue à la fonction d'envoi principale
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 // --- Middleware & Utilitaires ---
