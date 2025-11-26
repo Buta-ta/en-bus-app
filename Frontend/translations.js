@@ -216,6 +216,8 @@ const translations = {
     button_cancel_alt: "Annuler",
     button_remove: "Oui, retirer",
     toast_booking_removed: "Réservation retirée de l'historique.",
+    loading_bookings: "Chargement de vos réservations...",
+
 
 
 
@@ -737,6 +739,7 @@ const translations = {
     button_cancel_alt: "Cancel",
     button_remove: "Yes, remove",
     toast_booking_removed: "Booking removed from history.",
+    loading_bookings: "Loading your bookings...",
 
 
 

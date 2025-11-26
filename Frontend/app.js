@@ -3652,10 +3652,11 @@ async function displayConfirmation(reservation) {
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
-    listContainer.innerHTML = '<div class="loading-spinner">Chargement...</div>';
-
+    
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+
+    listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings}</div>`;
 
     // Traduire le titre de la page
     const pageTitle = document.querySelector("#reservations-page .page-header h2");

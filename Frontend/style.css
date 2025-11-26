@@ -4360,6 +4360,36 @@ body.pwa-installed textarea {
             transform: rotate(0deg);
         }
     }
+
+    /* ============================================
+   📱 CORRECTIONS RESPONSIVE POUR LE BILLET
+   ============================================ */
+
+@media (max-width: 640px) {
+    /* Cible le conteneur de la date sur le billet */
+    .journey-date-top {
+        font-size: 0.8rem; /* On réduit un peu la taille de la police */
+        padding: 4px 8px;
+    }
+    
+    /* Cible les infos de départ/arrivée */
+    .journey-route .point-info {
+        /* On permet au texte de passer à la ligne si besoin */
+        word-break: break-word;
+    }
+
+    .journey-route .point-city {
+        font-size: 1.2rem; /* On réduit la taille du nom de la ville */
+    }
+
+    /* On réduit l'espace entre les éléments pour gagner de la place */
+    .journey-route {
+        gap: 8px;
+    }
+    .route-connector {
+        padding: 0 8px;
+    }
+}
 }
 
 
