@@ -839,50 +839,59 @@ function updatePassengerSelectorUI() {
 
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 function startFrontendCountdown() {
-    // S'assurer qu'aucun autre minuteur ne tourne
+    // On nettoie l'ancien minuteur
     if (frontendCountdownInterval) {
         clearInterval(frontendCountdownInterval);
     }
 
-    const timerElement = document.getElementById('payment-countdown-timer');
-    const containerElement = document.getElementById('payment-countdown-container');
+    // On récupère TOUS les conteneurs de décompteur
+    const countdownContainers = document.querySelectorAll('#payment-countdown-container');
 
-    if (!timerElement || !containerElement?.dataset.deadline) {
-        console.warn("Éléments du décompteur manquants ou deadline non définie.");
+    // S'il n'y en a aucun, on s'arrête
+    if (countdownContainers.length === 0) {
         return;
     }
 
-    const deadline = new Date(containerElement.dataset.deadline);
-    
-    // Récupérer la langue pour les traductions
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    
-    // Traduire le texte initial "Calcul..."
-    timerElement.textContent = translation.countdown_calculating || "Calcul...";
-
+    // On lance UN SEUL intervalle qui va mettre à jour TOUS les décompteurs trouvés
     frontendCountdownInterval = setInterval(() => {
-        const now = new Date();
-        const timeLeft = deadline - now;
+        
+        countdownContainers.forEach(container => {
+            const timerElement = container.querySelector('#payment-countdown-timer');
 
-        if (timeLeft <= 0) {
+            // Sécurité : si un des décompteurs est mal formé, on l'ignore
+            if (!timerElement || !container.dataset.deadline) {
+                return;
+            }
+
+            const deadline = new Date(container.dataset.deadline);
+            const now = new Date();
+            const timeLeft = deadline - now;
+            
+            // On récupère la traduction à chaque cycle (au cas où la langue change)
+            const lang = getLanguage();
+            const translation = translations[lang] || translations.fr;
+
+            if (timeLeft <= 0) {
+                timerElement.textContent = translation.countdown_expired || "EXPIRÉ";
+                container.style.color = "#f44336";
+            } else {
+                const hours = Math.floor(timeLeft / 36e5);
+                const minutes = Math.floor((timeLeft % 36e5) / 6e4);
+                const seconds = Math.floor((timeLeft % 6e4) / 1000);
+                timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        });
+        
+        // Si tous les décompteurs sont expirés, on arrête l'intervalle
+        const allExpired = Array.from(countdownContainers).every(
+            c => new Date(c.dataset.deadline) - new Date() <= 0
+        );
+        if (allExpired) {
             clearInterval(frontendCountdownInterval);
-            // ✅ TRADUCTION DU MESSAGE "EXPIRÉ"
-            timerElement.textContent = translation.countdown_expired || "EXPIRÉ";
-            if (containerElement) containerElement.style.color = "#f44336"; // Rouge
-            return;
         }
 
-        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-        timerElement.textContent = 
-            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        
     }, 1000);
 }
-
 function stopFrontendCountdown() {
     if (frontendCountdownInterval) {
         clearInterval(frontendCountdownInterval);
