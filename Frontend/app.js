@@ -923,47 +923,44 @@ function addBookingToLocalHistory(bookingNumber) {
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 
 // DANS app.js, REMPLACEZ la fonction removeBookingFromLocalHistory
-
 async function removeBookingFromLocalHistory(bookingNumber) {
-    // Appel à la nouvelle modale personnalisée
+    // --- 1. Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // --- 2. Affichage de la modale de confirmation traduite ---
     const confirmed = await showCustomConfirm({
-        title: "Retirer la réservation ?",
-        message: `Voulez-vous vraiment retirer la réservation ${bookingNumber} de l'historique de cet appareil ?\n`,
+        title: translation.confirm_remove_booking_title,
+        message: translation.confirm_remove_booking_desc(bookingNumber),
         icon: '🗑️',
         iconClass: 'danger',
-        confirmText: 'Oui, retirer',
+        confirmText: translation.button_remove,
+        cancelText: translation.button_cancel_alt,
         confirmClass: 'btn-danger'
     });
 
-    // Si l'utilisateur clique sur "Annuler"
     if (!confirmed) {
         return;
     }
     
-    // ✅ CORRECTION : L'accolade en trop a été supprimée ici.
-    // Le bloc try...catch est maintenant correctement placé dans la fonction.
-
+    // --- 3. Logique de suppression (inchangée) ---
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        
-        // Filtre la liste pour enlever le numéro de réservation spécifié
         const newHistory = history.filter(bn => bn !== bookingNumber);
-        
-        // Sauvegarde la nouvelle liste
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
         
         console.log(`🗑️ Réservation ${bookingNumber} retirée de l'historique local.`);
-        Utils.showToast("Réservation retirée de l'historique.", "success");
         
-        // Rafraîchit l'affichage pour que la carte disparaisse
+        // --- 4. Toast de succès traduit ---
+        Utils.showToast(translation.toast_booking_removed, "success");
+        
         displayReservations();
 
     } catch (e) {
         console.error("Erreur lors de la suppression de l'historique local:", e);
-        Utils.showToast("Une erreur est survenue.", "error");
+        Utils.showToast(translation.error_generic, "error");
     }
 }
-
 
 
 // DANS app.js
@@ -3943,38 +3940,29 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
 // ============================================
 // ✅ SÉLECTION D'UN VOYAGE POUR LE REPORT
 // ============================================
-
 window.selectReportTrip = async function(tripId, bookingNumber, currentReportCount) {
     console.log('🎯 Voyage sélectionné:', tripId);
     
-    // Marquer visuellement la sélection
-    document.querySelectorAll('.report-trip-card').forEach(card => {
-        card.classList.remove('selected');
-    });
+    // --- Récupération des traductions ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    document.querySelectorAll('.report-trip-card').forEach(card => card.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
     
     try {
-        // Calculer le coût total du report
-        Utils.showToast('Calcul du coût...', 'info');
+        // ✅ TOAST TRADUIT
+        Utils.showToast(translation.toast_report_calculating_cost, 'info');
         
-        const response = await fetch(
-            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/calculate-report-cost`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newTripId: tripId })
-            }
-        );
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/calculate-report-cost`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newTripId: tripId })
+        });
         
         const data = await response.json();
+        if (!data.success) throw new Error(data.error || translation.error_generic);
         
-        if (!data.success) {
-            throw new Error(data.error || 'Erreur lors du calcul');
-        }
-        
-        console.log('💰 Calcul du coût:', data.calculation);
-        
-        // Afficher le récapitulatif
         displayReportSummary(bookingNumber, tripId, data.calculation, currentReportCount);
         
     } catch (error) {
@@ -4095,66 +4083,59 @@ window.toggleReportAgencyInfo = function(showAgency) {
 // ============================================
 
 window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, totalCost) {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
     let transactionId = null;
     let paymentMethod = 'MTN';
 
-    // Si paiement requis, on valide les champs
-       if (isPaymentRequired) {
+    if (isPaymentRequired) {
         const methodInput = document.querySelector('input[name="report-payment-method"]:checked');
         paymentMethod = methodInput ? methodInput.value : 'MTN';
 
         if (paymentMethod === 'AGENCY') {
-            // ✅ Cas Agence : Pas d'ID requis, on met un marqueur
-            transactionId = 'PAIEMENT_AGENCE';
+            transactionId = null; // Pas d'ID pour l'agence
         } else {
-            // ✅ Cas Mobile Money : ID requis
             const txInput = document.getElementById('report-transaction-id');
             if (!txInput || txInput.value.trim() === "") {
-                Utils.showToast("Veuillez entrer l'ID de transaction.", "error");
-                if(txInput) txInput.focus();
+                Utils.showToast(translation.toast_enter_transaction_id, "warning");
                 return;
             }
             transactionId = txInput.value.trim();
         }
     }
-
     
-    console.log('✅ Envoi de la demande de report avec ID:', transactionId);
-    Utils.showToast('Traitement en cours...', 'info');
+    Utils.showToast(translation.toast_report_confirming, 'info');
     
     try {
-        const response = await fetch(
-            `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/confirm-report`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    newTripId: tripId,
-                    paymentMethod: paymentMethod,
-                    transactionId: transactionId // ✅ On envoie l'ID
-                })
-            }
-        );
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/confirm-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newTripId: tripId, paymentMethod: paymentMethod, transactionId: transactionId })
+        });
         
         const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.error || 'Erreur lors de la confirmation');
-        }
+        if (!data.success) throw new Error(data.error || translation.error_generic);
         
         closeReportModal();
 
         if (data.requiresPayment) {
+            let message = '';
+            if (paymentMethod === 'AGENCY') {
+                message = translation.confirm_request_sent_agency_desc(Utils.formatPrice(data.paymentAmount));
+            } else {
+                message = translation.confirm_request_sent_mm_desc(transactionId);
+            }
+            
             await showCustomConfirm({
-                title: "Demande envoyée !",
-                message: `Votre demande de report et votre preuve de paiement (ID: ${transactionId}) ont été envoyées.\n\nUn administrateur va vérifier la transaction et valider votre nouveau billet sous peu.`,
+                title: translation.confirm_request_sent_title,
+                message: message,
                 icon: '✅',
-                iconClass: 'success',
-                confirmText: 'OK',
+                confirmText: translation.confirm_request_ok_button,
                 cancelText: ''
             });
         } else {
-            Utils.showToast('✅ Voyage reporté avec succès !', 'success');
+            Utils.showToast(translation.toast_report_confirmed, 'success');
             if (data.newBookingNumber) addBookingToLocalHistory(data.newBookingNumber);
         }
         

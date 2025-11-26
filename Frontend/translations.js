@@ -205,6 +205,18 @@ const translations = {
     error_report_not_allowed: "Report non autorisé pour ce billet.",
     info_no_trips_found_report: "Aucun autre voyage disponible pour le report.",
     error_generic: "Une erreur est survenue.",
+    toast_calculating_cost: "Calcul du coût...",
+    toast_confirming_request: "Traitement en cours...",
+    confirm_request_sent_title: "Demande envoyée !",
+    confirm_request_sent_mm_desc: (id) => `Votre demande et votre preuve de paiement (ID: ${id}) ont été envoyées. Un administrateur va vérifier et valider votre nouveau billet.`,
+    confirm_request_sent_agency_desc: (amount) => `Votre demande est enregistrée. Veuillez payer ${amount} FCFA à l'agence en présentant votre code.`,
+    confirm_request_ok_button: "J'ai compris",
+    confirm_remove_booking_title: "Retirer la réservation ?",
+    confirm_remove_booking_desc: (bookingNum) => `Voulez-vous vraiment retirer la réservation ${bookingNum} de l'historique de cet appareil ?`,
+    button_cancel_alt: "Annuler",
+    button_remove: "Oui, retirer",
+    toast_booking_removed: "Réservation retirée de l'historique.",
+
 
 
 
@@ -714,6 +726,19 @@ const translations = {
     error_report_not_allowed: "Reschedule not allowed for this ticket.",
     info_no_trips_found_report: "No other trips available for reschedule.",
     error_generic: "An error occurred.",
+    toast_calculating_cost: "Calculating cost...",
+    toast_confirming_request: "Processing...",
+    confirm_request_sent_title: "Request Sent!",
+    confirm_request_sent_mm_desc: (id) => `Your request and payment proof (ID: ${id}) have been sent. An administrator will verify and validate your new ticket shortly.`,
+    confirm_request_sent_agency_desc: (amount) => `Your request is registered. Please pay ${amount} FCFA at the agency by presenting your code.`,
+    confirm_request_ok_button: "Got it",
+    confirm_remove_booking_title: "Remove booking?",
+    confirm_remove_booking_desc: (bookingNum) => `Do you really want to remove booking ${bookingNum} from this device's history?`,
+    button_cancel_alt: "Cancel",
+    button_remove: "Yes, remove",
+    toast_booking_removed: "Booking removed from history.",
+
+
 
 
         
