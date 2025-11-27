@@ -1999,44 +1999,50 @@ async function populateCitySelects() {
     }
 }
 
-function populatePopularDestinations() {
+// Remplacez votre ancienne fonction par celle-ci
+
+async function populatePopularDestinations() {
     const grid = document.getElementById("popular-destinations-grid");
     if (!grid) return;
-    
-    const shuffled = [...routes].sort(() => 0.5 - Math.random());
-    let destinations = [];
-    let seen = new Set();
-    
-    for (const route of shuffled) {
-        const key = `${route.from}-${route.to}`;
-        if (!seen.has(key)) {
-            destinations.push(route);
-            seen.add(key);
-            if (destinations.length === 3) break;
+
+    // On met un état de chargement
+    grid.innerHTML = `<div class="loading-spinner">${(translations[getLanguage()] || translations.fr).info_loading_popular || 'Chargement...'}</div>`;
+
+    try {
+        // 1. On appelle la nouvelle route API publique
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`);
+        const data = await response.json();
+
+        if (!data.success || !data.destinations || data.destinations.length === 0) {
+            grid.innerHTML = ''; // On n'affiche rien si aucun trajet n'est populaire
+            return;
         }
-    }
-    
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    
-    grid.innerHTML = destinations.map(route => {
-        const formattedPrice = Utils.formatPrice(route.price);
         
-        const priceText = (typeof translation.destination_price_from === 'function')
-            ? translation.destination_price_from(formattedPrice)
-            : `À partir de ${formattedPrice} FCFA`;
+        const destinations = data.destinations;
 
-        // ===========================================
-        // ✅ LA SEULE MODIFICATION EST ICI
-        // ===========================================
-        return `
-            <div class="destination-card" onclick="showDetailedSearch({ from: '${route.from}', to: '${route.to}' })">
-                <div class="destination-name">${route.from} → ${route.to}</div>
-                <div class="destination-price">${priceText}</div>
-            </div>
-        `;
-    }).join("");
+        // 2. On récupère les traductions (comme avant)
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        
+        // 3. On génère le HTML avec les données de l'API
+        grid.innerHTML = destinations.map(route => {
+            const formattedPrice = Utils.formatPrice(route.price);
+            const priceText = (typeof translation.destination_price_from === 'function')
+                ? translation.destination_price_from(formattedPrice)
+                : `À partir de ${formattedPrice} FCFA`;
 
+            return `
+                <div class="destination-card" onclick="showDetailedSearch({ from: '${route.from}', to: '${route.to}' })">
+                    <div class="destination-name">${route.from} → ${route.to}</div>
+                    <div class="destination-price">${priceText}</div>
+                </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+        console.error("❌ Erreur chargement destinations populaires:", error);
+        grid.innerHTML = `<p style="text-align: center; color: var(--color-text-secondary);">Erreur de chargement.</p>`;
+    }
 }
 window.searchFromPopular = function(from, to) {
     document.getElementById("origin").value = from;

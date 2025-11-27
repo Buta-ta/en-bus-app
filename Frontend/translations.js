@@ -422,6 +422,9 @@ const translations = {
       email_report_new_trip_label: "Votre NOUVEAU billet :",
       email_report_outro: "Veuillez utiliser ce nouveau billet pour votre voyage.",
 
+
+      info_loading_popular: "Chargement des meilleures offres...",
+
 // DANS L'OBJET 'en'
 // ... (ajoutez les traductions anglaises correspondantes)
 // ex: email_greeting: (name) => `Hello ${name},`
@@ -847,6 +850,8 @@ const translations = {
     email_report_old_trip_invalid: "(is no longer valid)",
     email_report_new_trip_label: "Your NEW Ticket:",
     email_report_outro: "Please use this new ticket for your travel.",
+
+    info_loading_popular: "Loading best deals...",
                 
   }
 }
