@@ -1608,6 +1608,42 @@
                 /* Empêche les boutons de se casser */
             }
         }
+
+
+
+        /* ============================================
+   🔥 FIX D'AFFICHAGE POUR LES TABLEAUX
+   ============================================ */
+
+/* On s'assure que le conteneur est visible */
+#tab-destinations .table-container {
+    display: block !important;
+    min-height: 200px; /* Force une hauteur minimale */
+}
+
+/* On cible spécifiquement le tbody des destinations */
+#destinations-body {
+    display: table-row-group !important; /* Mode d'affichage normal pour un tbody */
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* On cible les lignes à l'intérieur */
+#destinations-body tr {
+    display: table-row !important; /* Mode d'affichage normal pour une ligne */
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* On cible les cellules à l'intérieur */
+#destinations-body td {
+    display: table-cell !important; /* Mode d'affichage normal pour une cellule */
+    padding: 1rem !important; /* Force un padding pour donner de la hauteur */
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: white !important; /* Force la couleur du texte */
+    border-bottom: 1px solid var(--dark-border);
+}
     </style>
 </head>
 
