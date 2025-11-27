@@ -1571,6 +1571,24 @@
         }
 
 
+        /* DANS <style> */
+
+.tab-content {
+    display: none;
+}
+
+/* On utilise l'ID pour être plus spécifique et !important pour forcer */
+#tab-reservations.active,
+#tab-report-requests.active,
+#tab-trips.active,
+#tab-templates.active,
+#tab-destinations.active,
+#tab-settings.active {
+    display: block !important;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+
         /* ============================================
    📱 RESPONSIVE - TABLEAU DEMANDES DE REPORT
    ============================================ */
@@ -3703,12 +3721,19 @@
         // ============================================
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
-// DANS le <script> de Admin/index.html
+
 async function loadAllDestinations() {
+    console.log("Chargement des destinations...");
     const data = await apiCall('/admin/destinations');
     if (!data || !data.success) return;
-    renderDestinationsTable(data.destinations);
+
+    // ✅ ON ATTEND 500ms AVANT D'INSÉRER LE HTML
+    setTimeout(() => {
+        renderDestinationsTable(data.destinations);
+    }, 500); // 500ms > 400ms de l'animation
 }
+
+
 function renderDestinationsTable(destinations) {
     const tbody = document.getElementById('destinations-body');
     if (!tbody) {
