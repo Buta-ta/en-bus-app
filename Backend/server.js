@@ -1795,26 +1795,53 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 });
 
 // Ajouter une nouvelle destination
+// DANS server.js
+
 app.post("/api/admin/destinations", authenticateToken, [
-    body('name').notEmpty().trim(),
-    body('country').notEmpty().trim(),
-    body('coords').isArray({ min: 2, max: 2 })
+    body('name').notEmpty().withMessage("Le nom est requis."),
+    body('country').notEmpty().withMessage("Le pays est requis."),
+    // On vérifie juste que c'est une chaîne de caractères
+    body('coords').isString().withMessage("Les coordonnées doivent être une chaîne de caractères.")
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
 
     try {
-        const { name, country, coords } = req.body;
+        const { name, country, coords: coordsStr } = req.body;
+
+        // ===================================
+        // ✅ CONVERSION DE LA CHAÎNE EN TABLEAU
+        // ===================================
+        let coordsArray = [];
+        if (coordsStr) {
+            // On sépare par la virgule, on convertit chaque partie en nombre, et on filtre les NaN
+            coordsArray = coordsStr.split(',').map(c => parseFloat(c.trim())).filter(c => !isNaN(c));
+        }
+
+        // On vérifie si on a bien deux nombres après conversion
+        if (coordsArray.length !== 2) {
+            console.warn("Format de coordonnées invalide reçu :", coordsStr);
+            // On peut soit renvoyer une erreur, soit continuer avec un tableau vide
+            // Pour plus de flexibilité, on continue.
+            coordsArray = [];
+        }
+        // ===================================
+        
         const newDestination = {
             name,
             country,
-            coords,
+            coords: coordsArray, // On enregistre le tableau converti
             isActive: true,
             createdAt: new Date()
         };
+        
         await destinationsCollection.insertOne(newDestination);
         res.status(201).json({ success: true, message: "Destination ajoutée avec succès." });
+
     } catch (error) {
+        console.error("❌ Erreur création destination:", error);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
