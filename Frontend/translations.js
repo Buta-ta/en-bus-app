@@ -14,6 +14,7 @@ const translations = {
     footer_copyright: "&copy; 2025 En-Bus. Tous droits réservés.",
 
     // --- Page d'accueil ---
+    select_a_city: "— Choisissez une ville —",
     smart_search_placeholder: "Où voulez-vous aller ? Ex: Brazzaville vers Pointe-Noire",
     hero_title: "Voyagez à travers l'Afrique",
     hero_subtitle: "Réservez vos billets de bus en ligne facilement et rapidement",
@@ -465,6 +466,7 @@ const translations = {
     feature_security_desc: "Your information is secure",
 
     // --- Search Form ---
+    select_a_city: "— Choose a city —",
     search_form_origin: "From",
     search_form_destination: "To",
     search_form_trip_type: "Trip Type",

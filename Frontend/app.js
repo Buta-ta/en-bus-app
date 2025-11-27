@@ -1758,37 +1758,45 @@ async function populateCitySelects() {
     const originSelect = document.getElementById("origin");
     const destinationSelect = document.getElementById("destination");
     
-    if (!originSelect || !destinationSelect) return;
+    if (!originSelect || !destinationSelect) {
+        console.error("Erreur: Sélecteurs de destination introuvables.");
+        return;
+    }
 
     try {
-        // On appelle la route publique pour récupérer les villes actives
         const response = await fetch(`${API_CONFIG.baseUrl}/api/destinations`);
         const data = await response.json();
 
         if (data.success && data.destinations) {
             const cities = data.destinations;
             
-            // On vide les sélecteurs au cas où
             originSelect.innerHTML = '';
             destinationSelect.innerHTML = '';
             
-            // On ajoute une option par défaut
-            originSelect.innerHTML += '<option value="">Choisissez une ville</option>';
-            destinationSelect.innerHTML += '<option value="">Choisissez une ville</option>';
+            // ===================================
+            // ✅ CORRECTION DE LA TRADUCTION
+            // ===================================
+            const lang = getLanguage();
+            const translation = translations[lang] || translations.fr;
+            const defaultOptionText = translation.select_a_city || "Choisissez une ville";
+            
+            originSelect.innerHTML = `<option value="">${defaultOptionText}</option>`;
+            destinationSelect.innerHTML = `<option value="">${defaultOptionText}</option>`;
+            // ===================================
 
             cities.forEach(city => {
                 const optionHTML = `<option value="${city.name}">${city.name}, ${city.country}</option>`;
                 originSelect.innerHTML += optionHTML;
                 destinationSelect.innerHTML += optionHTML;
             });
+            console.log(`✅ ${cities.length} destinations chargées dans les formulaires.`);
         } else {
-            console.error("Impossible de charger les destinations.");
+            console.error("Impossible de charger les destinations depuis l'API.");
         }
     } catch (error) {
-        console.error("Erreur lors du chargement des destinations:", error);
+        console.error("Erreur critique lors du chargement des destinations:", error);
     }
 }
-
 // Remplacez votre ancienne fonction par celle-ci
 
 async function populatePopularDestinations() {
