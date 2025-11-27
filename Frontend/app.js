@@ -2348,7 +2348,6 @@ window.searchBuses = async function() {
         Utils.showToast(error.message || translation.error_search_failed, 'error');
     }
 }
-
 function setupSmartSearch() {
     const searchInput = document.getElementById('smart-search-input');
     const submitBtn = document.getElementById('smart-search-submit-btn');
@@ -2364,26 +2363,13 @@ function setupSmartSearch() {
     };
 
     // ===================================
-    // ✅ GESTION DU CLAVIER MOBILE
+    // ❌ PARTIE SUPPRIMÉE (plus nécessaire)
     // ===================================
-    // Quand l'utilisateur clique DANS la barre, on prépare la page
-    searchInput.addEventListener('focus', () => {
-        document.body.classList.add('smart-search-active');
-        // Sur mobile, on scrolle pour que la barre soit en haut de l'écran
-        if (window.innerWidth < 768) {
-            setTimeout(() => {
-                searchInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 300); // Léger délai pour laisser le clavier apparaître
-        }
-    });
-
-    // Quand l'utilisateur clique AILLEURS, on remet la page en état normal
-    searchInput.addEventListener('blur', () => {
-        document.body.classList.remove('smart-search-active');
-    });
+    // searchInput.addEventListener('focus', ...);
+    // searchInput.addEventListener('blur', ...);
     // ===================================
 
-    // --- Écouteurs d'événements ---
+    // --- Écouteurs d'événements (votre code est correct et conservé) ---
     
     // Clic sur le bouton loupe 🔍
     submitBtn.addEventListener('click', () => {
@@ -2395,12 +2381,9 @@ function setupSmartSearch() {
         if (e.key === 'Enter') {
             e.preventDefault();
             const firstResult = resultsContainer.querySelector('.smart-result-item');
-            
             if (firstResult) {
-                // S'il y a une suggestion, on simule un clic dessus
                 firstResult.click();
             } else {
-                // Sinon, on utilise le texte tapé comme destination
                 triggerDetailedSearch({ to: searchInput.value.trim() });
             }
         }
@@ -2416,7 +2399,6 @@ function setupSmartSearch() {
             return;
         }
         
-        // Amélioration du filtre
         const filteredRoutes = routes.filter(route => 
             `${route.from} ${route.to}`.toLowerCase().includes(query) ||
             `${route.to} ${route.from}`.toLowerCase().includes(query)
@@ -2433,7 +2415,6 @@ function setupSmartSearch() {
         }
     });
 }
-
 
 function displaySmartSearchResults(results) {
     const resultsContainer = document.getElementById('smart-search-results');

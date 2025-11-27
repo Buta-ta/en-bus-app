@@ -2822,6 +2822,47 @@ body.smart-search-active .hero {
 
 
 
+/* DANS style.css */
+
+#smart-search-results {
+    /* --- Positionnement --- */
+    position: absolute; /* Élément flottant par rapport à son parent */
+    top: 100%; /* Se positionne juste en dessous de la barre de recherche */
+    left: 0;
+    right: 0;
+    
+    /* --- Visibilité et empilement --- */
+    z-index: 1000; /* Valeur élevée pour être sûr qu'il est au-dessus de tout */
+    display: none; /* Caché par défaut */
+    
+    /* --- Apparence --- */
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-top: none; /* Pour un look "attaché" à la barre */
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    
+    /* --- Gestion du contenu --- */
+    max-height: 300px; /* Hauteur maximale avant d'afficher une barre de défilement */
+    overflow-y: auto;
+}
+
+/* On s'assure que le conteneur principal permet le positionnement absolu */
+.smart-search-wrapper {
+    position: relative; /* Indispensable ! */
+}
+
+/* Le style pour chaque item reste le même */
+.smart-result-item {
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--color-border);
+}
+.smart-result-item:hover {
+    background-color: var(--color-background);
+}
+
 /* Styles pour les écrans de moins de 480px de large */
 @media (max-width: 480px) {
     #smart-search-input {
