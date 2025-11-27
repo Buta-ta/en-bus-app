@@ -2041,32 +2041,28 @@ function populatePopularDestinations() {
         }
     }
     
-    // ===================================
-    // ✅ LOGIQUE DE TRADUCTION AJOUTÉE
-    // ===================================
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    // ===================================
     
     grid.innerHTML = destinations.map(route => {
-        // 1. On formate le prix
         const formattedPrice = Utils.formatPrice(route.price);
         
-        // 2. On appelle la fonction de traduction avec le prix
-        // On ajoute une sécurité si la fonction n'existe pas
         const priceText = (typeof translation.destination_price_from === 'function')
             ? translation.destination_price_from(formattedPrice)
-            : `À partir de ${formattedPrice} FCFA`; // Texte par défaut
+            : `À partir de ${formattedPrice} FCFA`;
 
+        // ===========================================
+        // ✅ LA SEULE MODIFICATION EST ICI
+        // ===========================================
         return `
-            <div class="destination-card" onclick="searchFromPopular('${route.from}', '${route.to}')">
+            <div class="destination-card" onclick="showDetailedSearch({ from: '${route.from}', to: '${route.to}' })">
                 <div class="destination-name">${route.from} → ${route.to}</div>
                 <div class="destination-price">${priceText}</div>
             </div>
         `;
     }).join("");
+    
 }
-
 window.searchFromPopular = function(from, to) {
     document.getElementById("origin").value = from;
     document.getElementById("destination").value = to;
