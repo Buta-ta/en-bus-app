@@ -1605,11 +1605,16 @@ app.patch(
 
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED']),
-    body('delayMinutes').optional().isInt({ min: 0 }),
+    // On rend la validation conditionnelle
+    body('delayMinutes').if(body('status').equals('DELAYED')).isInt({ min: 1 }).withMessage('Le retard doit être un nombre positif.'),
+    body('reason').if(body('status').equals('CANCELLED')).notEmpty().withMessage('La raison est requise pour une annulation.'),
     body('reason').optional().isString().trim()
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+        // Renvoie la première erreur de validation
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
 
     try {
         const { tripId } = req.params;
@@ -1621,7 +1626,7 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
 
         const liveStatus = {
             status: status,
-            delayMinutes: status === 'DELAYED' ? delayMinutes : 0,
+            delayMinutes: status === 'DELAYED' ? (parseInt(delayMinutes) || 0) : 0,
             reason: reason || '',
             lastUpdated: new Date(),
             updatedBy: req.user.username
@@ -1635,9 +1640,9 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Voyage non trouvé." });
         }
-
-        // TODO (Futur): Envoyer un événement WebSocket ici pour notifier les clients en temps réel
         
+        console.log(`📢 Statut du voyage ${tripId} mis à jour par ${req.user.username}: ${status}`);
+
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
 
     } catch (error) {
