@@ -1459,16 +1459,44 @@ app.delete(
 // ============================================
 // --- GESTION DES VOYAGES (ADMIN) ---
 // ============================================
-
 app.get("/api/admin/trips", authenticateToken, async (req, res) => {
-  try {
-    const trips = await tripsCollection.find({}).sort({ date: -1 }).toArray();
-    res.json({ success: true, trips });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
+    try {
+        // 1. On récupère les paramètres de l'URL (envoyés par le frontend)
+        const { date, route, bus } = req.query;
+        
+        // 2. On construit l'objet de requête pour MongoDB
+        const query = {};
+        
+        // Si une date est fournie, on filtre par cette date exacte
+        if (date) {
+            query.date = date;
+        }
+        
+        // Si un texte de route est fourni...
+        if (route) {
+            // On cherche ce texte dans la ville de départ OU la ville d'arrivée
+            // '$regex' permet une recherche partielle, '$options: 'i'' la rend insensible à la casse
+            query.$or = [
+                { "route.from": { $regex: route, $options: 'i' } },
+                { "route.to": { $regex: route, $options: 'i' } }
+            ];
+        }
+        
+        // Si un numéro de bus est fourni
+        if (bus) {
+            query.busIdentifier = { $regex: bus, $options: 'i' };
+        }
 
+        // 3. On exécute la recherche avec les filtres et on trie par date la plus récente
+        const trips = await tripsCollection.find(query).sort({ date: -1 }).toArray();
+        
+        res.json({ success: true, trips });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération des voyages filtrés:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
 app.post(
   "/api/admin/trips",
   authenticateToken,

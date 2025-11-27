@@ -1891,6 +1891,41 @@
                     </form>
                 </div>
 
+
+                <!-- DANS #tab-trips, avant le .content-card de la table -->
+
+<div class="content-card">
+    <h2 class="card-title">Filtres des voyages</h2>
+    <div class="filters" style="margin-top: 1rem;">
+        <!-- Filtre par Date -->
+        <div class="form-group" style="flex: 1;">
+            <label for="trip-filter-date" class="form-label">Filtrer par date</label>
+            <input type="text" id="trip-filter-date" class="form-control" placeholder="Sélectionner une date..." onchange="loadAllTrips()">
+        </div>
+        
+        <!-- Filtre par Trajet -->
+        <div class="form-group" style="flex: 1;">
+            <label for="trip-filter-route" class="form-label">Filtrer par trajet</label>
+            <input type="text" id="trip-filter-route" class="form-control" placeholder="Ex: Brazzaville ou Pointe-Noire" oninput="loadAllTrips()">
+        </div>
+
+        <!-- Filtre par N° de Bus -->
+        <div class="form-group" style="flex: 1;">
+            <label for="trip-filter-bus" class="form-label">Filtrer par N° Bus</label>
+            <input type="text" id="trip-filter-bus" class="form-control" placeholder="Ex: B50" oninput="loadAllTrips()">
+        </div>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-header">
+        <h2 class="card-title">Voyages Programmés</h2>
+    </div>
+    <div class="table-container">
+        <!-- Votre tableau existant -->
+    </div>
+</div>
+
                 <div class="content-card">
                     <div class="card-header">
                         <h2 class="card-title">Voyages Programmés</h2>
@@ -2985,13 +3020,42 @@
         // ============================================
         // 🚌 VOYAGES
         // ============================================
-        async function loadAllTrips() {
-            const data = await apiCall("/admin/trips");
-            if (!data) return;
+      async function loadAllTrips() {
+    // 1. Récupérer les valeurs des champs de filtre
+    const dateFilter = document.getElementById('trip-filter-date')?.value || '';
+    const routeFilter = document.getElementById('trip-filter-route')?.value || '';
+    const busFilter = document.getElementById('trip-filter-bus')?.value || '';
 
-            allTrips = data.trips;
-            renderTripsTable();
-        }
+    // 2. Construire une chaîne de paramètres pour l'URL
+    const params = new URLSearchParams();
+    if (dateFilter) {
+        params.append('date', dateFilter);
+    }
+    if (routeFilter) {
+        params.append('route', routeFilter);
+    }
+    if (busFilter) {
+        params.append('bus', busFilter);
+    }
+    
+    // On convertit les paramètres en une chaîne de requête (ex: "?date=2025-11-28&route=Brazza")
+    const queryString = params.toString();
+    const endpoint = `/admin/trips${queryString ? '?' + queryString : ''}`;
+    
+    console.log(`Chargement des voyages depuis : ${endpoint}`);
+
+    // 3. Appeler l'API avec le bon endpoint
+    const data = await apiCall(endpoint);
+    if (!data) {
+        // En cas d'erreur, on vide la table pour éviter d'afficher d'anciens résultats
+        allTrips = [];
+        renderTripsTable();
+        return;
+    }
+
+    allTrips = data.trips;
+    renderTripsTable(); // Affiche les voyages filtrés
+}
 
         // Dans Admin/index.html (section <script>)
         // DANS admin/index.html, dans <script>
@@ -3769,29 +3833,51 @@ function switchTab(tabName) {
 
 
         }
-        // ============================================
-        // 🚀 DÉMARRAGE
-        // ============================================
         document.addEventListener("DOMContentLoaded", async () => {
-            if (await verifyToken()) {
-                showDashboard();
-                loadAdminData();
-                startInactivityDetection();
-            } else {
-                localStorage.removeItem("admin_token");
-                showLogin();
+    // 1. Vérification du token et affichage initial (votre code est correct)
+    if (await verifyToken()) {
+        showDashboard();
+        loadAdminData(); // Charge les réservations par défaut
+        startInactivityDetection();
+    } else {
+        localStorage.removeItem("admin_token");
+        showLogin();
+    }
+
+    // 2. Initialisation des écouteurs d'événements (votre code est correct)
+    setupEventListeners();
+    buildDaysSelector();
+
+    // 3. Initialisation des calendriers Flatpickr
+    
+    // Calendrier pour la création de voyages (votre code est correct)
+    flatpickr("#trip-dates", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        locale: "fr",
+        minDate: "today",
+    });
+
+    // ===================================
+    // ✅ AJOUT POUR LE NOUVEAU FILTRE
+    // ===================================
+    // Calendrier pour filtrer les voyages programmés
+    const tripFilterDateInput = document.getElementById('trip-filter-date');
+    if (tripFilterDateInput) {
+        flatpickr(tripFilterDateInput, {
+            dateFormat: "Y-m-d",
+            locale: "fr",
+            allowInput: true, // Permet de vider le champ
+            onChange: function(selectedDates, dateStr, instance) {
+                // On recharge la liste des voyages quand la date change
+                if (typeof loadAllTrips === 'function') {
+                    loadAllTrips();
+                }
             }
-
-            setupEventListeners();
-            buildDaysSelector();
-
-            flatpickr("#trip-dates", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "fr",
-                minDate: "today",
-            });
         });
+    }
+    // ===================================
+});
 
         // ============================================
         // 🛑 GESTION DYNAMIQUE DES ARRÊTS
