@@ -3691,40 +3691,26 @@ async function loadAllDestinations() {
 }
 function renderDestinationsTable(destinations) {
     const tbody = document.getElementById('destinations-body');
-    if (!tbody) {
-        console.error("L'élément 'destinations-body' n'a pas été trouvé.");
-        return;
-    }
+    if (!tbody) return;
 
-    if (!destinations || destinations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">Aucune destination.</td></tr>';
-        return;
-    }
-
-    let html = '';
+    // ... (votre code pour générer tableHTML) ...
+    let tableHTML = '';
     destinations.forEach(dest => {
-        html += `
-            <tr>
-                <td><strong class="font-bold">${dest.name}</strong></td>
-                <td>${dest.country}</td>
-                <td>
-                    <span class="badge ${dest.isActive ? 'badge-success' : 'badge-gray'}">
-                        ${dest.isActive ? 'Actif' : 'Inactif'}
-                    </span>
-                </td>
-                <td class="actions-cell">
-                    <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})">
-                        ${dest.isActive ? 'Désactiver' : 'Activer'}
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteDestination('${dest._id}', '${dest.name}')">
-                        Supprimer
-                    </button>
-                </td>
-            </tr>
-        `;
+        tableHTML += `<tr><td>${dest.name}</td><td>${dest.country}</td><td>...</td><td>...</td></tr>`;
     });
     
-    tbody.innerHTML = html;
+    // ❌ AU LIEU de tbody.innerHTML = tableHTML;
+    // On va utiliser une méthode qui ne peut pas être annulée facilement.
+
+    // ✅ ON AFFICHE LE HTML DANS LA CONSOLE POUR ÊTRE SÛR
+    console.log("HTML généré pour le tableau :\n", tableHTML);
+    
+    // ✅ ON UTILISE UNE ALERTE POUR BLOQUER LE SCRIPT
+    alert("Le tableau va maintenant être inséré. Cliquez sur OK.");
+    
+    tbody.innerHTML = tableHTML;
+    
+    alert("Le tableau a été inséré. Est-il visible ?");
 }
 
         async function handleCreateDestination(e) {
