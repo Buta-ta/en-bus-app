@@ -1589,6 +1589,9 @@
 }
 
 
+
+
+
         /* ============================================
    📱 RESPONSIVE - TABLEAU DEMANDES DE REPORT
    ============================================ */
@@ -1661,6 +1664,57 @@
     opacity: 1 !important;
     color: white !important; /* Force la couleur du texte */
     border-bottom: 1px solid var(--dark-border);
+}
+
+
+
+
+/* ============================================
+   🔘 INTERRUPTEUR (TOGGLE SWITCH)
+   ============================================ */
+.toggle-switch-popular {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.toggle-switch-popular input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #334155; /* Gris sombre */
+    transition: .4s;
+    border-radius: 28px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary); /* Vert En-Bus */
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
 }
     </style>
 </head>
@@ -2977,47 +3031,59 @@
             renderTemplatesTable();
             populateRouteTemplateSelector();
         }
+function renderTemplatesTable() {
+    const tbody = document.getElementById("templates-body");
+    if (!tbody) return;
+    
+    // 1. Mettre à jour les en-têtes du tableau
+    const thead = tbody.previousElementSibling; // On trouve le thead
+    if (thead) {
+        thead.innerHTML = `
+            <tr>
+                <th>Trajet</th>
+                <th>Compagnie</th>
+                <th>Prix</th>
+                <th>Horaires</th>
+                <th>Populaire</th> <!-- ✅ NOUVELLE COLONNE -->
+                <th>Actions</th>
+            </tr>
+        `;
+    }
 
-        function renderTemplatesTable() {
-            const tbody = document.getElementById("templates-body");
+    if (allTemplates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">...</td></tr>`;
+        return;
+    }
 
-            if (allTemplates.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center" style="padding:3rem;">
-                            <div style="font-size:3rem;margin-bottom:1rem;">🛣️</div>
-                            <div style="color:var(--gray-500);font-weight:600;">Aucun modèle de trajet</div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+    tbody.innerHTML = allTemplates.map(t => {
+        // La case est cochée si 'isPopular' est true
+        const isChecked = t.isPopular ? 'checked' : '';
 
-            tbody.innerHTML = allTemplates
-                .map(
-                    (t) => `
-                <tr>
-                    <td>
-                        <div class="font-bold">${t.from} → ${t.to}</div>
-                    </td>
-                    <td>${t.company}</td>
-                    <td class="font-bold">${t.price} FCFA</td>
-                    <td class="text-sm">
-                        <span style="color:var(--gray-600);">🕐 ${t.departure} → ${t.arrival}</span>
-                    </td>
-                    <td>
-                        <!-- ✅ AJOUT DU BOUTON MODIFIER -->
-                <button class="btn btn-sm btn-ghost" onclick="showEditTemplateModal('${t._id}')">✏️ Modifier</button>
-
-                        <button class="btn btn-sm btn-danger" onclick="handleDeleteTemplate('${t._id}', '${t.from} → ${t.to}')">
-                            🗑️ Supprimer
-                        </button>
-                    </td>
-                </tr>
-            `
-                )
-                .join("");
-        }
+        return `
+            <tr>
+                <td><strong class="font-bold">${t.from} → ${t.to}</strong></td>
+                <td>${t.company}</td>
+                <td class="font-bold">${t.price} FCFA</td>
+                <td class="text-sm"><span>🕐 ${t.departure} → ${t.arrival}</span></td>
+                
+                <!-- ✅ NOUVELLE CELLULE AVEC L'INTERRUPTEUR -->
+                <td>
+                    <label class="toggle-switch-popular">
+                        <input type="checkbox" ${isChecked} onchange="togglePopularStatus('${t._id}')">
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                
+                <td class="actions-cell">
+                    <button class="btn btn-sm btn-ghost" onclick="showEditTemplateModal('${t._id}')">✏️ Modifier</button>
+                    <button class="btn btn-sm btn-danger" onclick="handleDeleteTemplate('${t._id}', '${t.from} → ${t.to}')">
+                        🗑️ Supprimer
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
 
         // Dans Admin/index.html (section <script>)
         async function handleCreateTemplate(e) {
@@ -3776,6 +3842,26 @@ function renderDestinationsTable(destinations) {
 
 
 //render destination table 
+
+
+
+// DANS le <script> de Admin/index.html
+
+async function togglePopularStatus(templateId) {
+    showNotification('Mise à jour du statut...', 'info');
+    
+    const data = await apiCall(`/admin/route-templates/${templateId}/toggle-popular`, 'PATCH');
+
+    if (data && data.success) {
+        showNotification('Statut "Populaire" mis à jour !', 'success');
+        // On met à jour l'état local pour un affichage immédiat sans recharger toutes les données
+        const template = allTemplates.find(t => t._id === templateId);
+        if (template) {
+            template.isPopular = !template.isPopular;
+        }
+    }
+    // Pas besoin de recharger toute la table, le changement est visuel grâce au CSS
+}
 
 
 
