@@ -1531,6 +1531,107 @@ app.delete(
 );
 
 
+// ============================================
+// --- GESTION DES DESTINATIONS (ADMIN) ---
+// ============================================
+
+// Lister toutes les destinations pour l'admin
+app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
+    try {
+        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
+        res.json({ success: true, destinations });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Ajouter une nouvelle destination
+// DANS server.js
+
+app.post("/api/admin/destinations", authenticateToken, [
+    body('name').notEmpty().withMessage("Le nom est requis."),
+    body('country').notEmpty().withMessage("Le pays est requis."),
+    // On vérifie juste que c'est une chaîne de caractères
+    body('coords').isString().withMessage("Les coordonnées doivent être une chaîne de caractères.")
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
+    try {
+        const { name, country, coords: coordsStr } = req.body;
+
+        // ===================================
+        // ✅ CONVERSION DE LA CHAÎNE EN TABLEAU
+        // ===================================
+        let coordsArray = [];
+        if (coordsStr) {
+            // On sépare par la virgule, on convertit chaque partie en nombre, et on filtre les NaN
+            coordsArray = coordsStr.split(',').map(c => parseFloat(c.trim())).filter(c => !isNaN(c));
+        }
+
+        // On vérifie si on a bien deux nombres après conversion
+        if (coordsArray.length !== 2) {
+            console.warn("Format de coordonnées invalide reçu :", coordsStr);
+            // On peut soit renvoyer une erreur, soit continuer avec un tableau vide
+            // Pour plus de flexibilité, on continue.
+            coordsArray = [];
+        }
+        // ===================================
+        
+        const newDestination = {
+            name,
+            country,
+            coords: coordsArray, // On enregistre le tableau converti
+            isActive: true,
+            createdAt: new Date()
+        };
+        
+        await destinationsCollection.insertOne(newDestination);
+        res.status(201).json({ success: true, message: "Destination ajoutée avec succès." });
+
+    } catch (error) {
+        console.error("❌ Erreur création destination:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Mettre à jour une destination (notamment pour l'activer/désactiver)
+app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body; // ex: { isActive: false } ou { name: "Nouveau nom" }
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        await destinationsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updates });
+        res.json({ success: true, message: "Destination mise à jour." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Supprimer une destination
+app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+        
+        // TODO: Ajouter une vérification pour s'assurer que la ville n'est pas utilisée dans un trajet avant de la supprimer.
+        
+        await destinationsCollection.deleteOne({ _id: new ObjectId(id) });
+        res.json({ success: true, message: "Destination supprimée." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+
+
+
+
+
 
 
 // DANS server.js, avec les autres routes admin
@@ -1556,6 +1657,10 @@ app.patch("/api/admin/route-templates/:id/toggle-popular", authenticateToken, as
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
+
+
+
+
 // ============================================
 // --- GESTION DES VOYAGES (ADMIN) ---
 // ============================================
@@ -1779,101 +1884,6 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     }
 });
 
-
-// ============================================
-// --- GESTION DES DESTINATIONS (ADMIN) ---
-// ============================================
-
-// Lister toutes les destinations pour l'admin
-app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
-    try {
-        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
-        res.json({ success: true, destinations });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// Ajouter une nouvelle destination
-// DANS server.js
-
-app.post("/api/admin/destinations", authenticateToken, [
-    body('name').notEmpty().withMessage("Le nom est requis."),
-    body('country').notEmpty().withMessage("Le pays est requis."),
-    // On vérifie juste que c'est une chaîne de caractères
-    body('coords').isString().withMessage("Les coordonnées doivent être une chaîne de caractères.")
-], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ error: errors.array()[0].msg });
-    }
-
-    try {
-        const { name, country, coords: coordsStr } = req.body;
-
-        // ===================================
-        // ✅ CONVERSION DE LA CHAÎNE EN TABLEAU
-        // ===================================
-        let coordsArray = [];
-        if (coordsStr) {
-            // On sépare par la virgule, on convertit chaque partie en nombre, et on filtre les NaN
-            coordsArray = coordsStr.split(',').map(c => parseFloat(c.trim())).filter(c => !isNaN(c));
-        }
-
-        // On vérifie si on a bien deux nombres après conversion
-        if (coordsArray.length !== 2) {
-            console.warn("Format de coordonnées invalide reçu :", coordsStr);
-            // On peut soit renvoyer une erreur, soit continuer avec un tableau vide
-            // Pour plus de flexibilité, on continue.
-            coordsArray = [];
-        }
-        // ===================================
-        
-        const newDestination = {
-            name,
-            country,
-            coords: coordsArray, // On enregistre le tableau converti
-            isActive: true,
-            createdAt: new Date()
-        };
-        
-        await destinationsCollection.insertOne(newDestination);
-        res.status(201).json({ success: true, message: "Destination ajoutée avec succès." });
-
-    } catch (error) {
-        console.error("❌ Erreur création destination:", error);
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// Mettre à jour une destination (notamment pour l'activer/désactiver)
-app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body; // ex: { isActive: false } ou { name: "Nouveau nom" }
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
-
-        await destinationsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updates });
-        res.json({ success: true, message: "Destination mise à jour." });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// Supprimer une destination
-app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
-        
-        // TODO: Ajouter une vérification pour s'assurer que la ville n'est pas utilisée dans un trajet avant de la supprimer.
-        
-        await destinationsCollection.deleteOne({ _id: new ObjectId(id) });
-        res.json({ success: true, message: "Destination supprimée." });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
 
 
 
