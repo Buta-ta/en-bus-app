@@ -2805,6 +2805,12 @@ h3 {
     }
 }
 
+
+.popular-destinations {
+    position: relative; /* Nécessaire pour que z-index s'applique */
+    z-index: 10; /* Une valeur inférieure à celle du smart-search-wrapper */
+}
+
 /* ============================================
    🔍 BARRE DE RECHERCHE INTELLIGENTE (Version Finale)
    ============================================ */
