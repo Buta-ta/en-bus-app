@@ -675,6 +675,18 @@ app.get("/api/destinations", async (req, res) => {
 });
 
 
+// DANS server.js, avec les autres routes publiques
+
+app.get("/api/popular-destinations", async (req, res) => {
+    try {
+        // On récupère jusqu'à 4 modèles marqués comme populaires
+        const popular = await routeTemplatesCollection.find({ isPopular: true }).limit(4).toArray();
+        res.json({ success: true, destinations: popular });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 // ============================================
 // 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
 // ============================================
@@ -1440,35 +1452,46 @@ app.get("/api/admin/route-templates", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
-  try {
-    let template = req.body;
-    template.baggageOptions = {
-      standard: {
-        included: parseInt(template.standardBaggageIncluded) || 1,
-        max: parseInt(template.standardBaggageMax) || 5,
-        price: parseInt(template.standardBaggagePrice) || 2000,
-      },
-      oversized: {
-        max: parseInt(template.oversizedBaggageMax) || 2,
-        price: parseInt(template.oversizedBaggagePrice) || 5000,
-      },
-    };
-    // Nettoyage des champs bruts
-    [
-      "standardBaggageIncluded",
-      "standardBaggageMax",
-      "standardBaggagePrice",
-      "oversizedBaggageMax",
-      "oversizedBaggagePrice",
-    ].forEach((p) => delete template[p]);
+    try {
+        let template = req.body;
+        
+        // --- 1. Gestion des options de bagages (votre code est conservé) ---
+        template.baggageOptions = {
+            standard: {
+                included: parseInt(template.standardBaggageIncluded) || 1,
+                max: parseInt(template.standardBaggageMax) || 5,
+                price: parseInt(template.standardBaggagePrice) || 2000,
+            },
+            oversized: {
+                max: parseInt(template.oversizedBaggageMax) || 2,
+                price: parseInt(template.oversizedBaggagePrice) || 5000,
+            },
+        };
+        // Nettoyage des champs bruts
+        [
+            "standardBaggageIncluded",
+            "standardBaggageMax",
+            "standardBaggagePrice",
+            "oversizedBaggageMax",
+            "oversizedBaggagePrice",
+        ].forEach((p) => delete template[p]);
 
-    await routeTemplatesCollection.insertOne(template);
-    res
-      .status(201)
-      .json({ success: true, message: "Modèle créé avec succès." });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
+        // ===================================
+        // ✅ 2. AJOUT DU CHAMP 'isPopular'
+        // ===================================
+        template.isPopular = false; // Par défaut, un nouveau modèle n'est pas populaire
+        template.createdAt = new Date(); // C'est une bonne pratique d'ajouter une date de création
+        // ===================================
+
+        // --- 3. Insertion en base de données ---
+        await routeTemplatesCollection.insertOne(template);
+        
+        res.status(201).json({ success: true, message: "Modèle créé avec succès." });
+
+    } catch (error) {
+        console.error("❌ Erreur création modèle:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 app.delete(
@@ -1491,6 +1514,32 @@ app.delete(
   }
 );
 
+
+
+
+// DANS server.js, avec les autres routes admin
+
+app.patch("/api/admin/route-templates/:id/toggle-popular", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        // On récupère le modèle pour inverser son statut
+        const template = await routeTemplatesCollection.findOne({ _id: new ObjectId(id) });
+        if (!template) return res.status(404).json({ error: "Modèle non trouvé" });
+
+        const newStatus = !template.isPopular;
+
+        await routeTemplatesCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { isPopular: newStatus } }
+        );
+
+        res.json({ success: true, message: `Statut 'Populaire' mis à jour à ${newStatus}.` });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
 // ============================================
 // --- GESTION DES VOYAGES (ADMIN) ---
 // ============================================
