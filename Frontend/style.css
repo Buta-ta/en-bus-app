@@ -4288,6 +4288,114 @@ body.pwa-installed textarea {
 
 
 
+/* ============================================
+   🔍 BARRE DE RECHERCHE INTELLIGENTE
+   ============================================ */
+
+.smart-search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px; /* Ajustez la largeur maximale si besoin */
+    margin: 2rem auto 0;
+}
+
+.smart-search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#smart-search-input {
+    width: 100%;
+    padding: 18px 60px 18px 20px; /* Espace pour le texte et le bouton */
+    font-size: 1.1rem;
+    font-family: var(--font-base);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-full);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+#smart-search-input:focus {
+    outline: none;
+    border-color: var(--color-accent-glow);
+    box-shadow: 0 0 0 4px rgba(var(--color-accent-glow-rgb), 0.2), 0 8px 30px rgba(0,0,0,0.3);
+}
+
+#smart-search-submit-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--color-accent-glow);
+    color: var(--color-background);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#smart-search-submit-btn:hover {
+    background-color: var(--color-accent-hover);
+}
+
+/* --- Résultats de l'auto-complétion --- */
+#smart-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.smart-result-item {
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--color-border);
+}
+.smart-result-item:last-child {
+    border-bottom: none;
+}
+.smart-result-item:hover {
+    background-color: var(--color-background);
+}
+.smart-result-item strong {
+    color: var(--color-accent-glow);
+}
+
+/* --- Animation pour le formulaire détaillé --- */
+.search-box {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.search-box.visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+
+
+
 
 /* ============================================
    💅 AMÉLIORATION DES TITRES DE LA PAGE D'ACCUEIL

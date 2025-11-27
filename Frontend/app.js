@@ -1882,6 +1882,8 @@ const ticketHTML = `
         addToastStyles();
         setupAmenitiesFilters(); 
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
+        setupSmartSearch();
+        
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
     }
@@ -2339,6 +2341,123 @@ window.searchBuses = async function() {
         Utils.showToast(error.message || translation.error_search_failed, 'error');
     }
 }
+
+function setupSmartSearch() {
+    const searchInput = document.getElementById('smart-search-input');
+    const submitBtn = document.getElementById('smart-search-submit-btn');
+    const resultsContainer = document.getElementById('smart-search-results');
+
+    if (!searchInput || !submitBtn || !resultsContainer) return;
+
+    // --- Fonction interne pour déclencher l'affichage du formulaire détaillé ---
+    const triggerDetailedSearch = () => {
+        const destination = searchInput.value.trim();
+        // Cacher les résultats d'auto-complétion
+        resultsContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+
+        if (!destination) {
+            // Si le champ est vide, on affiche simplement le formulaire vierge
+            showDetailedSearch();
+        } else {
+            // Si l'utilisateur a tapé une destination, on pré-remplit le champ "Arrivée"
+            showDetailedSearch({ to: destination });
+        }
+    };
+
+    // --- Écouteurs d'événements ---
+    
+    // Événement pour le bouton loupe 🔍
+    submitBtn.addEventListener('click', triggerDetailedSearch);
+    
+    // Événement pour la touche "Entrée"
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Empêche le formulaire de se soumettre
+            triggerDetailedSearch();
+        }
+    });
+        
+    // Événement pour l'auto-complétion pendant la frappe
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase();
+        
+        if (query.length < 2) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        
+        const filteredRoutes = routes.filter(route => 
+            route.from.toLowerCase().includes(query) || 
+            route.to.toLowerCase().includes(query)
+        );
+        
+        displaySmartSearchResults(filteredRoutes.slice(0, 5)); // On affiche max 5 résultats
+    });
+
+    // Fermer les résultats si on clique ailleurs
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.smart-search-wrapper')) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+        }
+    });
+}
+
+
+
+function displaySmartSearchResults(results) {
+    const resultsContainer = document.getElementById('smart-search-results');
+    if (!resultsContainer) return;
+
+    if (results.length === 0) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+        return;
+    }
+
+    resultsContainer.innerHTML = results.map(route => `
+        <div class="smart-result-item" onclick="selectSmartSearchResult('${route.from}', '${route.to}')">
+            <span>${route.from} → <strong>${route.to}</strong></span>
+        </div>
+    `).join('');
+    resultsContainer.style.display = 'block';
+}
+
+
+function selectSmartSearchResult(from, to) {
+    // On appelle la fonction principale d'affichage avec les données complètes
+    showDetailedSearch({ from: from, to: to });
+}
+
+
+function showDetailedSearch(prefillData = {}) {
+    const smartSearchContainer = document.getElementById('smart-search-container');
+    const detailedSearchBox = document.getElementById('detailed-search-box');
+
+    if (!smartSearchContainer || !detailedSearchBox) return;
+
+    // Animer la disparition de la barre intelligente
+    smartSearchContainer.style.display = 'none';
+
+    // Pré-remplir les champs si des données sont fournies
+    document.getElementById('origin').value = prefillData.from || '';
+    document.getElementById('destination').value = prefillData.to || '';
+
+    // Animer l'apparition du formulaire détaillé
+    detailedSearchBox.classList.add('visible');
+
+    // Mettre le focus sur le bon champ
+    if (prefillData.from && prefillData.to) {
+        document.getElementById('travel-date').focus(); // Focus sur la date si tout est rempli
+    } else {
+        document.getElementById('origin').focus(); // Sinon, focus sur le départ
+    }
+}
+
+
+
 
 // ============================================
 // 🔍 FILTRAGE ET TRI DES RÉSULTATS

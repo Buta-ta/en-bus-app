@@ -335,6 +335,33 @@
             <p data-i18n="hero_subtitle">
               Réservez vos billets de bus en ligne facilement et rapidement
             </p>
+
+
+
+             <!-- ============================================= -->
+    <!-- ✅ 1. AJOUTER LA NOUVELLE BARRE DE RECHERCHE -->
+    <!-- ============================================= -->
+    <div id="smart-search-container" class="smart-search-wrapper">
+        <div class="smart-search-input-wrapper">
+            <input type="text" id="smart-search-input" placeholder="Où voulez-vous aller ?" autocomplete="off">
+            <button id="smart-search-submit-btn" aria-label="Lancer la recherche">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path></svg>
+            </button>
+        </div>
+        <div id="smart-search-results"></div>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ✅ 2. MODIFIER L'ANCIEN FORMULAIRE POUR LE CACHER -->
+    <!-- ================================================ -->
+    <div id="detailed-search-box" class="search-box" style="display: none;">
+        <div class="search-form">
+            <!-- Votre formulaire complet (Départ, Arrivée, Date...) reste ici -->
+            <!-- ... -->
+        </div>
+    </div>
+
+
             <div class="search-box">
               <div class="search-form">
                 <div class="form-row">
