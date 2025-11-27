@@ -2459,6 +2459,13 @@ function showDetailedSearch(prefillData = {}) {
     document.getElementById('origin').value = prefillData.from || '';
     document.getElementById('destination').value = prefillData.to || '';
 
+     // ✅ CORRECTION : ON INITIALISE LE CALENDRIER ICI
+    // ===================================
+    // Maintenant que le formulaire est visible, on peut initialiser Flatpickr sans bug.
+    if (typeof setupDatePickers === 'function') {
+        setupDatePickers();
+    }
+
     // Mettre le focus sur le bon champ
     if (prefillData.from && prefillData.to) {
         document.getElementById('travel-date').focus();
