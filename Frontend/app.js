@@ -1883,7 +1883,7 @@ const ticketHTML = `
         setupAmenitiesFilters(); 
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
         setupSmartSearch();
-        
+
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
     }
@@ -2436,23 +2436,36 @@ function showDetailedSearch(prefillData = {}) {
     const smartSearchContainer = document.getElementById('smart-search-container');
     const detailedSearchBox = document.getElementById('detailed-search-box');
 
-    if (!smartSearchContainer || !detailedSearchBox) return;
+    if (!smartSearchContainer || !detailedSearchBox) {
+        console.error("Erreur: Impossible de trouver les conteneurs de recherche.");
+        return;
+    }
+    
+    console.log("🚀 Affichage du formulaire détaillé...");
 
-    // Animer la disparition de la barre intelligente
+    // Cacher la barre intelligente
     smartSearchContainer.style.display = 'none';
+    
+    // Afficher le formulaire détaillé
+    detailedSearchBox.style.display = 'block';
+    
+    // On ajoute une classe pour l'animation après un court délai
+    // pour que la transition CSS fonctionne
+    setTimeout(() => {
+        detailedSearchBox.classList.add('visible');
+    }, 10);
 
     // Pré-remplir les champs si des données sont fournies
     document.getElementById('origin').value = prefillData.from || '';
     document.getElementById('destination').value = prefillData.to || '';
 
-    // Animer l'apparition du formulaire détaillé
-    detailedSearchBox.classList.add('visible');
-
     // Mettre le focus sur le bon champ
     if (prefillData.from && prefillData.to) {
-        document.getElementById('travel-date').focus(); // Focus sur la date si tout est rempli
+        document.getElementById('travel-date').focus();
+    } else if (prefillData.to) {
+        document.getElementById('origin').focus();
     } else {
-        document.getElementById('origin').focus(); // Sinon, focus sur le départ
+        document.getElementById('origin').focus();
     }
 }
 
