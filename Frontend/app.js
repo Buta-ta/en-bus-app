@@ -2446,8 +2446,8 @@ function showDetailedSearch(prefillData = {}) {
     // Cacher la barre intelligente
     smartSearchContainer.style.display = 'none';
     
-    // Afficher le formulaire détaillé
-    detailedSearchBox.style.display = 'block';
+    // ✅ ON UTILISE LA CLASSE POUR L'AFFICHER
+    detailedSearchBox.classList.add('visible');
     
     // On ajoute une classe pour l'animation après un court délai
     // pour que la transition CSS fonctionne

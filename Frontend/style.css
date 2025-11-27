@@ -4394,6 +4394,25 @@ body.pwa-installed textarea {
 
 
 
+/* DANS style.css */
+
+.search-box {
+    /* On le cache avec l'opacité et on le rend non-cliquable */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
+    
+    /* Important : on ne met PAS display: none; ici */
+}
+
+.search-box.visible {
+    /* On le rend visible et cliquable */
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
 
 
 
