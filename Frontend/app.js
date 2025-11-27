@@ -2356,53 +2356,57 @@ function setupSmartSearch() {
 
     if (!searchInput || !submitBtn || !resultsContainer) return;
 
-
-
-    // --- Fonction interne pour déclencher l'affichage du formulaire détaillé ---
-    const triggerDetailedSearch = () => {
-        const destination = searchInput.value.trim();
-        // Cacher les résultats d'auto-complétion
+    // --- Fonction interne pour afficher le formulaire détaillé ---
+    const triggerDetailedSearch = (prefillData = {}) => {
         resultsContainer.innerHTML = '';
         resultsContainer.style.display = 'none';
-
-        if (!destination) {
-            // Si le champ est vide, on affiche simplement le formulaire vierge
-            showDetailedSearch();
-        } else {
-            // Si l'utilisateur a tapé une destination, on pré-remplit le champ "Arrivée"
-            showDetailedSearch({ to: destination });
-        }
+        showDetailedSearch(prefillData);
     };
+
+    // ===================================
+    // ✅ GESTION DU CLAVIER MOBILE
+    // ===================================
+    // Quand l'utilisateur clique DANS la barre, on prépare la page
+    searchInput.addEventListener('focus', () => {
+        document.body.classList.add('smart-search-active');
+        // Sur mobile, on scrolle pour que la barre soit en haut de l'écran
+        if (window.innerWidth < 768) {
+            setTimeout(() => {
+                searchInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300); // Léger délai pour laisser le clavier apparaître
+        }
+    });
+
+    // Quand l'utilisateur clique AILLEURS, on remet la page en état normal
+    searchInput.addEventListener('blur', () => {
+        document.body.classList.remove('smart-search-active');
+    });
+    // ===================================
 
     // --- Écouteurs d'événements ---
     
-    // Événement pour le bouton loupe 🔍
-    submitBtn.addEventListener('click', triggerDetailedSearch);
+    // Clic sur le bouton loupe 🔍
+    submitBtn.addEventListener('click', () => {
+        triggerDetailedSearch({ to: searchInput.value.trim() });
+    });
     
-    // Événement pour la touche "Entrée"
+    // Touche "Entrée"
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault(); // Empêche le formulaire de se soumettre
-            triggerDetailedSearch();
-
-            // ===========================================
-            // ✅ LOGIQUE CORRIGÉE POUR LA TOUCHE "ENTRÉE"
-            // ===========================================
-            // On cherche le premier résultat dans la liste des suggestions
+            e.preventDefault();
             const firstResult = resultsContainer.querySelector('.smart-result-item');
             
             if (firstResult) {
                 // S'il y a une suggestion, on simule un clic dessus
                 firstResult.click();
             } else {
-                // S'il n'y a aucune suggestion, on pré-remplit juste la destination
+                // Sinon, on utilise le texte tapé comme destination
                 triggerDetailedSearch({ to: searchInput.value.trim() });
-
+            }
         }
-    }
     });
         
-    // Événement pour l'auto-complétion pendant la frappe
+    // Auto-complétion pendant la frappe
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.toLowerCase();
         
@@ -2412,15 +2416,16 @@ function setupSmartSearch() {
             return;
         }
         
+        // Amélioration du filtre
         const filteredRoutes = routes.filter(route => 
-            route.from.toLowerCase().includes(query) || 
-            route.to.toLowerCase().includes(query)
-        );
+            `${route.from} ${route.to}`.toLowerCase().includes(query) ||
+            `${route.to} ${route.from}`.toLowerCase().includes(query)
+        ).slice(0, 5);
         
-        displaySmartSearchResults(filteredRoutes.slice(0, 5)); // On affiche max 5 résultats
+        displaySmartSearchResults(filteredRoutes);
     });
 
-    // Fermer les résultats si on clique ailleurs
+    // Fermeture des résultats au clic extérieur
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.smart-search-wrapper')) {
             resultsContainer.innerHTML = '';
@@ -2428,7 +2433,6 @@ function setupSmartSearch() {
         }
     });
 }
-
 
 
 function displaySmartSearchResults(results) {

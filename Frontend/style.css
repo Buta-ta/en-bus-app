@@ -2806,6 +2806,42 @@ h3 {
 }
 
 
+
+
+/* Quand la barre de recherche est active sur mobile, on ajuste la section hero */
+body.smart-search-active .hero {
+    /* On peut réduire la hauteur ou ajouter une marge pour remonter le contenu */
+    padding-bottom: 250px; /* Ajoute de l'espace en bas, poussant tout vers le haut */
+    transition: padding-bottom 0.3s ease;
+}
+
+#smart-search-results {
+    /* On s'assure qu'elle s'affiche bien au-dessus des autres éléments */
+    z-index: 1000;
+}
+
+
+
+/* Styles pour les écrans de moins de 480px de large */
+@media (max-width: 480px) {
+    #smart-search-input {
+        /* On réduit la taille de la police et les espaces intérieurs */
+        font-size: 0.95rem;
+        padding: 14px 50px 14px 15px;
+    }
+
+    #smart-search-input::placeholder {
+        /* On peut aussi réduire la taille de la police du placeholder si besoin */
+        font-size: 0.9rem;
+    }
+
+    #smart-search-submit-btn {
+        /* On réduit légèrement la taille du bouton loupe */
+        width: 40px;
+        height: 40px;
+    }
+}
+
 /* ============================================
    📱 PWA STYLES
    ============================================ */
