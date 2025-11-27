@@ -3,6 +3,7 @@ const translations = {
   // LANGUE FRANÇAISE (FR)
   // ===================================
   fr: {
+    page_title: "En-Bus - Voyagez à travers l'Afrique",
     // --- Navbar & Footer ---
     nav_home: "Accueil",
     nav_my_bookings: "Mes Réservations",
@@ -433,6 +434,7 @@ const translations = {
   // LANGUE ANGLAISE (EN)
   // ===================================
   en: {
+    page_title: "En-Bus - Travel across Africa",
     // --- Navbar & Footer ---
     nav_home: "Home",
     nav_my_bookings: "My Bookings",

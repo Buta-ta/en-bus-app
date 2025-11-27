@@ -754,6 +754,13 @@ function applyLanguage(lang = getLanguage()) {
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
+    // ===================================
+    // ✅ TRADUCTION DU TITRE DE LA PAGE
+    // ===================================
+    if (translation.page_title) {
+        document.title = translation.page_title;
+    }
+
     // Cette boucle va trouver et traduire "Sièges :" et "Prix :"
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
