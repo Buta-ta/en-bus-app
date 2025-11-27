@@ -3702,52 +3702,64 @@
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
 async function loadAllDestinations() {
-    console.log("1. Début de loadAllDestinations.");
+    console.log("🏙️ Début du chargement des destinations (Méthode BRUTALE)...");
     
     try {
         const data = await apiCall('/admin/destinations');
         
-        if (data && data.success && Array.isArray(data.destinations)) {
-            console.log(`2. Données API reçues avec succès (${data.destinations.length} destinations).`);
-            
-            if (typeof renderDestinationsTable === 'function') {
-                console.log("3. Appel de renderDestinationsTable...");
-                renderDestinationsTable(data.destinations);
-                console.log("4. Fin de l'appel à renderDestinationsTable.");
-            } else {
-                console.error("ERREUR FATALE : La fonction renderDestinationsTable est introuvable.");
-            }
-        } else {
-            console.error("Erreur dans la réponse de l'API : les données sont invalides ou le succès est faux.", data);
-            showNotification("Impossible de charger les données des destinations.", "error");
+        if (!data || !data.success || !Array.isArray(data.destinations)) {
+            console.error("Données des destinations non valides.");
+            return;
         }
+        
+        console.log(`Données reçues : ${data.destinations.length} villes.`);
+
+        const tbody = document.getElementById('destinations-body');
+        if (!tbody) {
+            console.error("ERREUR FATALE : tbody #destinations-body INTROUVABLE.");
+            return;
+        }
+        
+        // On vide le tableau avant de le remplir
+        tbody.innerHTML = '';
+
+        // Si aucune destination, on affiche un message
+        if (data.destinations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination.</td></tr>';
+            return;
+        }
+        
+        // On construit le HTML avec une boucle simple
+        let html = '';
+        for (const dest of data.destinations) {
+            const isActive = dest.isActive;
+            html += `
+                <tr style="display: table-row !important; color: white;">
+                    <td style="padding: 1rem;">${dest.name}</td>
+                    <td style="padding: 1rem;">${dest.country}</td>
+                    <td style="padding: 1rem;">${isActive ? 'Actif' : 'Inactif'}</td>
+                    <td style="padding: 1rem;">[Actions]</td>
+                </tr>
+            `;
+        }
+        
+        console.log("HTML généré. Insertion dans le DOM...");
+        
+        // On insère le HTML
+        tbody.innerHTML = html;
+        
+        console.log("✅ Insertion terminée. Le tableau devrait être visible.");
+
     } catch (error) {
-        console.error("Erreur critique dans loadAllDestinations:", error);
+        console.error("Erreur dans loadAllDestinations:", error);
     }
 }
-function renderDestinationsTable(destinations) {
-    const tbody = document.getElementById('destinations-body');
-    if (!tbody) return;
 
-    // ... (votre code pour générer tableHTML) ...
-    let tableHTML = '';
-    destinations.forEach(dest => {
-        tableHTML += `<tr><td>${dest.name}</td><td>${dest.country}</td><td>...</td><td>...</td></tr>`;
-    });
-    
-    // ❌ AU LIEU de tbody.innerHTML = tableHTML;
-    // On va utiliser une méthode qui ne peut pas être annulée facilement.
 
-    // ✅ ON AFFICHE LE HTML DANS LA CONSOLE POUR ÊTRE SÛR
-    console.log("HTML généré pour le tableau :\n", tableHTML);
-    
-    // ✅ ON UTILISE UNE ALERTE POUR BLOQUER LE SCRIPT
-    alert("Le tableau va maintenant être inséré. Cliquez sur OK.");
-    
-    tbody.innerHTML = tableHTML;
-    
-    alert("Le tableau a été inséré. Est-il visible ?");
-}
+
+//render destination table 
+
+
 
         async function handleCreateDestination(e) {
             e.preventDefault();
