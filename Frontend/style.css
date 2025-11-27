@@ -2850,6 +2850,14 @@ body.smart-search-active .hero {
 /* On s'assure que le conteneur principal permet le positionnement absolu */
 .smart-search-wrapper {
     position: relative; /* Indispensable ! */
+    z-index: 1000; /* Valeur élevée pour s'assurer qu'elle est au-dessus de tout */
+    
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 /* Le style pour chaque item reste le même */
@@ -2881,6 +2889,9 @@ body.smart-search-active .hero {
         width: 40px;
         height: 40px;
     }
+
+
+
 }
 
 /* ============================================
