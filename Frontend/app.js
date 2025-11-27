@@ -114,230 +114,17 @@ const agencies = [
     }
 ];
 
-const routes = [
-    { 
-        id: 1, 
-        from: "Brazzaville", 
-        to: "Pointe-Noire", 
-        company: "Océan du Nord", 
-        price: 15000, 
-        duration: "8h 30m", 
-        departure: "06:00", 
-        arrival: "14:30", 
-        amenities: ["clim", "prise"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "B1" 
-    },
-    { 
-        id: 2, 
-        from: "Brazzaville", 
-        to: "Pointe-Noire", 
-        company: "Trans Bony", 
-        price: 13500, 
-        duration: "9h 00m", 
-        departure: "07:00", 
-        arrival: "16:00", 
-        amenities: ["clim"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "B2" 
-    },
-    { 
-        id: 3, 
-        from: "Brazzaville", 
-        to: "Pointe-Noire", 
-        company: "Stellimac", 
-        price: 14000, 
-        duration: "8h 45m", 
-        departure: "05:30", 
-        arrival: "14:15", 
-        amenities: ["clim", "prise"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "B3" 
-    },
-    { 
-        id: 4, 
-        from: "Pointe-Noire", 
-        to: "Brazzaville", 
-        company: "Océan du Nord", 
-        price: 15000, 
-        duration: "8h 30m", 
-        departure: "06:30", 
-        arrival: "15:00", 
-        amenities: ["clim", "prise"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "P1" 
-    },
-    { 
-        id: 5, 
-        from: "Pointe-Noire", 
-        to: "Brazzaville", 
-        company: "Trans Bony", 
-        price: 13500, 
-        duration: "9h 00m", 
-        departure: "07:30", 
-        arrival: "16:30", 
-        amenities: ["clim"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "P2" 
-    },
-    { 
-        id: 6, 
-        from: "Brazzaville", 
-        to: "Dolisie", 
-        company: "Stellimac", 
-        price: 10000, 
-        duration: "6h 00m", 
-        departure: "08:00", 
-        arrival: "14:00", 
-        amenities: ["clim"], 
-        tripType: "stops", 
-        stops: [
-            { city: "Mindouli", arrivalTime: "09:30", departureTime: "09:45", duration: "15min" },
-            { city: "Nkayi", arrivalTime: "11:30", departureTime: "11:50", duration: "20min" }
-        ], 
-        connections: [],
-        breaks: 2, 
-        trackerId: "D1" 
-    },
-    { 
-        id: 7, 
-        from: "Brazzaville", 
-        to: "Nkayi", 
-        company: "Océan du Nord", 
-        price: 7000, 
-        duration: "4h 00m", 
-        departure: "09:00", 
-        arrival: "13:00", 
-        amenities: ["clim"], 
-        tripType: "stops", 
-        stops: [
-            { city: "Mindouli", arrivalTime: "10:15", departureTime: "10:30", duration: "15min" }
-        ], 
-        connections: [],
-        breaks: 1, 
-        trackerId: "N1" 
-    },
-    { 
-        id: 8, 
-        from: "Brazzaville", 
-        to: "Ouesso", 
-        company: "Océan du Nord", 
-        price: 25000, 
-        duration: "16h 00m", 
-        departure: "05:00", 
-        arrival: "21:00", 
-        amenities: ["clim", "wc"], 
-        tripType: "stops", 
-        stops: [
-            { city: "Owando", arrivalTime: "11:00", departureTime: "12:00", duration: "1h" },
-            { city: "Makoua", arrivalTime: "16:30", departureTime: "17:00", duration: "30min" }
-        ], 
-        connections: [],
-        breaks: 3, 
-        trackerId: "O1" 
-    },
-    { 
-        id: 27, 
-        from: "Douala", 
-        to: "Yaoundé", 
-        company: "Touristique Express", 
-        price: 3500, 
-        duration: "3h 00m", 
-        departure: "06:00", 
-        arrival: "09:00", 
-        amenities: ["clim", "wifi"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "Y1" 
-    },
-    { 
-        id: 28, 
-        from: "Yaoundé", 
-        to: "Douala", 
-        company: "Garantie Express", 
-        price: 3500, 
-        duration: "3h 00m", 
-        departure: "14:00", 
-        arrival: "17:00", 
-        amenities: ["clim", "prise"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "Y2" 
-    },
-    { 
-        id: 31, 
-        from: "Lagos", 
-        to: "Abuja", 
-        company: "ABC Transport", 
-        price: 8000, 
-        duration: "8h 00m", 
-        departure: "06:00", 
-        arrival: "14:00", 
-        amenities: ["clim", "wifi", "wc"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "L1" 
-    },
-    {
-        id: 32,
-        from: "Brazzaville",
-        to: "Libreville",
-        company: "United Express",
-        price: 35000,
-        duration: "18h 30m",
-        departure: "06:00",
-        arrival: "00:30",
-        amenities: ["clim", "wc", "wifi"],
-        tripType: "connections",
-        stops: [
-            { city: "Dolisie", arrivalTime: "12:00", departureTime: "12:30", duration: "30min" }
-        ],
-        connections: [
-            { 
-                at: "Pointe-Noire", 
-                arrivalTime: "14:30", 
-                waitTime: "2h 30min",
-                nextDeparture: "17:00",
-                nextCompany: "Océan du Nord",
-                reason: "Correspondance maritime + route"
-            }
-        ],
-        breaks: 2,
-        trackerId: "BL1"
-    },
-    { 
-        id: 35, 
-        from: "Accra", 
-        to: "Kumasi", 
-        company: "STC", 
-        price: 4500, 
-        duration: "4h 30m", 
-        departure: "06:00", 
-        arrival: "10:30", 
-        amenities: ["clim", "wifi", "wc"], 
-        tripType: "direct", 
-        stops: [], 
-        connections: [],
-        trackerId: "A1" 
-    },
-];
+// ============================================
+// 📦 ÉTAT GLOBAL DE L'APPLICATION
+// ============================================
 
-
+// --- Variables pour les timers ---
 let frontendCountdownInterval = null; 
+// --- Données dynamiques ---
+let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
+let allReservations = []; // Pour la page "Mes réservations"
 
+// --- État principal de l'application ---
 let appState = {
     currentSearch: {},
     selectedBus: null,
@@ -348,25 +135,14 @@ let appState = {
     occupiedSeats: [],
     occupiedReturnSeats: [],
     passengerInfo: [],
-    allReservations: [],
     departurePicker: null,
     passengerCounts: { adults: 1, children: 0 },
     baggageCounts: {},
     currentResults: [],
-    filters: {
-        company: 'all',
-        amenities: [],
-        tripType: 'all',
-        priceRange: { min: 0, max: 100000 },
-        departureTime: 'all'
-    },
-    sortBy: 'departure',
     currentReservation: null
 };
 
-// ============================================
-// ÉTAT DES FILTRES
-// ============================================
+// --- État des filtres de la page de résultats ---
 let activeFilters = {
     company: 'all',
     tripType: 'all',
@@ -374,11 +150,8 @@ let activeFilters = {
     departureTime: 'all',
     amenities: [],
     sortBy: 'departure',
-    // ✅ AJOUTER CETTE LIGNE
     departureLocation: 'all'
 };
-
-
 // ✅ AJOUTEZ CETTE LIGNE
 let refreshPassengerSelectorUI = () => {}; // Variable globale initialisée avec une fonction vide
 
@@ -1849,6 +1622,7 @@ const ticketHTML = `
         addToastStyles();
         setupAmenitiesFilters(); 
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
+        loadAllRouteTemplates(); 
 
          // ===========================================
     // ✅ CORRECTION POUR LA SUPERPOSITION
@@ -1961,6 +1735,22 @@ function showPage(pageName) {
         stopAgencySpecificCountdown();
     }
 
+}
+
+
+// DANS app.js, avec vos autres fonctions
+
+async function loadAllRouteTemplates() {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/route-templates`);
+        const data = await response.json();
+        if (data.success && data.templates) {
+            allRouteTemplates = data.templates;
+            console.log(`✅ ${allRouteTemplates.length} modèles de trajets chargés pour les suggestions.`);
+        }
+    } catch (error) {
+        console.error("Erreur chargement des modèles de trajets:", error);
+    }
 }
 // DANS Frontend/app.js
 
@@ -2379,19 +2169,24 @@ function setupSmartSearch() {
     // Auto-complétion pendant la frappe
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.toLowerCase();
+
+
         
         if (query.length < 2) {
             resultsContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             return;
         }
+
         
-        const filteredRoutes = routes.filter(route => 
-            `${route.from} ${route.to}`.toLowerCase().includes(query) ||
-            `${route.to} ${route.from}`.toLowerCase().includes(query)
-        ).slice(0, 5);
+         // ✅ ON UTILISE LA NOUVELLE VARIABLE DYNAMIQUE
+    const filteredRoutes = allRouteTemplates.filter(route => 
+        `${route.from} ${route.to}`.toLowerCase().includes(query) ||
+        `${route.to} ${route.from}`.toLowerCase().includes(query)
+    );
+    
         
-        displaySmartSearchResults(filteredRoutes);
+        displaySmartSearchResults(filteredRoutes.slice(0, 5));
     });
 
     // Fermeture des résultats au clic extérieur

@@ -687,6 +687,22 @@ app.get("/api/popular-destinations", async (req, res) => {
     }
 });
 
+
+// DANS server.js
+
+app.get("/api/route-templates", async (req, res) => {
+    try {
+        // On ne renvoie que les modèles qui ont au moins une ville de départ et d'arrivée
+        const templates = await routeTemplatesCollection.find({ 
+            from: { $exists: true, $ne: "" },
+            to: { $exists: true, $ne: "" }
+        }).toArray();
+        res.json({ success: true, templates: templates });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 // ============================================
 // 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
 // ============================================
