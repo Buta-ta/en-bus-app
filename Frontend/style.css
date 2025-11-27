@@ -2842,20 +2842,16 @@ h3 {
 
 /* La liste déroulante des résultats */
 #smart-search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-
-    /* ✅ Z-INDEX TRÈS ÉLEVÉ */
-    /* Cette valeur garantit qu'il sera au-dessus de 99% des éléments de la page */
-    z-index: 9999; 
+    /* ✅ ON PASSE EN POSITION 'ABSOLUTE' PAR RAPPORT À LA PAGE */
+    position: absolute; 
     
+    z-index: 9999; /* Garanti d'être au-dessus de tout */
     display: none;
     
+    /* Le reste du style est le même */
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-radius: var(--radius-lg);
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     max-height: 300px;
     overflow-y: auto;

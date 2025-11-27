@@ -1889,6 +1889,16 @@ const ticketHTML = `
         addToastStyles();
         setupAmenitiesFilters(); 
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
+
+         // ===========================================
+    // ✅ CORRECTION POUR LA SUPERPOSITION
+    // ===========================================
+    // On déplace le conteneur des résultats à la fin du body
+    // pour qu'il ne soit plus "emprisonné" par un parent.
+    const resultsContainer = document.getElementById('smart-search-results');
+    if (resultsContainer) {
+        document.body.appendChild(resultsContainer);
+    }
         setupSmartSearch();
 
     } catch (error) {
@@ -2415,22 +2425,28 @@ function setupSmartSearch() {
         }
     });
 }
-
 function displaySmartSearchResults(results) {
     const resultsContainer = document.getElementById('smart-search-results');
-    if (!resultsContainer) return;
+    const searchInput = document.getElementById('smart-search-input');
+    if (!resultsContainer || !searchInput) return;
 
     if (results.length === 0) {
-        resultsContainer.innerHTML = '';
         resultsContainer.style.display = 'none';
         return;
     }
+    
+    // --- Calcul de la position ---
+    const inputRect = searchInput.getBoundingClientRect();
+    resultsContainer.style.left = `${inputRect.left}px`;
+    resultsContainer.style.top = `${inputRect.bottom + window.scrollY}px`; // On ajoute le scroll
+    resultsContainer.style.width = `${inputRect.width}px`;
 
     resultsContainer.innerHTML = results.map(route => `
         <div class="smart-result-item" onclick="selectSmartSearchResult('${route.from}', '${route.to}')">
             <span>${route.from} → <strong>${route.to}</strong></span>
         </div>
     `).join('');
+
     resultsContainer.style.display = 'block';
 }
 
