@@ -2806,62 +2806,60 @@ h3 {
 }
 
 /* ============================================
-   🔍 BARRE DE RECHERCHE INTELLIGENTE (Version Corrigée)
+   🔍 BARRE DE RECHERCHE INTELLIGENTE (Version Finale)
    ============================================ */
 
-/* 1. Le conteneur principal : simple et juste pour le positionnement */
+/* Le conteneur qui englobe la barre et les résultats */
 .smart-search-wrapper {
-    position: relative; /* Indispensable pour que #smart-search-results se positionne par rapport à lui */
+    position: relative; /* Indispensable pour le positionnement des résultats */
     width: 100%;
     max-width: 600px;
     margin: 2rem auto 0;
-    /* On lui donne un z-index élevé pour qu'il soit au-dessus des autres sections comme .popular-destinations */
+    
+    /* ✅ LA CLÉ EST ICI : On élève tout le bloc de recherche */
     z-index: 20; 
 }
 
-/* 2. La barre de recherche elle-même (votre code est bon) */
-#smart-search-input {
-    /* ... (gardez vos styles actuels pour l'input) ... */
+/* La barre de saisie et son bouton */
+.smart-search-input-wrapper {
+    position: relative;
 }
 
-/* 3. La liste déroulante des résultats */
+#smart-search-input {
+    /* ... vos styles pour l'input sont corrects ... */
+    border-radius: 9999px;
+}
+
+#smart-search-submit-btn {
+    /* ... vos styles pour le bouton sont corrects ... */
+}
+
+/* La liste déroulante des résultats */
 #smart-search-results {
-    /* ✅ ON PASSE EN POSITION 'FIXED' */
-    position: fixed; 
-    
-    /* Le z-index est crucial */
-    z-index: 9999; 
-    
-    /* Le reste du style est le même */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000; /* Valeur très élevée pour être au-dessus de tout le reste */
     display: none;
+    
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     max-height: 300px;
     overflow-y: auto;
 }
-/* 4. Style des items dans la liste (votre code est bon) */
+
 .smart-result-item {
     padding: 15px 20px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
     border-bottom: 1px solid var(--color-border);
 }
+
 .smart-result-item:hover {
     background-color: var(--color-background);
 }
-
-/* 5. Styles responsives (votre code est bon) */
-@media (max-width: 480px) {
-    #smart-search-input {
-        font-size: 0.95rem;
-        padding: 14px 50px 14px 15px;
-    }
-    /* ... (le reste de vos styles responsive) ... */
-}
-
-
 
 
 /* ============================================

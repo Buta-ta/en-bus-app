@@ -2417,36 +2417,20 @@ function setupSmartSearch() {
 }
 
 function displaySmartSearchResults(results) {
-    let resultsContainer = document.getElementById('smart-search-results');
-    
-    // Si le conteneur n'existe pas, on le crée et on l'ajoute au body
-    if (!resultsContainer) {
-        resultsContainer = document.createElement('div');
-        resultsContainer.id = 'smart-search-results';
-        document.body.appendChild(resultsContainer);
-    }
+    const resultsContainer = document.getElementById('smart-search-results');
+    if (!resultsContainer) return;
 
     if (results.length === 0) {
+        resultsContainer.innerHTML = '';
         resultsContainer.style.display = 'none';
         return;
     }
 
-    // Calculer la position de la barre de recherche
-    const searchInput = document.getElementById('smart-search-input');
-    const inputRect = searchInput.getBoundingClientRect();
-
-    // Positionner la liste des résultats juste en dessous
-    resultsContainer.style.left = `${inputRect.left}px`;
-    resultsContainer.style.top = `${inputRect.bottom}px`;
-    resultsContainer.style.width = `${inputRect.width}px`;
-
-    // Générer le HTML
     resultsContainer.innerHTML = results.map(route => `
         <div class="smart-result-item" onclick="selectSmartSearchResult('${route.from}', '${route.to}')">
             <span>${route.from} → <strong>${route.to}</strong></span>
         </div>
     `).join('');
-
     resultsContainer.style.display = 'block';
 }
 
