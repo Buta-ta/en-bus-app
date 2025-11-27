@@ -2173,16 +2173,7 @@
                                 </div>
                             </div>
 
-                            <!-- ✅ AJOUTEZ CE BLOC DE TEST À LA FIN DE L'ONGLET MODÈLES -->
-    <div class="content-card">
-        <h2 class="card-title">TEST DESTINATIONS</h2>
-        <div class="table-container">
-            <table>
-                <thead><tr><th>Ville</th><th>Pays</th></tr></thead>
-                <tbody id="TEST-destinations-body"></tbody>
-            </table>
-        </div>
-    </div>
+    
 
                             <button type="submit" class="btn btn-primary mt-4">
                                 <span>💾</span>
@@ -2220,63 +2211,6 @@
             </div>
 
 
-            <!-- ============================================
-     ONGLET: GESTION DES DESTINATIONS
-     ============================================ -->
-            <div id="tab-destinations" class="tab-content">
-                <div class="page-header">
-                    <h1 class="page-title">Gestion des Destinations</h1>
-                    <p class="page-subtitle">Ajoutez, modifiez ou désactivez les villes desservies.</p>
-                </div>
-
-                <!-- Formulaire d'ajout -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Ajouter une nouvelle ville</h2>
-                    </div>
-                    <form id="destination-creation-form">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="dest-name" class="form-label">Nom de la ville</label>
-                                <input type="text" id="dest-name" class="form-control" placeholder="Ex: Kinshasa"
-                                    required>
-                            </div>
-                            <div class="form-group">
-                                <label for="dest-country" class="form-label">Pays</label>
-                                <input type="text" id="dest-country" class="form-control" placeholder="Ex: RDC"
-                                    required>
-                            </div>
-                            <div class="form-group">
-                                <label for="dest-coords" class="form-label">Coordonnées GPS</label>
-                                <input type="text" id="dest-coords" class="form-control" placeholder="Ex: -4.44, 15.26">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary mt-4"><span>➕</span> Ajouter la
-                            destination</button>
-                    </form>
-                </div>
-
-                <!-- Tableau des destinations existantes -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Villes existantes</h2>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Ville</th>
-                                    <th>Pays</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="destinations-body">
-                                <!-- Généré dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
 
 
