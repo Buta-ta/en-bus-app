@@ -453,6 +453,9 @@ const Utils = {
         });
     },
 
+
+
+
     generateBookingNumber() {
     const timestamp = Date.now().toString();
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -583,6 +586,10 @@ const Utils = {
     },
 
 
+
+
+
+
 // Dans app.js, à l'intérieur de const Utils = { ... }
 
 // ✅ 1. FONCTION DE GÉNÉRATION DE LA CHAÎNE POUR LE QR CODE
@@ -690,6 +697,37 @@ async generateQRCodeBase64(text, size = 200) {
         }
     });
 }
+}
+
+
+
+// Fichier: app.js
+
+function getLiveStatusIcon(status) {
+    switch (status) {
+        case 'ON_TIME': return '🟢';
+        case 'DELAYED': return '🟠';
+        case 'CANCELLED': return '🔴';
+        case 'ARRIVED': return '✅';
+        default: return 'ℹ️';
+    }
+}
+
+function getLiveStatusText(liveStatus, translation) {
+    if (!liveStatus || !liveStatus.status) return '';
+    
+    switch (liveStatus.status) {
+        case 'ON_TIME':
+            return translation.live_status_on_time || "À l'heure";
+        case 'DELAYED':
+            return translation.live_status_delayed(liveStatus.delayMinutes, liveStatus.reason);
+        case 'CANCELLED':
+            return translation.live_status_cancelled(liveStatus.reason);
+        case 'ARRIVED':
+            return translation.live_status_arrived;
+        default:
+            return liveStatus.status; // Affiche le statut brut si non traduit
+    }
 }
 
 
@@ -3652,14 +3690,12 @@ async function displayConfirmation(reservation) {
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
-    
+
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-
-    listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings}</div>`;
-
     
-    // Traduire le titre de la page
+    listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings || 'Chargement...'}</div>`;
+
     const pageTitle = document.querySelector("#reservations-page .page-header h2");
     if (pageTitle) {
         pageTitle.textContent = translation.my_bookings_title;
@@ -3681,7 +3717,6 @@ async function displayReservations() {
         const data = await response.json();
         if (!data.success || !data.reservations) throw new Error("Données invalides");
 
-        // Logique d'auto-découverte des nouveaux billets
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         data.reservations.forEach(r => {
@@ -3695,7 +3730,6 @@ async function displayReservations() {
             return displayReservations();
         }
 
-        // Affichage de la liste triée
         listContainer.innerHTML = data.reservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
@@ -3705,7 +3739,6 @@ async function displayReservations() {
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                // Traduction du statut
                 let statusHTML = '';
                 if (isConfirmed) statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
                 else if (isPending) statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
@@ -3713,14 +3746,13 @@ async function displayReservations() {
                 else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
                 else if (isCancelled) statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
 
-                // Traduction des boutons
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
                 if (isConfirmed) {
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
                     if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">${translation.button_track || 'Suivre'}</a>`;
                     const reportCount = res.reportCount || 0;
-                    if (!res.returnRoute && reportCount < 2) { // Limite de 2 reports
+                    if (!res.returnRoute && reportCount < 2) {
                         actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
                     }
                 } else if (isPending) {
@@ -3734,17 +3766,29 @@ async function displayReservations() {
                     actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
                 }
 
-                // Bouton de suppression
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
                      deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
                 }
                 
-                // Traduction de la date et de l'heure
                 const formattedDate = Utils.formatDate(res.date, lang);
                 const dateTimeString = (typeof translation.date_at_time === 'function')
                     ? translation.date_at_time(formattedDate, res.route.departure)
                     : `${formattedDate} à ${res.route.departure}`;
+
+                // --- Génération de la ligne de statut ---
+                let liveStatusHTML = '';
+                if (res.liveStatus && res.status === 'Confirmé') {
+                    const statusClass = res.liveStatus.status.toLowerCase().replace(/_/g, '-');
+                    const icon = getLiveStatusIcon(res.liveStatus.status);
+                    const text = getLiveStatusText(res.liveStatus, translation);
+                    liveStatusHTML = `
+                        <div class="trip-status-line ${statusClass}">
+                            ${icon}
+                            <span>${text}</span>
+                        </div>
+                    `;
+                }
 
                 return `
                     <div class="reservation-card-pwa" style="${isReported ? 'opacity: 0.6;' : ''}">
@@ -3756,7 +3800,8 @@ async function displayReservations() {
                         <div class="res-pwa-body">
                             <h4>${res.route.from} → ${res.route.to}</h4>
                             <p>${dateTimeString}</p>
-                            <p>${translation.passenger_count(res.passengers.length)} - Total: ${res.totalPrice}</p>
+                            ${liveStatusHTML}
+                            <p style="margin-top: ${liveStatusHTML ? '12px' : '0'};">${translation.passenger_count(res.passengers.length)} - Total: ${res.totalPrice}</p>
                         </div>
                         <div class="res-pwa-actions">${actionsButtons}</div>
                     </div>

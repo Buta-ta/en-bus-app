@@ -4247,7 +4247,44 @@ body.pwa-installed textarea {
 }
 
 
+/* ============================================
+   🟢 LIGNE DE STATUT DU VOYAGE
+   ============================================ */
 
+.trip-status-line {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-base);
+    display: inline-flex; /* Permet de s'adapter à la taille du texte */
+    align-items: center;
+    gap: 8px;
+}
+
+.trip-status-line.on_time {
+    background-color: rgba(115, 215, 0, 0.15);
+    color: #8ee033;
+    border: 1px solid rgba(115, 215, 0, 0.3);
+}
+
+.trip-status-line.delayed {
+    background-color: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.trip-status-line.cancelled {
+    background-color: rgba(244, 67, 54, 0.15);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.trip-status-line.arrived {
+    background-color: rgba(158, 158, 158, 0.15);
+    color: #bdbdbd;
+    border: 1px solid rgba(158, 158, 158, 0.3);
+}
 
 
 

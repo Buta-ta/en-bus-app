@@ -3061,6 +3061,12 @@
         <!-- ✅ CORRECTION : Retour aux onclick directs pour plus de fiabilité -->
         <button class="btn btn-icon btn-ghost" onclick="manageSeats('${trip._id}')" title="Gérer sièges">💺</button>
         <button class="btn btn-icon btn-ghost" onclick="showEditTripModal('${trip._id}')" title="Modifier le voyage">✏️</button>
+        <!-- ✅ NOUVEAU BOUTON -->
+    <button class="btn btn-icon btn-ghost" style="color: #2196f3;" 
+            onclick="openStatusModal('${trip._id}', '${trip.route.from} → ${trip.route.to}')" 
+            title="Mettre à jour le statut">
+        📢
+    </button>
         <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges">🔄</button>
         ${deleteButtonHTML}
     </div>
@@ -3249,6 +3255,80 @@
                 manageSeats(tripId); // Rafraîchit la modale pour afficher le nouvel état
             }
         }
+
+
+
+
+        function openStatusModal(tripId, tripName) {
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
+
+    modalTitle.textContent = "Mettre à jour le statut du voyage";
+    modalBody.innerHTML = `
+        <p>Voyage : <strong>${tripName}</strong></p>
+        <form id="status-form">
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="status-select" class="form-label">Nouveau Statut</label>
+                <select id="status-select" class="form-control">
+                    <option value="ON_TIME">✅ À l'heure</option>
+                    <option value="DELAYED">🟠 En retard</option>
+                    <option value="CANCELLED">🔴 Annulé</option>
+                    <option value="ARRIVED">🏁 Arrivé</option>
+                </select>
+            </div>
+            <div id="delay-details" style="display:none;">
+                <div class="form-group">
+                    <label for="delay-minutes" class="form-label">Durée du retard (minutes)</label>
+                    <input type="number" id="delay-minutes" class="form-control" min="5" step="5">
+                </div>
+                <div class="form-group">
+                    <label for="delay-reason" class="form-label">Raison (optionnel)</label>
+                    <input type="text" id="delay-reason" class="form-control" placeholder="Ex: Trafic dense">
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+            </div>
+        </form>
+    `;
+
+    const statusSelect = document.getElementById('status-select');
+    const delayDetails = document.getElementById('delay-details');
+    statusSelect.onchange = () => {
+        delayDetails.style.display = statusSelect.value === 'DELAYED' ? 'block' : 'none';
+    };
+
+    document.getElementById("status-form").addEventListener('submit', (e) => {
+        e.preventDefault();
+        const status = statusSelect.value;
+        const delayMinutes = document.getElementById('delay-minutes').value;
+        const reason = document.getElementById('delay-reason').value;
+        
+        // Pour un voyage annulé, la raison devient obligatoire
+        if (status === 'CANCELLED' && !reason) {
+            showNotification('Veuillez spécifier la raison de l\'annulation.', 'warning');
+            return;
+        }
+
+        updateTripStatus(tripId, status, delayMinutes, reason);
+    });
+
+    document.getElementById("details-modal").classList.add('active');
+}
+
+async function updateTripStatus(tripId, status, delayMinutes, reason) {
+    showNotification('Mise à jour du statut en cours...', 'info');
+    
+    const body = { status, delayMinutes: parseInt(delayMinutes), reason };
+    
+    const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
+
+    if (data && data.success) {
+        showNotification(data.message, 'success');
+        closeModal();
+    }
+}
         // ============================================
         // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE
         // ============================================

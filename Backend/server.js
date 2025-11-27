@@ -526,44 +526,61 @@ app.post(
 
 app.get("/api/reservations/details", async (req, res) => {
     try {
-        const initialBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
-
-        if (!initialBookingNumbers || initialBookingNumbers.length === 0) {
-            return res.status(400).json({ success: false, error: "Aucun ID de réservation fourni." });
+        const knownBookingNumbers = req.query.ids?.split(',').filter(id => id.trim());
+        if (!knownBookingNumbers || knownBookingNumbers.length === 0) {
+            return res.json({ success: true, reservations: [] });
         }
+
+        // --- PHASE 1 : Trouver toute la chaîne de réservations (originales + remplacements) ---
         
-        // 1. Récupérer les réservations que le client connaît
-        const initialReservations = await reservationsCollection
-            .find({ bookingNumber: { $in: initialBookingNumbers } })
-            .toArray();
-
-        // 2. Chercher si des billets de remplacement existent
-        const replacementBookingNumbers = initialReservations
-            .map(r => r.replacementBookingNumber)
-            .filter(Boolean); // Garder seulement les numéros valides
-
-        let finalReservations = [...initialReservations];
-
-        // 3. S'il y a des billets de remplacement, aller les chercher
-        if (replacementBookingNumbers.length > 0) {
-            const replacementReservations = await reservationsCollection
-                .find({ bookingNumber: { $in: replacementBookingNumbers } })
+        let allRelevantBookingNumbers = new Set(knownBookingNumbers);
+        let numbersToSearch = [...knownBookingNumbers];
+        
+        // Boucle pour trouver tous les billets liés, au cas où il y aurait plusieurs reports successifs
+        while (numbersToSearch.length > 0) {
+            const foundReservations = await reservationsCollection
+                .find({ bookingNumber: { $in: numbersToSearch } })
+                .project({ replacementBookingNumber: 1 }) // On ne prend que le champ qui nous intéresse
                 .toArray();
+                
+            const newReplacements = foundReservations
+                .map(r => r.replacementBookingNumber)
+                .filter(Boolean) // On enlève les undefined/null
+                .filter(num => !allRelevantBookingNumbers.has(num)); // On ne garde que les nouveaux
             
-            finalReservations.push(...replacementReservations);
+            if (newReplacements.length === 0) {
+                break; // Plus rien à trouver, on sort de la boucle
+            }
+            
+            newReplacements.forEach(num => allRelevantBookingNumbers.add(num));
+            numbersToSearch = newReplacements;
         }
 
-        // 4. Renvoyer une liste unique de tous les billets trouvés
-        const uniqueReservations = Array.from(new Map(finalReservations.map(r => [r.bookingNumber, r])).values());
+        // --- PHASE 2 : Récupérer les détails complets de tous les billets pertinents AVEC leur statut live ---
         
-        res.json({ success: true, reservations: uniqueReservations });
+        const finalReservations = await reservationsCollection.aggregate([
+            { $match: { bookingNumber: { $in: Array.from(allRelevantBookingNumbers) } } },
+            { $addFields: { tripObjectId: { $toObjectId: "$route.id" } } },
+            {
+                $lookup: {
+                    from: "trips",
+                    localField: "tripObjectId",
+                    foreignField: "_id",
+                    as: "tripDetails"
+                }
+            },
+            { $unwind: { path: "$tripDetails", preserveNullAndEmptyArrays: true } },
+            { $addFields: { liveStatus: "$tripDetails.liveStatus" } },
+            { $project: { tripDetails: 0, tripObjectId: 0 } }
+        ]).toArray();
+
+        res.json({ success: true, reservations: finalReservations });
 
     } catch (error) {
         console.error("❌ Erreur récupération multi-réservations:", error);
         res.status(500).json({ success: false, error: "Erreur serveur." });
     }
 });
-
 
 
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
@@ -1582,6 +1599,52 @@ app.patch(
     }
   }
 );
+
+
+// DANS server.js
+
+app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
+    body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED']),
+    body('delayMinutes').optional().isInt({ min: 0 }),
+    body('reason').optional().isString().trim()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+        const { tripId } = req.params;
+        const { status, delayMinutes, reason } = req.body;
+        
+        if (!ObjectId.isValid(tripId)) {
+            return res.status(400).json({ error: "ID de voyage invalide." });
+        }
+
+        const liveStatus = {
+            status: status,
+            delayMinutes: status === 'DELAYED' ? delayMinutes : 0,
+            reason: reason || '',
+            lastUpdated: new Date(),
+            updatedBy: req.user.username
+        };
+
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(tripId) },
+            { $set: { liveStatus: liveStatus } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Voyage non trouvé." });
+        }
+
+        // TODO (Futur): Envoyer un événement WebSocket ici pour notifier les clients en temps réel
+        
+        res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
+
+    } catch (error) {
+        console.error("❌ Erreur mise à jour statut voyage:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 // ============================================
 // --- GESTION DES PARAMÈTRES (ADMIN) ---

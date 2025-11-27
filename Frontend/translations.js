@@ -166,6 +166,10 @@ const translations = {
     button_track: "Suivre",
     button_delete_title: "Masquer de l'historique",
     date_at_time: (date, time) => `${date} à ${time}`,
+    live_status_on_time: "À l'heure",
+    live_status_delayed: (min, reason) => `En retard (${min} min) - ${reason || 'Raison non spécifiée'}`,
+    live_status_cancelled: (reason) => `Annulé - ${reason || 'Raison non spécifiée'}`,
+    live_status_arrived: "Arrivé",
 
 
     // --- Modale de Report ---
@@ -688,6 +692,10 @@ const translations = {
     button_track: "Track",
     button_delete_title: "Hide from history",
     date_at_time: (date, time) => `${date} at ${time}`,
+    live_status_on_time: "On Time",
+    live_status_delayed: (min, reason) => `Delayed (${min} min) - ${reason || 'Unspecified reason'}`,
+    live_status_cancelled: (reason) => `Cancelled - ${reason || 'Unspecified reason'}`,
+    live_status_arrived: "Arrived",
 
 
 
