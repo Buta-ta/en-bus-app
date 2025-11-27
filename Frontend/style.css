@@ -2817,7 +2817,7 @@ h3 {
     margin: 2rem auto 0;
     
     /* ✅ LA CLÉ EST ICI : On élève tout le bloc de recherche */
-    z-index: 20; 
+    z-index: 50; 
 }
 
 /* La barre de saisie et son bouton */
@@ -2840,7 +2840,11 @@ h3 {
     top: 100%;
     left: 0;
     right: 0;
-    z-index: 1000; /* Valeur très élevée pour être au-dessus de tout le reste */
+
+    /* ✅ Z-INDEX TRÈS ÉLEVÉ */
+    /* Cette valeur garantit qu'il sera au-dessus de 99% des éléments de la page */
+    z-index: 9999; 
+    
     display: none;
     
     background-color: var(--color-surface);
