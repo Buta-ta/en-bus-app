@@ -1565,9 +1565,10 @@
 
 
         .tab-content.active {
-    display: block; /* ✅ C'est ça qui rend l'onglet visible */
-    animation: fadeIn 0.4s ease-in-out;
-}
+            display: block;
+            /* ✅ C'est ça qui rend l'onglet visible */
+            animation: fadeIn 0.4s ease-in-out;
+        }
 
 
         /* ============================================
@@ -1685,7 +1686,15 @@
                         </a>
                     </li>
 
-                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
+                    <!-- DANS la sidebar, après les autres liens -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="destinations">
+                            <span class="nav-icon">🏙️</span>
+                            <span>Destinations</span>
+                        </a>
+                    </li>
+
+                    <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
                             <span class="nav-icon">⚙️</span>
@@ -1693,7 +1702,7 @@
                         </a>
                     </li>
 
-                    
+
                 </ul>
 
 
@@ -1730,27 +1739,29 @@
                 <!-- Filters & Table -->
                 <div class="content-card">
                     <div class="filters">
-    <input type="text" id="search-input" class="form-control search-input"
-        placeholder="🔍 Rechercher par N°, nom, tél, preuve..." oninput="applyFilters()" />
-    
-    <!-- ✅ FILTRE PAR MÉTHODE DE PAIEMENT -->
-    <select id="filter-payment-method" class="form-control" style="flex: 0 1 200px;" onchange="applyFilters()">
-        <option value="all">Toutes les méthodes</option>
-        <option value="MTN">MTN</option>
-        <option value="AIRTEL">Airtel</option>
-        <option value="AGENCY">Agence</option>
-    </select>
-    
-    <!-- ✅ FILTRE PAR NUMÉRO DE BUS -->
-    <input type="text" id="filter-bus-id" class="form-control" style="flex: 0 1 200px;" placeholder="Filtrer par N° Bus..." oninput="applyFilters()">
+                        <input type="text" id="search-input" class="form-control search-input"
+                            placeholder="🔍 Rechercher par N°, nom, tél, preuve..." oninput="applyFilters()" />
 
-    <div class="filter-pills">
-        <button class="filter-pill active" data-status="all">Tous</button>
-        <button class="filter-pill" data-status="Confirmé">Confirmé</button>
-        <button class="filter-pill" data-status="En attente de paiement">En attente</button>
-        <button class="filter-pill" data-status="Annulé">Annulé</button>
-    </div>
-</div>
+                        <!-- ✅ FILTRE PAR MÉTHODE DE PAIEMENT -->
+                        <select id="filter-payment-method" class="form-control" style="flex: 0 1 200px;"
+                            onchange="applyFilters()">
+                            <option value="all">Toutes les méthodes</option>
+                            <option value="MTN">MTN</option>
+                            <option value="AIRTEL">Airtel</option>
+                            <option value="AGENCY">Agence</option>
+                        </select>
+
+                        <!-- ✅ FILTRE PAR NUMÉRO DE BUS -->
+                        <input type="text" id="filter-bus-id" class="form-control" style="flex: 0 1 200px;"
+                            placeholder="Filtrer par N° Bus..." oninput="applyFilters()">
+
+                        <div class="filter-pills">
+                            <button class="filter-pill active" data-status="all">Tous</button>
+                            <button class="filter-pill" data-status="Confirmé">Confirmé</button>
+                            <button class="filter-pill" data-status="En attente de paiement">En attente</button>
+                            <button class="filter-pill" data-status="Annulé">Annulé</button>
+                        </div>
+                    </div>
 
                     <div class="table-container">
                         <table>
@@ -1792,17 +1803,18 @@
 
                 <!-- Table des demandes -->
                 <div class="content-card">
-                   <div class="card-header">
-    <h2 class="card-title">Demandes en attente et Historique</h2>
-    
-    <!-- ✅ CHAMP DE RECHERCHE -->
-    <input type="text" id="report-search-input" class="form-control" style="flex: 1; max-width: 400px;" 
-           placeholder="Rechercher par N° réservation, nom, code..." oninput="loadReportRequests()">
-    
-    <button class="btn btn-secondary" onclick="loadReportRequests()">
-        🔄 Actualiser
-    </button>
-</div>
+                    <div class="card-header">
+                        <h2 class="card-title">Demandes en attente et Historique</h2>
+
+                        <!-- ✅ CHAMP DE RECHERCHE -->
+                        <input type="text" id="report-search-input" class="form-control"
+                            style="flex: 1; max-width: 400px;" placeholder="Rechercher par N° réservation, nom, code..."
+                            oninput="loadReportRequests()">
+
+                        <button class="btn btn-secondary" onclick="loadReportRequests()">
+                            🔄 Actualiser
+                        </button>
+                    </div>
                     <div class="table-container">
                         <table>
                             <thead>
@@ -1894,37 +1906,40 @@
 
                 <!-- DANS #tab-trips, avant le .content-card de la table -->
 
-<div class="content-card">
-    <h2 class="card-title">Filtres des voyages</h2>
-    <div class="filters" style="margin-top: 1rem;">
-        <!-- Filtre par Date -->
-        <div class="form-group" style="flex: 1;">
-            <label for="trip-filter-date" class="form-label">Filtrer par date</label>
-            <input type="text" id="trip-filter-date" class="form-control" placeholder="Sélectionner une date..." onchange="loadAllTrips()">
-        </div>
-        
-        <!-- Filtre par Trajet -->
-        <div class="form-group" style="flex: 1;">
-            <label for="trip-filter-route" class="form-label">Filtrer par trajet</label>
-            <input type="text" id="trip-filter-route" class="form-control" placeholder="Ex: Brazzaville ou Pointe-Noire" oninput="loadAllTrips()">
-        </div>
+                <div class="content-card">
+                    <h2 class="card-title">Filtres des voyages</h2>
+                    <div class="filters" style="margin-top: 1rem;">
+                        <!-- Filtre par Date -->
+                        <div class="form-group" style="flex: 1;">
+                            <label for="trip-filter-date" class="form-label">Filtrer par date</label>
+                            <input type="text" id="trip-filter-date" class="form-control"
+                                placeholder="Sélectionner une date..." onchange="loadAllTrips()">
+                        </div>
 
-        <!-- Filtre par N° de Bus -->
-        <div class="form-group" style="flex: 1;">
-            <label for="trip-filter-bus" class="form-label">Filtrer par N° Bus</label>
-            <input type="text" id="trip-filter-bus" class="form-control" placeholder="Ex: B50" oninput="loadAllTrips()">
-        </div>
-    </div>
-</div>
+                        <!-- Filtre par Trajet -->
+                        <div class="form-group" style="flex: 1;">
+                            <label for="trip-filter-route" class="form-label">Filtrer par trajet</label>
+                            <input type="text" id="trip-filter-route" class="form-control"
+                                placeholder="Ex: Brazzaville ou Pointe-Noire" oninput="loadAllTrips()">
+                        </div>
 
-<div class="content-card">
-    <div class="card-header">
-        <h2 class="card-title">Voyages Programmés</h2>
-    </div>
-    <div class="table-container">
-        <!-- Votre tableau existant -->
-    </div>
-</div>
+                        <!-- Filtre par N° de Bus -->
+                        <div class="form-group" style="flex: 1;">
+                            <label for="trip-filter-bus" class="form-label">Filtrer par N° Bus</label>
+                            <input type="text" id="trip-filter-bus" class="form-control" placeholder="Ex: B50"
+                                oninput="loadAllTrips()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Voyages Programmés</h2>
+                    </div>
+                    <div class="table-container">
+                        <!-- Votre tableau existant -->
+                    </div>
+                </div>
 
                 <div class="content-card">
                     <div class="card-header">
@@ -2153,14 +2168,74 @@
                 </div>
 
 
-                
+
 
             </div>
 
-        <!-- TAB: Paramètres -->
-            
+
+            <!-- ============================================
+     ONGLET: GESTION DES DESTINATIONS
+     ============================================ -->
+            <div id="tab-destinations" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">Gestion des Destinations</h1>
+                    <p class="page-subtitle">Ajoutez, modifiez ou désactivez les villes desservies.</p>
+                </div>
+
+                <!-- Formulaire d'ajout -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Ajouter une nouvelle ville</h2>
+                    </div>
+                    <form id="destination-creation-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="dest-name" class="form-label">Nom de la ville</label>
+                                <input type="text" id="dest-name" class="form-control" placeholder="Ex: Kinshasa"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dest-country" class="form-label">Pays</label>
+                                <input type="text" id="dest-country" class="form-control" placeholder="Ex: RDC"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dest-coords" class="form-label">Coordonnées GPS</label>
+                                <input type="text" id="dest-coords" class="form-control" placeholder="Ex: -4.44, 15.26">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-4"><span>➕</span> Ajouter la
+                            destination</button>
+                    </form>
+                </div>
+
+                <!-- Tableau des destinations existantes -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Villes existantes</h2>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ville</th>
+                                    <th>Pays</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="destinations-body">
+                                <!-- Généré dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
         </main>
     </div>
+    <!-- TAB: Paramètres -->
 
     <!-- ============================================
          🪟 MODAL
@@ -2424,41 +2499,41 @@
             <div class="stat-value">${totalCancelled}</div>
         </div>
     `;
-        }function applyFilters() {
-    let filtered = allReservations;
-    
-    // Filtre par statut (pills)
-    const activeStatus = document.querySelector(".filter-pill.active")?.dataset.status;
-    if (activeStatus && activeStatus !== "all") {
-        filtered = filtered.filter(r => r.status === activeStatus);
-    }
-    
-    // Filtre par méthode de paiement
-    const paymentMethod = document.getElementById('filter-payment-method').value;
-    if (paymentMethod !== 'all') {
-        filtered = filtered.filter(r => r.paymentMethod === paymentMethod);
-    }
-    
-    // Filtre par N° de Bus
-    const busId = document.getElementById('filter-bus-id').value.toLowerCase().trim();
-    if (busId) {
-        filtered = filtered.filter(r => r.busIdentifier?.toLowerCase().includes(busId));
-    }
+        } function applyFilters() {
+            let filtered = allReservations;
 
-    // Filtre par recherche générale
-    const searchTerm = document.getElementById("search-input").value.toLowerCase().trim();
-    if (searchTerm) {
-        filtered = filtered.filter(r => 
-            (r.bookingNumber || '').toLowerCase().includes(searchTerm) ||
-            (r.passengers[0]?.name || '').toLowerCase().includes(searchTerm) ||
-            (r.passengers[0]?.phone || '').includes(searchTerm) ||
-            (r.paymentDetails?.transactionProof || '').toLowerCase().includes(searchTerm) ||
-            (r.agencyPaymentCode || '').toLowerCase().includes(searchTerm)
-        );
-    }
-    
-    renderTable(filtered);
-}
+            // Filtre par statut (pills)
+            const activeStatus = document.querySelector(".filter-pill.active")?.dataset.status;
+            if (activeStatus && activeStatus !== "all") {
+                filtered = filtered.filter(r => r.status === activeStatus);
+            }
+
+            // Filtre par méthode de paiement
+            const paymentMethod = document.getElementById('filter-payment-method').value;
+            if (paymentMethod !== 'all') {
+                filtered = filtered.filter(r => r.paymentMethod === paymentMethod);
+            }
+
+            // Filtre par N° de Bus
+            const busId = document.getElementById('filter-bus-id').value.toLowerCase().trim();
+            if (busId) {
+                filtered = filtered.filter(r => r.busIdentifier?.toLowerCase().includes(busId));
+            }
+
+            // Filtre par recherche générale
+            const searchTerm = document.getElementById("search-input").value.toLowerCase().trim();
+            if (searchTerm) {
+                filtered = filtered.filter(r =>
+                    (r.bookingNumber || '').toLowerCase().includes(searchTerm) ||
+                    (r.passengers[0]?.name || '').toLowerCase().includes(searchTerm) ||
+                    (r.passengers[0]?.phone || '').includes(searchTerm) ||
+                    (r.paymentDetails?.transactionProof || '').toLowerCase().includes(searchTerm) ||
+                    (r.agencyPaymentCode || '').toLowerCase().includes(searchTerm)
+                );
+            }
+
+            renderTable(filtered);
+        }
         // DANS Admin/index.html (section <script>)
 
         // Dans Admin/index.html - Remplacer la fonction renderTable existante
@@ -2472,46 +2547,46 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
-   function renderTable(reservations) {
-    const tbody = document.getElementById('reservations-body');
-    if (!tbody) {
-        console.error("❌ Élément 'reservations-body' introuvable !");
-        return;
-    }
+        function renderTable(reservations) {
+            const tbody = document.getElementById('reservations-body');
+            if (!tbody) {
+                console.error("❌ Élément 'reservations-body' introuvable !");
+                return;
+            }
 
-    if (!reservations || reservations.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
-        return;
-    }
+            if (!reservations || reservations.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
+                return;
+            }
 
-    tbody.innerHTML = reservations.map(r => {
-        const p = r.passengers?.[0] || {};
-        const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
-        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
-        
-        // ==========================================================
-        // ✅ CORRECTION DE LA LOGIQUE D'AFFICHAGE DE LA PREUVE
-        // ==========================================================
-        const proof = 
-            r.paymentDetails?.transactionProof ||       // 1. Preuve validée par l'admin
-            r.paymentDetails?.clientTransactionId ||  // 2. Preuve soumise par le client
-            r.agencyPaymentCode ||                    // 3. Code de paiement agence
-            'N/A';                                    // 4. Si rien n'est trouvé
-        // ==========================================================
-        
-        const method = r.paymentMethod || 'N/A';
+            tbody.innerHTML = reservations.map(r => {
+                const p = r.passengers?.[0] || {};
+                const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
+                const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
 
-        let countdownHTML = '';
-        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-            countdownHTML = `
+                // ==========================================================
+                // ✅ CORRECTION DE LA LOGIQUE D'AFFICHAGE DE LA PREUVE
+                // ==========================================================
+                const proof =
+                    r.paymentDetails?.transactionProof ||       // 1. Preuve validée par l'admin
+                    r.paymentDetails?.clientTransactionId ||  // 2. Preuve soumise par le client
+                    r.agencyPaymentCode ||                    // 3. Code de paiement agence
+                    'N/A';                                    // 4. Si rien n'est trouvé
+                // ==========================================================
+
+                const method = r.paymentMethod || 'N/A';
+
+                let countdownHTML = '';
+                if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+                    countdownHTML = `
                 <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
                     <span class="countdown-icon">⏱️</span>
                     <span class="countdown-time">Calcul...</span>
                 </div>
             `;
-        }
+                }
 
-        return `
+                return `
             <tr>
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>
@@ -2542,10 +2617,10 @@
                 </td>
             </tr>
         `;
-    }).join('');
+            }).join('');
 
-    startCountdownUpdates();
-}
+            startCountdownUpdates();
+        }
         // Dans Admin/index.html - Ajouter après renderTable()
 
         // ============================================
@@ -3020,42 +3095,42 @@
         // ============================================
         // 🚌 VOYAGES
         // ============================================
-      async function loadAllTrips() {
-    // 1. Récupérer les valeurs des champs de filtre
-    const dateFilter = document.getElementById('trip-filter-date')?.value || '';
-    const routeFilter = document.getElementById('trip-filter-route')?.value || '';
-    const busFilter = document.getElementById('trip-filter-bus')?.value || '';
+        async function loadAllTrips() {
+            // 1. Récupérer les valeurs des champs de filtre
+            const dateFilter = document.getElementById('trip-filter-date')?.value || '';
+            const routeFilter = document.getElementById('trip-filter-route')?.value || '';
+            const busFilter = document.getElementById('trip-filter-bus')?.value || '';
 
-    // 2. Construire une chaîne de paramètres pour l'URL
-    const params = new URLSearchParams();
-    if (dateFilter) {
-        params.append('date', dateFilter);
-    }
-    if (routeFilter) {
-        params.append('route', routeFilter);
-    }
-    if (busFilter) {
-        params.append('bus', busFilter);
-    }
-    
-    // On convertit les paramètres en une chaîne de requête (ex: "?date=2025-11-28&route=Brazza")
-    const queryString = params.toString();
-    const endpoint = `/admin/trips${queryString ? '?' + queryString : ''}`;
-    
-    console.log(`Chargement des voyages depuis : ${endpoint}`);
+            // 2. Construire une chaîne de paramètres pour l'URL
+            const params = new URLSearchParams();
+            if (dateFilter) {
+                params.append('date', dateFilter);
+            }
+            if (routeFilter) {
+                params.append('route', routeFilter);
+            }
+            if (busFilter) {
+                params.append('bus', busFilter);
+            }
 
-    // 3. Appeler l'API avec le bon endpoint
-    const data = await apiCall(endpoint);
-    if (!data) {
-        // En cas d'erreur, on vide la table pour éviter d'afficher d'anciens résultats
-        allTrips = [];
-        renderTripsTable();
-        return;
-    }
+            // On convertit les paramètres en une chaîne de requête (ex: "?date=2025-11-28&route=Brazza")
+            const queryString = params.toString();
+            const endpoint = `/admin/trips${queryString ? '?' + queryString : ''}`;
 
-    allTrips = data.trips;
-    renderTripsTable(); // Affiche les voyages filtrés
-}
+            console.log(`Chargement des voyages depuis : ${endpoint}`);
+
+            // 3. Appeler l'API avec le bon endpoint
+            const data = await apiCall(endpoint);
+            if (!data) {
+                // En cas d'erreur, on vide la table pour éviter d'afficher d'anciens résultats
+                allTrips = [];
+                renderTripsTable();
+                return;
+            }
+
+            allTrips = data.trips;
+            renderTripsTable(); // Affiche les voyages filtrés
+        }
 
         // Dans Admin/index.html (section <script>)
         // DANS admin/index.html, dans <script>
@@ -3324,11 +3399,11 @@
 
 
         function openStatusModal(tripId, tripName) {
-    const modalTitle = document.getElementById("modal-title");
-    const modalBody = document.getElementById("modal-body");
+            const modalTitle = document.getElementById("modal-title");
+            const modalBody = document.getElementById("modal-body");
 
-    modalTitle.textContent = "Mettre à jour le statut du voyage";
-    modalBody.innerHTML = `
+            modalTitle.textContent = "Mettre à jour le statut du voyage";
+            modalBody.innerHTML = `
         <p>Voyage : <strong>${tripName}</strong></p>
         <form id="status-form">
             <div class="form-group" style="margin-top: 20px;">
@@ -3357,42 +3432,42 @@
         </form>
     `;
 
-    const statusSelect = document.getElementById('status-select');
-    const delayDetails = document.getElementById('delay-details');
-    statusSelect.onchange = () => {
-        delayDetails.style.display = statusSelect.value === 'DELAYED' ? 'block' : 'none';
-    };
+            const statusSelect = document.getElementById('status-select');
+            const delayDetails = document.getElementById('delay-details');
+            statusSelect.onchange = () => {
+                delayDetails.style.display = statusSelect.value === 'DELAYED' ? 'block' : 'none';
+            };
 
-    document.getElementById("status-form").addEventListener('submit', (e) => {
-        e.preventDefault();
-        const status = statusSelect.value;
-        const delayMinutes = document.getElementById('delay-minutes').value;
-        const reason = document.getElementById('delay-reason').value;
-        
-        // Pour un voyage annulé, la raison devient obligatoire
-        if (status === 'CANCELLED' && !reason) {
-            showNotification('Veuillez spécifier la raison de l\'annulation.', 'warning');
-            return;
+            document.getElementById("status-form").addEventListener('submit', (e) => {
+                e.preventDefault();
+                const status = statusSelect.value;
+                const delayMinutes = document.getElementById('delay-minutes').value;
+                const reason = document.getElementById('delay-reason').value;
+
+                // Pour un voyage annulé, la raison devient obligatoire
+                if (status === 'CANCELLED' && !reason) {
+                    showNotification('Veuillez spécifier la raison de l\'annulation.', 'warning');
+                    return;
+                }
+
+                updateTripStatus(tripId, status, delayMinutes, reason);
+            });
+
+            document.getElementById("details-modal").classList.add('active');
         }
 
-        updateTripStatus(tripId, status, delayMinutes, reason);
-    });
+        async function updateTripStatus(tripId, status, delayMinutes, reason) {
+            showNotification('Mise à jour du statut en cours...', 'info');
 
-    document.getElementById("details-modal").classList.add('active');
-}
+            const body = { status, delayMinutes: parseInt(delayMinutes), reason };
 
-async function updateTripStatus(tripId, status, delayMinutes, reason) {
-    showNotification('Mise à jour du statut en cours...', 'info');
-    
-    const body = { status, delayMinutes: parseInt(delayMinutes), reason };
-    
-    const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
+            const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
 
-    if (data && data.success) {
-        showNotification(data.message, 'success');
-        closeModal();
-    }
-}
+            if (data && data.success) {
+                showNotification(data.message, 'success');
+                closeModal();
+            }
+        }
         // ============================================
         // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE
         // ============================================
@@ -3586,49 +3661,137 @@ async function updateTripStatus(tripId, status, delayMinutes, reason) {
             }
         }
 
+
+        // ============================================
+// 🏙️ GESTION DES DESTINATIONS
+// ============================================
+
+async function loadAllDestinations() {
+    const data = await apiCall('/admin/destinations');
+    if (data && data.success) {
+        renderDestinationsTable(data.destinations);
+    }
+}
+
+function renderDestinationsTable(destinations) {
+    const tbody = document.getElementById('destinations-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = destinations.map(dest => `
+        <tr>
+            <td><strong class="font-bold">${dest.name}</strong></td>
+            <td>${dest.country}</td>
+            <td>
+                <span class="badge ${dest.isActive ? 'badge-success' : 'badge-gray'}">
+                    ${dest.isActive ? 'Actif' : 'Inactif'}
+                </span>
+            </td>
+            <td class="actions-cell">
+                <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})">
+                    ${dest.isActive ? 'Désactiver' : 'Activer'}
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteDestination('${dest._id}', '${dest.name}')">
+                    Supprimer
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function handleCreateDestination(e) {
+    e.preventDefault();
+    const name = document.getElementById('dest-name').value;
+    const country = document.getElementById('dest-country').value;
+    const coordsStr = document.getElementById('dest-coords').value;
+    
+    // Convertir les coordonnées en tableau de nombres
+    const coords = coordsStr.split(',').map(c => parseFloat(c.trim()));
+
+    if (!name || !country) {
+        showNotification('Le nom et le pays sont requis.', 'warning');
+        return;
+    }
+
+    const data = await apiCall('/admin/destinations', 'POST', { name, country, coords });
+    if (data && data.success) {
+        showNotification('Destination ajoutée !', 'success');
+        document.getElementById('destination-creation-form').reset();
+        loadAllDestinations(); // Recharger la table
+    }
+}
+
+async function toggleDestinationStatus(id, newStatus) {
+    const action = newStatus ? 'activer' : 'désactiver';
+    const confirmed = await showAdminConfirm({
+        title: `Confirmer ?`,
+        message: `Voulez-vous vraiment ${action} cette destination ?`,
+        confirmText: `Oui, ${action}`
+    });
+    if (!confirmed) return;
+
+    const data = await apiCall(`/admin/destinations/${id}`, 'PATCH', { isActive: newStatus });
+    if (data && data.success) {
+        showNotification('Statut mis à jour.', 'success');
+        loadAllDestinations();
+    }
+}
+
+async function deleteDestination(id, name) {
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer la destination ?",
+        message: `ATTENTION : Vous êtes sur le point de supprimer "${name}". Cette action est irréversible.`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, supprimer'
+    });
+    if (!confirmed) return;
+
+    const data = await apiCall(`/admin/destinations/${id}`, 'DELETE');
+    if (data && data.success) {
+        showNotification('Destination supprimée.', 'success');
+        loadAllDestinations();
+    }
+}
+
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
         // DANS Admin/index.
 
-        // DANS Admin/index.html, dans la section <script>
-function switchTab(tabName) {
+       function switchTab(tabName) {
     console.log(`🚀 DEMANDE DE CHANGEMENT D'ONGLET VERS : ${tabName}`);
 
     // 1. Désactiver tous les onglets
     const allTabs = document.querySelectorAll('.tab-content');
-    console.log(`ℹ️ ${allTabs.length} onglets trouvés dans le DOM.`);
-    
     allTabs.forEach(tab => {
         tab.classList.remove('active');
-        tab.style.display = 'none'; // Force le masquage
-        console.log(`- Masqué : ${tab.id}`);
+        tab.style.display = 'none';
     });
 
     // 2. Désactiver tous les liens
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
     // 3. Activer le bon lien
+    // On doit aussi gérer le cas de la modale "Paramètres" qui n'a pas de data-tab
     const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
     if (activeLink) {
         activeLink.classList.add('active');
         console.log(`✅ Lien activé pour : ${tabName}`);
-    } else {
-        console.error(`❌ Lien introuvable pour : ${tabName}`);
     }
 
     // 4. Activer le bon onglet
     const activeTab = document.getElementById(`tab-${tabName}`);
     if (activeTab) {
         activeTab.classList.add('active');
-        activeTab.style.display = 'block'; // Force l'affichage
+        activeTab.style.display = 'block';
         console.log(`✅ Onglet activé et affiché : tab-${tabName}`);
     } else {
-        console.error(`❌ ERREUR CRITIQUE : L'onglet "tab-${tabName}" n'existe pas dans le HTML !`);
+        // Ce n'est pas une erreur critique si l'onglet n'existe pas (cas de la modale)
+        console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas. Aucune vue à afficher.`);
         return;
     }
 
-    // 5. Charger les données
+    // 5. Charger les données correspondantes
     if (tabName !== 'reservations') {
         stopCountdownUpdates();
     }
@@ -3646,12 +3809,19 @@ function switchTab(tabName) {
         case 'templates':
             loadAllTemplates();
             break;
-        case 'settings':
-            console.log("⚙️ Chargement des paramètres...");
-            loadSettings();
+        
+        // ===================================
+        // ✅ LE CAS MANQUANT EST ICI
+        // ===================================
+        case 'destinations':
+            loadAllDestinations();
             break;
+
         default:
-            console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+            // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
+            if (tabName !== 'settings') {
+                console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+            }
     }
 }
         // ============================================
@@ -3692,36 +3862,36 @@ function switchTab(tabName) {
 
 
         async function loadSettings() {
-    console.log('🔄 Chargement des paramètres...');
-    try {
-        const data = await apiCall('/admin/settings/report');
-        console.log('📦 Données reçues:', data);
+            console.log('🔄 Chargement des paramètres...');
+            try {
+                const data = await apiCall('/admin/settings/report');
+                console.log('📦 Données reçues:', data);
 
-        if (!data || !data.success) {
-            console.error('❌ Erreur: succès=false ou data vide');
-            return;
-        }
-        
-        const settings = data.settings;
-        console.log('⚙️ Settings:', settings);
-        
-        // Vérification des éléments DOM
-        const elSecond = document.getElementById('setting-second-fee');
-        console.log('Élément second-fee existe ?', !!elSecond);
+                if (!data || !data.success) {
+                    console.error('❌ Erreur: succès=false ou data vide');
+                    return;
+                }
 
-        if (elSecond) {
-            document.getElementById('setting-second-fee').value = settings.secondReportFee;
-            document.getElementById('setting-third-fee').value = settings.thirdReportFee;
-            document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
-            document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
-            console.log('✅ Champs remplis !');
+                const settings = data.settings;
+                console.log('⚙️ Settings:', settings);
+
+                // Vérification des éléments DOM
+                const elSecond = document.getElementById('setting-second-fee');
+                console.log('Élément second-fee existe ?', !!elSecond);
+
+                if (elSecond) {
+                    document.getElementById('setting-second-fee').value = settings.secondReportFee;
+                    document.getElementById('setting-third-fee').value = settings.thirdReportFee;
+                    document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
+                    document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
+                    console.log('✅ Champs remplis !');
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur chargement paramètres:', error);
+                showNotification('Impossible de charger les paramètres', 'error');
+            }
         }
-        
-    } catch (error) {
-        console.error('❌ Erreur chargement paramètres:', error);
-        showNotification('Impossible de charger les paramètres', 'error');
-    }
-}
 
         async function saveSettings(e) {
             e.preventDefault();
@@ -3746,138 +3916,118 @@ function switchTab(tabName) {
             }
         }
 
-        function setupEventListeners() {
-            // --- Login & Logout (INCHANGÉ) ---
-            document.getElementById("login-form").addEventListener("submit", handleLogin);
-            document.getElementById("logout-btn").addEventListener("click", handleLogout);
+       function setupEventListeners() {
+    // --- Login & Logout (INCHANGÉ) ---
+    document.getElementById("login-form").addEventListener("submit", handleLogin);
+    document.getElementById("logout-btn").addEventListener("click", handleLogout);
 
-            // --- Gestion de la navigation par onglets (INCHANGÉ) ---
-            document.querySelectorAll(".nav-link").forEach((link) => {
-                link.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const tabName = link.getAttribute("data-tab");
-                    switchTab(tabName);
-                });
-            });
-
-            // --- Filtres (INCHANGÉ) ---
-            document.getElementById("search-input").addEventListener("input", applyFilters);
-            document.querySelectorAll(".filter-pill").forEach((pill) => {
-                pill.addEventListener("click", () => {
-                    document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-                    pill.classList.add("active");
-                    applyFilters();
-                });
-            });
-
-            // --- Forms (INCHANGÉ) ---
-            document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
-            document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
-
-            // --- Modal (INCHANGÉ) ---
-            window.addEventListener("click", (e) => {
-                if (e.target === document.getElementById("details-modal")) {
-                    closeModal();
-                }
-            });
-
-
-            // =======================================================================
-            // ✅ CORRECTION FINALE : DÉLÉGATION D'ÉVÉNEMENTS POUR LE TABLEAU DES VOYAGES
-            // =======================================================================
-            const tripsTbody = document.getElementById('trips-body');
-
-            // On vérifie que l'élément parent existe pour éviter toute erreur
-            if (tripsTbody) {
-                // On attache UN SEUL écouteur sur le <tbody> qui contient tout
-                tripsTbody.addEventListener('click', (event) => {
-
-                    // On cherche le bouton le plus proche de l'endroit où on a cliqué
-                    // qui possède un attribut [data-action]
-                    const button = event.target.closest('button[data-action]');
-
-                    // Si l'utilisateur n'a pas cliqué sur un bouton d'action, on ne fait rien
-                    if (!button) {
-                        return;
-                    }
-
-                    // On récupère l'action et l'ID du voyage depuis les attributs du bouton
-                    const action = button.dataset.action;
-                    const tripId = button.dataset.tripId;
-
-                    console.log(`✅ Action détectée par délégation : ${action} sur le voyage ${tripId}`);
-
-                    // On appelle la bonne fonction en fonction de l'action
-                    switch (action) {
-                        case 'delete':
-                            deleteTrip(tripId);
-                            break;
-                        case 'manage-seats':
-                            manageSeats(tripId);
-                            break;
-                        case 'edit-trip':
-                            showEditTripModal(tripId);
-                            break;
-                        case 'reset-seats':
-                            resetTripSeats(tripId);
-                            break;
-                    }
-                });
-                
-            }
-
-            const settingsForm = document.getElementById("report-settings-form");
-          if (settingsForm) {
-             settingsForm.addEventListener("submit", saveSettings);
-          }
-
-
-        }
-        document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Vérification du token et affichage initial (votre code est correct)
-    if (await verifyToken()) {
-        showDashboard();
-        loadAdminData(); // Charge les réservations par défaut
-        startInactivityDetection();
-    } else {
-        localStorage.removeItem("admin_token");
-        showLogin();
-    }
-
-    // 2. Initialisation des écouteurs d'événements (votre code est correct)
-    setupEventListeners();
-    buildDaysSelector();
-
-    // 3. Initialisation des calendriers Flatpickr
-    
-    // Calendrier pour la création de voyages (votre code est correct)
-    flatpickr("#trip-dates", {
-        mode: "range",
-        dateFormat: "Y-m-d",
-        locale: "fr",
-        minDate: "today",
+    // --- Gestion de la navigation par onglets (INCHANGÉ) ---
+    document.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            const tabName = link.getAttribute("data-tab");
+            switchTab(tabName);
+        });
     });
 
-    // ===================================
-    // ✅ AJOUT POUR LE NOUVEAU FILTRE
-    // ===================================
-    // Calendrier pour filtrer les voyages programmés
-    const tripFilterDateInput = document.getElementById('trip-filter-date');
-    if (tripFilterDateInput) {
-        flatpickr(tripFilterDateInput, {
-            dateFormat: "Y-m-d",
-            locale: "fr",
-            allowInput: true, // Permet de vider le champ
-            onChange: function(selectedDates, dateStr, instance) {
-                // On recharge la liste des voyages quand la date change
-                if (typeof loadAllTrips === 'function') {
-                    loadAllTrips();
-                }
+    // --- Filtres (INCHANGÉ) ---
+    document.getElementById("search-input").addEventListener("input", applyFilters);
+    document.querySelectorAll(".filter-pill").forEach((pill) => {
+        pill.addEventListener("click", () => {
+            document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+            pill.classList.add("active");
+            applyFilters();
+        });
+    });
+
+    // --- Forms (INCHANGÉ) ---
+    document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
+    document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
+
+    // --- Modal (INCHANGÉ) ---
+    window.addEventListener("click", (e) => {
+        if (e.target === document.getElementById("details-modal")) {
+            closeModal();
+        }
+    });
+
+    // --- Délégation d'événements pour le tableau des voyages (INCHANGÉ) ---
+    const tripsTbody = document.getElementById('trips-body');
+    if (tripsTbody) {
+        tripsTbody.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const tripId = button.dataset.tripId;
+            switch (action) {
+                case 'delete': deleteTrip(tripId); break;
+                case 'manage-seats': manageSeats(tripId); break;
+                case 'edit-trip': showEditTripModal(tripId); break;
+                case 'reset-seats': resetTripSeats(tripId); break;
             }
         });
     }
+
+    // Écouteur pour le formulaire des paramètres de report (INCHANGÉ)
+    const settingsForm = document.getElementById("report-settings-form");
+    if (settingsForm) {
+        settingsForm.addEventListener("submit", saveSettings);
+    }
+    
     // ===================================
-});
+    // ✅ AJOUT DE L'ÉCOUTEUR MANQUANT
+    // ===================================
+    const destForm = document.getElementById("destination-creation-form");
+    if (destForm) {
+        destForm.addEventListener("submit", handleCreateDestination);
+    }
+    // ===================================
+}
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. Vérification du token et affichage initial (votre code est correct)
+            if (await verifyToken()) {
+                showDashboard();
+                loadAdminData(); // Charge les réservations par défaut
+                startInactivityDetection();
+            } else {
+                localStorage.removeItem("admin_token");
+                showLogin();
+            }
+
+            // 2. Initialisation des écouteurs d'événements (votre code est correct)
+            setupEventListeners();
+            buildDaysSelector();
+
+            // 3. Initialisation des calendriers Flatpickr
+
+            // Calendrier pour la création de voyages (votre code est correct)
+            flatpickr("#trip-dates", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "fr",
+                minDate: "today",
+            });
+
+            // ===================================
+            // ✅ AJOUT POUR LE NOUVEAU FILTRE
+            // ===================================
+            // Calendrier pour filtrer les voyages programmés
+            const tripFilterDateInput = document.getElementById('trip-filter-date');
+            if (tripFilterDateInput) {
+                flatpickr(tripFilterDateInput, {
+                    dateFormat: "Y-m-d",
+                    locale: "fr",
+                    allowInput: true, // Permet de vider le champ
+                    onChange: function (selectedDates, dateStr, instance) {
+                        // On recharge la liste des voyages quand la date change
+                        if (typeof loadAllTrips === 'function') {
+                            loadAllTrips();
+                        }
+                    }
+                });
+            }
+            // ===================================
+        });
 
         // ============================================
         // 🛑 GESTION DYNAMIQUE DES ARRÊTS
@@ -4398,34 +4548,34 @@ function switchTab(tabName) {
         // 🔄 GESTION DES DEMANDES DE REPORT
         // ============================================
 
-      async function loadReportRequests() {
-    try {
-        // ✅ On récupère la valeur du champ de recherche
-        const searchTerm = document.getElementById('report-search-input').value.trim();
-        
-        // ✅ On construit l'URL avec le paramètre de recherche
-        const endpoint = searchTerm 
-            ? `/admin/reports/history?search=${encodeURIComponent(searchTerm)}` 
-            : '/admin/reports/history';
-        
-        const data = await apiCall(endpoint); 
-        
-        if (!data) {
-            document.getElementById('report-requests-body').innerHTML = `<tr><td colspan="7" class="text-center">Erreur de chargement.</td></tr>`;
-            return;
+        async function loadReportRequests() {
+            try {
+                // ✅ On récupère la valeur du champ de recherche
+                const searchTerm = document.getElementById('report-search-input').value.trim();
+
+                // ✅ On construit l'URL avec le paramètre de recherche
+                const endpoint = searchTerm
+                    ? `/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
+                    : '/admin/reports/history';
+
+                const data = await apiCall(endpoint);
+
+                if (!data) {
+                    document.getElementById('report-requests-body').innerHTML = `<tr><td colspan="7" class="text-center">Erreur de chargement.</td></tr>`;
+                    return;
+                }
+
+                const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
+                const processedReports = data.reports.filter(r => r.status !== 'En attente de report');
+
+                displayReportRequestsStats(pendingRequests);
+                renderReportRequestsTable(pendingRequests, processedReports);
+
+            } catch (error) {
+                console.error('❌ Erreur chargement historique des reports:', error);
+                showNotification('Erreur lors du chargement de l\'historique', 'error');
+            }
         }
-        
-        const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
-        const processedReports = data.reports.filter(r => r.status !== 'En attente de report');
-
-        displayReportRequestsStats(pendingRequests);
-        renderReportRequestsTable(pendingRequests, processedReports);
-
-    } catch (error) {
-        console.error('❌ Erreur chargement historique des reports:', error);
-        showNotification('Erreur lors du chargement de l\'historique', 'error');
-    }
-}
         function displayReportRequestsStats(requests) {
             const statsGrid = document.getElementById('report-stats-grid');
 
@@ -4449,63 +4599,63 @@ function switchTab(tabName) {
         </div>
     `;
         }
-function renderReportRequestsTable(pending, processed) {
-    const tbody = document.getElementById('report-requests-body');
-    if (!tbody) return;
+        function renderReportRequestsTable(pending, processed) {
+            const tbody = document.getElementById('report-requests-body');
+            if (!tbody) return;
 
-    if (pending.length === 0 && processed.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center">Aucun report trouvé.</td></tr>`;
-        return;
-    }
+            if (pending.length === 0 && processed.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center">Aucun report trouvé.</td></tr>`;
+                return;
+            }
 
-    let htmlContent = '';
+            let htmlContent = '';
 
-    const createRowHTML = (req) => {
-        const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
-        
-        let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
+            const createRowHTML = (req) => {
+                const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
 
-        if (req.status === 'En attente de report' && req.reportRequest) {
-            statusBadge = '<span class="badge badge-warning">En attente</span>';
-            fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-            toHTML = `${req.reportRequest.targetTrip.route.from} → ${req.reportRequest.targetTrip.route.to}<br><small>📅 ${new Date(req.reportRequest.targetTrip.date).toLocaleDateString('fr-FR')}</small>`;
-            
-            const proof = req.reportRequest.paymentMethod === 'AGENCY' 
-                ? req.reportRequest.agencyPaymentCode 
-                : req.reportRequest.transactionId;
-            
-            paymentHTML = `<strong>${formatPrice(req.reportRequest.cost?.totalCost || 0)} FCFA</strong><br><small>Preuve: ${proof || 'N/A'}</small>`;
-            requestedDate = new Date(req.reportRequest.requestedAt).toLocaleString('fr-FR');
-            
-            const proofForApproval = req.reportRequest.paymentMethod === 'AGENCY' ? 'PAIEMENT_AGENCE' : (req.reportRequest.transactionId || '');
-            
-            actionsHTML = `
+                let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
+
+                if (req.status === 'En attente de report' && req.reportRequest) {
+                    statusBadge = '<span class="badge badge-warning">En attente</span>';
+                    fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+                    toHTML = `${req.reportRequest.targetTrip.route.from} → ${req.reportRequest.targetTrip.route.to}<br><small>📅 ${new Date(req.reportRequest.targetTrip.date).toLocaleDateString('fr-FR')}</small>`;
+
+                    const proof = req.reportRequest.paymentMethod === 'AGENCY'
+                        ? req.reportRequest.agencyPaymentCode
+                        : req.reportRequest.transactionId;
+
+                    paymentHTML = `<strong>${formatPrice(req.reportRequest.cost?.totalCost || 0)} FCFA</strong><br><small>Preuve: ${proof || 'N/A'}</small>`;
+                    requestedDate = new Date(req.reportRequest.requestedAt).toLocaleString('fr-FR');
+
+                    const proofForApproval = req.reportRequest.paymentMethod === 'AGENCY' ? 'PAIEMENT_AGENCE' : (req.reportRequest.transactionId || '');
+
+                    actionsHTML = `
                 <button class="btn btn-icon btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${proofForApproval}')">✅</button>
                 <button class="btn btn-icon btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')">❌</button>
             `;
-        } 
-        else if (req.status === 'Reporté') {
-            statusBadge = '<span class="badge badge-gray">Obsolète</span>';
-            fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-            toHTML = `<small>Remplacé par <strong>${req.replacementBookingNumber || '...'}</strong></small>`;
-            paymentHTML = `-`;
-            requestedDate = new Date(req.reportedAt).toLocaleString('fr-FR');
-            actionsHTML = `<span>-</span>`;
-        } 
-        else if (req.originalReservation) {
-            statusBadge = '<span class="badge badge-success">Validé</span>';
-            const history = req.reportHistory[req.reportHistory.length - 1];
-            
-            if (history && history.from && history.to) {
-                fromHTML = `(Report de ...)<br><small>📅 ${new Date(history.from.date).toLocaleDateString('fr-FR')}</small>`;
-                toHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-                paymentHTML = `<strong>${formatPrice(history.totalCost || 0)} FCFA</strong><br><small>Preuve: ${history.transactionProof || 'GRATUIT'}</small>`;
-                requestedDate = new Date(history.reportedAt).toLocaleString('fr-FR');
-            }
-            actionsHTML = `<span>✓</span>`;
-        }
+                }
+                else if (req.status === 'Reporté') {
+                    statusBadge = '<span class="badge badge-gray">Obsolète</span>';
+                    fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+                    toHTML = `<small>Remplacé par <strong>${req.replacementBookingNumber || '...'}</strong></small>`;
+                    paymentHTML = `-`;
+                    requestedDate = new Date(req.reportedAt).toLocaleString('fr-FR');
+                    actionsHTML = `<span>-</span>`;
+                }
+                else if (req.originalReservation) {
+                    statusBadge = '<span class="badge badge-success">Validé</span>';
+                    const history = req.reportHistory[req.reportHistory.length - 1];
 
-        return `
+                    if (history && history.from && history.to) {
+                        fromHTML = `(Report de ...)<br><small>📅 ${new Date(history.from.date).toLocaleDateString('fr-FR')}</small>`;
+                        toHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+                        paymentHTML = `<strong>${formatPrice(history.totalCost || 0)} FCFA</strong><br><small>Preuve: ${history.transactionProof || 'GRATUIT'}</small>`;
+                        requestedDate = new Date(history.reportedAt).toLocaleString('fr-FR');
+                    }
+                    actionsHTML = `<span>✓</span>`;
+                }
+
+                return `
             <tr style="${req.status === 'Reporté' ? 'opacity: 0.5; text-decoration: line-through;' : ''}">
                 <td><strong class="font-mono">${req.bookingNumber}</strong><br>${statusBadge}</td>
                 <td>${passenger.name}</td>
@@ -4516,54 +4666,54 @@ function renderReportRequestsTable(pending, processed) {
                 <td class="actions-cell">${actionsHTML}</td>
             </tr>
         `;
-    };
+            };
 
-    if (pending.length > 0) htmlContent += pending.map(createRowHTML).join('');
-    if (processed.length > 0) {
-        htmlContent += `<tr><td colspan="7" style="background: var(--dark-elevated); text-align: center; font-weight: bold;">HISTORIQUE</td></tr>`;
-        htmlContent += processed.map(createRowHTML).join('');
-    }
+            if (pending.length > 0) htmlContent += pending.map(createRowHTML).join('');
+            if (processed.length > 0) {
+                htmlContent += `<tr><td colspan="7" style="background: var(--dark-elevated); text-align: center; font-weight: bold;">HISTORIQUE</td></tr>`;
+                htmlContent += processed.map(createRowHTML).join('');
+            }
 
-    tbody.innerHTML = htmlContent;
-}
-
-    async function approveReportRequest(bookingNumber, proofFromTable) {
-    // 1. Log pour être sûr que le clic fonctionne
-    console.log(`▶️ Validation demandée pour ${bookingNumber}. Preuve reçue: "${proofFromTable}"`);
-
-    // 2. Demander une confirmation simple à l'admin
-    const confirmed = await showAdminConfirm({
-        title: "Confirmer la validation ?",
-        message: `Vous êtes sur le point de valider le report pour la réservation ${bookingNumber}.\n\nAvez-vous vérifié le paiement ?`,
-        icon: '✅',
-        iconClass: 'success',
-        confirmText: 'Oui, valider'
-    });
-
-    if (!confirmed) {
-        showNotification('Validation annulée.', 'info');
-        return;
-    }
-
-    // 3. Appel de l'API avec la preuve récupérée
-    try {
-        const data = await apiCall(
-            `/admin/report-requests/${bookingNumber}/approve`,
-            'POST',
-            { transactionProof: proofFromTable } // On envoie simplement la preuve, le backend fera le tri
-        );
-
-        if (data && data.success) {
-            showNotification('Report validé avec succès !', 'success');
-            loadReportRequests(); // Recharger la liste
-        } else {
-            showNotification(data?.error || 'La validation a échoué.', 'error');
+            tbody.innerHTML = htmlContent;
         }
-    } catch (error) {
-        showNotification(`Erreur: ${error.message}`, 'error');
-    }
-}
-// Rejeter une demande de report
+
+        async function approveReportRequest(bookingNumber, proofFromTable) {
+            // 1. Log pour être sûr que le clic fonctionne
+            console.log(`▶️ Validation demandée pour ${bookingNumber}. Preuve reçue: "${proofFromTable}"`);
+
+            // 2. Demander une confirmation simple à l'admin
+            const confirmed = await showAdminConfirm({
+                title: "Confirmer la validation ?",
+                message: `Vous êtes sur le point de valider le report pour la réservation ${bookingNumber}.\n\nAvez-vous vérifié le paiement ?`,
+                icon: '✅',
+                iconClass: 'success',
+                confirmText: 'Oui, valider'
+            });
+
+            if (!confirmed) {
+                showNotification('Validation annulée.', 'info');
+                return;
+            }
+
+            // 3. Appel de l'API avec la preuve récupérée
+            try {
+                const data = await apiCall(
+                    `/admin/report-requests/${bookingNumber}/approve`,
+                    'POST',
+                    { transactionProof: proofFromTable } // On envoie simplement la preuve, le backend fera le tri
+                );
+
+                if (data && data.success) {
+                    showNotification('Report validé avec succès !', 'success');
+                    loadReportRequests(); // Recharger la liste
+                } else {
+                    showNotification(data?.error || 'La validation a échoué.', 'error');
+                }
+            } catch (error) {
+                showNotification(`Erreur: ${error.message}`, 'error');
+            }
+        }
+        // Rejeter une demande de report
         async function rejectReportRequest(bookingNumber) {
             const confirmed = await showAdminConfirm({
                 title: "Rejeter cette demande ?",
@@ -4603,15 +4753,15 @@ function renderReportRequestsTable(pending, processed) {
 
 
         async function openSettingsModal() {
-    // D'abord, charger les données
-    await loadSettings(); 
-    // Ensuite, afficher la modale
-    document.getElementById('settings-modal').classList.add('active');
-}
+            // D'abord, charger les données
+            await loadSettings();
+            // Ensuite, afficher la modale
+            document.getElementById('settings-modal').classList.add('active');
+        }
 
-function closeSettingsModal() {
-    document.getElementById('settings-modal').classList.remove('active');
-}
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('active');
+        }
 
 
     </script>
@@ -4669,7 +4819,7 @@ function closeSettingsModal() {
 
 
 
-        <!-- ... (vos autres modales et scripts) ... -->
+    <!-- ... (vos autres modales et scripts) ... -->
 
     <!-- ============================================
          ⚙️ MODALE DES PARAMÈTRES (NOUVELLE)
@@ -4697,7 +4847,8 @@ function closeSettingsModal() {
                             <input type="number" id="setting-max-reports" class="form-control" min="1" max="5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="setting-min-hours">Délai minimum avant départ (heures)</label>
+                            <label class="form-label" for="setting-min-hours">Délai minimum avant départ
+                                (heures)</label>
                             <input type="number" id="setting-min-hours" class="form-control" min="1">
                         </div>
                     </div>
@@ -4710,6 +4861,7 @@ function closeSettingsModal() {
     </div>
 
 </body> <!-- Votre balise de fermeture </body> -->
+
 </html>
 
 </body>
