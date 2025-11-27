@@ -2356,6 +2356,8 @@ function setupSmartSearch() {
 
     if (!searchInput || !submitBtn || !resultsContainer) return;
 
+
+
     // --- Fonction interne pour déclencher l'affichage du formulaire détaillé ---
     const triggerDetailedSearch = () => {
         const destination = searchInput.value.trim();
@@ -2382,7 +2384,22 @@ function setupSmartSearch() {
         if (e.key === 'Enter') {
             e.preventDefault(); // Empêche le formulaire de se soumettre
             triggerDetailedSearch();
+
+            // ===========================================
+            // ✅ LOGIQUE CORRIGÉE POUR LA TOUCHE "ENTRÉE"
+            // ===========================================
+            // On cherche le premier résultat dans la liste des suggestions
+            const firstResult = resultsContainer.querySelector('.smart-result-item');
+            
+            if (firstResult) {
+                // S'il y a une suggestion, on simule un clic dessus
+                firstResult.click();
+            } else {
+                // S'il n'y a aucune suggestion, on pré-remplit juste la destination
+                triggerDetailedSearch({ to: searchInput.value.trim() });
+
         }
+    }
     });
         
     // Événement pour l'auto-complétion pendant la frappe
