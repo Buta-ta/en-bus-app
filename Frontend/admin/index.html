@@ -3663,21 +3663,22 @@
 
 
         // ============================================
-// 🏙️ GESTION DES DESTINATIONS
-// ============================================
+        // 🏙️ GESTION DES DESTINATIONS
+        // ============================================
 
-async function loadAllDestinations() {
-    const data = await apiCall('/admin/destinations');
-    if (data && data.success) {
-        renderDestinationsTable(data.destinations);
-    }
-}
+        async function loadAllDestinations() {
+            console.log("🏙️ Chargement des destinations..."); 
+            const data = await apiCall('/admin/destinations');
+            if (data && data.success) {
+                renderDestinationsTable(data.destinations);
+            }
+        }
 
-function renderDestinationsTable(destinations) {
-    const tbody = document.getElementById('destinations-body');
-    if (!tbody) return;
+        function renderDestinationsTable(destinations) {
+            const tbody = document.getElementById('destinations-body');
+            if (!tbody) return;
 
-    tbody.innerHTML = destinations.map(dest => `
+            tbody.innerHTML = destinations.map(dest => `
         <tr>
             <td><strong class="font-bold">${dest.name}</strong></td>
             <td>${dest.country}</td>
@@ -3696,134 +3697,134 @@ function renderDestinationsTable(destinations) {
             </td>
         </tr>
     `).join('');
-}
+        }
 
-async function handleCreateDestination(e) {
-    e.preventDefault();
-    const name = document.getElementById('dest-name').value;
-    const country = document.getElementById('dest-country').value;
-    const coordsStr = document.getElementById('dest-coords').value;
-    
-    // Convertir les coordonnées en tableau de nombres
-    const coords = coordsStr.split(',').map(c => parseFloat(c.trim()));
+        async function handleCreateDestination(e) {
+            e.preventDefault();
+            const name = document.getElementById('dest-name').value;
+            const country = document.getElementById('dest-country').value;
+            const coordsStr = document.getElementById('dest-coords').value;
 
-    if (!name || !country) {
-        showNotification('Le nom et le pays sont requis.', 'warning');
-        return;
-    }
+            // Convertir les coordonnées en tableau de nombres
+            const coords = coordsStr.split(',').map(c => parseFloat(c.trim()));
 
-    const data = await apiCall('/admin/destinations', 'POST', { name, country, coords });
-    if (data && data.success) {
-        showNotification('Destination ajoutée !', 'success');
-        document.getElementById('destination-creation-form').reset();
-        loadAllDestinations(); // Recharger la table
-    }
-}
+            if (!name || !country) {
+                showNotification('Le nom et le pays sont requis.', 'warning');
+                return;
+            }
 
-async function toggleDestinationStatus(id, newStatus) {
-    const action = newStatus ? 'activer' : 'désactiver';
-    const confirmed = await showAdminConfirm({
-        title: `Confirmer ?`,
-        message: `Voulez-vous vraiment ${action} cette destination ?`,
-        confirmText: `Oui, ${action}`
-    });
-    if (!confirmed) return;
+            const data = await apiCall('/admin/destinations', 'POST', { name, country, coords });
+            if (data && data.success) {
+                showNotification('Destination ajoutée !', 'success');
+                document.getElementById('destination-creation-form').reset();
+                loadAllDestinations(); // Recharger la table
+            }
+        }
 
-    const data = await apiCall(`/admin/destinations/${id}`, 'PATCH', { isActive: newStatus });
-    if (data && data.success) {
-        showNotification('Statut mis à jour.', 'success');
-        loadAllDestinations();
-    }
-}
+        async function toggleDestinationStatus(id, newStatus) {
+            const action = newStatus ? 'activer' : 'désactiver';
+            const confirmed = await showAdminConfirm({
+                title: `Confirmer ?`,
+                message: `Voulez-vous vraiment ${action} cette destination ?`,
+                confirmText: `Oui, ${action}`
+            });
+            if (!confirmed) return;
 
-async function deleteDestination(id, name) {
-    const confirmed = await showAdminConfirm({
-        title: "Supprimer la destination ?",
-        message: `ATTENTION : Vous êtes sur le point de supprimer "${name}". Cette action est irréversible.`,
-        icon: '🗑️',
-        iconClass: 'danger',
-        confirmText: 'Oui, supprimer'
-    });
-    if (!confirmed) return;
+            const data = await apiCall(`/admin/destinations/${id}`, 'PATCH', { isActive: newStatus });
+            if (data && data.success) {
+                showNotification('Statut mis à jour.', 'success');
+                loadAllDestinations();
+            }
+        }
 
-    const data = await apiCall(`/admin/destinations/${id}`, 'DELETE');
-    if (data && data.success) {
-        showNotification('Destination supprimée.', 'success');
-        loadAllDestinations();
-    }
-}
+        async function deleteDestination(id, name) {
+            const confirmed = await showAdminConfirm({
+                title: "Supprimer la destination ?",
+                message: `ATTENTION : Vous êtes sur le point de supprimer "${name}". Cette action est irréversible.`,
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Oui, supprimer'
+            });
+            if (!confirmed) return;
+
+            const data = await apiCall(`/admin/destinations/${id}`, 'DELETE');
+            if (data && data.success) {
+                showNotification('Destination supprimée.', 'success');
+                loadAllDestinations();
+            }
+        }
 
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
         // DANS Admin/index.
 
-       function switchTab(tabName) {
-    console.log(`🚀 DEMANDE DE CHANGEMENT D'ONGLET VERS : ${tabName}`);
+        function switchTab(tabName) {
+            console.log(`🚀 DEMANDE DE CHANGEMENT D'ONGLET VERS : ${tabName}`);
 
-    // 1. Désactiver tous les onglets
-    const allTabs = document.querySelectorAll('.tab-content');
-    allTabs.forEach(tab => {
-        tab.classList.remove('active');
-        tab.style.display = 'none';
-    });
+            // 1. Désactiver tous les onglets
+            const allTabs = document.querySelectorAll('.tab-content');
+            allTabs.forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
 
-    // 2. Désactiver tous les liens
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            // 2. Désactiver tous les liens
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-    // 3. Activer le bon lien
-    // On doit aussi gérer le cas de la modale "Paramètres" qui n'a pas de data-tab
-    const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
-    if (activeLink) {
-        activeLink.classList.add('active');
-        console.log(`✅ Lien activé pour : ${tabName}`);
-    }
-
-    // 4. Activer le bon onglet
-    const activeTab = document.getElementById(`tab-${tabName}`);
-    if (activeTab) {
-        activeTab.classList.add('active');
-        activeTab.style.display = 'block';
-        console.log(`✅ Onglet activé et affiché : tab-${tabName}`);
-    } else {
-        // Ce n'est pas une erreur critique si l'onglet n'existe pas (cas de la modale)
-        console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas. Aucune vue à afficher.`);
-        return;
-    }
-
-    // 5. Charger les données correspondantes
-    if (tabName !== 'reservations') {
-        stopCountdownUpdates();
-    }
-
-    switch (tabName) {
-        case 'reservations':
-            loadAdminData();
-            break;
-        case 'report-requests':
-            loadReportRequests();
-            break;
-        case 'trips':
-            loadAllTemplates().then(loadAllTrips);
-            break;
-        case 'templates':
-            loadAllTemplates();
-            break;
-        
-        // ===================================
-        // ✅ LE CAS MANQUANT EST ICI
-        // ===================================
-        case 'destinations':
-            loadAllDestinations();
-            break;
-
-        default:
-            // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
-            if (tabName !== 'settings') {
-                console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+            // 3. Activer le bon lien
+            // On doit aussi gérer le cas de la modale "Paramètres" qui n'a pas de data-tab
+            const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+                console.log(`✅ Lien activé pour : ${tabName}`);
             }
-    }
-}
+
+            // 4. Activer le bon onglet
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.display = 'block';
+                console.log(`✅ Onglet activé et affiché : tab-${tabName}`);
+            } else {
+                // Ce n'est pas une erreur critique si l'onglet n'existe pas (cas de la modale)
+                console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas. Aucune vue à afficher.`);
+                return;
+            }
+
+            // 5. Charger les données correspondantes
+            if (tabName !== 'reservations') {
+                stopCountdownUpdates();
+            }
+
+            switch (tabName) {
+                case 'reservations':
+                    loadAdminData();
+                    break;
+                case 'report-requests':
+                    loadReportRequests();
+                    break;
+                case 'trips':
+                    loadAllTemplates().then(loadAllTrips);
+                    break;
+                case 'templates':
+                    loadAllTemplates();
+                    break;
+
+                // ===================================
+                // ✅ LE CAS MANQUANT EST ICI
+                // ===================================
+                case 'destinations':
+                    loadAllDestinations();
+                    break;
+
+                default:
+                    // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
+                    if (tabName !== 'settings') {
+                        console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+                    }
+            }
+        }
         // ============================================
         // 🎯 INITIALISATION
         // ============================================
@@ -3916,73 +3917,73 @@ async function deleteDestination(id, name) {
             }
         }
 
-       function setupEventListeners() {
-    // --- Login & Logout (INCHANGÉ) ---
-    document.getElementById("login-form").addEventListener("submit", handleLogin);
-    document.getElementById("logout-btn").addEventListener("click", handleLogout);
+        function setupEventListeners() {
+            // --- Login & Logout (INCHANGÉ) ---
+            document.getElementById("login-form").addEventListener("submit", handleLogin);
+            document.getElementById("logout-btn").addEventListener("click", handleLogout);
 
-    // --- Gestion de la navigation par onglets (INCHANGÉ) ---
-    document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            const tabName = link.getAttribute("data-tab");
-            switchTab(tabName);
-        });
-    });
+            // --- Gestion de la navigation par onglets (INCHANGÉ) ---
+            document.querySelectorAll(".nav-link").forEach((link) => {
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const tabName = link.getAttribute("data-tab");
+                    switchTab(tabName);
+                });
+            });
 
-    // --- Filtres (INCHANGÉ) ---
-    document.getElementById("search-input").addEventListener("input", applyFilters);
-    document.querySelectorAll(".filter-pill").forEach((pill) => {
-        pill.addEventListener("click", () => {
-            document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-            pill.classList.add("active");
-            applyFilters();
-        });
-    });
+            // --- Filtres (INCHANGÉ) ---
+            document.getElementById("search-input").addEventListener("input", applyFilters);
+            document.querySelectorAll(".filter-pill").forEach((pill) => {
+                pill.addEventListener("click", () => {
+                    document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+                    pill.classList.add("active");
+                    applyFilters();
+                });
+            });
 
-    // --- Forms (INCHANGÉ) ---
-    document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
-    document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
+            // --- Forms (INCHANGÉ) ---
+            document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
+            document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
 
-    // --- Modal (INCHANGÉ) ---
-    window.addEventListener("click", (e) => {
-        if (e.target === document.getElementById("details-modal")) {
-            closeModal();
-        }
-    });
+            // --- Modal (INCHANGÉ) ---
+            window.addEventListener("click", (e) => {
+                if (e.target === document.getElementById("details-modal")) {
+                    closeModal();
+                }
+            });
 
-    // --- Délégation d'événements pour le tableau des voyages (INCHANGÉ) ---
-    const tripsTbody = document.getElementById('trips-body');
-    if (tripsTbody) {
-        tripsTbody.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
-            const action = button.dataset.action;
-            const tripId = button.dataset.tripId;
-            switch (action) {
-                case 'delete': deleteTrip(tripId); break;
-                case 'manage-seats': manageSeats(tripId); break;
-                case 'edit-trip': showEditTripModal(tripId); break;
-                case 'reset-seats': resetTripSeats(tripId); break;
+            // --- Délégation d'événements pour le tableau des voyages (INCHANGÉ) ---
+            const tripsTbody = document.getElementById('trips-body');
+            if (tripsTbody) {
+                tripsTbody.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action]');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const tripId = button.dataset.tripId;
+                    switch (action) {
+                        case 'delete': deleteTrip(tripId); break;
+                        case 'manage-seats': manageSeats(tripId); break;
+                        case 'edit-trip': showEditTripModal(tripId); break;
+                        case 'reset-seats': resetTripSeats(tripId); break;
+                    }
+                });
             }
-        });
-    }
 
-    // Écouteur pour le formulaire des paramètres de report (INCHANGÉ)
-    const settingsForm = document.getElementById("report-settings-form");
-    if (settingsForm) {
-        settingsForm.addEventListener("submit", saveSettings);
-    }
-    
-    // ===================================
-    // ✅ AJOUT DE L'ÉCOUTEUR MANQUANT
-    // ===================================
-    const destForm = document.getElementById("destination-creation-form");
-    if (destForm) {
-        destForm.addEventListener("submit", handleCreateDestination);
-    }
-    // ===================================
-}
+            // Écouteur pour le formulaire des paramètres de report (INCHANGÉ)
+            const settingsForm = document.getElementById("report-settings-form");
+            if (settingsForm) {
+                settingsForm.addEventListener("submit", saveSettings);
+            }
+
+            // ===================================
+            // ✅ AJOUT DE L'ÉCOUTEUR MANQUANT
+            // ===================================
+            const destForm = document.getElementById("destination-creation-form");
+            if (destForm) {
+                destForm.addEventListener("submit", handleCreateDestination);
+            }
+            // ===================================
+        }
         document.addEventListener("DOMContentLoaded", async () => {
             // 1. Vérification du token et affichage initial (votre code est correct)
             if (await verifyToken()) {
