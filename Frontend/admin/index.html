@@ -3709,17 +3709,43 @@ async function loadAllDestinations() {
     if (!data || !data.success) return;
     renderDestinationsTable(data.destinations);
 }
-
 function renderDestinationsTable(destinations) {
     const tbody = document.getElementById('destinations-body');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error("L'élément 'destinations-body' n'a pas été trouvé.");
+        return;
+    }
+
+    if (!destinations || destinations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">Aucune destination.</td></tr>';
+        return;
+    }
+
     let html = '';
     destinations.forEach(dest => {
-        // ... (votre logique pour générer les <tr>)
+        html += `
+            <tr>
+                <td><strong class="font-bold">${dest.name}</strong></td>
+                <td>${dest.country}</td>
+                <td>
+                    <span class="badge ${dest.isActive ? 'badge-success' : 'badge-gray'}">
+                        ${dest.isActive ? 'Actif' : 'Inactif'}
+                    </span>
+                </td>
+                <td class="actions-cell">
+                    <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})">
+                        ${dest.isActive ? 'Désactiver' : 'Activer'}
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteDestination('${dest._id}', '${dest.name}')">
+                        Supprimer
+                    </button>
+                </td>
+            </tr>
+        `;
     });
+    
     tbody.innerHTML = html;
 }
-
 
 
 //render destination table 
