@@ -3665,14 +3665,30 @@
         // ============================================
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
-
-        async function loadAllDestinations() {
-            console.log("🏙️ Chargement des destinations..."); 
-            const data = await apiCall('/admin/destinations');
-            if (data && data.success) {
+async function loadAllDestinations() {
+    console.log("1. Début de loadAllDestinations.");
+    
+    try {
+        const data = await apiCall('/admin/destinations');
+        
+        if (data && data.success && Array.isArray(data.destinations)) {
+            console.log(`2. Données API reçues avec succès (${data.destinations.length} destinations).`);
+            
+            if (typeof renderDestinationsTable === 'function') {
+                console.log("3. Appel de renderDestinationsTable...");
                 renderDestinationsTable(data.destinations);
+                console.log("4. Fin de l'appel à renderDestinationsTable.");
+            } else {
+                console.error("ERREUR FATALE : La fonction renderDestinationsTable est introuvable.");
             }
+        } else {
+            console.error("Erreur dans la réponse de l'API : les données sont invalides ou le succès est faux.", data);
+            showNotification("Impossible de charger les données des destinations.", "error");
         }
+    } catch (error) {
+        console.error("Erreur critique dans loadAllDestinations:", error);
+    }
+}
 function renderDestinationsTable(destinations) {
     const tbody = document.getElementById('destinations-body');
     if (!tbody) {
