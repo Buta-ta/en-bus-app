@@ -2251,27 +2251,28 @@ function showDetailedSearch(prefillData = {}) {
     // Cacher la barre intelligente
     smartSearchContainer.style.display = 'none';
     
-    // ✅ ON UTILISE LA CLASSE POUR L'AFFICHER
+    // Afficher le formulaire détaillé
     detailedSearchBox.classList.add('visible');
     
-    // On ajoute une classe pour l'animation après un court délai
-    // pour que la transition CSS fonctionne
-    setTimeout(() => {
-        detailedSearchBox.classList.add('visible');
-    }, 10);
-
-    // Pré-remplir les champs si des données sont fournies
+    // ===================================
+    // ✅ CORRECTION : ON PEUPLE LES VILLES ICI
+    // ===================================
+    // On s'assure que la liste des villes est à jour depuis l'API
+    if (typeof populateCitySelects === 'function') {
+        populateCitySelects();
+    }
+    // ===================================
+    
+    // Pré-remplir les champs
     document.getElementById('origin').value = prefillData.from || '';
     document.getElementById('destination').value = prefillData.to || '';
 
-     // ✅ CORRECTION : ON INITIALISE LE CALENDRIER ICI
-    // ===================================
-    // Maintenant que le formulaire est visible, on peut initialiser Flatpickr sans bug.
+    // Initialiser le calendrier
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
 
-    // Mettre le focus sur le bon champ
+    // Mettre le focus
     if (prefillData.from && prefillData.to) {
         document.getElementById('travel-date').focus();
     } else if (prefillData.to) {
