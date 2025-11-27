@@ -84,7 +84,7 @@ let reservationsCollection,
   positionsCollection,
   tripsCollection,
   routeTemplatesCollection,
-  systemSettingsCollection;
+  systemSettingsCollection,
   destinationsCollection;
 
 async function connectToDb() {
