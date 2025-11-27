@@ -769,6 +769,13 @@ function applyLanguage(lang = getLanguage()) {
         }
     });
 
+    // ===========================================
+    // ✅ TRADUCTION DES PLACEHOLDERS SPÉCIFIQUES
+    // ===========================================
+    const smartSearchInput = document.getElementById('smart-search-input');
+    if (smartSearchInput && translation.smart_search_placeholder) {
+        smartSearchInput.placeholder = translation.smart_search_placeholder;
+    }
     // On rafraîchit les composants dynamiques
     updateDynamicTexts(lang); // Met à jour le "1 Adulte..."
     populatePopularDestinations(); // Met à jour "À partir de..."

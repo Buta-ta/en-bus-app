@@ -14,6 +14,7 @@ const translations = {
     footer_copyright: "&copy; 2025 En-Bus. Tous droits réservés.",
 
     // --- Page d'accueil ---
+    smart_search_placeholder: "Où voulez-vous aller ? Ex: Brazzaville vers Pointe-Noire",
     hero_title: "Voyagez à travers l'Afrique",
     hero_subtitle: "Réservez vos billets de bus en ligne facilement et rapidement",
     popular_destinations_title: "Destinations populaires",
@@ -445,6 +446,7 @@ const translations = {
     footer_copyright: "&copy; 2025 En-Bus. All rights reserved.",
 
     // --- Home Page ---
+    smart_search_placeholder: "Where do you want to go? E.g. Brazzaville to Pointe-Noire",
     hero_title: "Travel across Africa",
     hero_subtitle: "Book your bus tickets online easily and quickly",
     popular_destinations_title: "Popular Destinations",

@@ -4415,6 +4415,23 @@ body.pwa-installed textarea {
 
 
 
+/* DANS style.css */
+
+#smart-search-input {
+    width: 100%;
+    padding: 18px 60px 18px 20px;
+    font-size: 1.1rem;
+    font-family: var(--font-base);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    
+    /* ✅ MODIFICATION ICI */
+    border-radius: 9999px; /* Valeur très grande pour un arrondi parfait */
+    
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
 
 /* ============================================
    💅 AMÉLIORATION DES TITRES DE LA PAGE D'ACCUEIL
