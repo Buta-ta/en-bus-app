@@ -2173,6 +2173,17 @@
                                 </div>
                             </div>
 
+                            <!-- ✅ AJOUTEZ CE BLOC DE TEST À LA FIN DE L'ONGLET MODÈLES -->
+    <div class="content-card">
+        <h2 class="card-title">TEST DESTINATIONS</h2>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Ville</th><th>Pays</th></tr></thead>
+                <tbody id="TEST-destinations-body"></tbody>
+            </table>
+        </div>
+    </div>
+
                             <button type="submit" class="btn btn-primary mt-4">
                                 <span>💾</span>
                                 Créer le modèle
@@ -3702,57 +3713,19 @@
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
 async function loadAllDestinations() {
-    console.log("🏙️ Début du chargement des destinations (Méthode BRUTALE)...");
-    
-    try {
-        const data = await apiCall('/admin/destinations');
-        
-        if (!data || !data.success || !Array.isArray(data.destinations)) {
-            console.error("Données des destinations non valides.");
-            return;
-        }
-        
-        console.log(`Données reçues : ${data.destinations.length} villes.`);
+    const data = await apiCall('/admin/destinations');
+    if (!data || !data.success) return;
 
-        const tbody = document.getElementById('destinations-body');
-        if (!tbody) {
-            console.error("ERREUR FATALE : tbody #destinations-body INTROUVABLE.");
-            return;
-        }
-        
-        // On vide le tableau avant de le remplir
-        tbody.innerHTML = '';
+    // ✅ ON CIBLE LE TBODY DE TEST DANS L'ONGLET MODÈLES
+    const tbody = document.getElementById('TEST-destinations-body');
+    if (!tbody) return;
 
-        // Si aucune destination, on affiche un message
-        if (data.destinations.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination.</td></tr>';
-            return;
-        }
-        
-        // On construit le HTML avec une boucle simple
-        let html = '';
-        for (const dest of data.destinations) {
-            const isActive = dest.isActive;
-            html += `
-                <tr style="display: table-row !important; color: white;">
-                    <td style="padding: 1rem;">${dest.name}</td>
-                    <td style="padding: 1rem;">${dest.country}</td>
-                    <td style="padding: 1rem;">${isActive ? 'Actif' : 'Inactif'}</td>
-                    <td style="padding: 1rem;">[Actions]</td>
-                </tr>
-            `;
-        }
-        
-        console.log("HTML généré. Insertion dans le DOM...");
-        
-        // On insère le HTML
-        tbody.innerHTML = html;
-        
-        console.log("✅ Insertion terminée. Le tableau devrait être visible.");
-
-    } catch (error) {
-        console.error("Erreur dans loadAllDestinations:", error);
-    }
+    let html = '';
+    data.destinations.forEach(dest => {
+        html += `<tr><td>${dest.name}</td><td>${dest.country}</td></tr>`;
+    });
+    tbody.innerHTML = html;
+    console.log("Table de test remplie dans l'onglet Modèles.");
 }
 
 
