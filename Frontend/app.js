@@ -70,46 +70,6 @@ const companies = [
     { id: 15, name: "God is Good Motors", rating: 4.0, country: "Nigeria" }
 ];
 
-const cities = [
-    { name: "Brazzaville", country: "Congo" },
-    { name: "Pointe-Noire", country: "Congo" },
-    { name: "Dolisie", country: "Congo" },
-    { name: "Nkayi", country: "Congo" },
-    { name: "Ouesso", country: "Congo" },
-    { name: "Owando", country: "Congo" },
-    { name: "Impfondo", country: "Congo" },
-    { name: "Madingou", country: "Congo" },
-    { name: "Loudima", country: "Congo" },
-    { name: "Mindouli", country: "Congo" },
-    { name: "Djambala", country: "Congo" },
-    { name: "Gamboma", country: "Congo" },
-    { name: "Makoua", country: "Congo" },
-    { name: "Oyo", country: "Congo" },
-    { name: "Pokola", country: "Congo" },
-    { name: "Bétou", country: "Congo" },
-    { name: "Yaoundé", country: "Cameroun" },
-    { name: "Douala", country: "Cameroun" },
-    { name: "Bafoussam", country: "Cameroun" },
-    { name: "Bamenda", country: "Cameroun" },
-    { name: "Garoua", country: "Cameroun" },
-    { name: "Libreville", country: "Gabon" },
-    { name: "Port-Gentil", country: "Gabon" },
-    { name: "Franceville", country: "Gabon" },
-    { name: "Lagos", country: "Nigeria" },
-    { name: "Abuja", country: "Nigeria" },
-    { name: "Port Harcourt", country: "Nigeria" },
-    { name: "Cotonou", country: "Bénin" },
-    { name: "Porto-Novo", country: "Bénin" },
-    { name: "Parakou", country: "Bénin" },
-    { name: "Lomé", country: "Togo" },
-    { name: "Accra", country: "Ghana" },
-    { name: "Kumasi", country: "Ghana" },
-    { name: "Abidjan", country: "Côte d'Ivoire" },
-    { name: "Yamoussoukro", country: "Côte d'Ivoire" },
-    { name: "Ouagadougou", country: "Burkina Faso" },
-    { name: "Bobo-Dioulasso", country: "Burkina Faso" },
-    { name: "Kinshasa", country: "RDC" }
-];
 
 const agencies = [
     { 
@@ -2002,26 +1962,41 @@ function showPage(pageName) {
     }
 
 }
+// DANS Frontend/app.js
 
-function populateCitySelects() {
+async function populateCitySelects() {
     const originSelect = document.getElementById("origin");
     const destinationSelect = document.getElementById("destination");
     
     if (!originSelect || !destinationSelect) return;
-    
-    cities.sort((a, b) => a.name.localeCompare(b.name));
-    
-    cities.forEach(city => {
-        const originOption = document.createElement("option");
-        originOption.value = city.name;
-        originOption.textContent = `${city.name}, ${city.country}`;
-        originSelect.appendChild(originOption);
-        
-        const destOption = document.createElement("option");
-        destOption.value = city.name;
-        destOption.textContent = `${city.name}, ${city.country}`;
-        destinationSelect.appendChild(destOption);
-    });
+
+    try {
+        // On appelle la route publique pour récupérer les villes actives
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/destinations`);
+        const data = await response.json();
+
+        if (data.success && data.destinations) {
+            const cities = data.destinations;
+            
+            // On vide les sélecteurs au cas où
+            originSelect.innerHTML = '';
+            destinationSelect.innerHTML = '';
+            
+            // On ajoute une option par défaut
+            originSelect.innerHTML += '<option value="">Choisissez une ville</option>';
+            destinationSelect.innerHTML += '<option value="">Choisissez une ville</option>';
+
+            cities.forEach(city => {
+                const optionHTML = `<option value="${city.name}">${city.name}, ${city.country}</option>`;
+                originSelect.innerHTML += optionHTML;
+                destinationSelect.innerHTML += optionHTML;
+            });
+        } else {
+            console.error("Impossible de charger les destinations.");
+        }
+    } catch (error) {
+        console.error("Erreur lors du chargement des destinations:", error);
+    }
 }
 
 function populatePopularDestinations() {
@@ -2061,7 +2036,7 @@ function populatePopularDestinations() {
             </div>
         `;
     }).join("");
-    
+
 }
 window.searchFromPopular = function(from, to) {
     document.getElementById("origin").value = from;
