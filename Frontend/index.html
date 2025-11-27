@@ -242,8 +242,8 @@
     <div class="container">
       <div class="nav-content">
         <div class="nav-links desktop-links">
-         <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
-    <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+          <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
+          <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
         </div>
         <div class="logo" onclick="showPage('home')">
           <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
@@ -300,7 +300,7 @@
         </div>
         <div class="nav-links desktop-links">
           <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
-    <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
+          <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
         </div>
         <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
           <span></span><span></span><span></span>
@@ -338,97 +338,83 @@
 
 
 
-             <!-- ============================================= -->
-    <!-- ✅ 1. AJOUTER LA NOUVELLE BARRE DE RECHERCHE -->
-    <!-- ============================================= -->
-    <div id="smart-search-container" class="smart-search-wrapper">
-        <div class="smart-search-input-wrapper">
-            <input type="text" id="smart-search-input" placeholder="Où voulez-vous aller ?" autocomplete="off">
-            <button id="smart-search-submit-btn" aria-label="Lancer la recherche">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path></svg>
-            </button>
-        </div>
-        <div id="smart-search-results"></div>
-    </div>
+            <!-- ============================================= -->
+            <!-- ✅ 1. AJOUTER LA NOUVELLE BARRE DE RECHERCHE -->
+            <!-- ============================================= -->
+            <div id="smart-search-container" class="smart-search-wrapper">
+              <div class="smart-search-input-wrapper">
+                <input type="text" id="smart-search-input" placeholder="Où voulez-vous aller ?" autocomplete="off">
+                <button id="smart-search-submit-btn" aria-label="Lancer la recherche">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24"
+                    height="24">
+                    <path
+                      d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z">
+                    </path>
+                  </svg>
+                </button>
+              </div>
+              <div id="smart-search-results"></div>
+            </div>
 
+            <!-- ================================================ -->
+    <!-- ✅ FORMULAIRE DÉTAILLÉ CORRIGÉ ET FUSIONNÉ -->
     <!-- ================================================ -->
-    <!-- ✅ 2. MODIFIER L'ANCIEN FORMULAIRE POUR LE CACHER -->
-    <!-- ================================================ -->
-    <div id="detailed-search-box" class="search-box">
+    <div id="detailed-search-box" class="search-box"> <!-- Un seul div avec le bon ID -->
         <div class="search-form">
-            <!-- Votre formulaire complet (Départ, Arrivée, Date...) reste ici -->
-            <!-- ... -->
-        </div>
-    </div>
-
-
-            <div class="search-box">
-              <div class="search-form">
-                <div class="form-row">
-                  <div class="form-group">
+            <div class="form-row">
+                <div class="form-group">
                     <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
                     <select id="origin" class="form-control"></select>
-                  </div>
-                  <div class="form-group">
+                </div>
+                <div class="form-group">
                     <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
                     <select id="destination" class="form-control"></select>
-                  </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
                     <label data-i18n="search_form_trip_type">Type de voyage</label>
                     <div class="trip-type-toggle" data-mode="one-way">
-                      <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller
-                        simple</label>
-                      <label class="toggle-option" data-value="round-trip"
-                        data-i18n="search_form_round_trip">Aller-retour</label>
+                      <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller simple</label>
+                      <label class="toggle-option" data-value="round-trip" data-i18n="search_form_round_trip">Aller-retour</label>
                       <div class="toggle-switch"></div>
                     </div>
-                  </div>
-                  <div class="form-group">
+                </div>
+                <div class="form-group">
                     <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
                     <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder" placeholder="Sélectionnez vos dates" />
-                  </div>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
                     <label data-i18n="search_form_passengers">Passagers</label>
                     <div id="passenger-input" class="form-control passenger-selector">
                       <span id="passenger-summary">1 Adulte</span>
                     </div>
                     <div id="passenger-dropdown" class="passenger-dropdown-menu">
-                      <div class="passenger-row">
-                        <label data-i18n="search_form_adults">Adultes</label>
-                        <div class="passenger-counter">
-                          <button type="button" class="counter-btn" data-type="adults" data-action="decrement">
-                            -
-                          </button>
-                          <span id="adults-count">1</span>
-                          <button type="button" class="counter-btn" data-type="adults" data-action="increment">
-                            +
-                          </button>
+                        <div class="passenger-row">
+                            <label data-i18n="search_form_adults">Adultes</label>
+                            <div class="passenger-counter">
+                                <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
+                                <span id="adults-count">1</span>
+                                <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
+                            </div>
                         </div>
-                      </div>
-                      <div class="passenger-row">
-                        <label data-i18n="search_form_children">Enfants <small>(0-6 ans)</small></label>
-                        <div class="passenger-counter">
-                          <button type="button" class="counter-btn" data-type="children" data-action="decrement">
-                            -
-                          </button>
-                          <span id="children-count">0</span>
-                          <button type="button" class="counter-btn" data-type="children" data-action="increment">
-                            +
-                          </button>
+                        <div class="passenger-row">
+                            <label data-i18n="search_form_children">Enfants <small>(0-6 ans)</small></label>
+                            <div class="passenger-counter">
+                                <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
+                                <span id="children-count">0</span>
+                                <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
+                            </div>
                         </div>
-                      </div>
                     </div>
-                  </div>
                 </div>
-                <button class="btn btn-primary btn-large" onclick="searchBuses()" data-i18n="search_form_button">
-                  Rechercher
-                </button>
-              </div>
             </div>
+            <button class="btn btn-primary btn-large" onclick="searchBuses()" data-i18n="search_form_button">Rechercher</button>
+        </div>
+    </div>
+
           </div>
         </div>
       </section>
@@ -625,16 +611,16 @@
             <div class="w-full md:w-auto flex flex-col items-center gap-4">
               <div class="text-white text-center">
                 <!-- Label pour "Sièges" -->
-    <span data-i18n="seats_summary_seats">Sièges :</span>
-    <!-- Valeur pour les numéros de sièges -->
-    <strong id="selected-seats-display" class="text-blue-400"></strong>
+                <span data-i18n="seats_summary_seats">Sièges :</span>
+                <!-- Valeur pour les numéros de sièges -->
+                <strong id="selected-seats-display" class="text-blue-400"></strong>
 
-    <span class="mx-2">|</span>
+                <span class="mx-2">|</span>
 
-    <!-- Label pour "Prix" -->
-    <span data-i18n="seats_summary_price">Prix :</span>
-    <!-- Valeur pour le montant -->
-    <strong id="total-price-display" class="text-green-400"></strong>
+                <!-- Label pour "Prix" -->
+                <span data-i18n="seats_summary_price">Prix :</span>
+                <!-- Valeur pour le montant -->
+                <strong id="total-price-display" class="text-green-400"></strong>
 
 
               </div>
@@ -652,11 +638,11 @@
       <!-- ... (Contenu de la page passagers, inchangé) ... -->
       <div class="container">
         <div class="page-header">
-  <button class="btn btn-secondary" onclick="showPage('seats')" data-i18n="passengers_page_back_button">
-    ← Retour
-  </button>
-  <h2 data-i18n="passengers_page_title">Informations passagers</h2>
-</div>
+          <button class="btn btn-secondary" onclick="showPage('seats')" data-i18n="passengers_page_back_button">
+            ← Retour
+          </button>
+          <h2 data-i18n="passengers_page_title">Informations passagers</h2>
+        </div>
         <div id="passengers-forms" class="passengers-forms"></div>
         <div id="baggage-section" class="content-card" style="margin-top: 32px">
           <h3 data-i18n="baggage_title">Bagages Supplémentaires</h3>
@@ -683,9 +669,9 @@
       <div class="container">
         <div class="page-header">
           <button class="btn btn-secondary" onclick="showPage('passengers')" data-i18n="payment_page_back_button">
-    ← Retour
-  </button>
-  <h2 data-i18n="payment_page_title">Paiement</h2>
+            ← Retour
+          </button>
+          <h2 data-i18n="payment_page_title">Paiement</h2>
         </div>
         <div class="payment-container">
           <div class="booking-summary-card">
@@ -713,7 +699,8 @@
               <div class="payment-details-form" id="mtn-details">
                 <div class="form-group">
                   <label for="mtn-phone" data-i18n="payment_phone_label_mtn">📞 Numéro de téléphone MTN</label>
-                  <input type="tel" id="mtn-phone" class="form-control" data-i18n="payment_phone_placeholder_mtn" placeholder="Ex: 06 123 4567" />
+                  <input type="tel" id="mtn-phone" class="form-control" data-i18n="payment_phone_placeholder_mtn"
+                    placeholder="Ex: 06 123 4567" />
                 </div>
                 <div class="form-group">
                   <label for="mtn-amount" data-i18n="payment_amount_label">💰 Montant à payer</label>
@@ -737,7 +724,8 @@
               <div class="payment-details-form" id="airtel-details" style="display: none">
                 <div class="form-group">
                   <label for="airtel-phone" data-i18n="payment_phone_label_airtel">📞 Numéro de téléphone Airtel</label>
-                  <input type="tel" id="airtel-phone" class="form-control" data-i18n="payment_phone_placeholder_airtel" placeholder="Ex: 05 123 4567" />
+                  <input type="tel" id="airtel-phone" class="form-control" data-i18n="payment_phone_placeholder_airtel"
+                    placeholder="Ex: 05 123 4567" />
                 </div>
                 <div class="form-group">
                   <label for="airtel-amount" data-i18n="payment_amount_label">💰 Montant à payer</label>
@@ -761,31 +749,31 @@
               </label>
               <div class="payment-details-form" id="agency-details" style="display: none">
                 <div class="agency-info-box">
-        <!-- ✅ TRADUCTION DU TITRE -->
-        <h4 data-i18n="payment_agency_nearest">📍 Agence la plus proche</h4>
-        <div id="selected-agency-info"></div>
-    </div>
-    <div class="form-group">
-        <!-- ✅ TRADUCTION DU LABEL -->
-        <label data-i18n="payment_agency_deadline">⏰ Vous devez payer avant :</label>
-        <input type="text" id="agency-deadline" class="form-control" readonly />
-    </div>
-    <div class="form-group">
-        <!-- ✅ TRADUCTION DU LABEL -->
-        <label data-i18n="payment_agency_ref">📋 Référence de réservation</label>
-        <input type="text" id="agency-booking-ref" class="form-control" readonly />
-    </div>
-    <div class="info-note">
-        <!-- ✅ TRADUCTION DU TITRE -->
-        <strong data-i18n="payment_agency_important_title">⚠️ Important :</strong>
-        <ul style="margin: 10px 0 0 20px; font-size: 14px">
-            <!-- ✅ Le premier point sera géré par JS -->
-            <li id="agency-rule1-placeholder"></li> 
-            <!-- ✅ TRADUCTION DES RÈGLES STATIQUES -->
-            <li data-i18n="payment_agency_rule2">Présentez-vous à l'agence avec une pièce d'identité</li>
-            <li data-i18n="payment_agency_rule3">Le numéro de réservation sera requis</li>
-        </ul>
-    </div>
+                  <!-- ✅ TRADUCTION DU TITRE -->
+                  <h4 data-i18n="payment_agency_nearest">📍 Agence la plus proche</h4>
+                  <div id="selected-agency-info"></div>
+                </div>
+                <div class="form-group">
+                  <!-- ✅ TRADUCTION DU LABEL -->
+                  <label data-i18n="payment_agency_deadline">⏰ Vous devez payer avant :</label>
+                  <input type="text" id="agency-deadline" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <!-- ✅ TRADUCTION DU LABEL -->
+                  <label data-i18n="payment_agency_ref">📋 Référence de réservation</label>
+                  <input type="text" id="agency-booking-ref" class="form-control" readonly />
+                </div>
+                <div class="info-note">
+                  <!-- ✅ TRADUCTION DU TITRE -->
+                  <strong data-i18n="payment_agency_important_title">⚠️ Important :</strong>
+                  <ul style="margin: 10px 0 0 20px; font-size: 14px">
+                    <!-- ✅ Le premier point sera géré par JS -->
+                    <li id="agency-rule1-placeholder"></li>
+                    <!-- ✅ TRADUCTION DES RÈGLES STATIQUES -->
+                    <li data-i18n="payment_agency_rule2">Présentez-vous à l'agence avec une pièce d'identité</li>
+                    <li data-i18n="payment_agency_rule3">Le numéro de réservation sera requis</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -818,7 +806,7 @@
               </div>
             </div>
           </div>
-         <h1 class="confirmation-title">Réservation confirmée !</h1>
+          <h1 class="confirmation-title">Réservation confirmée !</h1>
           <p class="confirmation-subtitle">Votre billet a été réservé avec succès</p>
 
           <!-- Carte principale qui contiendra les billets -->
@@ -852,16 +840,16 @@
                 <div class="info-icon">⏰</div>
                 <div class="info-content">
                   <h4 data-i18n="info_arrive_early_title">Arrivez à l'avance</h4>
-                <p data-i18n="info_arrive_early_desc">
+                  <p data-i18n="info_arrive_early_desc">
                     Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide
-                </p>
+                  </p>
                 </div>
               </div>
               <div class="info-card info-card-info">
                 <div class="info-icon">🎒</div>
                 <div class="info-content">
-                   <h4 data-i18n="info_baggage_title">Bagages inclus</h4>
-                <p data-i18n="info_baggage_desc">1 bagage en soute (20kg) + 1 bagage à main</p>
+                  <h4 data-i18n="info_baggage_title">Bagages inclus</h4>
+                  <p data-i18n="info_baggage_desc">1 bagage en soute (20kg) + 1 bagage à main</p>
                 </div>
               </div>
             </div>
@@ -872,7 +860,7 @@
 
           <!-- Footer de la page de confirmation -->
           <div class="confirmation-footer">
-             <p data-i18n="confirmation_help">Besoin d'aide ? Contactez-nous :</p>
+            <p data-i18n="confirmation_help">Besoin d'aide ? Contactez-nous :</p>
             <div class="contact-links">
               <a href="tel:+242061234567">📞 +242 06 123 4567</a>
               <a href="mailto:contact@en-bus.com">📧 contact@en-bus.com</a>
@@ -910,7 +898,7 @@
             Connecter les grandes villes d'Afrique et faciliter les
             déplacements des populations à travers le continent.
           </p>
-            <h3 data-i18n="about_partners_title">Nos partenaires</h3>
+          <h3 data-i18n="about_partners_title">Nos partenaires</h3>
           <ul>
             <li>Océan du Nord</li>
             <li>Trans Bony Voyage</li>
@@ -927,7 +915,7 @@
           <h2 data-i18n="contact_title">Contact</h2>
         </div>
         <div class="content-card">
-           <h3 data-i18n="contact_header">Contactez-nous</h3>
+          <h3 data-i18n="contact_header">Contactez-nous</h3>
           <p data-i18n="contact_intro">
             Pour toute question ou assistance, n'hésitez pas à nous contacter
             :
@@ -958,7 +946,7 @@
           <p data-i18n="footer_tagline">Voyagez à travers l'Afrique en toute simplicité</p>
         </div>
         <div class="footer-section">
-           <h4 data-i18n="footer_quicklinks">Liens rapides</h4>
+          <h4 data-i18n="footer_quicklinks">Liens rapides</h4>
           <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
           <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
           <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
@@ -997,7 +985,7 @@
                   navigator.serviceWorker.controller
                 ) {
 
-                  
+
                   if (
                     confirm(
                       "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
