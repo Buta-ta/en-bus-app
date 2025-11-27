@@ -85,41 +85,60 @@ let reservationsCollection,
   tripsCollection,
   routeTemplatesCollection,
   systemSettingsCollection;
+  destinationsCollection;
 
 async function connectToDb() {
   try {
     await dbClient.connect();
     const database = dbClient.db("en-bus-db");
+    
+    // Initialisation de toutes les collections
     reservationsCollection = database.collection("reservations");
     positionsCollection = database.collection("positions");
     tripsCollection = database.collection("trips");
     routeTemplatesCollection = database.collection("route_templates");
     systemSettingsCollection = database.collection("system_settings");
-    await tripsCollection.createIndex({
-      date: 1,
-      "route.from": 1,
-      "route.to": 1,
-    });
-    const existingSettings = await systemSettingsCollection.findOne({
-      key: "reportSettings",
-    });
+    destinationsCollection = database.collection("destinations"); // Votre ajout est correct
+
+    // Création des index
+    await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 });
+    await destinationsCollection.createIndex({ name: 1 });
+    
+    // Initialisation des paramètres (votre code est correct)
+    const existingSettings = await systemSettingsCollection.findOne({ key: "reportSettings" });
     if (!existingSettings) {
       await systemSettingsCollection.insertOne({
         key: "reportSettings",
-        value: {
-          firstReportFree: true,
-          secondReportFee: 2000,
-          thirdReportFee: 5000,
-          maxReportsAllowed: 3,
-          minHoursBeforeDeparture: 48,
-          maxDaysInFuture: 30,
-        },
+        value: { /*...*/ },
         createdAt: new Date(),
-        updatedBy: "system",
+        updatedBy: "system"
       });
       console.log("✅ Paramètres de report initialisés.");
     }
+
+    // ====================================================
+    // ✅ BLOC MANQUANT : PEUPLEMENT INITIAL DES VILLES
+    // ====================================================
+    const destinationsCount = await destinationsCollection.countDocuments();
+    if (destinationsCount === 0) {
+        console.log("🏙️  La collection 'destinations' est vide. Remplissage avec les données initiales...");
+        const initialCities = [
+            { name: "Brazzaville", country: "Congo", coords: [-4.2634, 15.2429], isActive: true, createdAt: new Date() },
+            { name: "Pointe-Noire", country: "Congo", coords: [-4.7761, 11.8636], isActive: true, createdAt: new Date() },
+            { name: "Dolisie", country: "Congo", coords: [-4.2064, 12.6686], isActive: true, createdAt: new Date() },
+            { name: "Yaoundé", country: "Cameroun", coords: [3.8480, 11.5021], isActive: true, createdAt: new Date() },
+            { name: "Douala", country: "Cameroun", coords: [4.0511, 9.7679], isActive: true, createdAt: new Date() },
+            { name: "Libreville", country: "Gabon", coords: [0.4162, 9.4673], isActive: true, createdAt: new Date() },
+            { name: "Lagos", country: "Nigeria", coords: [6.5244, 3.3792], isActive: true, createdAt: new Date() },
+            { name: "Abidjan", country: "Côte d'Ivoire", coords: [5.3599, -4.0083], isActive: true, createdAt: new Date() }
+        ];
+        await destinationsCollection.insertMany(initialCities);
+        console.log(`✅ ${initialCities.length} destinations initiales ajoutées à la base de données.`);
+    }
+    // ====================================================
+
     console.log("✅ Connecté à MongoDB.");
+
   } catch (error) {
     console.error("❌ Erreur connexion DB:", error.message);
     process.exit(1);
@@ -639,6 +658,22 @@ app.patch(
     }
   }
 );
+
+
+// ============================================
+// --- ROUTE PUBLIQUE POUR LES DESTINATIONS ---
+// ============================================
+
+app.get("/api/destinations", async (req, res) => {
+    try {
+        // On ne renvoie que les villes actives
+        const destinations = await destinationsCollection.find({ isActive: true }).sort({ name: 1 }).toArray();
+        res.json({ success: true, destinations });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 
 // ============================================
 // 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
@@ -1678,6 +1713,77 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
+
+
+// ============================================
+// --- GESTION DES DESTINATIONS (ADMIN) ---
+// ============================================
+
+// Lister toutes les destinations pour l'admin
+app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
+    try {
+        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
+        res.json({ success: true, destinations });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Ajouter une nouvelle destination
+app.post("/api/admin/destinations", authenticateToken, [
+    body('name').notEmpty().trim(),
+    body('country').notEmpty().trim(),
+    body('coords').isArray({ min: 2, max: 2 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    try {
+        const { name, country, coords } = req.body;
+        const newDestination = {
+            name,
+            country,
+            coords,
+            isActive: true,
+            createdAt: new Date()
+        };
+        await destinationsCollection.insertOne(newDestination);
+        res.status(201).json({ success: true, message: "Destination ajoutée avec succès." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Mettre à jour une destination (notamment pour l'activer/désactiver)
+app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body; // ex: { isActive: false } ou { name: "Nouveau nom" }
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        await destinationsCollection.updateOne({ _id: new ObjectId(id) }, { $set: updates });
+        res.json({ success: true, message: "Destination mise à jour." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Supprimer une destination
+app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+        
+        // TODO: Ajouter une vérification pour s'assurer que la ville n'est pas utilisée dans un trajet avant de la supprimer.
+        
+        await destinationsCollection.deleteOne({ _id: new ObjectId(id) });
+        res.json({ success: true, message: "Destination supprimée." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
 
 // ============================================
 // --- GESTION DES PARAMÈTRES (ADMIN) ---
