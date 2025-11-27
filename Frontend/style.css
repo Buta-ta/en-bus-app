@@ -2826,28 +2826,21 @@ h3 {
 
 /* 3. La liste déroulante des résultats */
 #smart-search-results {
-    /* Positionnement flottant */
-    position: absolute;
-    top: 100%; /* Juste en dessous de la barre */
-    left: 0;
-    right: 0;
+    /* ✅ ON PASSE EN POSITION 'FIXED' */
+    position: fixed; 
     
-    /* Affichage au-dessus de tout */
-    z-index: 1000; /* Valeur très élevée */
-    display: none; /* Caché par défaut, affiché par JS */
+    /* Le z-index est crucial */
+    z-index: 9999; 
     
-    /* Apparence visuelle */
+    /* Le reste du style est le même */
+    display: none;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-top: none;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-radius: var(--radius-lg);
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    
-    /* Gestion du contenu */
     max-height: 300px;
     overflow-y: auto;
 }
-
 /* 4. Style des items dans la liste (votre code est bon) */
 .smart-result-item {
     padding: 15px 20px;
