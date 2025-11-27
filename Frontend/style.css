@@ -2805,62 +2805,50 @@ h3 {
     }
 }
 
+/* ============================================
+   🔍 BARRE DE RECHERCHE INTELLIGENTE (Version Corrigée)
+   ============================================ */
 
-
-
-/* Quand la barre de recherche est active sur mobile, on ajuste la section hero */
-body.smart-search-active .hero {
-    /* On peut réduire la hauteur ou ajouter une marge pour remonter le contenu */
-    padding-bottom: 250px; /* Ajoute de l'espace en bas, poussant tout vers le haut */
-    transition: padding-bottom 0.3s ease;
+/* 1. Le conteneur principal : simple et juste pour le positionnement */
+.smart-search-wrapper {
+    position: relative; /* Indispensable pour que #smart-search-results se positionne par rapport à lui */
+    width: 100%;
+    max-width: 600px;
+    margin: 2rem auto 0;
+    /* On lui donne un z-index élevé pour qu'il soit au-dessus des autres sections comme .popular-destinations */
+    z-index: 20; 
 }
 
-#smart-search-results {
-    /* On s'assure qu'elle s'affiche bien au-dessus des autres éléments */
-    z-index: 1000;
+/* 2. La barre de recherche elle-même (votre code est bon) */
+#smart-search-input {
+    /* ... (gardez vos styles actuels pour l'input) ... */
 }
 
-
-
-/* DANS style.css */
-
+/* 3. La liste déroulante des résultats */
 #smart-search-results {
-    /* --- Positionnement --- */
-    position: absolute; /* Élément flottant par rapport à son parent */
-    top: 100%; /* Se positionne juste en dessous de la barre de recherche */
+    /* Positionnement flottant */
+    position: absolute;
+    top: 100%; /* Juste en dessous de la barre */
     left: 0;
     right: 0;
     
-    /* --- Visibilité et empilement --- */
-    z-index: 1000; /* Valeur élevée pour être sûr qu'il est au-dessus de tout */
-    display: none; /* Caché par défaut */
+    /* Affichage au-dessus de tout */
+    z-index: 1000; /* Valeur très élevée */
+    display: none; /* Caché par défaut, affiché par JS */
     
-    /* --- Apparence --- */
+    /* Apparence visuelle */
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-top: none; /* Pour un look "attaché" à la barre */
+    border-top: none;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     
-    /* --- Gestion du contenu --- */
-    max-height: 300px; /* Hauteur maximale avant d'afficher une barre de défilement */
-    overflow-y: auto;
-}
-
-/* On s'assure que le conteneur principal permet le positionnement absolu */
-.smart-search-wrapper {
-    position: relative; /* Indispensable ! */
-    z-index: 1000; /* Valeur élevée pour s'assurer qu'elle est au-dessus de tout */
-    
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    /* Gestion du contenu */
     max-height: 300px;
     overflow-y: auto;
 }
 
-/* Le style pour chaque item reste le même */
+/* 4. Style des items dans la liste (votre code est bon) */
 .smart-result-item {
     padding: 15px 20px;
     cursor: pointer;
@@ -2871,28 +2859,17 @@ body.smart-search-active .hero {
     background-color: var(--color-background);
 }
 
-/* Styles pour les écrans de moins de 480px de large */
+/* 5. Styles responsives (votre code est bon) */
 @media (max-width: 480px) {
     #smart-search-input {
-        /* On réduit la taille de la police et les espaces intérieurs */
         font-size: 0.95rem;
         padding: 14px 50px 14px 15px;
     }
-
-    #smart-search-input::placeholder {
-        /* On peut aussi réduire la taille de la police du placeholder si besoin */
-        font-size: 0.9rem;
-    }
-
-    #smart-search-submit-btn {
-        /* On réduit légèrement la taille du bouton loupe */
-        width: 40px;
-        height: 40px;
-    }
-
-
-
+    /* ... (le reste de vos styles responsive) ... */
 }
+
+
+
 
 /* ============================================
    📱 PWA STYLES
