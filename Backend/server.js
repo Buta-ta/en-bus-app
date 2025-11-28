@@ -17,6 +17,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
+const html_pdf = require('html-pdf-node'); // ✅ AJOUTER CETTE LIGNE
 
 // ✅ AJOUTEZ CES LIGNES ICI
 const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
@@ -1635,7 +1636,14 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
         const htmlContent = generateInvoiceHTML(reservation, lang);
         
         const html_pdf = require('html-pdf-node');
-        const options = { format: 'A4' };
+                const options = { 
+            format: 'A4',
+            // ✅ AJOUTER CETTE PARTIE POUR LA COMPATIBILITÉ SERVEUR
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ]
+        }; 
         const file = { content: htmlContent };
         
         html_pdf.generatePdf(file, options).then(pdfBuffer => {
