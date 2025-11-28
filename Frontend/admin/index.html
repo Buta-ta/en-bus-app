@@ -1810,6 +1810,15 @@
                         </a>
                     </li>
 
+
+                    <!-- ✅ NOUVEAU LIEN ANALYTICS -->
+<li class="nav-item">
+    <a href="#" class="nav-link" data-tab="analytics">
+        <span class="nav-icon">📊</span>
+        <span>Analytics Bus</span>
+    </a>
+</li>
+
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -1817,6 +1826,8 @@
                             <span>Paramètres</span>
                         </a>
                     </li>
+
+
 
 
                 </ul>
@@ -2353,7 +2364,71 @@
     </div>
 
 
+    <!-- ============================================
+         📊 ONGLET: ANALYTICS BUS
+         ============================================ -->
+    <div id="tab-analytics" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">📊 Analytics Bus</h1>
+            <p class="page-subtitle">Analyse du rendement de chaque bus</p>
+        </div>
 
+        <!-- Sélecteur de bus -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Sélectionner un bus</h2>
+            </div>
+            <div class="filters" style="margin-bottom: 0;">
+                <div class="form-group" style="flex: 1; max-width: 400px;">
+                    <label for="analytics-bus-select" class="form-label">Numéro de bus</label>
+                    <select id="analytics-bus-select" class="form-control">
+                        <option value="">-- Choisir un bus --</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="loadBusAnalytics()" style="align-self: flex-end;">
+                    🔄 Charger les statistiques
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistiques du bus sélectionné -->
+        <div id="analytics-stats-container" style="display: none;">
+            <!-- Stats cards -->
+            <div id="analytics-stats-grid" class="stats-grid">
+                <!-- Généré dynamiquement -->
+            </div>
+
+            <!-- Tableau détaillé -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2 class="card-title">Détails des voyages</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Trajet</th>
+                                <th>Occupation</th>
+                                <th>Revenu</th>
+                                <th>Statut final</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-trips-body">
+                            <!-- Généré dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message si aucun bus sélectionné -->
+        <div id="analytics-empty-state" class="content-card" style="text-align: center; padding: 3rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🚌</div>
+            <h3>Sélectionnez un bus pour voir ses statistiques</h3>
+            <p style="color: var(--text-muted);">Choisissez un numéro de bus dans la liste ci-dessus</p>
+        </div>
+    </div>
     </main>
     </div>
     <!-- TAB: Paramètres -->
