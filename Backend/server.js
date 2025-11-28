@@ -2206,7 +2206,7 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
                     console.log(`   -> IDs de l'équipage à mettre à jour:`, crewIds);
                     
                     if (crewIds.length > 0) {
-                        const updateResult = await database.collection('crew').updateMany(
+                        const updateResult = await dbClient.db("en-bus-db").collection('crew').updateMany(
                             { _id: { $in: crewIds } },
                             { $inc: { totalTrips: 1, totalKm: distance } }
                         );
