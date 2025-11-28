@@ -1429,10 +1429,10 @@ app.post(
 // DANS server.js
 
 app.post("/api/admin/destinations", authenticateToken, [
-    body('name').notEmpty().withMessage("Le nom est requis."),
+    body('name').notEmpty().withMessage("Le nom de la ville est requis."),
     body('country').notEmpty().withMessage("Le pays est requis."),
-    // On vérifie juste que c'est une chaîne de caractères
-    body('coords').isString().withMessage("Les coordonnées doivent être une chaîne de caractères.")
+    // On rend le champ 'coords' complètement optionnel
+    body('coords').optional().isString()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1441,29 +1441,25 @@ app.post("/api/admin/destinations", authenticateToken, [
 
     try {
         const { name, country, coords: coordsStr } = req.body;
-
-        // ===================================
-        // ✅ CONVERSION DE LA CHAÎNE EN TABLEAU
-        // ===================================
+        
         let coordsArray = [];
-        if (coordsStr) {
-            // On sépare par la virgule, on convertit chaque partie en nombre, et on filtre les NaN
-            coordsArray = coordsStr.split(',').map(c => parseFloat(c.trim())).filter(c => !isNaN(c));
+        
+        // On ne traite la chaîne que si elle existe et n'est pas vide
+        if (coordsStr && coordsStr.trim() !== '') {
+            const parts = coordsStr.split(',').map(c => parseFloat(c.trim()));
+            // On vérifie qu'on a bien deux nombres valides
+            if (parts.length === 2 && !parts.some(isNaN)) {
+                coordsArray = parts;
+            } else {
+                // Si le format est incorrect, on renvoie une erreur claire
+                return res.status(400).json({ error: "Format des coordonnées GPS invalide. Utilisez 'latitude, longitude'." });
+            }
         }
-
-        // On vérifie si on a bien deux nombres après conversion
-        if (coordsArray.length !== 2) {
-            console.warn("Format de coordonnées invalide reçu :", coordsStr);
-            // On peut soit renvoyer une erreur, soit continuer avec un tableau vide
-            // Pour plus de flexibilité, on continue.
-            coordsArray = [];
-        }
-        // ===================================
         
         const newDestination = {
             name,
             country,
-            coords: coordsArray, // On enregistre le tableau converti
+            coords: coordsArray, // Sera un tableau de 2 nombres ou un tableau vide
             isActive: true,
             createdAt: new Date()
         };
@@ -1473,10 +1469,9 @@ app.post("/api/admin/destinations", authenticateToken, [
 
     } catch (error) {
         console.error("❌ Erreur création destination:", error);
-        res.status(500).json({ error: "Erreur serveur" });
+        res.status(500).json({ error: "Erreur serveur." });
     }
-});
-
+}); 
 
 
 // À placer avec les autres routes POST admin dans server.js
