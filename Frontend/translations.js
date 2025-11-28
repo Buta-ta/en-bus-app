@@ -73,6 +73,7 @@ const translations = {
     departure_location_label: (location) => `📍 Départ : ${location}`,
     details_stops_planned: "Arrêts prévus :",
     details_stops_count: (count) => `${count} arrêt(s)`,
+    details_connections: "Correspondance :",
     details_connections_count: (count) => `${count} changement(s)`, 
     details_arrival: "Arrivée",
     details_departure: "Départ",
@@ -107,6 +108,7 @@ const translations = {
     amenity_wc: "WC",
     amenity_plugs: "Prises",
     amenity_ac: "Clim",
+    filter_departure_location: "Lieu de départ",
 
 
 
@@ -518,6 +520,7 @@ const translations = {
     departure_location_label: (location) => `📍 Departs from: ${location}`,
     details_stops_planned: "Scheduled stops:",
     details_stops_count: (count) => `${count} stop(s)`,
+    details_connections: "Connection:",
     details_connections_count: (count) => `${count} change(s)`,
     details_arrival: "Arrival",
     details_departure: "Departure",
@@ -552,6 +555,7 @@ const translations = {
     amenity_wc: "Restroom",
     amenity_plugs: "Plugs",
     amenity_ac: "AC",
+    filter_departure_location: "Departure point",
 
     // --- Seat Selection Page ---
     //✅ VÉRIFIEZ QUE CES LIGNES SONT BIEN PRÉSENTES ET CORRECTEMENT ÉCRITES
