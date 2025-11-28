@@ -2028,22 +2028,35 @@
                             </div>
 
 
-                            <!-- ✅ NOUVEAUX CHAMPS ÉQUIPAGE -->
-                            <div class="form-group">
-                                <label for="trip-driver" class="form-label">🚗 Chauffeur (optionnel)</label>
-                                <select id="trip-driver" class="form-control">
-                                    <option value="">-- Aucun chauffeur assigné --</option>
-                                    <!-- Rempli dynamiquement -->
-                                </select>
-                            </div>
+                   <!-- ✅ ÉQUIPAGE - CHAUFFEURS -->
+<div class="form-group">
+    <label for="trip-driver1" class="form-label">🚗 Chauffeur principal (optionnel)</label>
+    <select id="trip-driver1" class="form-control">
+        <option value="">-- Aucun chauffeur --</option>
+    </select>
+</div>
 
-                            <div class="form-group">
-                                <label for="trip-controller" class="form-label">🎫 Contrôleur (optionnel)</label>
-                                <select id="trip-controller" class="form-control">
-                                    <option value="">-- Aucun contrôleur assigné --</option>
-                                    <!-- Rempli dynamiquement -->
-                                </select>
-                            </div>
+<div class="form-group">
+    <label for="trip-driver2" class="form-label">🚗 Chauffeur secondaire (trajets longs)</label>
+    <select id="trip-driver2" class="form-control">
+        <option value="">-- Aucun chauffeur --</option>
+    </select>
+</div>
+
+<!-- ✅ ÉQUIPAGE - CONTRÔLEURS -->
+<div class="form-group">
+    <label for="trip-controller1" class="form-label">🎫 Contrôleur principal (optionnel)</label>
+    <select id="trip-controller1" class="form-control">
+        <option value="">-- Aucun contrôleur --</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="trip-controller2" class="form-label">🎫 Contrôleur secondaire (trajets longs)</label>
+    <select id="trip-controller2" class="form-control">
+        <option value="">-- Aucun contrôleur --</option>
+    </select>
+</div>
 
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
@@ -3608,7 +3621,7 @@ function getCrewDisplay(crew) {
 async function handleCreateTrips(e) {
     e.preventDefault();
 
-    // 1. Récupération des valeurs du formulaire de base
+    // 1. Récupération des valeurs du formulaire
     const routeId = document.getElementById("route-template").value;
     const dateValue = document.getElementById("trip-dates").value;
     const seatCount = parseInt(document.getElementById("seat-count").value);
@@ -3616,20 +3629,12 @@ async function handleCreateTrips(e) {
     const highlightBadge = document.getElementById('highlight-badge').value.trim();
 
     // 2. Validations
-    if (!routeId) {
-        showNotification("Veuillez sélectionner un modèle de trajet.", "warning");
-        return;
-    }
-    if (!dateValue) {
-        showNotification("Veuillez sélectionner une ou plusieurs dates.", "warning");
-        return;
-    }
-    if (!seatCount || seatCount < 10 || seatCount > 100) {
-        showNotification("Le nombre de sièges doit être entre 10 et 100.", "warning");
+    if (!routeId || !dateValue || !seatCount) {
+        showNotification("Modèle, dates et sièges sont requis.", "warning");
         return;
     }
 
-    // 3. Logique des dates et jours
+    // 3. Logique des dates
     let startDate, endDate;
     if (dateValue.includes(" au ")) {
         [startDate, endDate] = dateValue.split(" au ");
@@ -3637,21 +3642,15 @@ async function handleCreateTrips(e) {
         startDate = endDate = dateValue;
     }
 
-    const selectedDays = Array.from(
-        document.querySelectorAll("#days-selector input:checked")
-    ).map((cb) => cb.value);
+    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+    const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
 
-    if (selectedDays.length === 0 && startDate !== endDate) {
-        showNotification("Veuillez sélectionner au moins un jour pour une plage de dates.", "warning");
+    if (daysToSend.length === 0) {
+        showNotification("Veuillez sélectionner au moins un jour.", "warning");
         return;
     }
 
-    const daysToSend = (startDate === endDate)
-        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-        : selectedDays;
-
-    // ✅ 4. RÉCUPÉRATION DES 4 MEMBRES D'ÉQUIPAGE
-    // On utilise ?.value pour éviter les erreurs si les champs n'existent pas encore
+    // ✅ 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
     const driver1Select = document.getElementById('trip-driver1');
     const driver2Select = document.getElementById('trip-driver2');
     const controller1Select = document.getElementById('trip-controller1');
@@ -3669,23 +3668,15 @@ async function handleCreateTrips(e) {
     const controller2Id = controller2Select?.value || null;
     const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
 
-    // 5. Construction de l'objet de données pour l'API
+    // 5. Construction de l'objet de données
     const tripData = {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek: daysToSend,
-        seatCount,
+        routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
         busIdentifier: busIdentifier || null,
         highlightBadge: highlightBadge || null,
-        driver1Id: driver1Id,
-        driver1Name: driver1Name,
-        driver2Id: driver2Id,
-        driver2Name: driver2Name,
-        controller1Id: controller1Id,
-        controller1Name: controller1Name,
-        controller2Id: controller2Id,
-        controller2Name: controller2Name
+        driver1Id, driver1Name,
+        driver2Id, driver2Name,
+        controller1Id, controller1Name,
+        controller2Id, controller2Name
     };
 
     console.log("📤 Envoi des données de création de voyage :", tripData);
@@ -3693,13 +3684,12 @@ async function handleCreateTrips(e) {
     // 6. Appel API
     const data = await apiCall("/admin/trips", "POST", tripData);
 
-    // 7. Gestion du résultat
     if (data && data.success) {
-        showNotification(data.message || "Voyages programmés avec succès !", "success");
+        showNotification(data.message || "Voyages programmés !", "success");
         e.target.reset();
         loadAllTrips();
     }
-}    // Dans Admin/index.html (section <script>)
+}  // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
