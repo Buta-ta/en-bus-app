@@ -1573,20 +1573,20 @@
 
         /* DANS <style> */
 
-.tab-content {
-    display: none;
-}
+        .tab-content {
+            display: none;
+        }
 
-/* On utilise l'ID pour être plus spécifique et !important pour forcer */
-#tab-reservations.active,
-#tab-report-requests.active,
-#tab-trips.active,
-#tab-templates.active,
-#tab-destinations.active,
-#tab-settings.active {
-    display: block !important;
-    animation: fadeIn 0.4s ease-in-out;
-}
+        /* On utilise l'ID pour être plus spécifique et !important pour forcer */
+        #tab-reservations.active,
+        #tab-report-requests.active,
+        #tab-trips.active,
+        #tab-templates.active,
+        #tab-destinations.active,
+        #tab-settings.active {
+            display: block !important;
+            animation: fadeIn 0.4s ease-in-out;
+        }
 
 
 
@@ -1636,86 +1636,94 @@
    🔥 FIX D'AFFICHAGE POUR LES TABLEAUX
    ============================================ */
 
-/* On s'assure que le conteneur est visible */
-#tab-destinations .table-container {
-    display: block !important;
-    min-height: 200px; /* Force une hauteur minimale */
-}
+        /* On s'assure que le conteneur est visible */
+        #tab-destinations .table-container {
+            display: block !important;
+            min-height: 200px;
+            /* Force une hauteur minimale */
+        }
 
-/* On cible spécifiquement le tbody des destinations */
-#destinations-body {
-    display: table-row-group !important; /* Mode d'affichage normal pour un tbody */
-    visibility: visible !important;
-    opacity: 1 !important;
-}
+        /* On cible spécifiquement le tbody des destinations */
+        #destinations-body {
+            display: table-row-group !important;
+            /* Mode d'affichage normal pour un tbody */
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
 
-/* On cible les lignes à l'intérieur */
-#destinations-body tr {
-    display: table-row !important; /* Mode d'affichage normal pour une ligne */
-    visibility: visible !important;
-    opacity: 1 !important;
-}
+        /* On cible les lignes à l'intérieur */
+        #destinations-body tr {
+            display: table-row !important;
+            /* Mode d'affichage normal pour une ligne */
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
 
-/* On cible les cellules à l'intérieur */
-#destinations-body td {
-    display: table-cell !important; /* Mode d'affichage normal pour une cellule */
-    padding: 1rem !important; /* Force un padding pour donner de la hauteur */
-    visibility: visible !important;
-    opacity: 1 !important;
-    color: white !important; /* Force la couleur du texte */
-    border-bottom: 1px solid var(--dark-border);
-}
+        /* On cible les cellules à l'intérieur */
+        #destinations-body td {
+            display: table-cell !important;
+            /* Mode d'affichage normal pour une cellule */
+            padding: 1rem !important;
+            /* Force un padding pour donner de la hauteur */
+            visibility: visible !important;
+            opacity: 1 !important;
+            color: white !important;
+            /* Force la couleur du texte */
+            border-bottom: 1px solid var(--dark-border);
+        }
 
 
 
 
-/* ============================================
+        /* ============================================
    🔘 INTERRUPTEUR (TOGGLE SWITCH)
    ============================================ */
-.toggle-switch-popular {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 28px;
-}
+        .toggle-switch-popular {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
 
-.toggle-switch-popular input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+        .toggle-switch-popular input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #334155; /* Gris sombre */
-    transition: .4s;
-    border-radius: 28px;
-}
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #334155;
+            /* Gris sombre */
+            transition: .4s;
+            border-radius: 28px;
+        }
 
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
 
-input:checked + .slider {
-    background-color: var(--primary); /* Vert En-Bus */
-}
+        input:checked+.slider {
+            background-color: var(--primary);
+            /* Vert En-Bus */
+        }
 
-input:checked + .slider:before {
-    transform: translateX(22px);
-}
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
     </style>
 </head>
 
@@ -2245,7 +2253,7 @@ input:checked + .slider:before {
                                 </div>
                             </div>
 
-    
+
 
                             <button type="submit" class="btn btn-primary mt-4">
                                 <span>💾</span>
@@ -2284,68 +2292,68 @@ input:checked + .slider:before {
 
 
 
-            </div>
+    </div>
 
 
-            <!-- ============================================
+    <!-- ============================================
      ONGLET: GESTION DES DESTINATIONS (Version Saine)
      ============================================ -->
-<div id="tab-destinations" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title">Gestion des Destinations</h1>
-        <p class="page-subtitle">Ajoutez, modifiez ou désactivez les villes desservies.</p>
-    </div>
-
-    <!-- Formulaire d'ajout -->
-    <div class="content-card">
-        <div class="card-header">
-            <h2 class="card-title">Ajouter une nouvelle ville</h2>
+    <div id="tab-destinations" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Gestion des Destinations</h1>
+            <p class="page-subtitle">Ajoutez, modifiez ou désactivez les villes desservies.</p>
         </div>
-        <form id="destination-creation-form">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="dest-name" class="form-label">Nom de la ville</label>
-                    <input type="text" id="dest-name" class="form-control" placeholder="Ex: Kinshasa" required>
-                </div>
-                <div class="form-group">
-                    <label for="dest-country" class="form-label">Pays</label>
-                    <input type="text" id="dest-country" class="form-control" placeholder="Ex: RDC" required>
-                </div>
-                <div class="form-group">
-                    <label for="dest-coords" class="form-label">Coordonnées GPS</label>
-                    <input type="text" id="dest-coords" class="form-control" placeholder="Ex: -4.44, 15.26">
-                </div>
+
+        <!-- Formulaire d'ajout -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Ajouter une nouvelle ville</h2>
             </div>
-            <button type="submit" class="btn btn-primary mt-4"><span>➕</span> Ajouter la destination</button>
-        </form>
+            <form id="destination-creation-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="dest-name" class="form-label">Nom de la ville</label>
+                        <input type="text" id="dest-name" class="form-control" placeholder="Ex: Kinshasa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dest-country" class="form-label">Pays</label>
+                        <input type="text" id="dest-country" class="form-control" placeholder="Ex: RDC" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dest-coords" class="form-label">Coordonnées GPS</label>
+                        <input type="text" id="dest-coords" class="form-control" placeholder="Ex: -4.44, 15.26">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-4"><span>➕</span> Ajouter la destination</button>
+            </form>
+        </div>
+
+        <!-- Tableau des destinations existantes -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Villes existantes</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ville</th>
+                            <th>Pays</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="destinations-body">
+                        <!-- Contenu généré par JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- Tableau des destinations existantes -->
-    <div class="content-card">
-        <div class="card-header">
-            <h2 class="card-title">Villes existantes</h2>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ville</th>
-                        <th>Pays</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="destinations-body">
-                    <!-- Contenu généré par JavaScript -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
 
-
-        </main>
+    </main>
     </div>
     <!-- TAB: Paramètres -->
 
@@ -3031,14 +3039,14 @@ input:checked + .slider:before {
             renderTemplatesTable();
             populateRouteTemplateSelector();
         }
-function renderTemplatesTable() {
-    const tbody = document.getElementById("templates-body");
-    if (!tbody) return;
-    
-    // 1. Mettre à jour les en-têtes du tableau
-    const thead = tbody.previousElementSibling; // On trouve le thead
-    if (thead) {
-        thead.innerHTML = `
+        function renderTemplatesTable() {
+            const tbody = document.getElementById("templates-body");
+            if (!tbody) return;
+
+            // 1. Mettre à jour les en-têtes du tableau
+            const thead = tbody.previousElementSibling; // On trouve le thead
+            if (thead) {
+                thead.innerHTML = `
             <tr>
                 <th>Trajet</th>
                 <th>Compagnie</th>
@@ -3048,18 +3056,18 @@ function renderTemplatesTable() {
                 <th>Actions</th>
             </tr>
         `;
-    }
+            }
 
-    if (allTemplates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center">...</td></tr>`;
-        return;
-    }
+            if (allTemplates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center">...</td></tr>`;
+                return;
+            }
 
-    tbody.innerHTML = allTemplates.map(t => {
-        // La case est cochée si 'isPopular' est true
-        const isChecked = t.isPopular ? 'checked' : '';
+            tbody.innerHTML = allTemplates.map(t => {
+                // La case est cochée si 'isPopular' est true
+                const isChecked = t.isPopular ? 'checked' : '';
 
-        return `
+                return `
             <tr>
                 <td><strong class="font-bold">${t.from} → ${t.to}</strong></td>
                 <td>${t.company}</td>
@@ -3082,8 +3090,8 @@ function renderTemplatesTable() {
                 </td>
             </tr>
         `;
-    }).join("");
-}
+            }).join("");
+        }
 
         // Dans Admin/index.html (section <script>)
         async function handleCreateTemplate(e) {
@@ -3790,34 +3798,34 @@ function renderTemplatesTable() {
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
 
-// DANS Admin/index.html
-async function loadAllDestinations() {
-    console.log("🏙️ Appel de la route de test /api/admin/test-destinations...");
-    const data = await apiCall('/admin/test-destinations'); // ✅ On appelle la route de test
-    
-    if (data && data.success) {
-        console.log("Données reçues de la route de test :", data.destinations);
-        renderDestinationsTable(data.destinations);
-    } else {
-        console.error("Échec de l'appel à la route de test.");
-    }
-}
+        // DANS Admin/index.html
+        async function loadAllDestinations() {
+            console.log("🏙️ Appel de la route de test /api/admin/test-destinations...");
+            const data = await apiCall('/admin/test-destinations'); // ✅ On appelle la route de test
 
-function renderDestinationsTable(destinations) {
-    const tbody = document.getElementById('destinations-body');
-    if (!tbody) {
-        console.error("L'élément 'destinations-body' n'a pas été trouvé.");
-        return;
-    }
+            if (data && data.success) {
+                console.log("Données reçues de la route de test :", data.destinations);
+                renderDestinationsTable(data.destinations);
+            } else {
+                console.error("Échec de l'appel à la route de test.");
+            }
+        }
 
-    if (!destinations || destinations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">Aucune destination.</td></tr>';
-        return;
-    }
+        function renderDestinationsTable(destinations) {
+            const tbody = document.getElementById('destinations-body');
+            if (!tbody) {
+                console.error("L'élément 'destinations-body' n'a pas été trouvé.");
+                return;
+            }
 
-    let html = '';
-    destinations.forEach(dest => {
-        html += `
+            if (!destinations || destinations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">Aucune destination.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            destinations.forEach(dest => {
+                html += `
             <tr>
                 <td><strong class="font-bold">${dest.name}</strong></td>
                 <td>${dest.country}</td>
@@ -3830,39 +3838,44 @@ function renderDestinationsTable(destinations) {
                     <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})">
                         ${dest.isActive ? 'Désactiver' : 'Activer'}
                     </button>
+
+                    <!-- ✅ NOUVEAU BOUTON -->
+    <button class="btn btn-sm btn-ghost" onclick="openEditDestinationModal('${dest._id}', '${dest.name}', '${dest.country}', '${dest.coords.join(',')}')">
+        ✏️ Modifier
+    </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteDestination('${dest._id}', '${dest.name}')">
                         Supprimer
                     </button>
                 </td>
             </tr>
         `;
-    });
-    
-    tbody.innerHTML = html;
-}
+            });
 
-
-//render destination table 
-
-
-
-// DANS le <script> de Admin/index.html
-
-async function togglePopularStatus(templateId) {
-    showNotification('Mise à jour du statut...', 'info');
-    
-    const data = await apiCall(`/admin/route-templates/${templateId}/toggle-popular`, 'PATCH');
-
-    if (data && data.success) {
-        showNotification('Statut "Populaire" mis à jour !', 'success');
-        // On met à jour l'état local pour un affichage immédiat sans recharger toutes les données
-        const template = allTemplates.find(t => t._id === templateId);
-        if (template) {
-            template.isPopular = !template.isPopular;
+            tbody.innerHTML = html;
         }
-    }
-    // Pas besoin de recharger toute la table, le changement est visuel grâce au CSS
-}
+
+
+        //render destination table 
+
+
+
+        // DANS le <script> de Admin/index.html
+
+        async function togglePopularStatus(templateId) {
+            showNotification('Mise à jour du statut...', 'info');
+
+            const data = await apiCall(`/admin/route-templates/${templateId}/toggle-popular`, 'PATCH');
+
+            if (data && data.success) {
+                showNotification('Statut "Populaire" mis à jour !', 'success');
+                // On met à jour l'état local pour un affichage immédiat sans recharger toutes les données
+                const template = allTemplates.find(t => t._id === templateId);
+                if (template) {
+                    template.isPopular = !template.isPopular;
+                }
+            }
+            // Pas besoin de recharger toute la table, le changement est visuel grâce au CSS
+        }
 
 
 
@@ -3921,6 +3934,60 @@ async function togglePopularStatus(templateId) {
             }
         }
 
+
+
+        // Dans le <script> de Admin/index.html
+
+        function openEditDestinationModal(id, name, country, coords) {
+            const modalTitle = document.getElementById("modal-title");
+            const modalBody = document.getElementById("modal-body");
+
+            modalTitle.textContent = "Modifier la destination";
+            modalBody.innerHTML = `
+        <form id="destination-edit-form">
+            <div class="form-group">
+                <label class="form-label">Nom</label>
+                <input type="text" id="edit-dest-name" class="form-control" value="${name}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Pays</label>
+                <input type="text" id="edit-dest-country" class="form-control" value="${country}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Coordonnées GPS</label>
+                <input type="text" id="edit-dest-coords" class="form-control" value="${coords}" placeholder="latitude, longitude">
+            </div>
+            <div style="text-align: right;">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    `;
+
+            document.getElementById("destination-edit-form").addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('edit-dest-name').value;
+                const newCountry = document.getElementById('edit-dest-country').value;
+                const newCoordsStr = document.getElementById('edit-dest-coords').value;
+
+                const updates = { name: newName, country: newCountry };
+                if (newCoordsStr) {
+                    updates.coords = newCoordsStr.split(',').map(c => parseFloat(c.trim()));
+                }
+
+                updateDestination(id, updates);
+            });
+
+            document.getElementById("details-modal").classList.add('active');
+        }
+
+        async function updateDestination(id, updates) {
+            const data = await apiCall(`/admin/destinations/${id}`, 'PATCH', updates);
+            if (data && data.success) {
+                showNotification('Destination mise à jour !', 'success');
+                closeModal();
+                loadAllDestinations();
+            }
+        }
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
