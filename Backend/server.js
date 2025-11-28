@@ -1427,12 +1427,11 @@ app.post(
 
 // Ajouter une nouvelle destination
 // DANS server.js
-
 app.post("/api/admin/destinations", authenticateToken, [
+    // On valide uniquement les champs obligatoires
     body('name').notEmpty().withMessage("Le nom de la ville est requis."),
-    body('country').notEmpty().withMessage("Le pays est requis."),
-    // On rend le champ 'coords' complètement optionnel
-    body('coords').optional().isString()
+    body('country').notEmpty().withMessage("Le pays est requis.")
+    // ❌ ON SUPPRIME LA VALIDATION POUR 'coords'
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1440,26 +1439,27 @@ app.post("/api/admin/destinations", authenticateToken, [
     }
 
     try {
-        const { name, country, coords: coordsStr } = req.body;
+        const { name, country, coords } = req.body;
         
         let coordsArray = [];
         
-        // On ne traite la chaîne que si elle existe et n'est pas vide
-        if (coordsStr && coordsStr.trim() !== '') {
-            const parts = coordsStr.split(',').map(c => parseFloat(c.trim()));
-            // On vérifie qu'on a bien deux nombres valides
+        // On vérifie si 'coords' est une chaîne de caractères et n'est pas vide
+        if (typeof coords === 'string' && coords.trim() !== '') {
+            const parts = coords.split(',').map(c => parseFloat(c.trim()));
+            
             if (parts.length === 2 && !parts.some(isNaN)) {
                 coordsArray = parts;
             } else {
-                // Si le format est incorrect, on renvoie une erreur claire
+                // Si le format est incorrect, on renvoie une erreur
                 return res.status(400).json({ error: "Format des coordonnées GPS invalide. Utilisez 'latitude, longitude'." });
             }
         }
+        // Si 'coords' est vide, null, ou undefined, on continue avec un tableau vide.
         
         const newDestination = {
             name,
             country,
-            coords: coordsArray, // Sera un tableau de 2 nombres ou un tableau vide
+            coords: coordsArray,
             isActive: true,
             createdAt: new Date()
         };
@@ -1471,8 +1471,7 @@ app.post("/api/admin/destinations", authenticateToken, [
         console.error("❌ Erreur création destination:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
-}); 
-
+});
 
 // À placer avec les autres routes POST admin dans server.js
 
