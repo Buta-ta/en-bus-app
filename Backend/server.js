@@ -1433,6 +1433,56 @@ app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
 
 
 
+// Récupérer les détails d'un membre spécifique et son historique
+app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID de membre invalide" });
+        }
+
+        // 1. Récupérer le profil du membre
+        const member = await database.collection('crew').findOne({ _id: new ObjectId(id) });
+        
+        if (!member) {
+            return res.status(404).json({ error: "Membre du personnel introuvable" });
+        }
+
+        // 2. Récupérer les 5 derniers voyages auxquels ce membre a été assigné
+        // On cherche où son ID apparaît dans crew.drivers.id OU crew.controllers.id
+        const recentTrips = await tripsCollection.find({
+            $or: [
+                { "crew.drivers.id": id },
+                { "crew.controllers.id": id }
+            ],
+            // On ne prend que les voyages terminés pour l'historique
+            "liveStatus.status": "ARRIVED" 
+        })
+        .sort({ date: -1 }) // Trie par date la plus récente
+        .limit(5)           // Limite à 5 résultats
+        .toArray();
+
+        // 3. Formater l'historique pour le frontend
+        const history = recentTrips.map(trip => ({
+            date: trip.date,
+            route: `${trip.route.from} → ${trip.route.to}`,
+            busIdentifier: trip.busIdentifier,
+            distance: trip.route.distance || 0
+        }));
+
+        res.json({
+            success: true,
+            member,
+            history
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération détails personnel:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
