@@ -2214,44 +2214,67 @@ function setupSmartSearch() {
 /**
  * Anime le placeholder de la barre de recherche avec un effet machine à écrire.
  */
+// Fichier: app.js
+
 function animateSearchPlaceholder() {
     const searchInput = document.getElementById('smart-search-input');
     if (!searchInput) return;
 
     let suggestionIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
 
-    setInterval(() => {
-        // On récupère la langue actuelle et les suggestions correspondantes
+    // Fonction pour l'effet "machine à écrire"
+    function type(text, callback) {
+        let i = 0;
+        searchInput.placeholder = ''; // On vide le placeholder
+        const typingInterval = setInterval(() => {
+            if (i < text.length) {
+                searchInput.placeholder += text.charAt(i);
+                i++;
+            } else {
+                clearInterval(typingInterval);
+                if (callback) setTimeout(callback, 2000); // Pause de 2 secondes après avoir écrit
+            }
+        }, 100); // Vitesse d'écriture
+    }
+
+    // Fonction pour l'effet "suppression"
+    function erase(callback) {
+        const text = searchInput.placeholder;
+        let i = text.length;
+        const erasingInterval = setInterval(() => {
+            if (i > 0) {
+                searchInput.placeholder = text.substring(0, i - 1);
+                i--;
+            } else {
+                clearInterval(erasingInterval);
+                if (callback) callback();
+            }
+        }, 50); // Vitesse de suppression
+    }
+
+    // Boucle d'animation principale
+    function loop() {
         const lang = getLanguage();
-        const suggestions = (translations[lang] || translations.fr).smart_search_suggestions;
-        const currentSuggestion = suggestions[suggestionIndex];
+        const translation = translations[lang] || translations.fr;
+        const suggestions = translation.smart_search_suggestions;
+        const initialPlaceholder = translation.smart_search_placeholder;
 
-        if (isDeleting) {
-            // Phase de suppression
-            charIndex--;
-            searchInput.placeholder = currentSuggestion.substring(0, charIndex);
-            
-            if (charIndex === 0) {
-                isDeleting = false;
-                // On passe à la suggestion suivante
-                suggestionIndex = (suggestionIndex + 1) % suggestions.length;
-            }
-        } else {
-            // Phase d'écriture
-            charIndex++;
-            searchInput.placeholder = currentSuggestion.substring(0, charIndex);
+        // On alterne entre le placeholder de base et les suggestions
+        const currentText = (suggestionIndex % (suggestions.length + 1) === 0)
+            ? initialPlaceholder
+            : suggestions[(suggestionIndex - 1) % suggestions.length];
 
-            if (charIndex === currentSuggestion.length) {
-                // Une fois le mot écrit, on attend avant de supprimer
-                isDeleting = true;
-                // On peut ajouter un délai plus long ici si on veut
-            }
-        }
-    }, 150); // Vitesse de frappe (ajustez si besoin)
+        type(currentText, () => { // On écrit le texte
+            erase(() => {         // Puis on l'efface
+                suggestionIndex++;
+                loop();            // Et on recommence
+            });
+        });
+    }
+
+    // On lance la première animation
+    loop();
 }
-
 
 
 
