@@ -2612,9 +2612,6 @@ window.resetFilters = function() {
 
 // DANS app.js (remplacez votre fonction displayResults)
 function displayResults(results, isReturn = false) {
-
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
     // --- 1. Récupération des éléments DOM et des traductions ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
@@ -2622,8 +2619,10 @@ function displayResults(results, isReturn = false) {
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
     
+    // On récupère les traductions AU TOUT DÉBUT pour qu'elles soient disponibles pour toute la fonction
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     
-
     // --- 2. Application des filtres et du tri ---
     const displayedResults = applyFiltersAndSort();
     
@@ -2635,7 +2634,6 @@ function displayResults(results, isReturn = false) {
 
     // --- 4. Mise à jour du filtre par lieu de départ ---
     if (locationFilterSection && locationSelect) {
-        // On utilise 'allRouteTemplates' pour construire la liste
         const uniqueLocations = [...new Set(allRouteTemplates.map(t => t.departureLocation).filter(Boolean))];
         
         if (uniqueLocations.length > 1) {
@@ -2677,7 +2675,9 @@ function displayResults(results, isReturn = false) {
             <div class="no-results" style="text-align: center; padding: 48px;">
                 <h3>${translation.results_no_results_title}</h3>
                 <p>${translation.results_no_results_desc}</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">${translation.filter_reset_button}</button>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
+                    ${translation.filter_reset_button}
+                </button>
             </div>`;
         return;
     }
@@ -2689,7 +2689,7 @@ function displayResults(results, isReturn = false) {
         else if (route.id === cheapestId) badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
         else if (route.id === fastestId) badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
 
-        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${translation.amenity_labels[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
+        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
         
         let tripDetailsHTML = '';
