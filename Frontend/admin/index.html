@@ -1812,13 +1812,19 @@
 
 
                     <!-- ✅ NOUVEAU LIEN ANALYTICS -->
-<li class="nav-item">
-    <a href="#" class="nav-link" data-tab="analytics">
-        <span class="nav-icon">📊</span>
-        <span>Analytics Bus</span>
-    </a>
-</li>
-
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="analytics">
+                            <span class="nav-icon">📊</span>
+                            <span>Analytics Bus</span>
+                        </a>
+                    </li>
+                    <!-- ✅ NOUVEAU LIEN PERSONNEL -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="crew">
+                            <span class="nav-icon">👥</span>
+                            <span>Personnel</span>
+                        </a>
+                    </li>
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -2083,7 +2089,7 @@
                                     <th>N° Bus</th>
                                     <!-- ✅ NOUVELLE COLONNE -->
                                     <th>Disponibilité</th>
-                                    <th>Statut</th> 
+                                    <th>Statut</th>
                                     <th style="min-width: 180px">Actions</th>
                                 </tr>
                             </thead>
@@ -2429,6 +2435,76 @@
             <p style="color: var(--text-muted);">Choisissez un numéro de bus dans la liste ci-dessus</p>
         </div>
     </div>
+
+
+
+
+    <!-- ============================================
+     👥 ONGLET: GESTION DU PERSONNEL
+     ============================================ -->
+    <div id="tab-crew" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">👥 Gestion du Personnel</h1>
+            <p class="page-subtitle">Gérez les chauffeurs et contrôleurs</p>
+        </div>
+
+        <!-- Statistiques générales -->
+        <div id="crew-stats-grid" class="stats-grid">
+            <!-- Généré dynamiquement -->
+        </div>
+
+        <!-- Tableau du personnel -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Liste du personnel</h2>
+                <button class="btn btn-primary" onclick="openAddCrewModal()">
+                    <span>➕</span> Ajouter un membre
+                </button>
+            </div>
+
+            <div class="filters" style="margin-bottom: 1rem;">
+                <select id="crew-filter-role" class="form-control" style="max-width: 200px;" onchange="filterCrew()">
+                    <option value="all">Tous les postes</option>
+                    <option value="Chauffeur">Chauffeurs</option>
+                    <option value="Contrôleur">Contrôleurs</option>
+                </select>
+
+                <select id="crew-filter-status" class="form-control" style="max-width: 200px;" onchange="filterCrew()">
+                    <option value="all">Tous les statuts</option>
+                    <option value="Actif">Actif</option>
+                    <option value="En congé">En congé</option>
+                    <option value="Inactif">Inactif</option>
+                </select>
+
+                <input type="text" id="crew-search" class="form-control search-input"
+                    placeholder="🔍 Rechercher par nom ou matricule..." oninput="filterCrew()" style="flex: 1;">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom</th>
+                            <th>Poste</th>
+                            <th>Téléphone</th>
+                            <th>Km</th>
+                            <th>Trajets</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crew-body">
+                        <!-- Généré dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+
+
     </main>
     </div>
     <!-- TAB: Paramètres -->
@@ -3348,29 +3424,29 @@
         // DANS admin/index.html, REMPLACEZ votre fonction renderTripsTable par celle-ci
 
         // ============================================
-// 🎨 AFFICHAGE DU BADGE DE STATUT (pour le tableau)
-// ============================================
-function getLiveStatusBadge(liveStatus) {
-    if (!liveStatus || !liveStatus.status) {
-        return '<span class="badge badge-gray">⚪ Non défini</span>';
-    }
+        // 🎨 AFFICHAGE DU BADGE DE STATUT (pour le tableau)
+        // ============================================
+        function getLiveStatusBadge(liveStatus) {
+            if (!liveStatus || !liveStatus.status) {
+                return '<span class="badge badge-gray">⚪ Non défini</span>';
+            }
 
-    const statusConfig = {
-        'ON_TIME': { icon: '🟢', text: 'À l\'heure', class: 'badge-success' },
-        'DELAYED': { icon: '🟠', text: `Retard ${liveStatus.delayMinutes || 0}min`, class: 'badge-warning' },
-        'CANCELLED': { icon: '🔴', text: 'Annulé', class: 'badge-danger' },
-        'ARRIVED': { icon: '🏁', text: 'Arrivé', class: 'badge-gray' },
-        'MAINTENANCE': { icon: '🔧', text: 'Maintenance', class: 'badge-warning' }
-    };
+            const statusConfig = {
+                'ON_TIME': { icon: '🟢', text: 'À l\'heure', class: 'badge-success' },
+                'DELAYED': { icon: '🟠', text: `Retard ${liveStatus.delayMinutes || 0}min`, class: 'badge-warning' },
+                'CANCELLED': { icon: '🔴', text: 'Annulé', class: 'badge-danger' },
+                'ARRIVED': { icon: '🏁', text: 'Arrivé', class: 'badge-gray' },
+                'MAINTENANCE': { icon: '🔧', text: 'Maintenance', class: 'badge-warning' }
+            };
 
-    const config = statusConfig[liveStatus.status] || { 
-        icon: '❓', 
-        text: liveStatus.status, 
-        class: 'badge-gray' 
-    };
+            const config = statusConfig[liveStatus.status] || {
+                icon: '❓',
+                text: liveStatus.status,
+                class: 'badge-gray'
+            };
 
-    return `<span class="badge ${config.class}">${config.icon} ${config.text}</span>`;
-}
+            return `<span class="badge ${config.class}">${config.icon} ${config.text}</span>`;
+        }
 
         function renderTripsTable() {
             const tbody = document.getElementById("trips-body");
@@ -3635,12 +3711,12 @@ function getLiveStatusBadge(liveStatus) {
 
 
 
-function openStatusModal(tripId, tripName) {
-    const modalTitle = document.getElementById("modal-title");
-    const modalBody = document.getElementById("modal-body");
+        function openStatusModal(tripId, tripName) {
+            const modalTitle = document.getElementById("modal-title");
+            const modalBody = document.getElementById("modal-body");
 
-    modalTitle.textContent = "Mettre à jour le statut du voyage";
-    modalBody.innerHTML = `
+            modalTitle.textContent = "Mettre à jour le statut du voyage";
+            modalBody.innerHTML = `
         <p>Voyage : <strong>${tripName}</strong></p>
         <form id="status-form">
             <div class="form-group" style="margin-top: 20px;">
@@ -3670,67 +3746,67 @@ function openStatusModal(tripId, tripName) {
         </form>
     `;
 
-    const statusSelect = document.getElementById('status-select');
-    const delayDetails = document.getElementById('delay-details');
-    const delayMinutesGroup = document.getElementById('delay-minutes-group');
-    const delayReasonLabel = document.querySelector('#delay-reason').parentElement.querySelector('label');
+            const statusSelect = document.getElementById('status-select');
+            const delayDetails = document.getElementById('delay-details');
+            const delayMinutesGroup = document.getElementById('delay-minutes-group');
+            const delayReasonLabel = document.querySelector('#delay-reason').parentElement.querySelector('label');
 
-    statusSelect.onchange = () => {
-        const selectedStatus = statusSelect.value;
-        
-        // Afficher le bloc de détails pour DELAYED, CANCELLED ou MAINTENANCE
-        if (selectedStatus === 'DELAYED') {
-            delayDetails.style.display = 'block';
-            delayMinutesGroup.style.display = 'block';
-            delayReasonLabel.textContent = 'Raison (optionnel)';
-        } else if (selectedStatus === 'CANCELLED' || selectedStatus === 'MAINTENANCE') {
-            delayDetails.style.display = 'block';
-            delayMinutesGroup.style.display = 'none';
-            
-            if (selectedStatus === 'CANCELLED') {
-                delayReasonLabel.textContent = 'Raison de l\'annulation *';
-            } else {
-                delayReasonLabel.textContent = 'Raison de la maintenance *';
+            statusSelect.onchange = () => {
+                const selectedStatus = statusSelect.value;
+
+                // Afficher le bloc de détails pour DELAYED, CANCELLED ou MAINTENANCE
+                if (selectedStatus === 'DELAYED') {
+                    delayDetails.style.display = 'block';
+                    delayMinutesGroup.style.display = 'block';
+                    delayReasonLabel.textContent = 'Raison (optionnel)';
+                } else if (selectedStatus === 'CANCELLED' || selectedStatus === 'MAINTENANCE') {
+                    delayDetails.style.display = 'block';
+                    delayMinutesGroup.style.display = 'none';
+
+                    if (selectedStatus === 'CANCELLED') {
+                        delayReasonLabel.textContent = 'Raison de l\'annulation *';
+                    } else {
+                        delayReasonLabel.textContent = 'Raison de la maintenance *';
+                    }
+                } else {
+                    delayDetails.style.display = 'none';
+                }
+            };
+
+            document.getElementById("status-form").addEventListener('submit', (e) => {
+                e.preventDefault();
+                const status = statusSelect.value;
+                const delayMinutes = document.getElementById('delay-minutes').value;
+                const reason = document.getElementById('delay-reason').value;
+
+                // Pour un voyage annulé ou en maintenance, la raison devient obligatoire
+                if ((status === 'CANCELLED' || status === 'MAINTENANCE') && !reason) {
+                    const message = status === 'CANCELLED'
+                        ? 'Veuillez spécifier la raison de l\'annulation.'
+                        : 'Veuillez spécifier la raison de la maintenance.';
+                    showNotification(message, 'warning');
+                    return;
+                }
+
+                updateTripStatus(tripId, status, delayMinutes, reason);
+            });
+
+            document.getElementById("details-modal").classList.add('active');
+        }
+
+        async function updateTripStatus(tripId, status, delayMinutes, reason) {
+            showNotification('Mise à jour du statut en cours...', 'info');
+
+            const body = { status, delayMinutes: parseInt(delayMinutes), reason };
+
+            const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
+
+            if (data && data.success) {
+                showNotification(data.message, 'success');
+                closeModal();
+                loadAllTrips(); // ✅ Recharger le tableau pour voir le nouveau statut
             }
-        } else {
-            delayDetails.style.display = 'none';
         }
-    };
-
-    document.getElementById("status-form").addEventListener('submit', (e) => {
-        e.preventDefault();
-        const status = statusSelect.value;
-        const delayMinutes = document.getElementById('delay-minutes').value;
-        const reason = document.getElementById('delay-reason').value;
-
-        // Pour un voyage annulé ou en maintenance, la raison devient obligatoire
-        if ((status === 'CANCELLED' || status === 'MAINTENANCE') && !reason) {
-            const message = status === 'CANCELLED' 
-                ? 'Veuillez spécifier la raison de l\'annulation.' 
-                : 'Veuillez spécifier la raison de la maintenance.';
-            showNotification(message, 'warning');
-            return;
-        }
-
-        updateTripStatus(tripId, status, delayMinutes, reason);
-    });
-
-    document.getElementById("details-modal").classList.add('active');
-}
-
-async function updateTripStatus(tripId, status, delayMinutes, reason) {
-    showNotification('Mise à jour du statut en cours...', 'info');
-
-    const body = { status, delayMinutes: parseInt(delayMinutes), reason };
-
-    const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
-
-    if (data && data.success) {
-        showNotification(data.message, 'success');
-        closeModal();
-        loadAllTrips(); // ✅ Recharger le tableau pour voir le nouveau statut
-    }
-}
         // ============================================
         // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE
         // ============================================
@@ -3944,98 +4020,98 @@ async function updateTripStatus(tripId, status, delayMinutes, reason) {
 
 
         // ============================================
-// 📊 ANALYTICS BUS - FONCTIONS
-// ============================================
+        // 📊 ANALYTICS BUS - FONCTIONS
+        // ============================================
 
-/**
- * Charge la liste de tous les bus dans le select
- */
-async function loadBusList() {
-    const select = document.getElementById('analytics-bus-select');
-    
-    if (!select) {
-        console.error("❌ Élément 'analytics-bus-select' introuvable");
-        return;
-    }
+        /**
+         * Charge la liste de tous les bus dans le select
+         */
+        async function loadBusList() {
+            const select = document.getElementById('analytics-bus-select');
 
-    try {
-        const data = await apiCall('/admin/analytics/buses');
-        
-        if (!data || !data.success) {
-            showNotification('Impossible de charger la liste des bus', 'error');
-            return;
+            if (!select) {
+                console.error("❌ Élément 'analytics-bus-select' introuvable");
+                return;
+            }
+
+            try {
+                const data = await apiCall('/admin/analytics/buses');
+
+                if (!data || !data.success) {
+                    showNotification('Impossible de charger la liste des bus', 'error');
+                    return;
+                }
+
+                // Remplir le select
+                select.innerHTML = '<option value="">-- Choisir un bus --</option>';
+
+                data.buses.forEach(busId => {
+                    select.innerHTML += `<option value="${busId}">${busId}</option>`;
+                });
+
+                console.log(`✅ ${data.buses.length} bus chargés dans le sélecteur`);
+
+            } catch (error) {
+                console.error('❌ Erreur chargement liste des bus:', error);
+                showNotification('Erreur lors du chargement des bus', 'error');
+            }
         }
 
-        // Remplir le select
-        select.innerHTML = '<option value="">-- Choisir un bus --</option>';
-        
-        data.buses.forEach(busId => {
-            select.innerHTML += `<option value="${busId}">${busId}</option>`;
-        });
+        /**
+         * Charge et affiche les statistiques d'un bus
+         */
+        async function loadBusAnalytics() {
+            const select = document.getElementById('analytics-bus-select');
+            const busId = select.value;
 
-        console.log(`✅ ${data.buses.length} bus chargés dans le sélecteur`);
+            if (!busId) {
+                showNotification('Veuillez sélectionner un bus', 'warning');
+                return;
+            }
 
-    } catch (error) {
-        console.error('❌ Erreur chargement liste des bus:', error);
-        showNotification('Erreur lors du chargement des bus', 'error');
-    }
-}
+            console.log(`📊 Chargement des analytics pour le bus: ${busId}`);
 
-/**
- * Charge et affiche les statistiques d'un bus
- */
-async function loadBusAnalytics() {
-    const select = document.getElementById('analytics-bus-select');
-    const busId = select.value;
+            // Afficher un loader
+            showNotification('Chargement des statistiques...', 'info');
 
-    if (!busId) {
-        showNotification('Veuillez sélectionner un bus', 'warning');
-        return;
-    }
+            try {
+                const data = await apiCall(`/admin/analytics/bus/${busId}`);
 
-    console.log(`📊 Chargement des analytics pour le bus: ${busId}`);
+                if (!data || !data.success) {
+                    showNotification('Impossible de charger les statistiques', 'error');
+                    return;
+                }
 
-    // Afficher un loader
-    showNotification('Chargement des statistiques...', 'info');
+                console.log('✅ Données reçues:', data);
 
-    try {
-        const data = await apiCall(`/admin/analytics/bus/${busId}`);
+                // Afficher les statistiques
+                displayBusStats(data.stats, busId);
+                displayBusTrips(data.trips);
 
-        if (!data || !data.success) {
-            showNotification('Impossible de charger les statistiques', 'error');
-            return;
+                // Masquer le message vide et afficher les stats
+                document.getElementById('analytics-empty-state').style.display = 'none';
+                document.getElementById('analytics-stats-container').style.display = 'block';
+
+                showNotification(`Statistiques chargées pour le bus ${busId}`, 'success');
+
+            } catch (error) {
+                console.error('❌ Erreur chargement analytics:', error);
+                showNotification('Erreur lors du chargement des statistiques', 'error');
+            }
         }
 
-        console.log('✅ Données reçues:', data);
+        /**
+         * Affiche les cartes de statistiques
+         */
+        function displayBusStats(stats, busId) {
+            const statsGrid = document.getElementById('analytics-stats-grid');
 
-        // Afficher les statistiques
-        displayBusStats(data.stats, busId);
-        displayBusTrips(data.trips);
+            if (!statsGrid) {
+                console.error("❌ Élément 'analytics-stats-grid' introuvable");
+                return;
+            }
 
-        // Masquer le message vide et afficher les stats
-        document.getElementById('analytics-empty-state').style.display = 'none';
-        document.getElementById('analytics-stats-container').style.display = 'block';
-
-        showNotification(`Statistiques chargées pour le bus ${busId}`, 'success');
-
-    } catch (error) {
-        console.error('❌ Erreur chargement analytics:', error);
-        showNotification('Erreur lors du chargement des statistiques', 'error');
-    }
-}
-
-/**
- * Affiche les cartes de statistiques
- */
-function displayBusStats(stats, busId) {
-    const statsGrid = document.getElementById('analytics-stats-grid');
-
-    if (!statsGrid) {
-        console.error("❌ Élément 'analytics-stats-grid' introuvable");
-        return;
-    }
-
-    statsGrid.innerHTML = `
+            statsGrid.innerHTML = `
         <div class="stat-card">
             <div class="stat-header">
                 <span class="stat-label">Voyages effectués</span>
@@ -4077,29 +4153,29 @@ function displayBusStats(stats, busId) {
             </div>
         </div>
     `;
-}
+        }
 
-/**
- * Affiche le tableau détaillé des voyages
- */
-function displayBusTrips(trips) {
-    const tbody = document.getElementById('analytics-trips-body');
+        /**
+         * Affiche le tableau détaillé des voyages
+         */
+        function displayBusTrips(trips) {
+            const tbody = document.getElementById('analytics-trips-body');
 
-    if (!tbody) {
-        console.error("❌ Élément 'analytics-trips-body' introuvable");
-        return;
-    }
+            if (!tbody) {
+                console.error("❌ Élément 'analytics-trips-body' introuvable");
+                return;
+            }
 
-    if (trips.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun voyage trouvé</td></tr>';
-        return;
-    }
+            if (trips.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun voyage trouvé</td></tr>';
+                return;
+            }
 
-    tbody.innerHTML = trips.map(trip => {
-        const occupancyClass = trip.occupancyRate >= 80 ? 'success' : trip.occupancyRate >= 50 ? 'warning' : 'danger';
-        const statusBadge = getLiveStatusBadge({ status: trip.finalStatus });
+            tbody.innerHTML = trips.map(trip => {
+                const occupancyClass = trip.occupancyRate >= 80 ? 'success' : trip.occupancyRate >= 50 ? 'warning' : 'danger';
+                const statusBadge = getLiveStatusBadge({ status: trip.finalStatus });
 
-        return `
+                return `
             <tr>
                 <td class="font-bold">${new Date(trip.date).toLocaleDateString('fr-FR')}</td>
                 <td>${trip.route}</td>
@@ -4115,8 +4191,363 @@ function displayBusTrips(trips) {
                 <td>${statusBadge}</td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
+
+
+
+        // ============================================
+        // 👥 GESTION DU PERSONNEL - FONCTIONS
+        // ============================================
+
+        let allCrewMembers = [];
+
+        /**
+         * Charge tous les membres du personnel
+         */
+        async function loadAllCrew() {
+            try {
+                const data = await apiCall('/admin/crew');
+
+                if (!data || !data.success) {
+                    showNotification('Impossible de charger le personnel', 'error');
+                    return;
+                }
+
+                allCrewMembers = data.crew;
+                displayCrewStats(data.stats);
+                filterCrew(); // Affiche le tableau
+
+                console.log(`✅ ${allCrewMembers.length} membres du personnel chargés`);
+
+            } catch (error) {
+                console.error('❌ Erreur chargement personnel:', error);
+                showNotification('Erreur lors du chargement du personnel', 'error');
+            }
+        }
+
+        /**
+         * Affiche les statistiques générales
+         */
+        function displayCrewStats(stats) {
+            const statsGrid = document.getElementById('crew-stats-grid');
+
+            statsGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Total</span>
+                <div class="stat-icon primary">👥</div>
+            </div>
+            <div class="stat-value">${stats.total}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Chauffeurs</span>
+                <div class="stat-icon success">🚗</div>
+            </div>
+            <div class="stat-value">${stats.drivers}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Contrôleurs</span>
+                <div class="stat-icon warning">🎫</div>
+            </div>
+            <div class="stat-value">${stats.controllers}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Actifs</span>
+                <div class="stat-icon success">✅</div>
+            </div>
+            <div class="stat-value">${stats.active}</div>
+        </div>
+    `;
+        }
+
+        /**
+         * Filtre et affiche le tableau du personnel
+         */
+        function filterCrew() {
+            let filtered = [...allCrewMembers];
+
+            // Filtre par poste
+            const roleFilter = document.getElementById('crew-filter-role').value;
+            if (roleFilter !== 'all') {
+                filtered = filtered.filter(m => m.role === roleFilter);
+            }
+
+            // Filtre par statut
+            const statusFilter = document.getElementById('crew-filter-status').value;
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(m => m.status === statusFilter);
+            }
+
+            // Filtre par recherche
+            const searchTerm = document.getElementById('crew-search').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(m =>
+                    m.name.toLowerCase().includes(searchTerm) ||
+                    m.matricule.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            renderCrewTable(filtered);
+        }
+
+        /**
+         * Affiche le tableau du personnel
+         */
+        function renderCrewTable(crewMembers) {
+            const tbody = document.getElementById('crew-body');
+
+            if (!tbody) {
+                console.error("❌ Élément 'crew-body' introuvable");
+                return;
+            }
+
+            if (crewMembers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = crewMembers.map(member => {
+                const statusBadges = {
+                    'Actif': '<span class="badge badge-success">✅ Actif</span>',
+                    'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
+                    'Inactif': '<span class="badge badge-gray">❌ Inactif</span>'
+                };
+
+                const roleIcons = {
+                    'Chauffeur': '🚗',
+                    'Contrôleur': '🎫'
+                };
+
+                return `
+            <tr>
+                <td class="font-mono font-bold" style="color: var(--primary);">${member.matricule}</td>
+                <td><strong>${member.name}</strong></td>
+                <td>${roleIcons[member.role] || ''} ${member.role}</td>
+                <td class="text-sm">${member.phone}</td>
+                <td class="font-bold">${formatPrice(member.totalKm || 0)} km</td>
+                <td>${member.totalTrips || 0}</td>
+                <td>${statusBadges[member.status] || member.status}</td>
+                <td class="actions-cell">
+                    <button class="btn btn-icon btn-ghost" onclick="viewCrewDetails('${member._id}')" title="Voir détails">👁️</button>
+                    <button class="btn btn-icon btn-ghost" onclick="openEditCrewModal('${member._id}')" title="Modifier">✏️</button>
+                    <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}', '${member.name}')" title="Désactiver">🗑️</button>
+                </td>
+            </tr>
+        `;
+            }).join('');
+        }
+
+        /**
+         * Ouvre la modale d'ajout d'un membre
+         */
+        function openAddCrewModal() {
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = "Ajouter un membre du personnel";
+            modalBody.innerHTML = `
+        <form id="add-crew-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="crew-name" class="form-label">Nom complet *</label>
+                    <input type="text" id="crew-name" class="form-control" placeholder="Ex: Jean Mobembo" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="crew-role" class="form-label">Poste *</label>
+                    <select id="crew-role" class="form-control" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="Chauffeur">🚗 Chauffeur</option>
+                        <option value="Contrôleur">🎫 Contrôleur</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="crew-phone" class="form-label">Téléphone *</label>
+                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="crew-status" class="form-label">Statut *</label>
+                    <select id="crew-status" class="form-control" required>
+                        <option value="Actif">✅ Actif</option>
+                        <option value="En congé">🏖️ En congé</option>
+                        <option value="Inactif">❌ Inactif</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(115, 215, 0, 0.1); border-radius: 8px;">
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
+                    💡 <strong>Info :</strong> Le matricule sera généré automatiquement (ex: CH-001, CT-001)
+                </p>
+            </div>
+
+            <div style="text-align: right; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">💾 Ajouter</button>
+            </div>
+        </form>
+    `;
+
+            document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
+            document.getElementById('details-modal').classList.add('active');
+        }
+
+        /**
+         * Gère l'ajout d'un membre
+         */
+        async function handleAddCrew(e) {
+            e.preventDefault();
+
+            const newMember = {
+                name: document.getElementById('crew-name').value.trim(),
+                role: document.getElementById('crew-role').value,
+                phone: document.getElementById('crew-phone').value.trim(),
+                status: document.getElementById('crew-status').value
+            };
+
+            try {
+                const data = await apiCall('/admin/crew', 'POST', newMember);
+
+                if (data && data.success) {
+                    showNotification(data.message, 'success');
+                    closeModal();
+                    loadAllCrew(); // Recharger la liste
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur ajout membre:', error);
+                showNotification('Erreur lors de l\'ajout', 'error');
+            }
+        }
+
+        /**
+         * Ouvre la modale de modification
+         */
+        function openEditCrewModal(memberId) {
+            const member = allCrewMembers.find(m => m._id === memberId);
+            if (!member) return;
+
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = `Modifier - ${member.name}`;
+            modalBody.innerHTML = `
+        <form id="edit-crew-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Matricule</label>
+                    <input type="text" class="form-control" value="${member.matricule}" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Poste</label>
+                    <input type="text" class="form-control" value="${member.role}" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-crew-name" class="form-label">Nom complet *</label>
+                    <input type="text" id="edit-crew-name" class="form-control" value="${member.name}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-crew-phone" class="form-label">Téléphone *</label>
+                    <input type="tel" id="edit-crew-phone" class="form-control" value="${member.phone}" required>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="edit-crew-status" class="form-label">Statut *</label>
+                    <select id="edit-crew-status" class="form-control" required>
+                        <option value="Actif" ${member.status === 'Actif' ? 'selected' : ''}>✅ Actif</option>
+                        <option value="En congé" ${member.status === 'En congé' ? 'selected' : ''}>🏖️ En congé</option>
+                        <option value="Inactif" ${member.status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            </div>
+        </form>
+    `;
+
+            document.getElementById('edit-crew-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleEditCrew(memberId);
+            });
+
+            document.getElementById('details-modal').classList.add('active');
+        }
+
+        /**
+         * Gère la modification d'un membre
+         */
+        async function handleEditCrew(memberId) {
+            const updates = {
+                name: document.getElementById('edit-crew-name').value.trim(),
+                phone: document.getElementById('edit-crew-phone').value.trim(),
+                status: document.getElementById('edit-crew-status').value
+            };
+
+            try {
+                const data = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
+
+                if (data && data.success) {
+                    showNotification(data.message, 'success');
+                    closeModal();
+                    loadAllCrew();
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur modification:', error);
+                showNotification('Erreur lors de la modification', 'error');
+            }
+        }
+
+        /**
+         * Désactive un membre (suppression douce)
+         */
+        async function deactivateCrewMember(memberId, memberName) {
+            const confirmed = await showAdminConfirm({
+                title: 'Désactiver ce membre ?',
+                message: `Voulez-vous vraiment désactiver ${memberName} ?\n\nLe membre passera au statut "Inactif".`,
+                icon: '🗑️',
+                iconClass: 'warning',
+                confirmText: 'Oui, désactiver',
+                confirmClass: 'btn-danger'
+            });
+
+            if (!confirmed) return;
+
+            try {
+                const data = await apiCall(`/admin/crew/${memberId}`, 'DELETE');
+
+                if (data && data.success) {
+                    showNotification(data.message, 'success');
+                    loadAllCrew();
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur désactivation:', error);
+                showNotification('Erreur lors de la désactivation', 'error');
+            }
+        }
+
+        /**
+         * Affiche les détails d'un membre (TODO)
+         */
+        function viewCrewDetails(memberId) {
+            showNotification('Fonctionnalité en cours de développement', 'info');
+        }
 
 
 
@@ -4368,10 +4799,14 @@ function displayBusTrips(trips) {
                     loadAllDestinations();
                     break;
 
-                    // ✅ NOUVEAU CAS POUR ANALYTICS
-    case 'analytics':
-        loadBusList();
-        break;
+                // ✅ NOUVEAU CAS POUR ANALYTICS
+                case 'analytics':
+                    loadBusList();
+                    break;
+
+                case 'crew':
+                    loadAllCrew();
+                    break;
 
                 default:
                     // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
