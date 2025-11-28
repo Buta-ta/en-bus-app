@@ -2191,6 +2191,12 @@
                                         required />
                                 </div>
 
+                                <!-- ✅ NOUVEAU CHAMP DISTANCE -->
+<div class="form-group">
+    <label for="template-distance" class="form-label">Distance (km)</label>
+    <input type="number" id="template-distance" class="form-control" placeholder="Ex: 510" required />
+</div>
+
                                 <div class="form-group">
                                     <label for="template-departure" class="form-label">Heure de départ</label>
                                     <input type="text" id="template-departure" class="form-control" placeholder="08:00"
@@ -3236,6 +3242,7 @@
                 <th>Trajet</th>
                 <th>Compagnie</th>
                 <th>Prix</th>
+                <th>Distance</th>
                 <th>Horaires</th>
                 <th>Populaire</th> <!-- ✅ NOUVELLE COLONNE -->
                 <th>Actions</th>
@@ -3257,6 +3264,7 @@
                 <td><strong class="font-bold">${t.from} → ${t.to}</strong></td>
                 <td>${t.company}</td>
                 <td class="font-bold">${t.price} FCFA</td>
+                <td><strong>${t.distance || 0} km</strong></td> <!-- ✅ AJOUTER ICI -->
                 <td class="text-sm"><span>🕐 ${t.departure} → ${t.arrival}</span></td>
                 
                 <!-- ✅ NOUVELLE CELLULE AVEC L'INTERRUPTEUR -->
@@ -3320,6 +3328,7 @@
 
                 company: document.getElementById("template-company").value.trim(),
                 price: parseInt(document.getElementById("template-price").value),
+                distance: parseInt(document.getElementById("template-distance").value), // ✅ NOUVELLE LIGNE
                 departure: document.getElementById("template-departure").value,
                 arrival: document.getElementById("template-arrival").value,
                 amenities: amenities,

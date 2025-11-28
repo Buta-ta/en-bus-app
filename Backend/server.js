@@ -2170,7 +2170,58 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         const result = await tripsCollection.updateOne({ _id: new ObjectId(tripId) }, { $set: { liveStatus } });
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Voyage non trouvé." });
+
         }
+
+
+
+         // ==========================================================
+        // ✅ NOUVEAU BLOC : MISE À JOUR DES STATS DU PERSONNEL
+        // ==========================================================
+        if (status === 'ARRIVED') {
+            console.log('🏁 Voyage arrivé ! Tentative de mise à jour des stats du personnel...');
+            
+            // 1. Récupérer les infos complètes du voyage
+            const trip = await tripsCollection.findOne({ _id: new ObjectId(tripId) });
+            
+            // 2. Vérifier si on a les infos nécessaires
+            const distance = trip?.route?.distance;
+            const crew = trip?.crew;
+
+            if (distance && crew) {
+                // On rassemble tous les membres d'équipage (chauffeurs et contrôleurs)
+                const crewMembers = [
+                    ...(crew.drivers || []), 
+                    ...(crew.controllers || [])
+                ];
+
+                if (crewMembers.length > 0) {
+                    // On ne met à jour que les membres qui ont un ID valide
+                    const crewIds = crewMembers
+                        .map(member => member.id)
+                        .filter(id => id && ObjectId.isValid(id)) // Filtre les ID nuls ou invalides
+                        .map(id => new ObjectId(id));
+                    
+                    // 3. Mettre à jour tous les membres en une seule requête
+                    if (crewIds.length > 0) {
+                        await database.collection('crew').updateMany(
+                            { _id: { $in: crewIds } },
+                            { 
+                                $inc: { 
+                                    totalTrips: 1, 
+                                    totalKm: distance 
+                                } 
+                            }
+                        );
+                        
+                        console.log(`✅ Stats mises à jour pour ${crewIds.length} membre(s) d'équipage.`);
+                    }
+                }
+            } else {
+                console.log('⚠️ Pas de distance ou d\'équipage, mise à jour des stats ignorée.');
+            }
+        }
+
         console.log(`📢 Statut du voyage ${tripId} mis à jour : ${status}`);
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
     } catch (error) {
