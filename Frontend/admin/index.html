@@ -3479,24 +3479,30 @@ function getCrewDisplay(crew) {
 
     let html = '';
 
-    // Afficher le chauffeur
-    if (crew.driver && crew.driver.name) {
-        html += `
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <span style="font-size: 1rem;">🚗</span>
-                <span style="font-size: 0.875rem; font-weight: 600;">${crew.driver.name}</span>
-            </div>
-        `;
+    // Afficher les chauffeurs
+    if (crew.drivers && crew.drivers.length > 0) {
+        html += '<div style="margin-bottom: 6px;">';
+        crew.drivers.forEach((driver, index) => {
+            html += `
+                <div style="display: flex; align-items: center; gap: 6px; ${index > 0 ? 'margin-top: 4px;' : ''}">
+                    <span style="font-size: 1rem;">🚗</span>
+                    <span style="font-size: 0.875rem; font-weight: 600;">${driver.name}</span>
+                </div>
+            `;
+        });
+        html += '</div>';
     }
 
-    // Afficher le contrôleur
-    if (crew.controller && crew.controller.name) {
-        html += `
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 1rem;">🎫</span>
-                <span style="font-size: 0.875rem; font-weight: 600;">${crew.controller.name}</span>
-            </div>
-        `;
+    // Afficher les contrôleurs
+    if (crew.controllers && crew.controllers.length > 0) {
+        crew.controllers.forEach((controller, index) => {
+            html += `
+                <div style="display: flex; align-items: center; gap: 6px; ${index > 0 ? 'margin-top: 4px;' : ''}">
+                    <span style="font-size: 1rem;">🎫</span>
+                    <span style="font-size: 0.875rem; font-weight: 600;">${controller.name}</span>
+                </div>
+            `;
+        });
     }
 
     // Si aucun équipage assigné
@@ -3506,7 +3512,6 @@ function getCrewDisplay(crew) {
 
     return html;
 }
-
 
 
 
@@ -3657,19 +3662,22 @@ async function handleCreateTrips(e) {
 
     // 5. Construction de l'objet de données pour l'API
     const tripData = {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek: daysToSend,
-        seatCount,
-        busIdentifier: busIdentifier || null,
-        highlightBadge: highlightBadge || null,
-        driverId: driverId,
-        driverName: driverName,
-        controllerId: controllerId,
-        controllerName: controllerName
-    };
-
+    routeId,
+    startDate,
+    endDate,
+    daysOfWeek: daysToSend,
+    seatCount,
+    busIdentifier: busIdentifier || null,
+    highlightBadge: highlightBadge || null,
+    driver1Id: driver1Id,
+    driver1Name: driver1Name,
+    driver2Id: driver2Id,
+    driver2Name: driver2Name,
+    controller1Id: controller1Id,
+    controller1Name: controller1Name,
+    controller2Id: controller2Id,
+    controller2Name: controller2Name
+};
     console.log("📤 Envoi des données de création de voyage :", tripData);
 
     // 6. Appel API

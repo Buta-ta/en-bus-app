@@ -1621,7 +1621,6 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 });
 
 
-
 app.post(
   "/api/admin/trips",
   authenticateToken,
@@ -1649,10 +1648,14 @@ app.post(
         seatCount,
         busIdentifier,
         highlightBadge,
-         driverId,           // ✅ NOUVEAU
-    driverName,         // ✅ NOUVEAU
-    controllerId,       // ✅ NOUVEAU
-    controllerName
+        driver1Id,
+        driver1Name,
+        driver2Id,
+        driver2Name,
+        controller1Id,
+        controller1Name,
+        controller2Id,
+        controller2Name
       } = req.body;
 
       if (!ObjectId.isValid(routeId)) {
@@ -1671,31 +1674,37 @@ app.post(
       const lastDate = new Date(endDate);
       const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       
+      // ✅ CONSTRUCTION DE L'ÉQUIPAGE (AVANT LA BOUCLE)
+      const drivers = [];
+      if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
+      if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
+
+      const controllers = [];
+      if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
+      if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
+
+      // ✅ BOUCLE DE CRÉATION DES VOYAGES
       while (currentDate <= lastDate) {
         const dayName = dayMap[currentDate.getUTCDay()];
+        
         if (daysOfWeek.includes(dayName)) {
           const seats = Array.from({ length: seatCount }, (_, i) => ({
             number: i + 1,
             status: "available",
           }));
+
           newTrips.push({
-    date: currentDate.toISOString().split("T")[0],
-    route: routeTemplate,
-    seats: seats,
-    busIdentifier: busIdentifier || null,
-    highlightBadge: highlightBadge || null,
-    crew: {
-        driver: driverId ? { 
-            id: driverId, 
-            name: driverName 
-        } : null,
-        controller: controllerId ? { 
-            id: controllerId, 
-            name: controllerName 
-        } : null
-    },
-    createdAt: new Date(),
-});
+            date: currentDate.toISOString().split("T")[0],
+            route: routeTemplate,
+            seats: seats,
+            busIdentifier: busIdentifier || null,
+            highlightBadge: highlightBadge || null,
+            crew: {
+                drivers: drivers.length > 0 ? drivers : null,
+                controllers: controllers.length > 0 ? controllers : null
+            },
+            createdAt: new Date(),
+          });
         }
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
