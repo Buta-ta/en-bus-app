@@ -2276,7 +2276,6 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 // --- E. Routes de suppression (DELETE) ---
 
 app.delete("/api/admin/route-templates/:id", authenticateToken, async (req, res) => {
