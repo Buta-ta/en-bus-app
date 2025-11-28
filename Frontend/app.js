@@ -2732,7 +2732,7 @@ function displayResults(results, isReturn = false) {
                         ${tripDetailsHTML}
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
-                            <div class="bus-seats">${translation.seats_available(route.availableSeats)}</div>
+                            <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
                         </div>
                     </div>
                     <div class="bus-card-pricing">
