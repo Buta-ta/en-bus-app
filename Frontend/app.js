@@ -1647,90 +1647,76 @@ const ticketHTML = `
 
 
 // DANS app.js
-
 async function initInteractiveMap() {
     const mapContainer = document.getElementById('interactive-map');
-    // Si l'élément n'existe pas ou si la carte est déjà initialisée, on s'arrête.
-    if (!mapContainer || mapContainer._leaflet_id) {
-        return;
-    }
+    if (!mapContainer || mapContainer._leaflet_id) return;
 
     console.log("🗺️ Initialisation de la carte interactive...");
-
-    // Créer la carte, centrée sur l'Afrique
     const map = L.map('interactive-map').setView([2.8, 17.3], 4);
-
-    // Ajouter le fond de carte sombre
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: 'CARTO & OpenStreetMap',
     }).addTo(map);
 
     try {
-        // On appelle en parallèle nos deux API :
-        // 1. Les trajets populaires pour savoir QUOI dessiner.
-        // 2. Toutes les destinations pour connaître les coordonnées de chaque ville.
-        const [popularResponse, destinationsResponse] = await Promise.all([
+        const [popularRes, allDestinationsRes] = await Promise.all([
             fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`),
             fetch(`${API_CONFIG.baseUrl}/api/destinations`)
         ]);
         
-        const popularData = await popularResponse.json();
-        const destinationsData = await destinationsResponse.json();
+        const popularData = await popularRes.json();
+        const allDestinationsData = await allDestinationsRes.json();
 
-        if (!popularData.success || !destinationsData.success) {
-            throw new Error("Impossible de charger les données pour la carte.");
-        }
+        if (!popularData.success || !allDestinationsData.success) throw new Error("Données de carte invalides.");
         
         const popularRoutes = popularData.destinations;
-        const allCities = destinationsData.destinations;
+        const allCities = allDestinationsData.destinations;
         
-        // On crée une "carte de correspondance" pour trouver facilement les coordonnées d'une ville par son nom
-        const cityCoords = new Map(allCities.map(city => [city.name, city.coords]));
+        const cityCoordsMap = new Map(allCities.map(city => [city.name, city.coords]));
         
-        // Icône personnalisée pour les marqueurs
         const busIcon = L.icon({
-            iconUrl: './icons/bus-marker.png', // Assurez-vous d'avoir ce fichier image
+            iconUrl: './icons/bus-marker.png',
             iconSize: [40, 40],
             iconAnchor: [20, 40],
             popupAnchor: [0, -42]
         });
         
-        let addedMarkers = new Set(); // Pour ne pas ajouter deux fois la même ville
+        let addedMarkers = new Set();
 
         popularRoutes.forEach(route => {
-            const fromCoords = cityCoords.get(route.from);
-            const toCoords = cityCoords.get(route.to);
+            const fromCoords = cityCoordsMap.get(route.from);
+            const toCoords = cityCoordsMap.get(route.to);
 
-            if (fromCoords && toCoords) {
-                // Ajouter le marqueur pour la ville de départ (si pas déjà fait)
+            // ===================================
+            // ✅ CORRECTION DE SÉCURITÉ ICI
+            // ===================================
+            // On ne dessine le trajet que si les deux villes ont des coordonnées valides
+            if (fromCoords && fromCoords.length === 2 && toCoords && toCoords.length === 2) {
+                
                 if (!addedMarkers.has(route.from)) {
                     L.marker(fromCoords, { icon: busIcon }).addTo(map)
                         .bindPopup(`<div class="popup-city-name">${route.from}</div>`);
                     addedMarkers.add(route.from);
                 }
                 
-                // Ajouter le marqueur pour la ville d'arrivée (si pas déjà fait)
                 if (!addedMarkers.has(route.to)) {
                     L.marker(toCoords, { icon: busIcon }).addTo(map)
                         .bindPopup(`<div class="popup-city-name">${route.to}</div>`);
                     addedMarkers.add(route.to);
                 }
 
-                // Dessiner la ligne entre les deux villes
-                L.polyline([fromCoords, toCoords], { 
-                    color: '#73d700', 
-                    weight: 3, 
-                    opacity: 0.8 
-                }).addTo(map);
+                L.polyline([fromCoords, toCoords], { color: '#73d700', weight: 3, opacity: 0.7 }).addTo(map);
+            
+            } else {
+                // On affiche un avertissement dans la console pour le debug
+                console.warn(`⚠️ Trajet populaire ignoré car coordonnées manquantes pour : ${route.from} ou ${route.to}`);
             }
         });
 
     } catch (error) {
         console.error("❌ Erreur lors de l'initialisation de la carte:", error);
-        mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555; padding: 20px;">Erreur de chargement de la carte.</p>`;
+        mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555;">Erreur de chargement de la carte.</p>`;
     }
 }
-
 function addToastStyles() {
     if (!document.getElementById('toast-styles')) {
         const style = document.createElement('style');
