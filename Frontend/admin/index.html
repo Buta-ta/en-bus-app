@@ -3608,7 +3608,7 @@ function getCrewDisplay(crew) {
 async function handleCreateTrips(e) {
     e.preventDefault();
 
-    // 1. Récupération des valeurs du formulaire
+    // 1. Récupération des valeurs du formulaire de base
     const routeId = document.getElementById("route-template").value;
     const dateValue = document.getElementById("trip-dates").value;
     const seatCount = parseInt(document.getElementById("seat-count").value);
@@ -3650,34 +3650,44 @@ async function handleCreateTrips(e) {
         ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
         : selectedDays;
 
-    // ✅ 4. RÉCUPÉRATION DE L'ÉQUIPAGE (ICI, AVANT LA CONSTRUCTION DE tripData)
-    const driverSelect = document.getElementById('trip-driver');
-    const controllerSelect = document.getElementById('trip-controller');
+    // ✅ 4. RÉCUPÉRATION DES 4 MEMBRES D'ÉQUIPAGE
+    // On utilise ?.value pour éviter les erreurs si les champs n'existent pas encore
+    const driver1Select = document.getElementById('trip-driver1');
+    const driver2Select = document.getElementById('trip-driver2');
+    const controller1Select = document.getElementById('trip-controller1');
+    const controller2Select = document.getElementById('trip-controller2');
 
-    const driverId = driverSelect?.value || null;
-    const driverName = driverId ? driverSelect.options[driverSelect.selectedIndex].dataset.name : null;
+    const driver1Id = driver1Select?.value || null;
+    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
 
-    const controllerId = controllerSelect?.value || null;
-    const controllerName = controllerId ? controllerSelect.options[controllerSelect.selectedIndex].dataset.name : null;
+    const driver2Id = driver2Select?.value || null;
+    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
+
+    const controller1Id = controller1Select?.value || null;
+    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
+
+    const controller2Id = controller2Select?.value || null;
+    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
 
     // 5. Construction de l'objet de données pour l'API
     const tripData = {
-    routeId,
-    startDate,
-    endDate,
-    daysOfWeek: daysToSend,
-    seatCount,
-    busIdentifier: busIdentifier || null,
-    highlightBadge: highlightBadge || null,
-    driver1Id: driver1Id,
-    driver1Name: driver1Name,
-    driver2Id: driver2Id,
-    driver2Name: driver2Name,
-    controller1Id: controller1Id,
-    controller1Name: controller1Name,
-    controller2Id: controller2Id,
-    controller2Name: controller2Name
-};
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek: daysToSend,
+        seatCount,
+        busIdentifier: busIdentifier || null,
+        highlightBadge: highlightBadge || null,
+        driver1Id: driver1Id,
+        driver1Name: driver1Name,
+        driver2Id: driver2Id,
+        driver2Name: driver2Name,
+        controller1Id: controller1Id,
+        controller1Name: controller1Name,
+        controller2Id: controller2Id,
+        controller2Name: controller2Name
+    };
+
     console.log("📤 Envoi des données de création de voyage :", tripData);
 
     // 6. Appel API
@@ -3689,8 +3699,7 @@ async function handleCreateTrips(e) {
         e.target.reset();
         loadAllTrips();
     }
-}
-        // Dans Admin/index.html (section <script>)
+}    // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
