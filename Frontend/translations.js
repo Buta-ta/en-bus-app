@@ -109,6 +109,9 @@ const translations = {
     amenity_plugs: "Prises",
     amenity_ac: "Clim",
     filter_departure_location: "Lieu de départ",
+    filter_all_locations: "Tous les lieux",
+
+
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
 
 
@@ -562,6 +565,8 @@ const translations = {
     amenity_plugs: "Plugs",
     amenity_ac: "AC",
     filter_departure_location: "Departure point",
+    filter_all_locations: "All departure locations",
+
     
 
 
