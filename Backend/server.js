@@ -1191,7 +1191,7 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
                     totalRevenue: 0,
                     averageOccupancy: 0,
                     onTimeRate: 0,
-                    maintenanceDays: 0
+                    maintenanceDays: 0,
                 },
                 trips: []
             });
@@ -1203,6 +1203,8 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
         let totalSeatsSold = 0;
         let onTimeTrips = 0;
         let maintenanceDays = 0;
+        let totalKm = 0 // ✅ NOUVELLE LIGNE
+
 
         const tripsDetails = allTrips.map(trip => {
             const totalSeats = trip.seats.length;
@@ -1213,6 +1215,7 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
             totalRevenue += revenue;
             totalSeatsAvailable += totalSeats;
             totalSeatsSold += occupiedSeats;
+            totalKm += trip?.route?.distance || 0; // ✅ NOUVELLE LIGNE
 
             if (trip.liveStatus?.status === 'ON_TIME' || trip.liveStatus?.status === 'ARRIVED') {
                 onTimeTrips++;
@@ -1241,7 +1244,8 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
             onTimeRate: allTrips.length > 0 ? Math.round((onTimeTrips / allTrips.length) * 100) : 0,
             maintenanceDays: maintenanceDays,
             totalSeatsSold: totalSeatsSold,
-            totalSeatsAvailable: totalSeatsAvailable
+            totalSeatsAvailable: totalSeatsAvailable,
+            totalKm: totalKm // ✅ NOUVELLE LIGNE
         };
 
         console.log(`✅ Statistiques calculées pour ${busId}:`, stats);

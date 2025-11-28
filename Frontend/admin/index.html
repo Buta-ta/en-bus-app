@@ -4214,6 +4214,15 @@ async function handleCreateTrips(e) {
             <div class="stat-value">${stats.totalTrips}</div>
         </div>
 
+        <!-- ✅ NOUVELLE CARTE POUR LES KM -->
+<div class="stat-card">
+    <div class="stat-header">
+        <span class="stat-label">Distance totale parcourue</span>
+        <div class="stat-icon primary" style="background: rgba(33, 150, 243, 0.15); color: #2196F3;">📏</div>
+    </div>
+    <div class="stat-value">${formatPrice(stats.totalKm || 0)} km</div>
+</div>
+
         <div class="stat-card">
             <div class="stat-header">
                 <span class="stat-label">Revenu total</span>
