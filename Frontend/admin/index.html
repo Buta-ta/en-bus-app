@@ -4871,7 +4871,13 @@ async function handleCreateTrips(e) {
                     loadReportRequests();
                     break;
                 case 'trips':
-                    loadAllTemplates().then(loadAllTrips);
+                        loadAllTemplates().then(() => {
+        // Ensuite, on charge la liste des voyages
+        loadAllTrips();
+        // ET on remplit les selects du personnel en même temps
+        populateCrewSelects();
+    });
+
                     break;
                 case 'templates':
                     loadAllTemplates();
@@ -5103,8 +5109,7 @@ async function handleCreateTrips(e) {
                 });
             }
 
-            populateCrewSelects();
-
+           
 
             // ===================================
         });
