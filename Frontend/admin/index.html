@@ -4648,9 +4648,101 @@ async function handleCreateTrips(e) {
         /**
          * Affiche les détails d'un membre (TODO)
          */
-        function viewCrewDetails(memberId) {
-            showNotification('Fonctionnalité en cours de développement', 'info');
+        /**
+ * Affiche les détails d'un membre du personnel et son historique
+ */
+async function viewCrewDetails(memberId) {
+    showNotification('Chargement des détails...', 'info');
+
+    try {
+        const data = await apiCall(`/admin/crew/${memberId}`);
+
+        if (!data || !data.success) {
+            showNotification('Impossible de charger les détails du membre.', 'error');
+            return;
         }
+
+        const member = data.member;
+        const history = data.history;
+
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+
+        modalTitle.textContent = `Fiche détaillée - ${member.name}`;
+
+        // --- Construction de l'historique ---
+        let historyHTML = '';
+        if (history.length > 0) {
+            historyHTML = history.map(trip => `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--dark-border);">
+                    <div>
+                        <span style="font-weight: 600;">${new Date(trip.date).toLocaleDateString('fr-FR')}</span>
+                        <small style="display: block; color: var(--text-muted);">${trip.route}</small>
+                    </div>
+                    <div>
+                        <span style="background: var(--dark-elevated); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-family: var(--font-mono);">
+                            🚌 ${trip.busIdentifier || 'N/A'}
+                        </span>
+                        <span style="background: var(--dark-elevated); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-family: var(--font-mono); margin-left: 8px;">
+                            📏 ${trip.distance} km
+                        </span>
+                    </div>
+                </li>
+            `).join('');
+        } else {
+            historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
+        }
+
+        // --- Construction du HTML de la modale ---
+        modalBody.innerHTML = `
+            <!-- Section Informations générales -->
+            <div style="background: var(--dark-elevated); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <div style="font-size: 3rem; background: var(--dark-surface); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        ${member.role === 'Chauffeur' ? '🚗' : '🎫'}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem; color: var(--primary);">${member.name}</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-family: var(--font-mono);">${member.matricule}</p>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
+                    <div><strong>Téléphone:</strong><br> ${member.phone}</div>
+                    <div><strong>Statut:</strong><br> ${member.status}</div>
+                </div>
+            </div>
+            
+            <!-- Section Statistiques -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--primary); margin-bottom: 10px;">📊 Statistiques</h4>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                    <div class="stat-card" style="padding: 15px;">
+                        <span class="stat-label">Km parcourus</span>
+                        <div class="stat-value" style="font-size: 2rem;">${formatPrice(member.totalKm || 0)}</div>
+                    </div>
+                    <div class="stat-card" style="padding: 15px;">
+                        <span class="stat-label">Trajets effectués</span>
+                        <div class="stat-value" style="font-size: 2rem;">${member.totalTrips || 0}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Historique -->
+            <div>
+                <h4 style="color: var(--primary); margin-bottom: 10px;">🗓️ 5 derniers voyages terminés</h4>
+                <ul style="list-style: none; padding: 0; background: var(--dark-surface); border-radius: 8px; border: 1px solid var(--dark-border);">
+                    ${historyHTML}
+                </ul>
+            </div>
+        `;
+
+        document.getElementById('details-modal').classList.add('active');
+
+    } catch (error) {
+        console.error('❌ Erreur affichage détails membre:', error);
+        showNotification('Erreur lors de l\'affichage des détails', 'error');
+    }
+}
 
 
 
