@@ -2612,6 +2612,9 @@ window.resetFilters = function() {
 
 // DANS app.js (remplacez votre fonction displayResults)
 function displayResults(results, isReturn = false) {
+
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     // --- 1. Récupération des éléments DOM et des traductions ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
@@ -2619,8 +2622,7 @@ function displayResults(results, isReturn = false) {
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
     
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+    
 
     // --- 2. Application des filtres et du tri ---
     const displayedResults = applyFiltersAndSort();

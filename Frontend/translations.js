@@ -109,6 +109,8 @@ const translations = {
     amenity_plugs: "Prises",
     amenity_ac: "Clim",
     filter_departure_location: "Lieu de départ",
+    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+
 
 
 
@@ -556,6 +558,12 @@ const translations = {
     amenity_plugs: "Plugs",
     amenity_ac: "AC",
     filter_departure_location: "Departure point",
+    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+  
+  
+    
+
+
 
     // --- Seat Selection Page ---
     //✅ VÉRIFIEZ QUE CES LIGNES SONT BIEN PRÉSENTES ET CORRECTEMENT ÉCRITES
