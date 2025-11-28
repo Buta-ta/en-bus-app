@@ -1772,6 +1772,19 @@ function addKebabMenuStyles() {
                 display: inline-block;
             }
 
+                        .kebab-menu-container {
+                position: relative;
+                display: inline-block;
+            }
+
+            /* ✅ AJOUTER CE BLOC CI-DESSOUS */
+            .reservation-card-pwa.is-active {
+                position: relative; /* Établit un contexte de superposition */
+                z-index: 5;       /* Soulève CETTE carte au-dessus des autres */
+            }
+
+            .res-pwa-actions > .kebab-menu-container {
+
             /* ✅ NOUVELLE RÈGLE CI-DESSOUS */
             .res-pwa-actions > .kebab-menu-container {
                 /* S'assure que le conteneur est au-dessus des autres éléments de la carte */
@@ -4035,22 +4048,43 @@ async function displayReservations() {
 }
 
 
-
-// Affiche ou cache le menu kebab
+// Affiche ou cache le menu kebab et gère le z-index
 function toggleKebabMenu(event) {
-    event.stopPropagation(); // Empêche le clic de fermer immédiatement le menu
-    closeAllKebabMenus(event.currentTarget.nextElementSibling); // Ferme les autres menus
-    event.currentTarget.nextElementSibling.classList.toggle('show');
+    event.stopPropagation(); // Indispensable pour ne pas refermer immédiatement
+
+    const dropdown = event.currentTarget.nextElementSibling;
+    const parentCard = event.currentTarget.closest('.reservation-card-pwa');
+
+    // On vérifie si le menu qu'on clique est déjà ouvert
+    const isAlreadyOpen = dropdown.classList.contains('show');
+
+    // D'abord, on ferme TOUS les menus et on "rabaisse" toutes les cartes
+    closeAllKebabMenus();
+
+    // Si le menu n'était pas déjà ouvert, on l'ouvre et on "soulève" sa carte parente
+    if (!isAlreadyOpen) {
+        dropdown.classList.add('show');
+        if (parentCard) {
+            parentCard.classList.add('is-active');
+        }
+    }
 }
 
-// Ferme tous les menus kebab (sauf celui qu'on vient d'ouvrir)
-function closeAllKebabMenus(exceptThisOne = null) {
-    document.querySelectorAll('.kebab-dropdown').forEach(dropdown => {
-        if (dropdown !== exceptThisOne && dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-        }
+// Ferme tous les menus et réinitialise le z-index de toutes les cartes
+function closeAllKebabMenus() {
+    // Cache tous les menus déroulants
+    document.querySelectorAll('.kebab-dropdown.show').forEach(dropdown => {
+        dropdown.classList.remove('show');
+    });
+
+    // Retire la classe "active" de toutes les cartes pour réinitialiser le z-index
+    document.querySelectorAll('.reservation-card-pwa.is-active').forEach(card => {
+        card.classList.remove('is-active');
     });
 }
+
+// ... La fonction downloadInvoice reste la même ...
+// ... La fonction qui ferme les menus au clic extérieur reste la même ...
 
 // Action pour télécharger la facture
 function downloadInvoice(bookingNumber) {
