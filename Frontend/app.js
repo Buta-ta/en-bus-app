@@ -2618,6 +2618,32 @@ function displayResults(results, isReturn = false) {
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
 
+     // ============================================
+    // ✅ CORRECTION DE LA LOGIQUE DU FILTRE
+    // ============================================
+    if (locationFilterSection && locationSelect) {
+        // On utilise 'allRouteTemplates' qui contient TOUS les lieux de départ possibles
+        const uniqueLocations = [...new Set(allRouteTemplates.map(t => t.departureLocation).filter(Boolean))];
+        
+        console.log("Lieux de départ trouvés pour le filtre :", uniqueLocations);
+
+        if (uniqueLocations.length > 1) {
+            // On conserve la valeur sélectionnée actuelle
+            const currentFilterValue = activeFilters.departureLocation;
+            
+            locationSelect.innerHTML = `<option value="all">${translation.filter_all_locations || 'Tous les lieux'}</option>`;
+            uniqueLocations.forEach(location => {
+                const isSelected = currentFilterValue === location ? 'selected' : '';
+                locationSelect.innerHTML += `<option value="${location}" ${isSelected}>${location}</option>`;
+            });
+            locationFilterSection.style.display = 'block';
+        } else {
+            locationFilterSection.style.display = 'none';
+        }
+    }
+
+
+
     // --- Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
