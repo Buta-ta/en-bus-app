@@ -5123,39 +5123,63 @@ async function handleCreateTrips(e) {
 
         /**
  * Remplit les selects de chauffeur/contrôleur dans le formulaire voyage
- */
-        async function populateCrewSelects() {
-            try {
-                const data = await apiCall('/admin/crew');
+ */async function populateCrewSelects() {
+    try {
+        const data = await apiCall('/admin/crew');
+        
+        if (!data || !data.success) return;
 
-                if (!data || !data.success) return;
+        const allDrivers = data.crew.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
+        const allControllers = data.crew.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
 
-                const drivers = data.crew.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
-                const controllers = data.crew.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
+        const driver1Select = document.getElementById('trip-driver1');
+        const driver2Select = document.getElementById('trip-driver2');
+        const controller1Select = document.getElementById('trip-controller1');
+        const controller2Select = document.getElementById('trip-controller2');
 
-                const driverSelect = document.getElementById('trip-driver');
-                const controllerSelect = document.getElementById('trip-controller');
+        const fillSelect = (select, items, defaultText) => {
+            if (!select) return;
+            select.innerHTML = `<option value="">${defaultText}</option>`;
+            items.forEach(item => {
+                select.innerHTML += `<option value="${item._id}" data-name="${item.name}">${item.name} (${item.matricule})</option>`;
+            });
+        };
 
-                if (driverSelect) {
-                    driverSelect.innerHTML = '<option value="">-- Aucun chauffeur assigné --</option>';
-                    drivers.forEach(d => {
-                        driverSelect.innerHTML += `<option value="${d._id}" data-name="${d.name}">${d.name} (${d.matricule})</option>`;
-                    });
-                }
+        fillSelect(driver1Select, allDrivers, "-- Chauffeur Principal --");
+        fillSelect(driver2Select, allDrivers, "-- Chauffeur Secondaire --");
+        fillSelect(controller1Select, allControllers, "-- Contrôleur Principal --");
+        fillSelect(controller2Select, allControllers, "-- Contrôleur Secondaire --");
 
-                if (controllerSelect) {
-                    controllerSelect.innerHTML = '<option value="">-- Aucun contrôleur assigné --</option>';
-                    controllers.forEach(c => {
-                        controllerSelect.innerHTML += `<option value="${c._id}" data-name="${c.name}">${c.name} (${c.matricule})</option>`;
-                    });
-                }
+        // ✅ NOUVELLE LOGIQUE POUR DÉSACTIVER LES OPTIONS
+        const updateSelectOptions = (primarySelect, secondarySelect) => {
+            if (!primarySelect || !secondarySelect) return;
 
-                console.log(`✅ Personnel chargé : ${drivers.length} chauffeurs, ${controllers.length} contrôleurs`);
+            primarySelect.addEventListener('change', () => {
+                const selectedValue = primarySelect.value;
+                Array.from(secondarySelect.options).forEach(option => {
+                    // Si une valeur est sélectionnée dans le premier select
+                    // et que l'option du second a la même valeur, on la désactive
+                    option.disabled = (selectedValue !== '' && option.value === selectedValue);
+                });
+            });
 
-            } catch (error) {
-                console.error('❌ Erreur chargement personnel pour selects:', error);
-            }
-        }
+            secondarySelect.addEventListener('change', () => {
+                const selectedValue = secondarySelect.value;
+                Array.from(primarySelect.options).forEach(option => {
+                    option.disabled = (selectedValue !== '' && option.value === selectedValue);
+                });
+            });
+        };
+
+        updateSelectOptions(driver1Select, driver2Select);
+        updateSelectOptions(controller1Select, controller2Select);
+
+        console.log(`✅ Personnel chargé : ${allDrivers.length} chauffeurs, ${allControllers.length} contrôleurs`);
+
+    } catch (error) {
+        console.error('❌ Erreur chargement personnel pour selects:', error);
+    }
+}
 
         // ============================================
         // 🛑 GESTION DYNAMIQUE DES ARRÊTS
