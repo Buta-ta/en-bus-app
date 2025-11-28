@@ -1838,7 +1838,7 @@ app.patch(
 // --- D. Routes d'action spécifiques (PATCH) ---
 
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
-    body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED']),
+    body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED', 'MAINTENANCE']),
     body('delayMinutes').if(body('status').equals('DELAYED')).isInt({ min: 1 }).withMessage('Le retard doit être un nombre positif.'),
     body('reason').if(body('status').equals('CANCELLED')).notEmpty().withMessage('La raison est requise pour une annulation.'),
     body('reason').optional().isString().trim()
