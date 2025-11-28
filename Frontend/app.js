@@ -2612,25 +2612,32 @@ window.resetFilters = function() {
 
 // DANS app.js (remplacez votre fonction displayResults)
 function displayResults(results, isReturn = false) {
+    // --- 1. Récupération des éléments DOM et des traductions ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
+    
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
-     // ============================================
-    // ✅ CORRECTION DE LA LOGIQUE DU FILTRE
-    // ============================================
+    // --- 2. Application des filtres et du tri ---
+    const displayedResults = applyFiltersAndSort();
+    
+    // --- 3. Mise à jour du résumé de la recherche ---
+    let summaryText = isReturn
+        ? translation.results_summary_return(displayedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
+        : translation.results_summary_outbound(displayedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
+    if (summary) summary.innerHTML = summaryText;
+
+    // --- 4. Mise à jour du filtre par lieu de départ ---
     if (locationFilterSection && locationSelect) {
-        // On utilise 'allRouteTemplates' qui contient TOUS les lieux de départ possibles
+        // On utilise 'allRouteTemplates' pour construire la liste
         const uniqueLocations = [...new Set(allRouteTemplates.map(t => t.departureLocation).filter(Boolean))];
         
-        console.log("Lieux de départ trouvés pour le filtre :", uniqueLocations);
-
         if (uniqueLocations.length > 1) {
-            // On conserve la valeur sélectionnée actuelle
             const currentFilterValue = activeFilters.departureLocation;
-            
             locationSelect.innerHTML = `<option value="all">${translation.filter_all_locations || 'Tous les lieux'}</option>`;
             uniqueLocations.forEach(location => {
                 const isSelected = currentFilterValue === location ? 'selected' : '';
@@ -2642,57 +2649,47 @@ function displayResults(results, isReturn = false) {
         }
     }
 
+    // --- 5. Logique pour les badges "Moins cher" et "Plus rapide" ---
+    let cheapestId = null, fastestId = null;
+    if (displayedResults.length > 1) {
+        const minPrice = Math.min(...displayedResults.map(r => r.price));
+        const cheapestRoute = displayedResults.find(r => r.price === minPrice);
+        if (cheapestRoute) cheapestId = cheapestRoute.id;
 
-
-    // --- Récupération des traductions ---
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    
-    const displayedResults = applyFiltersAndSort();
-    
-    // --- Traduction du résumé ---
-    let summaryText = isReturn
-        ? translation.results_summary_return(displayedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
-        : translation.results_summary_outbound(displayedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
-    if(summary) summary.innerHTML = summaryText;
-
-    // --- Logique du filtre par lieu (inchangée) ---
-    if (locationFilterSection && locationSelect) {
-        // ... (votre logique est correcte)
+        const directTrips = displayedResults.filter(r => r.tripType === 'direct');
+        if (directTrips.length > 0) {
+            let minDuration = Infinity;
+            directTrips.forEach(route => {
+                const durationInMinutes = Utils.getDurationInMinutes(route.duration);
+                if (durationInMinutes < minDuration) {
+                    minDuration = durationInMinutes;
+                    fastestId = route.id;
+                }
+            });
+        }
     }
 
-    // --- Logique des badges "Moins cher" / "Plus rapide" (inchangée) ---
-    let cheapestId = null, fastestId = null;
-    // ... (votre logique est correcte)
-
-    // --- Traduction du message "Aucun résultat" ---
+    // --- 6. Affichage du message si aucun résultat ---
     if (displayedResults.length === 0) {
         resultsList.innerHTML = `
             <div class="no-results" style="text-align: center; padding: 48px;">
                 <h3>${translation.results_no_results_title}</h3>
                 <p>${translation.results_no_results_desc}</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;" data-i18n="filter_reset_button">
-                    ${translation.filter_reset_button}
-                </button>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">${translation.filter_reset_button}</button>
             </div>`;
         return;
     }
 
+    // --- 7. Génération des cartes de résultats ---
     resultsList.innerHTML = displayedResults.map(route => {
-        // --- Traduction des badges ---
         let badgeHTML = '';
-        if (route.highlightBadge) {
-            badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        } else if (route.id === cheapestId) {
-            badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
-        } else if (route.id === fastestId) {
-            badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
-        }
+        if (route.highlightBadge) badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
+        else if (route.id === cheapestId) badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
+        else if (route.id === fastestId) badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
 
-        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
+        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${translation.amenity_labels[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
         
-        // --- Traduction de l'accordéon ---
         let tripDetailsHTML = '';
         if (route.stops && route.stops.length > 0) {
             tripDetailsHTML = `
@@ -2708,7 +2705,18 @@ function displayResults(results, isReturn = false) {
                     </div>
                 </div>`;
         } else if (route.connections && route.connections.length > 0) {
-             tripDetailsHTML = `...`; // Similaire pour les correspondances
+             tripDetailsHTML = `
+                <div class="trip-details-accordion">
+                    <div class="accordion-header" onclick="toggleTripDetails(this)">
+                         <span class="bus-card-trip-details"><span class="accordion-icon">▶</span>
+                            <span>${translation.details_connections} </span>
+                            <strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong>
+                        </span>
+                    </div>
+                    <div class="accordion-content">
+                         ${route.connections.map(conn => `<div class="accordion-content-item">${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}
+                    </div>
+                </div>`;
         } else {
             tripDetailsHTML = `<div class="bus-card-trip-details">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
         }
@@ -2718,37 +2726,32 @@ function displayResults(results, isReturn = false) {
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
-                        <div class="bus-card-time"><span>${route.departure}</span>...<span>${route.arrival}</span></div>
+                        <div class="bus-card-time"><span>${route.departure}</span><div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div><span>${route.arrival}</span></div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
                         ${tripDetailsHTML}
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
-<div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
-                        
+                            <div class="bus-seats">${translation.seats_available(route.availableSeats)}</div>
                         </div>
                     </div>
                     <div class="bus-card-pricing">
                         <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                        
-                        <button class="btn btn-primary" onclick="selectBus('${route.id}')" data-i18n="button_select">${translation.button_select}</button>
+                        <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
                     </div>
                 </div>
             </div>
         `;
     }).join("");
 
-    // --- Traduction de la légende ---
+    // --- 8. Mise à jour de la légende (traduite) ---
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
-        let legendHTML = "";
-        for (const [key, label] of Object.entries(amenityLabels)) {
-            legendHTML += `<div class="legend-amenity">${Utils.getAmenityIcon(key)}<span>${label}</span></div>`;
-        }
-        legendContainer.innerHTML = legendHTML;
+        legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 
+            `<div class="legend-amenity">${Utils.getAmenityIcon(key)}<span>${label}</span></div>`
+        ).join('');
     }
 }
-
 
 // DANS app.js (à ajouter avec vos autres fonctions)
 
