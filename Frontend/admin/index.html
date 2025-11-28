@@ -2027,6 +2027,25 @@
                                     placeholder="Ex: ⭐ Recommandé, 🎉 Promo">
                             </div>
 
+
+                            <!-- ✅ NOUVEAUX CHAMPS ÉQUIPAGE -->
+                            <div class="form-group">
+                                <label for="trip-driver" class="form-label">🚗 Chauffeur (optionnel)</label>
+                                <select id="trip-driver" class="form-control">
+                                    <option value="">-- Aucun chauffeur assigné --</option>
+                                    <!-- Rempli dynamiquement -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="trip-controller" class="form-label">🎫 Contrôleur (optionnel)</label>
+                                <select id="trip-controller" class="form-control">
+                                    <option value="">-- Aucun contrôleur assigné --</option>
+                                    <!-- Rempli dynamiquement -->
+                                </select>
+                            </div>
+
+
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
                         <button type="submit" class="btn btn-primary mt-4">
@@ -3588,7 +3607,11 @@
                 daysOfWeek: daysToSend,
                 seatCount,
                 busIdentifier: busIdentifier || null,
-                highlightBadge: highlightBadge || null // Envoie null si le champ est vide
+                highlightBadge: highlightBadge || null, // Envoie null si le champ est vide
+                driverId: driverId,           // ✅ NOUVEAU
+                driverName: driverName,       // ✅ NOUVEAU
+                controllerId: controllerId,   // ✅ NOUVEAU
+                controllerName: controllerName // ✅ NOUVEAU
             };
 
             console.log("📤 Envoi des données de création de voyage :", tripData);
@@ -5017,8 +5040,50 @@
                     }
                 });
             }
+
+            populateCrewSelects();
+
+
             // ===================================
         });
+
+
+
+        /**
+ * Remplit les selects de chauffeur/contrôleur dans le formulaire voyage
+ */
+        async function populateCrewSelects() {
+            try {
+                const data = await apiCall('/admin/crew');
+
+                if (!data || !data.success) return;
+
+                const drivers = data.crew.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
+                const controllers = data.crew.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
+
+                const driverSelect = document.getElementById('trip-driver');
+                const controllerSelect = document.getElementById('trip-controller');
+
+                if (driverSelect) {
+                    driverSelect.innerHTML = '<option value="">-- Aucun chauffeur assigné --</option>';
+                    drivers.forEach(d => {
+                        driverSelect.innerHTML += `<option value="${d._id}" data-name="${d.name}">${d.name} (${d.matricule})</option>`;
+                    });
+                }
+
+                if (controllerSelect) {
+                    controllerSelect.innerHTML = '<option value="">-- Aucun contrôleur assigné --</option>';
+                    controllers.forEach(c => {
+                        controllerSelect.innerHTML += `<option value="${c._id}" data-name="${c.name}">${c.name} (${c.matricule})</option>`;
+                    });
+                }
+
+                console.log(`✅ Personnel chargé : ${drivers.length} chauffeurs, ${controllers.length} contrôleurs`);
+
+            } catch (error) {
+                console.error('❌ Erreur chargement personnel pour selects:', error);
+            }
+        }
 
         // ============================================
         // 🛑 GESTION DYNAMIQUE DES ARRÊTS

@@ -1648,7 +1648,11 @@ app.post(
         daysOfWeek,
         seatCount,
         busIdentifier,
-        highlightBadge 
+        highlightBadge,
+         driverId,           // ✅ NOUVEAU
+    driverName,         // ✅ NOUVEAU
+    controllerId,       // ✅ NOUVEAU
+    controllerName
       } = req.body;
 
       if (!ObjectId.isValid(routeId)) {
@@ -1675,13 +1679,23 @@ app.post(
             status: "available",
           }));
           newTrips.push({
-            date: currentDate.toISOString().split("T")[0],
-            route: routeTemplate,
-            seats: seats,
-            busIdentifier: busIdentifier || null,
-            highlightBadge: highlightBadge || null,
-            createdAt: new Date(),
-          });
+    date: currentDate.toISOString().split("T")[0],
+    route: routeTemplate,
+    seats: seats,
+    busIdentifier: busIdentifier || null,
+    highlightBadge: highlightBadge || null,
+    crew: {
+        driver: driverId ? { 
+            id: driverId, 
+            name: driverName 
+        } : null,
+        controller: controllerId ? { 
+            id: controllerId, 
+            name: controllerName 
+        } : null
+    },
+    createdAt: new Date(),
+});
         }
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
