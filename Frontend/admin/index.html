@@ -3536,95 +3536,68 @@ function getCrewDisplay(crew) {
 }
 
 
+function renderTripsTable() {
+    const tbody = document.getElementById("trips-body");
 
-        function renderTripsTable() {
-            const tbody = document.getElementById("trips-body");
+    if (!tbody) {
+        console.error("L'élément 'trips-body' est introuvable.");
+        return;
+    }
 
-            if (allTrips.length === 0) {
-                tbody.innerHTML = `
+    if (allTrips.length === 0) {
+        tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center" style="padding:3rem;">
+                <td colspan="8" class="text-center" style="padding:3rem;">
                     <div style="font-size:3rem;margin-bottom:1rem;">🚌</div>
-                    <div style="color:var(--text-muted);font-weight:600;">Aucun voyage programmé</div>
+                    <div style="color:var(--text-muted);font-weight:600;">Aucun voyage programmé pour ces filtres</div>
                 </td>
             </tr>
         `;
-                return;
-            }
+        return;
+    }
 
-            // On génère le HTML en utilisant des attributs `data-*` pour stocker les informations
-            tbody.innerHTML = allTrips.map((trip) => {
-                const availableSeats = trip.seats.filter(s => s.status === "available").length;
-                const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
-                const percentage = (availableSeats / trip.seats.length) * 100;
-                const canBeDeleted = occupiedSeats === 0;
+    tbody.innerHTML = allTrips.map((trip) => {
+        const availableSeats = trip.seats.filter(s => s.status === "available").length;
+        const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
+        const percentage = trip.seats.length > 0 ? (availableSeats / trip.seats.length) * 100 : 100;
+        const canBeDeleted = occupiedSeats === 0;
 
-                // On prépare le bouton de suppression
-                const deleteButtonHTML = canBeDeleted
-                    ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
-                    : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
+        const deleteButtonHTML = canBeDeleted
+            ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
+            : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
 
-                // On retourne la ligne complète du tableau
-                return `
+        return `
             <tr>
-                <td class="font-bold">${new Date(trip.date).toLocaleDateString("fr-FR", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                })}</td>
+                <td class="font-bold">${new Date(trip.date).toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" })}</td>
                 <td>
                     <div class="font-bold">${trip.route.from} → ${trip.route.to}</div>
-                    <div class="text-xs" style="color:var(--text-muted);">🕐 ${trip.route.departure} • ${trip.route.price} FCFA</div>
+                    <div class="text-xs" style="color:var(--text-muted);">🕐 ${trip.route.departure} • ${formatPrice(trip.route.price)} FCFA</div>
                 </td>
                 <td>${trip.route.company}</td>
                 <td class="font-bold font-mono" style="color: var(--primary);">${trip.busIdentifier || "N/A"}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
                         <div style="flex:1;background:var(--dark-elevated);height:8px;border-radius:9999px;overflow:hidden;">
-                            <div style="width:${percentage}%;height:100%;background:${percentage > 50 ? "var(--primary)" :
-                        percentage > 20 ? "var(--status-pending)" :
-                            "var(--status-cancelled)"
-                    };transition:width 0.3s;"></div>
+                            <div style="width:${percentage}%;height:100%;background:${percentage > 50 ? "var(--primary)" : percentage > 20 ? "var(--status-pending)" : "var(--status-cancelled)"};transition:width 0.3s;"></div>
                         </div>
                         <span class="font-bold text-sm">${availableSeats}/${trip.seats.length}</span>
                     </div>
                     ${occupiedSeats > 0 ? `<div class="text-xs" style="color:var(--status-confirmed);margin-top:4px;">✅ ${occupiedSeats} réservé(s)</div>` : ""}
                 </td>
-        
-                
-                <td>
-                    ${getLiveStatusBadge(trip.liveStatus)}
+                <td>${getLiveStatusBadge(trip.liveStatus)}</td>
+                <td>${getCrewDisplay(trip.crew)}</td>
+                <td class="actions-cell">
+                    <button class="btn btn-icon btn-ghost" onclick="manageSeats('${trip._id}')" title="Gérer sièges">💺</button>
+                    <button class="btn btn-icon btn-ghost" onclick="showEditTripModal('${trip._id}')" title="Modifier le voyage">✏️</button>
+                    <button class="btn btn-icon btn-ghost" style="color: #2196f3;" onclick="openStatusModal('${trip._id}', '${trip.route.from} → ${trip.route.to}')" title="Mettre à jour le statut">📢</button>
+                    <button class="btn btn-icon btn-ghost" onclick="openEditCrewModal('${trip._id}')" title="Modifier l'équipage">👥</button>
+                    <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges">🔄</button>
+                    ${deleteButtonHTML}
                 </td>
-
-                <!-- ✅ NOUVELLE COLONNE ÉQUIPAGE -->
-<td>
-    ${getCrewDisplay(trip.crew)}
-</td>
-
-<td>
-    
-    <div class="actions-cell">
-        <!-- ✅ CORRECTION : Retour aux onclick directs pour plus de fiabilité -->
-        <button class="btn btn-icon btn-ghost" onclick="manageSeats('${trip._id}')" title="Gérer sièges">💺</button>
-        <button class="btn btn-icon btn-ghost" onclick="showEditTripModal('${trip._id}')" title="Modifier le voyage">✏️</button>
-        <!-- ✅ NOUVEAU BOUTON -->
-    <button class="btn btn-icon btn-ghost" style="color: #2196f3;" 
-            onclick="openStatusModal('${trip._id}', '${trip.route.from} → ${trip.route.to}')" 
-            title="Mettre à jour le statut">
-        📢
-    </button>
-        <button class="btn btn-icon btn-ghost" style="color: var(--status-pending);" onclick="resetTripSeats('${trip._id}')" title="Réinitialiser tous les sièges">🔄</button>
-        ${deleteButtonHTML}
-    </div>
-</td>
             </tr>
         `;
-            }).join("");
-
-            // NOTE : La partie qui attache les `addEventListener` a été déplacée 
-            // dans la fonction setupEventListeners pour être appelée une seule fois.
-        }
+    }).join("");
+}
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
 async function handleCreateTrips(e) {
