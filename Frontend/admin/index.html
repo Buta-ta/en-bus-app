@@ -3600,81 +3600,88 @@ function getCrewDisplay(crew) {
         }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
+async function handleCreateTrips(e) {
+    e.preventDefault();
 
-        async function handleCreateTrips(e) {
-            e.preventDefault();
+    // 1. Récupération des valeurs du formulaire
+    const routeId = document.getElementById("route-template").value;
+    const dateValue = document.getElementById("trip-dates").value;
+    const seatCount = parseInt(document.getElementById("seat-count").value);
+    const busIdentifier = document.getElementById("bus-identifier").value.trim();
+    const highlightBadge = document.getElementById('highlight-badge').value.trim();
 
-            // 1. Récupération des valeurs du formulaire
-            const routeId = document.getElementById("route-template").value;
-            const dateValue = document.getElementById("trip-dates").value;
-            const seatCount = parseInt(document.getElementById("seat-count").value);
-            const busIdentifier = document.getElementById("bus-identifier").value.trim();
-            const highlightBadge = document.getElementById('highlight-badge').value.trim();
+    // 2. Validations
+    if (!routeId) {
+        showNotification("Veuillez sélectionner un modèle de trajet.", "warning");
+        return;
+    }
+    if (!dateValue) {
+        showNotification("Veuillez sélectionner une ou plusieurs dates.", "warning");
+        return;
+    }
+    if (!seatCount || seatCount < 10 || seatCount > 100) {
+        showNotification("Le nombre de sièges doit être entre 10 et 100.", "warning");
+        return;
+    }
 
-            // 2. Validations
-            if (!routeId) {
-                showNotification("Veuillez sélectionner un modèle de trajet.", "warning");
-                return;
-            }
-            if (!dateValue) {
-                showNotification("Veuillez sélectionner une ou plusieurs dates.", "warning");
-                return;
-            }
-            if (!seatCount || seatCount < 10 || seatCount > 100) {
-                showNotification("Le nombre de sièges doit être entre 10 et 100.", "warning");
-                return;
-            }
+    // 3. Logique des dates et jours
+    let startDate, endDate;
+    if (dateValue.includes(" au ")) {
+        [startDate, endDate] = dateValue.split(" au ");
+    } else {
+        startDate = endDate = dateValue;
+    }
 
-            // 3. Logique des dates et jours
-            let startDate, endDate;
-            if (dateValue.includes(" au ")) {
-                [startDate, endDate] = dateValue.split(" au ");
-            } else {
-                startDate = endDate = dateValue;
-            }
+    const selectedDays = Array.from(
+        document.querySelectorAll("#days-selector input:checked")
+    ).map((cb) => cb.value);
 
-            const selectedDays = Array.from(
-                document.querySelectorAll("#days-selector input:checked")
-            ).map((cb) => cb.value);
+    if (selectedDays.length === 0 && startDate !== endDate) {
+        showNotification("Veuillez sélectionner au moins un jour pour une plage de dates.", "warning");
+        return;
+    }
 
-            if (selectedDays.length === 0 && startDate !== endDate) {
-                showNotification("Veuillez sélectionner au moins un jour pour une plage de dates.", "warning");
-                return;
-            }
+    const daysToSend = (startDate === endDate)
+        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+        : selectedDays;
 
-            // Si une seule date est choisie, on considère que tous les jours sont valides pour ce jour unique.
-            const daysToSend = (startDate === endDate)
-                ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-                : selectedDays;
+    // ✅ 4. RÉCUPÉRATION DE L'ÉQUIPAGE (ICI, AVANT LA CONSTRUCTION DE tripData)
+    const driverSelect = document.getElementById('trip-driver');
+    const controllerSelect = document.getElementById('trip-controller');
 
-            // 4. Construction de l'objet de données pour l'API
-            const tripData = {
-                routeId,
-                startDate,
-                endDate,
-                daysOfWeek: daysToSend,
-                seatCount,
-                busIdentifier: busIdentifier || null,
-                highlightBadge: highlightBadge || null, // Envoie null si le champ est vide
-                driverId: driverId,           // ✅ NOUVEAU
-                driverName: driverName,       // ✅ NOUVEAU
-                controllerId: controllerId,   // ✅ NOUVEAU
-                controllerName: controllerName // ✅ NOUVEAU
-            };
+    const driverId = driverSelect?.value || null;
+    const driverName = driverId ? driverSelect.options[driverSelect.selectedIndex].dataset.name : null;
 
-            console.log("📤 Envoi des données de création de voyage :", tripData);
+    const controllerId = controllerSelect?.value || null;
+    const controllerName = controllerId ? controllerSelect.options[controllerSelect.selectedIndex].dataset.name : null;
 
-            // 5. Appel API
-            const data = await apiCall("/admin/trips", "POST", tripData);
+    // 5. Construction de l'objet de données pour l'API
+    const tripData = {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek: daysToSend,
+        seatCount,
+        busIdentifier: busIdentifier || null,
+        highlightBadge: highlightBadge || null,
+        driverId: driverId,
+        driverName: driverName,
+        controllerId: controllerId,
+        controllerName: controllerName
+    };
 
-            // 6. Gestion du résultat
-            if (data && data.success) {
-                showNotification(data.message || "Voyages programmés avec succès !", "success");
-                e.target.reset(); // Réinitialise le formulaire
-                loadAllTrips();   // Met à jour le tableau des voyages
-            }
-            // La gestion d'erreur est déjà dans apiCall()
-        }
+    console.log("📤 Envoi des données de création de voyage :", tripData);
+
+    // 6. Appel API
+    const data = await apiCall("/admin/trips", "POST", tripData);
+
+    // 7. Gestion du résultat
+    if (data && data.success) {
+        showNotification(data.message || "Voyages programmés avec succès !", "success");
+        e.target.reset();
+        loadAllTrips();
+    }
+}
         // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
