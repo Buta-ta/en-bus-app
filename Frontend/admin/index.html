@@ -4508,87 +4508,107 @@ async function handleCreateTrips(e) {
         /**
          * Ouvre la modale de modification
          */
-        function openEditCrewModal(memberId) {
-            const member = allCrewMembers.find(m => m._id === memberId);
-            if (!member) return;
-
-            const modalTitle = document.getElementById('modal-title');
-            const modalBody = document.getElementById('modal-body');
-
-            modalTitle.textContent = `Modifier - ${member.name}`;
-            modalBody.innerHTML = `
-        <form id="edit-crew-form">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Matricule</label>
-                    <input type="text" class="form-control" value="${member.matricule}" disabled>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Poste</label>
-                    <input type="text" class="form-control" value="${member.role}" disabled>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit-crew-name" class="form-label">Nom complet *</label>
-                    <input type="text" id="edit-crew-name" class="form-control" value="${member.name}" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="edit-crew-phone" class="form-label">Téléphone *</label>
-                    <input type="tel" id="edit-crew-phone" class="form-control" value="${member.phone}" required>
-                </div>
-
-                <div class="form-group form-group-full">
-                    <label for="edit-crew-status" class="form-label">Statut *</label>
-                    <select id="edit-crew-status" class="form-control" required>
-                        <option value="Actif" ${member.status === 'Actif' ? 'selected' : ''}>✅ Actif</option>
-                        <option value="En congé" ${member.status === 'En congé' ? 'selected' : ''}>🏖️ En congé</option>
-                        <option value="Inactif" ${member.status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="text-align: right; margin-top: 1.5rem;">
-                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-            </div>
-        </form>
-    `;
-
-            document.getElementById('edit-crew-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                handleEditCrew(memberId);
-            });
-
-            document.getElementById('details-modal').classList.add('active');
-        }
-
         /**
-         * Gère la modification d'un membre
-         */
-        async function handleEditCrew(memberId) {
-            const updates = {
-                name: document.getElementById('edit-crew-name').value.trim(),
-                phone: document.getElementById('edit-crew-phone').value.trim(),
-                status: document.getElementById('edit-crew-status').value
-            };
+ * Ouvre une modale pour modifier l'équipage d'un voyage existant
+ */
+async function openEditCrewModal(tripId) {
+    console.log(`▶️ Clic sur "Modifier l'équipage" pour le voyage : ${tripId}`);
+    
+    try {
+        // 1. Trouver le voyage
+        const trip = allTrips.find(t => t._id === tripId);
+        if (!trip) {
+            showNotification("Erreur : Voyage introuvable.", "error");
+            console.error("❌ Voyage non trouvé dans 'allTrips'.");
+            return;
+        }
+        console.log("   -> ✅ Voyage trouvé:", trip);
 
-            try {
-                const data = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
-
-                if (data && data.success) {
-                    showNotification(data.message, 'success');
-                    closeModal();
-                    loadAllCrew();
-                }
-
-            } catch (error) {
-                console.error('❌ Erreur modification:', error);
-                showNotification('Erreur lors de la modification', 'error');
+        // 2. S'assurer que la liste du personnel est chargée
+        if (allCrewMembers.length === 0) {
+            console.log("   -> ⏳ Liste du personnel vide, chargement en cours...");
+            const crewData = await apiCall('/admin/crew');
+            if (crewData && crewData.success) {
+                allCrewMembers = crewData.crew;
+                console.log("   -> ✅ Liste du personnel chargée avec succès.");
+            } else {
+                showNotification("Impossible de charger la liste du personnel.", "error");
+                return;
             }
         }
 
+        const allDrivers = allCrewMembers.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
+        const allControllers = allCrewMembers.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
+        console.log(`   -> Personnel actif trouvé: ${allDrivers.length} chauffeurs, ${allControllers.length} contrôleurs.`);
+        
+        // 3. Récupérer l'équipage actuel
+        const currentDrivers = trip.crew?.drivers?.map(d => d.id) || [];
+        const currentControllers = trip.crew?.controllers?.map(c => c.id) || [];
+        console.log("   -> Équipage actuel:", { currentDrivers, currentControllers });
+
+        // 4. Ouvrir la modale
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        modalTitle.textContent = `Modifier l'équipage - ${trip.route.from} → ${trip.route.to}`;
+
+        const createOptions = (items, selectedId) => {
+            return items.map(item => {
+                const isSelected = item._id === selectedId ? 'selected' : '';
+                return `<option value="${item._id}" data-name="${item.name}" ${isSelected}>${item.name} (${item.matricule})</option>`;
+            }).join('');
+        };
+
+        modalBody.innerHTML = `
+            <form id="edit-crew-form">
+                <p>Date du voyage : <strong>${new Date(trip.date).toLocaleDateString('fr-FR')}</strong></p>
+                <div class="form-grid">
+                    <div class="form-group"><label for="edit-driver1">🚗 Chauffeur principal</label><select id="edit-driver1" class="form-control"><option value="">-- Aucun --</option>${createOptions(allDrivers, currentDrivers[0])}</select></div>
+                    <div class="form-group"><label for="edit-driver2">🚗 Chauffeur secondaire</label><select id="edit-driver2" class="form-control"><option value="">-- Aucun --</option>${createOptions(allDrivers, currentDrivers[1])}</select></div>
+                    <div class="form-group"><label for="edit-controller1">🎫 Contrôleur principal</label><select id="edit-controller1" class="form-control"><option value="">-- Aucun --</option>${createOptions(allControllers, currentControllers[0])}</select></div>
+                    <div class="form-group"><label for="edit-controller2">🎫 Contrôleur secondaire</label><select id="edit-controller2" class="form-control"><option value="">-- Aucun --</option>${createOptions(allControllers, currentControllers[1])}</select></div>
+                </div>
+                <div style="text-align: right; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">💾 Enregistrer les changements</button>
+                </div>
+            </form>
+        `;
+
+        document.getElementById('details-modal').classList.add('active');
+        console.log("   -> ✅ Modale affichée.");
+
+        // 5. Gérer la soumission du formulaire
+        document.getElementById('edit-crew-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const getSelectData = (id) => {
+                const select = document.getElementById(id);
+                const value = select.value || null;
+                const name = value ? select.options[select.selectedIndex].dataset.name : null;
+                return { id: value, name: name };
+            };
+
+            const crewUpdate = {
+                driver1Id: getSelectData('edit-driver1').id, driver1Name: getSelectData('edit-driver1').name,
+                driver2Id: getSelectData('edit-driver2').id, driver2Name: getSelectData('edit-driver2').name,
+                controller1Id: getSelectData('edit-controller1').id, controller1Name: getSelectData('edit-controller1').name,
+                controller2Id: getSelectData('edit-controller2').id, controller2Name: getSelectData('edit-controller2').name,
+            };
+
+            const data = await apiCall(`/admin/trips/${tripId}/crew`, 'PATCH', crewUpdate);
+
+            if (data && data.success) {
+                showNotification(data.message, 'success');
+                closeModal();
+                loadAllTrips();
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur critique dans openEditCrewModal:", error);
+        showNotification("Une erreur critique est survenue. Vérifiez la console.", "error");
+    }
+}
         /**
          * Désactive un membre (suppression douce)
          */
