@@ -1635,6 +1635,9 @@ const ticketHTML = `
     }
         setupSmartSearch();
 
+        // ✅ AJOUTER CET APPEL
+    animateSearchPlaceholder();
+
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
     }
@@ -2205,6 +2208,53 @@ function setupSmartSearch() {
         }
     });
 }
+
+// Fichier : app.js
+
+/**
+ * Anime le placeholder de la barre de recherche avec un effet machine à écrire.
+ */
+function animateSearchPlaceholder() {
+    const searchInput = document.getElementById('smart-search-input');
+    if (!searchInput) return;
+
+    let suggestionIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+
+    setInterval(() => {
+        // On récupère la langue actuelle et les suggestions correspondantes
+        const lang = getLanguage();
+        const suggestions = (translations[lang] || translations.fr).smart_search_suggestions;
+        const currentSuggestion = suggestions[suggestionIndex];
+
+        if (isDeleting) {
+            // Phase de suppression
+            charIndex--;
+            searchInput.placeholder = currentSuggestion.substring(0, charIndex);
+            
+            if (charIndex === 0) {
+                isDeleting = false;
+                // On passe à la suggestion suivante
+                suggestionIndex = (suggestionIndex + 1) % suggestions.length;
+            }
+        } else {
+            // Phase d'écriture
+            charIndex++;
+            searchInput.placeholder = currentSuggestion.substring(0, charIndex);
+
+            if (charIndex === currentSuggestion.length) {
+                // Une fois le mot écrit, on attend avant de supprimer
+                isDeleting = true;
+                // On peut ajouter un délai plus long ici si on veut
+            }
+        }
+    }, 150); // Vitesse de frappe (ajustez si besoin)
+}
+
+
+
+
 function displaySmartSearchResults(results) {
     const resultsContainer = document.getElementById('smart-search-results');
     const searchInput = document.getElementById('smart-search-input');

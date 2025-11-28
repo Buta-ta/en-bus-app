@@ -31,6 +31,16 @@ const translations = {
     feature_security_desc: "Vos informations sont sécurisées",
 
     // --- Formulaire de recherche ---
+
+    smart_search_suggestions: [
+    "Ex: Brazzaville → Pointe-Noire",
+    "Ex: Douala → Yaoundé",
+    "Ex: Abidjan → Lagos"
+],
+
+
+
+
     search_form_origin: "Ville de départ",
     search_form_destination: "Ville d'arrivée",
     search_form_trip_type: "Type de voyage",
@@ -466,6 +476,13 @@ const translations = {
     feature_security_desc: "Your information is secure",
 
     // --- Search Form ---
+
+    smart_search_suggestions: [
+    "E.g. Brazzaville to Pointe-Noire",
+    "E.g. Douala to Yaoundé",
+    "E.g. Abidjan to Lagos"
+],
+
     select_a_city: "— Choose a city —",
     search_form_origin: "From",
     search_form_destination: "To",
