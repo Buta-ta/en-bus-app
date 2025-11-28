@@ -3790,17 +3790,18 @@ function renderTemplatesTable() {
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
 
+// DANS Admin/index.html
 async function loadAllDestinations() {
-    console.log("Chargement des destinations...");
-    const data = await apiCall('/admin/destinations');
-    if (!data || !data.success) return;
-
-    // ✅ ON ATTEND 500ms AVANT D'INSÉRER LE HTML
-    setTimeout(() => {
+    console.log("🏙️ Appel de la route de test /api/admin/test-destinations...");
+    const data = await apiCall('/admin/test-destinations'); // ✅ On appelle la route de test
+    
+    if (data && data.success) {
+        console.log("Données reçues de la route de test :", data.destinations);
         renderDestinationsTable(data.destinations);
-    }, 500); // 500ms > 400ms de l'animation
+    } else {
+        console.error("Échec de l'appel à la route de test.");
+    }
 }
-
 
 function renderDestinationsTable(destinations) {
     const tbody = document.getElementById('destinations-body');

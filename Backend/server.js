@@ -77,6 +77,22 @@ const loginLimiter = rateLimit({
 });
 app.use("/api/", generalLimiter);
 
+
+// ============================================
+// ✅ ROUTE DE TEST (À PLACER ICI TEMPORAIREMENT)
+// ============================================
+app.get("/api/admin/test-destinations", authenticateToken, async (req, res) => {
+    try {
+        console.log("--- ✅ LA ROUTE DE TEST EST ATTEINTE ---");
+        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
+        res.json({ success: true, from_test_route: true, destinations });
+    } catch (error) {
+        console.error("❌ Erreur dans la route de test:", error);
+        res.status(500).json({ error: "Erreur serveur dans la route de test" });
+    }
+});
+
+
 // --- Configuration Services (Email, DB) ---
 const resend = new Resend(process.env.RESEND_API_KEY);
 const dbClient = new MongoClient(process.env.MONGODB_URI);
