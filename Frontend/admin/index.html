@@ -3599,7 +3599,29 @@ function getLiveStatusBadge(liveStatus) {
             const statusSelect = document.getElementById('status-select');
             const delayDetails = document.getElementById('delay-details');
             statusSelect.onchange = () => {
-                delayDetails.style.display = statusSelect.value === 'DELAYED' ? 'block' : 'none';
+                const selectedStatus = statusSelect.value;
+    
+    // Afficher le bloc de détails pour DELAYED, CANCELLED ou MAINTENANCE
+    if (selectedStatus === 'DELAYED') {
+        delayDetails.style.display = 'block';
+        // Afficher les champs de retard
+        document.getElementById('delay-minutes').parentElement.style.display = 'block';
+        document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison (optionnel)';
+    } else if (selectedStatus === 'CANCELLED' || selectedStatus === 'MAINTENANCE') {
+        delayDetails.style.display = 'block';
+        // Masquer le champ de durée du retard
+        document.getElementById('delay-minutes').parentElement.style.display = 'none';
+        // Changer le label selon le statut
+        if (selectedStatus === 'CANCELLED') {
+            document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison de l\'annulation *';
+        } else {
+            document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison de la maintenance *';
+        }
+    } else {
+        delayDetails.style.display = 'none';
+    }
+};
+
             };
 
             document.getElementById("status-form").addEventListener('submit', (e) => {
@@ -3609,16 +3631,20 @@ function getLiveStatusBadge(liveStatus) {
                 const reason = document.getElementById('delay-reason').value;
 
                 // Pour un voyage annulé, la raison devient obligatoire
-                if (status === 'CANCELLED' && !reason) {
-                    showNotification('Veuillez spécifier la raison de l\'annulation.', 'warning');
-                    return;
-                }
+              // Pour un voyage annulé ou en maintenance, la raison devient obligatoire
+if ((status === 'CANCELLED' || status === 'MAINTENANCE') && !reason) {
+    const message = status === 'CANCELLED' 
+        ? 'Veuillez spécifier la raison de l\'annulation.' 
+        : 'Veuillez spécifier la raison de la maintenance.';
+    showNotification(message, 'warning');
+    return;
+}
 
                 updateTripStatus(tripId, status, delayMinutes, reason);
             });
 
             document.getElementById("details-modal").classList.add('active');
-        }
+        
 
         async function updateTripStatus(tripId, status, delayMinutes, reason) {
             showNotification('Mise à jour du statut en cours...', 'info');
