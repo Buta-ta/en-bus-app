@@ -3560,13 +3560,12 @@ function getLiveStatusBadge(liveStatus) {
 
 
 
+function openStatusModal(tripId, tripName) {
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
 
-        function openStatusModal(tripId, tripName) {
-            const modalTitle = document.getElementById("modal-title");
-            const modalBody = document.getElementById("modal-body");
-
-            modalTitle.textContent = "Mettre à jour le statut du voyage";
-            modalBody.innerHTML = `
+    modalTitle.textContent = "Mettre à jour le statut du voyage";
+    modalBody.innerHTML = `
         <p>Voyage : <strong>${tripName}</strong></p>
         <form id="status-form">
             <div class="form-group" style="margin-top: 20px;">
@@ -3580,7 +3579,7 @@ function getLiveStatusBadge(liveStatus) {
                 </select>
             </div>
             <div id="delay-details" style="display:none;">
-                <div class="form-group">
+                <div class="form-group" id="delay-minutes-group">
                     <label for="delay-minutes" class="form-label">Durée du retard (minutes)</label>
                     <input type="number" id="delay-minutes" class="form-control" min="5" step="5">
                 </div>
@@ -3596,68 +3595,67 @@ function getLiveStatusBadge(liveStatus) {
         </form>
     `;
 
-            const statusSelect = document.getElementById('status-select');
-            const delayDetails = document.getElementById('delay-details');
-            statusSelect.onchange = () => {
-                const selectedStatus = statusSelect.value;
-    
-    // Afficher le bloc de détails pour DELAYED, CANCELLED ou MAINTENANCE
-    if (selectedStatus === 'DELAYED') {
-        delayDetails.style.display = 'block';
-        // Afficher les champs de retard
-        document.getElementById('delay-minutes').parentElement.style.display = 'block';
-        document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison (optionnel)';
-    } else if (selectedStatus === 'CANCELLED' || selectedStatus === 'MAINTENANCE') {
-        delayDetails.style.display = 'block';
-        // Masquer le champ de durée du retard
-        document.getElementById('delay-minutes').parentElement.style.display = 'none';
-        // Changer le label selon le statut
-        if (selectedStatus === 'CANCELLED') {
-            document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison de l\'annulation *';
+    const statusSelect = document.getElementById('status-select');
+    const delayDetails = document.getElementById('delay-details');
+    const delayMinutesGroup = document.getElementById('delay-minutes-group');
+    const delayReasonLabel = document.querySelector('#delay-reason').parentElement.querySelector('label');
+
+    statusSelect.onchange = () => {
+        const selectedStatus = statusSelect.value;
+        
+        // Afficher le bloc de détails pour DELAYED, CANCELLED ou MAINTENANCE
+        if (selectedStatus === 'DELAYED') {
+            delayDetails.style.display = 'block';
+            delayMinutesGroup.style.display = 'block';
+            delayReasonLabel.textContent = 'Raison (optionnel)';
+        } else if (selectedStatus === 'CANCELLED' || selectedStatus === 'MAINTENANCE') {
+            delayDetails.style.display = 'block';
+            delayMinutesGroup.style.display = 'none';
+            
+            if (selectedStatus === 'CANCELLED') {
+                delayReasonLabel.textContent = 'Raison de l\'annulation *';
+            } else {
+                delayReasonLabel.textContent = 'Raison de la maintenance *';
+            }
         } else {
-            document.getElementById('delay-reason').parentElement.querySelector('label').textContent = 'Raison de la maintenance *';
+            delayDetails.style.display = 'none';
         }
-    } else {
-        delayDetails.style.display = 'none';
-    }
-};
+    };
 
-            };
+    document.getElementById("status-form").addEventListener('submit', (e) => {
+        e.preventDefault();
+        const status = statusSelect.value;
+        const delayMinutes = document.getElementById('delay-minutes').value;
+        const reason = document.getElementById('delay-reason').value;
 
-            document.getElementById("status-form").addEventListener('submit', (e) => {
-                e.preventDefault();
-                const status = statusSelect.value;
-                const delayMinutes = document.getElementById('delay-minutes').value;
-                const reason = document.getElementById('delay-reason').value;
+        // Pour un voyage annulé ou en maintenance, la raison devient obligatoire
+        if ((status === 'CANCELLED' || status === 'MAINTENANCE') && !reason) {
+            const message = status === 'CANCELLED' 
+                ? 'Veuillez spécifier la raison de l\'annulation.' 
+                : 'Veuillez spécifier la raison de la maintenance.';
+            showNotification(message, 'warning');
+            return;
+        }
 
-                // Pour un voyage annulé, la raison devient obligatoire
-              // Pour un voyage annulé ou en maintenance, la raison devient obligatoire
-if ((status === 'CANCELLED' || status === 'MAINTENANCE') && !reason) {
-    const message = status === 'CANCELLED' 
-        ? 'Veuillez spécifier la raison de l\'annulation.' 
-        : 'Veuillez spécifier la raison de la maintenance.';
-    showNotification(message, 'warning');
-    return;
+        updateTripStatus(tripId, status, delayMinutes, reason);
+    });
+
+    document.getElementById("details-modal").classList.add('active');
 }
 
-                updateTripStatus(tripId, status, delayMinutes, reason);
-            });
+async function updateTripStatus(tripId, status, delayMinutes, reason) {
+    showNotification('Mise à jour du statut en cours...', 'info');
 
-            document.getElementById("details-modal").classList.add('active');
-        
+    const body = { status, delayMinutes: parseInt(delayMinutes), reason };
 
-        async function updateTripStatus(tripId, status, delayMinutes, reason) {
-            showNotification('Mise à jour du statut en cours...', 'info');
+    const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
 
-            const body = { status, delayMinutes: parseInt(delayMinutes), reason };
-
-            const data = await apiCall(`/admin/trips/${tripId}/status`, 'PATCH', body);
-
-            if (data && data.success) {
-                showNotification(data.message, 'success');
-                closeModal();
-            }
-        }
+    if (data && data.success) {
+        showNotification(data.message, 'success');
+        closeModal();
+        loadAllTrips(); // ✅ Recharger le tableau pour voir le nouveau statut
+    }
+}
         // ============================================
         // ✏️ MODIFICATION ET SUPPRESSION DE VOYAGE
         // ============================================
