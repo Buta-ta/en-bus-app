@@ -1115,6 +1115,22 @@ app.get("/api/admin/verify", authenticateToken, (req, res) =>
   res.json({ valid: true, user: req.user })
 );
 
+
+
+
+app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
+    try {
+        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
+        res.json({ success: true, destinations });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+
+
+
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
   try {
     const reservations = await reservationsCollection
@@ -1197,15 +1213,6 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
 });
 
 
-app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
-    try {
-        const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
-        res.json({ success: true, destinations });
-    } catch (error) {
-        res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
 
 
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
@@ -1283,6 +1290,94 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 });
 
 
+
+app.post(
+  "/api/admin/trips",
+  authenticateToken,
+  [
+    body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
+    body("startDate").isISO8601().withMessage("La date de début est invalide."),
+    body("endDate").isISO8601().withMessage("La date de fin est invalide."),
+    body("daysOfWeek").isArray({ min: 1 }).withMessage("Au moins un jour de la semaine doit être sélectionné."),
+    body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
+    body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
+    body('highlightBadge').optional({ checkFalsy: true }).isString().trim()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array()[0].msg });
+    }
+    
+    try {
+      const {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek,
+        seatCount,
+        busIdentifier,
+        highlightBadge 
+      } = req.body;
+
+      if (!ObjectId.isValid(routeId)) {
+        return res.status(400).json({ error: "ID de modèle de trajet invalide." });
+      }
+
+      const routeTemplate = await routeTemplatesCollection.findOne({
+        _id: new ObjectId(routeId),
+      });
+      if (!routeTemplate) {
+        return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+      }
+
+      let newTrips = [];
+      let currentDate = new Date(startDate);
+      const lastDate = new Date(endDate);
+      const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+      
+      while (currentDate <= lastDate) {
+        const dayName = dayMap[currentDate.getUTCDay()];
+        if (daysOfWeek.includes(dayName)) {
+          const seats = Array.from({ length: seatCount }, (_, i) => ({
+            number: i + 1,
+            status: "available",
+          }));
+          newTrips.push({
+            date: currentDate.toISOString().split("T")[0],
+            route: routeTemplate,
+            seats: seats,
+            busIdentifier: busIdentifier || null,
+            highlightBadge: highlightBadge || null,
+            createdAt: new Date(),
+          });
+        }
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      }
+
+      if (newTrips.length > 0) {
+        await tripsCollection.insertMany(newTrips);
+        console.log(`✅ ${newTrips.length} voyage(s) créé(s) avec succès.`);
+      } else {
+        console.log("⚠️ Aucun voyage créé, les jours ne correspondaient pas à la plage de dates.");
+      }
+
+      res.status(201).json({
+          success: true,
+          message: `${newTrips.length} voyage(s) ont été programmé(s).`,
+      });
+    } catch (error) {
+      console.error("❌ Erreur lors de la création des voyages:", error);
+      res.status(500).json({ error: "Erreur serveur." });
+    }
+  }
+);
+
+
+
+
+
+
 // Ajouter une nouvelle destination
 // DANS server.js
 
@@ -1334,6 +1429,10 @@ app.post("/api/admin/destinations", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
+
+
+
+// À placer avec les autres routes POST admin dans server.js
 
 
 
@@ -1695,6 +1794,11 @@ app.patch(
     }
   }
 );
+
+
+
+
+// ICI
 
 
 
