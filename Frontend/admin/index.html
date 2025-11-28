@@ -2109,6 +2109,7 @@
                                     <!-- ✅ NOUVELLE COLONNE -->
                                     <th>Disponibilité</th>
                                     <th>Statut</th>
+                                     <th>Équipage</th> <!-- ✅ NOUVELLE COLONNE -->
                                     <th style="min-width: 180px">Actions</th>
                                 </tr>
                             </thead>
@@ -3467,6 +3468,48 @@
             return `<span class="badge ${config.class}">${config.icon} ${config.text}</span>`;
         }
 
+
+        // ============================================
+// 👥 AFFICHAGE DE L'ÉQUIPAGE
+// ============================================
+function getCrewDisplay(crew) {
+    if (!crew) {
+        return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
+    }
+
+    let html = '';
+
+    // Afficher le chauffeur
+    if (crew.driver && crew.driver.name) {
+        html += `
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span style="font-size: 1rem;">🚗</span>
+                <span style="font-size: 0.875rem; font-weight: 600;">${crew.driver.name}</span>
+            </div>
+        `;
+    }
+
+    // Afficher le contrôleur
+    if (crew.controller && crew.controller.name) {
+        html += `
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1rem;">🎫</span>
+                <span style="font-size: 0.875rem; font-weight: 600;">${crew.controller.name}</span>
+            </div>
+        `;
+    }
+
+    // Si aucun équipage assigné
+    if (!html) {
+        return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
+    }
+
+    return html;
+}
+
+
+
+
         function renderTripsTable() {
             const tbody = document.getElementById("trips-body");
 
@@ -3526,6 +3569,11 @@
                 <td>
                     ${getLiveStatusBadge(trip.liveStatus)}
                 </td>
+
+                <!-- ✅ NOUVELLE COLONNE ÉQUIPAGE -->
+<td>
+    ${getCrewDisplay(trip.crew)}
+</td>
 
 <td>
     
