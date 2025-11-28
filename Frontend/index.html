@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#73d700" />
@@ -453,6 +454,22 @@
           </div>
         </div>
       </section>
+
+
+
+      <!-- ============================================ -->
+<!-- ✅ NOUVELLE SECTION POUR LA CARTE -->
+<!-- ============================================ -->
+<section class="map-section">
+    <div class="container">
+        <h2 data-i18n="map_section_title">Notre Réseau en un coup d'œil</h2>
+        
+        <!-- C'est ce div que Leaflet utilisera pour dessiner la carte -->
+        <div id="interactive-map"></div>
+    </div>
+</section>
+
+
     </div>
 
     <div id="results-page" class="page">
@@ -967,6 +984,10 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+
+  <!-- ✅ AJOUTER CETTE LIGNE AVANT translations.js ET app.js -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script src="translations.js"></script>
   <script src="app.js"></script>
 

@@ -57,6 +57,9 @@ const translations = {
         if (children > 0) text += `, ${children} Enfant(s)`;
         return text;
     },
+
+    map_section_title: "Notre Réseau en un coup d'œil",
+
     
     // --- Page Résultats ---
     results_title: "Résultats de recherche",
@@ -500,6 +503,8 @@ const translations = {
         if (children > 0) text += `, ${children} Child(ren)`;
         return text;
     },
+
+    map_section_title: "Our Network at a Glance",
 
     // --- Results Page ---
     results_title: "Search Results",

@@ -2869,6 +2869,67 @@ h3 {
 
 
 
+/* ============================================
+   🗺️ CARTE INTERACTIVE
+   ============================================ */
+
+.map-section {
+    padding: var(--space-64, 4rem) 0;
+    background-color: var(--color-background); /* Utilise la couleur de fond de votre site */
+}
+
+/* Style pour le titre de la section */
+.map-section h2 {
+    font-family: var(--font-logo), sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    text-align: center;
+    margin-bottom: var(--space-32, 2rem);
+    background: linear-gradient(145deg, var(--color-text-primary, #fff), var(--color-text-secondary, #ccc));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Le conteneur de la carte */
+#interactive-map {
+    height: 500px; /* Vous pouvez ajuster cette hauteur */
+    width: 100%;
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--color-border);
+    background-color: #080c21; /* Fond sombre pendant le chargement */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Style pour les popups qui s'ouvrent sur la carte */
+.leaflet-popup-content-wrapper {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-lg);
+}
+
+.leaflet-popup-content {
+    font-family: var(--font-base);
+    margin: 15px 20px !important;
+}
+
+.leaflet-popup-tip {
+    background: var(--color-surface);
+}
+
+.leaflet-popup-close-button {
+    color: var(--color-text-secondary) !important;
+}
+
+/* Style personnalisé pour le contenu du popup */
+.popup-city-name {
+    font-family: var(--font-logo);
+    font-size: 1.2rem;
+    color: var(--color-accent-glow);
+    margin: 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--color-border);
+}
+
 
 /* ============================================
    📱 PWA STYLES
