@@ -3942,6 +3942,191 @@ async function updateTripStatus(tripId, status, delayMinutes, reason) {
             }
         }
 
+
+        // ============================================
+// 📊 ANALYTICS BUS - FONCTIONS
+// ============================================
+
+/**
+ * Charge la liste de tous les bus dans le select
+ */
+async function loadBusList() {
+    const select = document.getElementById('analytics-bus-select');
+    
+    if (!select) {
+        console.error("❌ Élément 'analytics-bus-select' introuvable");
+        return;
+    }
+
+    try {
+        const data = await apiCall('/admin/analytics/buses');
+        
+        if (!data || !data.success) {
+            showNotification('Impossible de charger la liste des bus', 'error');
+            return;
+        }
+
+        // Remplir le select
+        select.innerHTML = '<option value="">-- Choisir un bus --</option>';
+        
+        data.buses.forEach(busId => {
+            select.innerHTML += `<option value="${busId}">${busId}</option>`;
+        });
+
+        console.log(`✅ ${data.buses.length} bus chargés dans le sélecteur`);
+
+    } catch (error) {
+        console.error('❌ Erreur chargement liste des bus:', error);
+        showNotification('Erreur lors du chargement des bus', 'error');
+    }
+}
+
+/**
+ * Charge et affiche les statistiques d'un bus
+ */
+async function loadBusAnalytics() {
+    const select = document.getElementById('analytics-bus-select');
+    const busId = select.value;
+
+    if (!busId) {
+        showNotification('Veuillez sélectionner un bus', 'warning');
+        return;
+    }
+
+    console.log(`📊 Chargement des analytics pour le bus: ${busId}`);
+
+    // Afficher un loader
+    showNotification('Chargement des statistiques...', 'info');
+
+    try {
+        const data = await apiCall(`/admin/analytics/bus/${busId}`);
+
+        if (!data || !data.success) {
+            showNotification('Impossible de charger les statistiques', 'error');
+            return;
+        }
+
+        console.log('✅ Données reçues:', data);
+
+        // Afficher les statistiques
+        displayBusStats(data.stats, busId);
+        displayBusTrips(data.trips);
+
+        // Masquer le message vide et afficher les stats
+        document.getElementById('analytics-empty-state').style.display = 'none';
+        document.getElementById('analytics-stats-container').style.display = 'block';
+
+        showNotification(`Statistiques chargées pour le bus ${busId}`, 'success');
+
+    } catch (error) {
+        console.error('❌ Erreur chargement analytics:', error);
+        showNotification('Erreur lors du chargement des statistiques', 'error');
+    }
+}
+
+/**
+ * Affiche les cartes de statistiques
+ */
+function displayBusStats(stats, busId) {
+    const statsGrid = document.getElementById('analytics-stats-grid');
+
+    if (!statsGrid) {
+        console.error("❌ Élément 'analytics-stats-grid' introuvable");
+        return;
+    }
+
+    statsGrid.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Voyages effectués</span>
+                <div class="stat-icon primary">🚌</div>
+            </div>
+            <div class="stat-value">${stats.totalTrips}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Revenu total</span>
+                <div class="stat-icon success">💰</div>
+            </div>
+            <div class="stat-value">${formatPrice(stats.totalRevenue)} FCFA</div>
+            <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 8px;">
+                Moy. ${formatPrice(stats.averageRevenue)} FCFA/voyage
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Taux d'occupation</span>
+                <div class="stat-icon warning">📈</div>
+            </div>
+            <div class="stat-value">${stats.averageOccupancy}%</div>
+            <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 8px;">
+                ${stats.totalSeatsSold} / ${stats.totalSeatsAvailable} sièges vendus
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Ponctualité</span>
+                <div class="stat-icon ${stats.onTimeRate >= 80 ? 'success' : 'warning'}">⏱️</div>
+            </div>
+            <div class="stat-value">${stats.onTimeRate}%</div>
+            <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 8px;">
+                ${stats.maintenanceDays} jour(s) en maintenance
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Affiche le tableau détaillé des voyages
+ */
+function displayBusTrips(trips) {
+    const tbody = document.getElementById('analytics-trips-body');
+
+    if (!tbody) {
+        console.error("❌ Élément 'analytics-trips-body' introuvable");
+        return;
+    }
+
+    if (trips.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun voyage trouvé</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = trips.map(trip => {
+        const occupancyClass = trip.occupancyRate >= 80 ? 'success' : trip.occupancyRate >= 50 ? 'warning' : 'danger';
+        const statusBadge = getLiveStatusBadge({ status: trip.finalStatus });
+
+        return `
+            <tr>
+                <td class="font-bold">${new Date(trip.date).toLocaleDateString('fr-FR')}</td>
+                <td>${trip.route}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="flex: 1; background: var(--dark-elevated); height: 8px; border-radius: 9999px; overflow: hidden;">
+                            <div style="width: ${trip.occupancyRate}%; height: 100%; background: var(--status-${occupancyClass}); transition: width 0.3s;"></div>
+                        </div>
+                        <span class="font-bold text-sm">${trip.seatsOccupied}/${trip.seatsTotal} (${trip.occupancyRate}%)</span>
+                    </div>
+                </td>
+                <td class="font-bold" style="color: var(--primary);">${formatPrice(trip.revenue)} FCFA</td>
+                <td>${statusBadge}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+
+
+
+
+
+
+
+
         function renderDestinationsTable(destinations) {
             const tbody = document.getElementById('destinations-body');
             if (!tbody) {
@@ -4182,6 +4367,11 @@ async function updateTripStatus(tripId, status, delayMinutes, reason) {
                 case 'destinations':
                     loadAllDestinations();
                     break;
+
+                    // ✅ NOUVEAU CAS POUR ANALYTICS
+    case 'analytics':
+        loadBusList();
+        break;
 
                 default:
                     // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
