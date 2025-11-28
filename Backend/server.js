@@ -2197,23 +2197,25 @@ app.patch(
 // ============================================
 
 // --- D. Routes d'action spécifiques (PATCH) ---
-
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED', 'MAINTENANCE']),
     body('delayMinutes').if(body('status').equals('DELAYED')).isInt({ min: 1 }).withMessage('Le retard doit être un nombre positif.'),
-    body('reason').if(body('status').equals('CANCELLED')).notEmpty().withMessage('La raison est requise pour une annulation.'),
+    body('reason').if(body('status').equals('CANCELLED') || body('status').equals('MAINTENANCE')).notEmpty().withMessage('La raison est requise pour cette action.'),
     body('reason').optional().isString().trim()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ error: errors.array()[0].msg });
     }
+
     try {
         const { tripId } = req.params;
         const { status, delayMinutes, reason } = req.body;
+
         if (!ObjectId.isValid(tripId)) {
             return res.status(400).json({ error: "ID de voyage invalide." });
         }
+
         const liveStatus = {
             status,
             delayMinutes: status === 'DELAYED' ? (parseInt(delayMinutes) || 0) : 0,
@@ -2221,35 +2223,28 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
             lastUpdated: new Date(),
             updatedBy: req.user.username
         };
+
         const result = await tripsCollection.updateOne({ _id: new ObjectId(tripId) }, { $set: { liveStatus } });
+
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Voyage non trouvé." });
-
         }
 
-
-
-                 // ==========================================================
-        // ✅ BLOC AMÉLIORÉ : MISE À JOUR DES STATS DU PERSONNEL
+        // ==========================================================
+        // ✅ BLOC DE MISE À JOUR DES STATS (PLACÉ AU BON ENDROIT)
         // ==========================================================
         if (status === 'ARRIVED') {
             console.log(`🏁 Voyage ${tripId} marqué "Arrivé". Tentative de mise à jour des stats...`);
             
             const trip = await tripsCollection.findOne({ _id: new ObjectId(tripId) });
-            
             const distance = trip?.route?.distance;
             const crew = trip?.crew;
 
-            // --- Logging de débogage ---
             if (!distance) console.log(`   -> ⚠️ Distance non trouvée pour ce voyage.`);
             if (!crew || (!crew.drivers && !crew.controllers)) console.log(`   -> ⚠️ Équipage non trouvé pour ce voyage.`);
-            // --- Fin du logging ---
 
             if (distance && crew && (crew.drivers || crew.controllers)) {
-                const crewMembers = [
-                    ...(crew.drivers || []), 
-                    ...(crew.controllers || [])
-                ];
+                const crewMembers = [...(crew.drivers || []), ...(crew.controllers || [])];
 
                 if (crewMembers.length > 0) {
                     const crewIds = crewMembers
@@ -2264,7 +2259,6 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
                             { _id: { $in: crewIds } },
                             { $inc: { totalTrips: 1, totalKm: distance } }
                         );
-                        
                         console.log(`   -> ✅ Succès ! ${updateResult.modifiedCount} membre(s) d'équipage mis à jour.`);
                     }
                 }
@@ -2272,14 +2266,16 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
                 console.log('   -> ❌ Mise à jour des stats ignorée (données manquantes).');
             }
         }
+        // ==========================================================
+
         console.log(`📢 Statut du voyage ${tripId} mis à jour : ${status}`);
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
+
     } catch (error) {
         console.error("❌ Erreur mise à jour statut voyage:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 
 // --- E. Routes de suppression (DELETE) ---
 
