@@ -2931,6 +2931,15 @@ h3 {
 }
 
 
+.btn-invoice {
+    background: #607D8B; /* Une couleur neutre comme le gris-bleu */
+    color: white;
+}
+.btn-invoice:hover {
+    background: #78909c;
+}
+
+
 /* ============================================
    📱 PWA STYLES
    ============================================ */
