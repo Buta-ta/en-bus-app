@@ -3951,51 +3951,39 @@ async function displayReservations() {
                 else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
                 else if (isCancelled) statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
 
-                                // ========================================================
-                // ✅ NOUVELLE LOGIQUE POUR LES BOUTONS D'ACTION
-                // ========================================================
                 let actionsButtons = '';
-                let kebabMenuItems = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
-
                 if (isConfirmed) {
-                    // --- STATUT CONFIRMÉ ---
-                    // Bouton principal : Voir le billet
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
-                    
-                    // Actions secondaires dans le menu Kebab
+                    if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">${translation.button_track || 'Suivre'}</a>`;
+                    const reportCount = res.reportCount || 0;
+                    if (!res.returnRoute && reportCount < 2) {
+                        actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
+                    }
+                } else if (isPending) {
+                    actionsButtons = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">${translation.button_pay}</button>`;
+                } else if (isReportPending) {
+                    actionsButtons = `<div style="text-align: center; color: #2196f3;">${translation.info_report_pending}</div>`;
+                } else if (isReported) {
+                    const newBookingNum = res.replacementBookingNumber;
+                    actionsButtons = `<div style="text-align: center; color: #9e9e9e;">${translation.info_replaced_by} <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong></div>`;
+                } else {
+                    actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
+                }
+
+                    // ✅ NOUVELLE LOGIQUE POUR LE MENU KEBAB
+                let kebabMenuItems = '';
+                if (isConfirmed) {
                     kebabMenuItems += `<div class="kebab-dropdown-item" onclick="downloadInvoice('${res.bookingNumber}')">📄 <span>Voir la Facture</span></div>`;
                     if (trackerIdentifier) {
-                        kebabMenuItems += `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" target="_blank" class="kebab-dropdown-item">🛰️ <span>${translation.button_track}</span></a>`;
+                        kebabMenuItems += `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="kebab-dropdown-item">🛰️ <span>${translation.button_track}</span></a>`;
                     }
                     const reportCount = res.reportCount || 0;
                     if (!res.returnRoute && reportCount < 2) {
                         kebabMenuItems += `<div class="kebab-dropdown-item" onclick="initiateReport('${res.bookingNumber}')">🔄 <span>${translation.button_report}</span></div>`;
                     }
-
-                } else if (isPending) {
-                    // --- STATUT EN ATTENTE DE PAIEMENT ---
-                    // Un seul bouton : Payer
-                    actionsButtons = `<button class="btn btn-secondary" onclick="viewPaymentInstructions('${res.bookingNumber}')">${translation.button_pay}</button>`;
-
-                } else if (isReported) {
-                    // --- STATUT REPORTÉ (obsolète) ---
-                    // Affiche le lien vers le nouveau billet
-                    const newBookingNum = res.replacementBookingNumber;
-                    actionsButtons = `<div style="text-align: center; color: #9e9e9e;">${translation.info_replaced_by} <strong style="color: white; cursor: pointer;" onclick="viewTicket('${newBookingNum}')">${newBookingNum || '...'}</strong></div>`;
-                
-                } else {
-                    // --- STATUT ANNULÉ, EXPIRÉ, OU AUTRE ---
-                    // Un seul bouton : Nouvelle réservation
-                    actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
-                }
-                
-                // Le bouton pour masquer de l'historique est toujours dans le menu Kebab
-                if (!isPending && !isReportPending) {
-                     kebabMenuItems += `<div class="kebab-dropdown-item" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" style="color: #f44336;">🗑️ <span>${translation.button_delete_title || 'Masquer'}</span></div>`;
                 }
 
-                // Construction finale du HTML des actions
                 if (kebabMenuItems) {
                     actionsButtons += `
                         <div class="kebab-menu-container">
@@ -4004,6 +3992,9 @@ async function displayReservations() {
                         </div>
                     `;
                 }
+
+
+
 
 
 
