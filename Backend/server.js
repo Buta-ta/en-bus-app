@@ -2175,53 +2175,49 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
 
 
 
-         // ==========================================================
-        // ✅ NOUVEAU BLOC : MISE À JOUR DES STATS DU PERSONNEL
+                 // ==========================================================
+        // ✅ BLOC AMÉLIORÉ : MISE À JOUR DES STATS DU PERSONNEL
         // ==========================================================
         if (status === 'ARRIVED') {
-            console.log('🏁 Voyage arrivé ! Tentative de mise à jour des stats du personnel...');
+            console.log(`🏁 Voyage ${tripId} marqué "Arrivé". Tentative de mise à jour des stats...`);
             
-            // 1. Récupérer les infos complètes du voyage
             const trip = await tripsCollection.findOne({ _id: new ObjectId(tripId) });
             
-            // 2. Vérifier si on a les infos nécessaires
             const distance = trip?.route?.distance;
             const crew = trip?.crew;
 
-            if (distance && crew) {
-                // On rassemble tous les membres d'équipage (chauffeurs et contrôleurs)
+            // --- Logging de débogage ---
+            if (!distance) console.log(`   -> ⚠️ Distance non trouvée pour ce voyage.`);
+            if (!crew || (!crew.drivers && !crew.controllers)) console.log(`   -> ⚠️ Équipage non trouvé pour ce voyage.`);
+            // --- Fin du logging ---
+
+            if (distance && crew && (crew.drivers || crew.controllers)) {
                 const crewMembers = [
                     ...(crew.drivers || []), 
                     ...(crew.controllers || [])
                 ];
 
                 if (crewMembers.length > 0) {
-                    // On ne met à jour que les membres qui ont un ID valide
                     const crewIds = crewMembers
                         .map(member => member.id)
-                        .filter(id => id && ObjectId.isValid(id)) // Filtre les ID nuls ou invalides
+                        .filter(id => id && ObjectId.isValid(id))
                         .map(id => new ObjectId(id));
                     
-                    // 3. Mettre à jour tous les membres en une seule requête
+                    console.log(`   -> IDs de l'équipage à mettre à jour:`, crewIds);
+                    
                     if (crewIds.length > 0) {
-                        await database.collection('crew').updateMany(
+                        const updateResult = await database.collection('crew').updateMany(
                             { _id: { $in: crewIds } },
-                            { 
-                                $inc: { 
-                                    totalTrips: 1, 
-                                    totalKm: distance 
-                                } 
-                            }
+                            { $inc: { totalTrips: 1, totalKm: distance } }
                         );
                         
-                        console.log(`✅ Stats mises à jour pour ${crewIds.length} membre(s) d'équipage.`);
+                        console.log(`   -> ✅ Succès ! ${updateResult.modifiedCount} membre(s) d'équipage mis à jour.`);
                     }
                 }
             } else {
-                console.log('⚠️ Pas de distance ou d\'équipage, mise à jour des stats ignorée.');
+                console.log('   -> ❌ Mise à jour des stats ignorée (données manquantes).');
             }
         }
-
         console.log(`📢 Statut du voyage ${tripId} mis à jour : ${status}`);
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
     } catch (error) {
