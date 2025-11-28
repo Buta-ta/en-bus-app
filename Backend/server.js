@@ -2276,6 +2276,53 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
+
+// Modifier l'équipage d'un voyage spécifique
+app.patch("/api/admin/trips/:tripId/crew", authenticateToken, async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const {
+            driver1Id, driver1Name, driver2Id, driver2Name,
+            controller1Id, controller1Name, controller2Id, controller2Name
+        } = req.body;
+
+        if (!ObjectId.isValid(tripId)) {
+            return res.status(400).json({ error: "ID de voyage invalide." });
+        }
+
+        const drivers = [];
+        if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
+        if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
+
+        const controllers = [];
+        if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
+        if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
+
+        const newCrewObject = {
+            drivers: drivers.length > 0 ? drivers : null,
+            controllers: controllers.length > 0 ? controllers : null
+        };
+
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(tripId) },
+            { $set: { crew: newCrewObject } }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Voyage introuvable." });
+        }
+
+        console.log(`✅ Équipage du voyage ${tripId} mis à jour.`);
+        res.json({ success: true, message: "Équipage mis à jour avec succès." });
+
+    } catch (error) {
+        console.error("❌ Erreur mise à jour équipage:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
+
 // --- E. Routes de suppression (DELETE) ---
 
 app.delete("/api/admin/route-templates/:id", authenticateToken, async (req, res) => {
