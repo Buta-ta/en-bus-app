@@ -2072,6 +2072,7 @@
                                     <th>N° Bus</th>
                                     <!-- ✅ NOUVELLE COLONNE -->
                                     <th>Disponibilité</th>
+                                    <th>Statut</th> 
                                     <th style="min-width: 180px">Actions</th>
                                 </tr>
                             </thead>
@@ -3271,6 +3272,31 @@
         // DANS admin/index.html, dans <script>
         // DANS admin/index.html, REMPLACEZ votre fonction renderTripsTable par celle-ci
 
+        // ============================================
+// 🎨 AFFICHAGE DU BADGE DE STATUT (pour le tableau)
+// ============================================
+function getLiveStatusBadge(liveStatus) {
+    if (!liveStatus || !liveStatus.status) {
+        return '<span class="badge badge-gray">⚪ Non défini</span>';
+    }
+
+    const statusConfig = {
+        'ON_TIME': { icon: '🟢', text: 'À l\'heure', class: 'badge-success' },
+        'DELAYED': { icon: '🟠', text: `Retard ${liveStatus.delayMinutes || 0}min`, class: 'badge-warning' },
+        'CANCELLED': { icon: '🔴', text: 'Annulé', class: 'badge-danger' },
+        'ARRIVED': { icon: '🏁', text: 'Arrivé', class: 'badge-gray' },
+        'MAINTENANCE': { icon: '🔧', text: 'Maintenance', class: 'badge-warning' }
+    };
+
+    const config = statusConfig[liveStatus.status] || { 
+        icon: '❓', 
+        text: liveStatus.status, 
+        class: 'badge-gray' 
+    };
+
+    return `<span class="badge ${config.class}">${config.icon} ${config.text}</span>`;
+}
+
         function renderTripsTable() {
             const tbody = document.getElementById("trips-body");
 
@@ -3325,9 +3351,14 @@
                     </div>
                     ${occupiedSeats > 0 ? `<div class="text-xs" style="color:var(--status-confirmed);margin-top:4px;">✅ ${occupiedSeats} réservé(s)</div>` : ""}
                 </td>
-             
+        
+                
+                <td>
+                    ${getLiveStatusBadge(trip.liveStatus)}
+                </td>
 
 <td>
+    
     <div class="actions-cell">
         <!-- ✅ CORRECTION : Retour aux onclick directs pour plus de fiabilité -->
         <button class="btn btn-icon btn-ghost" onclick="manageSeats('${trip._id}')" title="Gérer sièges">💺</button>
@@ -3545,6 +3576,7 @@
                     <option value="DELAYED">🟠 En retard</option>
                     <option value="CANCELLED">🔴 Annulé</option>
                     <option value="ARRIVED">🏁 Arrivé</option>
+                    <option value="MAINTENANCE">🔧 Maintenance</option>
                 </select>
             </div>
             <div id="delay-details" style="display:none;">
