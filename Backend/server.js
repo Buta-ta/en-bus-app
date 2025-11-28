@@ -1261,6 +1261,175 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
 
 
 
+// ============================================
+// 👥 GESTION DU PERSONNEL (CREW)
+// ============================================
+
+// Récupérer tous les membres du personnel
+app.get("/api/admin/crew", authenticateToken, async (req, res) => {
+    try {
+        const crewMembers = await dbClient.db("en-bus-db").collection('crew')
+            .find({})
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        // Calculer les stats générales
+        const stats = {
+            total: crewMembers.length,
+            drivers: crewMembers.filter(m => m.role === 'Chauffeur').length,
+            controllers: crewMembers.filter(m => m.role === 'Contrôleur').length,
+            active: crewMembers.filter(m => m.status === 'Actif').length
+        };
+
+        res.json({
+            success: true,
+            stats: stats,
+            crew: crewMembers
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération personnel:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Ajouter un nouveau membre du personnel
+app.post("/api/admin/crew", authenticateToken, [
+    body('name').notEmpty().withMessage('Le nom est requis'),
+    body('role').isIn(['Chauffeur', 'Contrôleur']).withMessage('Poste invalide'),
+    body('phone').notEmpty().withMessage('Le téléphone est requis'),
+    body('status').isIn(['Actif', 'En congé', 'Inactif']).withMessage('Statut invalide')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
+    try {
+        const { name, role, phone, status } = req.body;
+
+        // Générer le matricule automatiquement
+        const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
+        
+        // Compter le nombre de membres avec ce poste pour générer le numéro
+        const count = await dbClient.db("en-bus-db").collection('crew').countDocuments({ role: role });
+        const matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+
+        const newMember = {
+            matricule: matricule,
+            name: name,
+            role: role,
+            phone: phone,
+            status: status,
+            totalKm: 0,
+            totalTrips: 0,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        const result = await dbClient.db("en-bus-db").collection('crew').insertOne(newMember);
+
+        console.log(`✅ Nouveau membre ajouté: ${matricule} - ${name}`);
+
+        res.status(201).json({
+            success: true,
+            message: `${role} ajouté avec succès`,
+            member: { ...newMember, _id: result.insertedId }
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur ajout personnel:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Modifier un membre du personnel
+app.patch("/api/admin/crew/:id", authenticateToken, [
+    body('name').optional().notEmpty(),
+    body('phone').optional().notEmpty(),
+    body('status').optional().isIn(['Actif', 'En congé', 'Inactif'])
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
+    try {
+        const { id } = req.params;
+        
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID invalide" });
+        }
+
+        const updates = {};
+        if (req.body.name) updates.name = req.body.name;
+        if (req.body.phone) updates.phone = req.body.phone;
+        if (req.body.status) updates.status = req.body.status;
+        
+        updates.updatedAt = new Date();
+
+        const result = await dbClient.db("en-bus-db").collection('crew').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updates }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Membre introuvable" });
+        }
+
+        console.log(`✅ Membre ${id} modifié`);
+
+        res.json({
+            success: true,
+            message: "Informations mises à jour"
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur modification personnel:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Supprimer (désactiver) un membre du personnel
+app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID invalide" });
+        }
+
+        // On ne supprime pas vraiment, on désactive
+        const result = await dbClient.db("en-bus-db").collection('crew').updateOne(
+            { _id: new ObjectId(id) },
+            { 
+                $set: { 
+                    status: 'Inactif',
+                    updatedAt: new Date()
+                } 
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Membre introuvable" });
+        }
+
+        console.log(`✅ Membre ${id} désactivé`);
+
+        res.json({
+            success: true,
+            message: "Membre désactivé"
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur suppression personnel:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+
+
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
   try {
