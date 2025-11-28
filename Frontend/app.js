@@ -1771,6 +1771,11 @@ function addKebabMenuStyles() {
                 position: relative;
                 display: inline-block;
             }
+
+            /* ✅ NOUVELLE RÈGLE CI-DESSOUS */
+            .res-pwa-actions > .kebab-menu-container {
+                /* S'assure que le conteneur est au-dessus des autres éléments de la carte */
+                z-index: 2; 
             .kebab-menu-button {
                 background: none;
                 border: none;
