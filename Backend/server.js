@@ -1145,6 +1145,121 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 
 
 
+// ============================================
+// 📊 ANALYTICS BUS - STATISTIQUES PAR BUS
+// ============================================
+
+// Liste des bus disponibles
+app.get("/api/admin/analytics/buses", authenticateToken, async (req, res) => {
+    try {
+        // Récupérer tous les numéros de bus uniques (en excluant les null)
+        const buses = await tripsCollection.distinct("busIdentifier", { 
+            busIdentifier: { $exists: true, $ne: null, $ne: "" } 
+        });
+        
+        res.json({ 
+            success: true, 
+            buses: buses.sort() // Trier par ordre alphabétique
+        });
+    } catch (error) {
+        console.error("❌ Erreur récupération liste des bus:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// Statistiques complètes d'un bus
+app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) => {
+    try {
+        const { busId } = req.params;
+        
+        if (!busId) {
+            return res.status(400).json({ error: "Numéro de bus manquant" });
+        }
+
+        console.log(`📊 Calcul des statistiques pour le bus: ${busId}`);
+
+        // 1. Récupérer TOUS les voyages de ce bus
+        const allTrips = await tripsCollection.find({ 
+            busIdentifier: busId 
+        }).sort({ date: -1 }).toArray();
+
+        if (allTrips.length === 0) {
+            return res.json({
+                success: true,
+                stats: {
+                    totalTrips: 0,
+                    totalRevenue: 0,
+                    averageOccupancy: 0,
+                    onTimeRate: 0,
+                    maintenanceDays: 0
+                },
+                trips: []
+            });
+        }
+
+        // 2. Calculer les statistiques globales
+        let totalRevenue = 0;
+        let totalSeatsAvailable = 0;
+        let totalSeatsSold = 0;
+        let onTimeTrips = 0;
+        let maintenanceDays = 0;
+
+        const tripsDetails = allTrips.map(trip => {
+            const totalSeats = trip.seats.length;
+            const occupiedSeats = trip.seats.filter(s => s.status === 'occupied').length;
+            const revenue = occupiedSeats * (trip.route.price || 0);
+
+            // Accumulation pour les stats globales
+            totalRevenue += revenue;
+            totalSeatsAvailable += totalSeats;
+            totalSeatsSold += occupiedSeats;
+
+            if (trip.liveStatus?.status === 'ON_TIME' || trip.liveStatus?.status === 'ARRIVED') {
+                onTimeTrips++;
+            }
+
+            if (trip.liveStatus?.status === 'MAINTENANCE') {
+                maintenanceDays++;
+            }
+
+            return {
+                date: trip.date,
+                route: `${trip.route.from} → ${trip.route.to}`,
+                seatsOccupied: occupiedSeats,
+                seatsTotal: totalSeats,
+                occupancyRate: totalSeats > 0 ? Math.round((occupiedSeats / totalSeats) * 100) : 0,
+                revenue: revenue,
+                finalStatus: trip.liveStatus?.status || 'Non défini'
+            };
+        });
+
+        const stats = {
+            totalTrips: allTrips.length,
+            totalRevenue: totalRevenue,
+            averageRevenue: allTrips.length > 0 ? Math.round(totalRevenue / allTrips.length) : 0,
+            averageOccupancy: totalSeatsAvailable > 0 ? Math.round((totalSeatsSold / totalSeatsAvailable) * 100) : 0,
+            onTimeRate: allTrips.length > 0 ? Math.round((onTimeTrips / allTrips.length) * 100) : 0,
+            maintenanceDays: maintenanceDays,
+            totalSeatsSold: totalSeatsSold,
+            totalSeatsAvailable: totalSeatsAvailable
+        };
+
+        console.log(`✅ Statistiques calculées pour ${busId}:`, stats);
+
+        res.json({
+            success: true,
+            busId: busId,
+            stats: stats,
+            trips: tripsDetails
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur calcul analytics bus:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
 
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
