@@ -1427,52 +1427,45 @@ app.post(
 
 // Ajouter une nouvelle destination
 // DANS server.js
-app.post("/api/admin/destinations", authenticateToken, [ /* ... */ ], async (req, res) => {
-    // ...
+app.post("/api/admin/destinations", authenticateToken, [
+    body('name').notEmpty().withMessage("Le nom est requis."),
+    body('country').notEmpty().withMessage("Le pays est requis."),
+    // On rend le champ 'coords' complètement optionnel et on accepte qu'il soit vide
+    body('coords').optional({ checkFalsy: true }).isString()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.log("❌ Erreurs de validation:", errors.array());
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
     try {
-        const { name, country, coords: coordsStr } = req.body;
+        const { name, country, coords } = req.body;
         
-        console.log("--- DEBUG Création Destination ---");
-        console.log("Coordonnées reçues (chaîne) :", coordsStr);
-
         let coordsArray = [];
-        if (coordsStr && typeof coordsStr === 'string' && coordsStr.trim() !== '') {
-            const parts = coordsStr.split(',');
-            console.log("Parties après split :", parts);
-            
-            const numbers = parts.map(c => parseFloat(c.trim()));
-            console.log("Parties converties en nombres :", numbers);
-
-            const validNumbers = numbers.filter(c => !isNaN(c));
-            console.log("Nombres valides gardés :", validNumbers);
-
-            if (validNumbers.length === 2) {
-                coordsArray = validNumbers;
+        
+        // On ne traite la chaîne que si elle existe et n'est pas vide
+        if (coords && coords.trim() !== '') {
+            const parts = coords.split(',').map(c => parseFloat(c.trim()));
+            if (parts.length === 2 && !parts.some(isNaN)) {
+                coordsArray = parts;
+            } else {
+                return res.status(400).json({ error: "Format des coordonnées invalide." });
             }
         }
         
-        console.log("Tableau final des coordonnées :", coordsArray);
-        console.log("---------------------------------");
-        
-         const newDestination = {
-            name,
-            country,
-            coords: coordsArray,
-            isActive: true,
-            createdAt: new Date()
+        const newDestination = {
+            name, country, coords: coordsArray, isActive: true, createdAt: new Date()
         };
         
         await destinationsCollection.insertOne(newDestination);
-        res.status(201).json({ success: true, message: "Destination ajoutée avec succès." });
+        res.status(201).json({ success: true, message: "Destination ajoutée." });
 
     } catch (error) {
         console.error("❌ Erreur création destination:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
-     
-        // ... (le reste de votre logique pour créer la destination)
-    }
-);
+});
 
 // À placer avec les autres routes POST admin dans server.js
 
