@@ -2237,42 +2237,41 @@ function selectSmartSearchResult(from, to) {
 }
 
 
-function showDetailedSearch(prefillData = {}) {
+async function showDetailedSearch(prefillData = {}) {
     const smartSearchContainer = document.getElementById('smart-search-container');
     const detailedSearchBox = document.getElementById('detailed-search-box');
 
     if (!smartSearchContainer || !detailedSearchBox) {
-        console.error("Erreur: Impossible de trouver les conteneurs de recherche.");
+        console.error("Erreur: Conteneurs de recherche introuvables.");
         return;
     }
     
-    console.log("🚀 Affichage du formulaire détaillé...");
-
-    // Cacher la barre intelligente
+    // Cacher la barre intelligente et afficher le formulaire
     smartSearchContainer.style.display = 'none';
-    
-    // Afficher le formulaire détaillé
-    detailedSearchBox.classList.add('visible');
-    
-    // ===================================
-    // ✅ CORRECTION : ON PEUPLE LES VILLES ICI
-    // ===================================
-    // On s'assure que la liste des villes est à jour depuis l'API
-    if (typeof populateCitySelects === 'function') {
-        populateCitySelects();
-    }
-    // ===================================
-    
-    // Pré-remplir les champs
-    document.getElementById('origin').value = prefillData.from || '';
-    document.getElementById('destination').value = prefillData.to || '';
+    detailedSearchBox.style.display = 'block';
+    setTimeout(() => { detailedSearchBox.classList.add('visible'); }, 10);
 
-    // Initialiser le calendrier
+    // ============================================
+    // ✅ CORRECTION DE L'ORDRE D'EXÉCUTION
+    // ============================================
+
+    // 1. On attend que la liste des villes soit chargée et affichée
+    if (typeof populateCitySelects === 'function') {
+        await populateCitySelects();
+    }
+
+    // 2. SEULEMENT APRÈS, on pré-remplit les valeurs
+    if (prefillData) {
+        if (prefillData.from) document.getElementById('origin').value = prefillData.from;
+        if (prefillData.to) document.getElementById('destination').value = prefillData.to;
+    }
+
+    // 3. On initialise le calendrier
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
-
-    // Mettre le focus
+    
+    // 4. On met le focus sur le bon champ
     if (prefillData.from && prefillData.to) {
         document.getElementById('travel-date').focus();
     } else if (prefillData.to) {
@@ -2280,8 +2279,8 @@ function showDetailedSearch(prefillData = {}) {
     } else {
         document.getElementById('origin').focus();
     }
+    // ============================================
 }
-
 
 
 
