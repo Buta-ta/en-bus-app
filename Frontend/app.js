@@ -1620,7 +1620,6 @@ const ticketHTML = `
         populatePopularDestinations();
         setupPaymentMethodToggle();
         addToastStyles();
-        addKebabMenuStyles(); 
         setupAmenitiesFilters(); 
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
@@ -1762,74 +1761,7 @@ function addToastStyles() {
 }
 
 
-function addKebabMenuStyles() {
-    if (!document.getElementById('kebab-menu-styles')) {
-        const style = document.createElement('style');
-        style.id = 'kebab-menu-styles';
-        style.textContent = `
-            .kebab-menu-container {
-                position: relative;
-                display: inline-block;
-            }
 
-                        .kebab-menu-container {
-                position: relative;
-                display: inline-block;
-            }
-
-            /* ✅ AJOUTER CE BLOC CI-DESSOUS */
-            .reservation-card-pwa.is-active {
-                position: relative; /* Établit un contexte de superposition */
-                z-index: 5;       /* Soulève CETTE carte au-dessus des autres */
-            }
-
-            .res-pwa-actions > .kebab-menu-container {
-
-            /* ✅ NOUVELLE RÈGLE CI-DESSOUS */
-            .res-pwa-actions > .kebab-menu-container {
-                /* S'assure que le conteneur est au-dessus des autres éléments de la carte */
-                z-index: 2; 
-            .kebab-menu-button {
-                background: none;
-                border: none;
-                font-size: 1.5rem;
-                cursor: pointer;
-                color: var(--color-text-secondary);
-                padding: 0 8px;
-            }
-            .kebab-dropdown {
-                display: none;
-                position: absolute;
-                right: 0;
-                top: 100%;
-                background-color: var(--color-surface-dark);
-                min-width: 180px;
-                box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
-                z-index: 10;
-                border-radius: var(--radius-md);
-                overflow: hidden;
-                border: 1px solid var(--color-border);
-            }
-            .kebab-dropdown.show {
-                display: block;
-            }
-            .kebab-dropdown-item {
-                color: var(--color-text-primary);
-                padding: 12px 16px;
-                text-decoration: none;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 0.9rem;
-                cursor: pointer;
-            }
-            .kebab-dropdown-item:hover {
-                background-color: var(--color-accent-glow-transparent);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
 
 
 
@@ -3971,34 +3903,6 @@ async function displayReservations() {
                     actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
                 }
 
-                    // ✅ NOUVELLE LOGIQUE POUR LE MENU KEBAB
-                let kebabMenuItems = '';
-                if (isConfirmed) {
-                    kebabMenuItems += `<div class="kebab-dropdown-item" onclick="downloadInvoice('${res.bookingNumber}')">📄 <span>Voir la Facture</span></div>`;
-                    if (trackerIdentifier) {
-                        kebabMenuItems += `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="kebab-dropdown-item">🛰️ <span>${translation.button_track}</span></a>`;
-                    }
-                    const reportCount = res.reportCount || 0;
-                    if (!res.returnRoute && reportCount < 2) {
-                        kebabMenuItems += `<div class="kebab-dropdown-item" onclick="initiateReport('${res.bookingNumber}')">🔄 <span>${translation.button_report}</span></div>`;
-                    }
-                }
-
-                if (kebabMenuItems) {
-                    actionsButtons += `
-                        <div class="kebab-menu-container">
-                            <button class="kebab-menu-button" onclick="toggleKebabMenu(event)">⋮</button>
-                            <div class="kebab-dropdown">${kebabMenuItems}</div>
-                        </div>
-                    `;
-                }
-
-
-
-
-
-
-
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
                      deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
@@ -4049,21 +3953,6 @@ async function displayReservations() {
 
 
 
-// Affiche ou cache le menu kebab
-function toggleKebabMenu(event) {
-    event.stopPropagation(); // Empêche le clic de fermer immédiatement le menu
-    closeAllKebabMenus(event.currentTarget.nextElementSibling); // Ferme les autres menus
-    event.currentTarget.nextElementSibling.classList.toggle('show');
-}
-
-// Ferme tous les menus kebab (sauf celui qu'on vient d'ouvrir)
-function closeAllKebabMenus(exceptThisOne = null) {
-    document.querySelectorAll('.kebab-dropdown').forEach(dropdown => {
-        if (dropdown !== exceptThisOne && dropdown.classList.contains('show')) {
-            dropdown.classList.remove('show');
-        }
-    });
-}
 
 // Action pour télécharger la facture
 function downloadInvoice(bookingNumber) {
