@@ -511,6 +511,10 @@ const translations = {
     map_section_title: "Our Network at a Glance",
 
     // --- Results Page ---
+    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+  
+  
+    
     results_title: "Search Results",
     results_back_button: "← Modify Search",
     results_summary_outbound: (count, from, to) => `Select your <strong>OUTBOUND</strong> trip: <strong>${from}</strong> → <strong>${to}</strong> (${count} result(s))`,
@@ -558,9 +562,6 @@ const translations = {
     amenity_plugs: "Plugs",
     amenity_ac: "AC",
     filter_departure_location: "Departure point",
-    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
-  
-  
     
 
 
