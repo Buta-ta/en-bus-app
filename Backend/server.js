@@ -1512,6 +1512,143 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
 });
 
 
+// ============================================
+// 📄 GESTION DES FACTURES (INVOICES)
+// ============================================
+
+// Fonction qui génère le template HTML de la facture
+function generateInvoiceHTML(reservation, lang = 'fr') {
+    // Mini-traductions pour la facture
+    const t = {
+        fr: {
+            title: "FACTURE",
+            invoice_nr: "Facture N°",
+            booking_nr: "Réf. Réservation",
+            date: "Date d'émission",
+            billed_to: "Facturé à",
+            description: "Description",
+            qty: "Qté",
+            unit_price: "P.U.",
+            total: "Total",
+            subtotal: "Sous-total",
+            vat: "TVA",
+            total_paid: "TOTAL PAYÉ",
+            payment_method: "Payé via",
+            status_paid: "PAYÉE"
+        },
+        en: {
+            title: "INVOICE",
+            invoice_nr: "Invoice #",
+            booking_nr: "Booking Ref.",
+            date: "Issue Date",
+            billed_to: "Billed to",
+            description: "Description",
+            qty: "Qty",
+            unit_price: "Unit Price",
+            total: "Total",
+            subtotal: "Subtotal",
+            vat: "VAT",
+            total_paid: "TOTAL PAID",
+            payment_method: "Paid via",
+            status_paid: "PAID"
+        }
+    };
+    const texts = t[lang] || t.fr;
+    const passenger = reservation.passengers[0];
+
+    // Calcul des lignes (simplifié, à améliorer si besoin)
+    const adultTickets = reservation.passengers.length;
+    const ticketPrice = reservation.route.price;
+    const subtotal = reservation.totalPriceNumeric;
+
+    return `
+    <!DOCTYPE html>
+    <html>
+        <head><meta charset="utf-8"><style>body{font-family:sans-serif;color:#333;}.invoice-box{max-width:800px;margin:auto;padding:30px;border:1px solid #eee;box-shadow:0 0 10px rgba(0,0,0,.15);font-size:16px;line-height:24px;}.invoice-box table{width:100%;line-height:inherit;text-align:left;border-collapse:collapse;}.invoice-box table td{padding:5px;vertical-align:top;}.invoice-box table tr.top table td{padding-bottom:20px;}.invoice-box table tr.top table td.title{font-size:45px;line-height:45px;color:#333;}.invoice-box table tr.information table td{padding-bottom:40px;}.invoice-box table tr.heading td{background:#eee;border-bottom:1px solid #ddd;font-weight:700;}.invoice-box table tr.item td{border-bottom:1px solid #eee;}.invoice-box table tr.total td:nth-child(2){border-top:2px solid #eee;font-weight:700;}.status{font-size:1.5em;color:green;font-weight:bold;}</style></head>
+        <body>
+            <div class="invoice-box">
+                <table>
+                    <tr class="top">
+                        <td colspan="4">
+                            <table>
+                                <tr>
+                                    <td class="title">En-Bus</td>
+                                    <td style="text-align:right;">
+                                        ${texts.invoice_nr}: INV-${reservation.bookingNumber.slice(3)}<br>
+                                        ${texts.date}: ${new Date(reservation.confirmedAt || reservation.createdAt).toLocaleDateString(lang)}<br>
+                                        ${texts.booking_nr}: ${reservation.bookingNumber}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr class="information">
+                        <td colspan="4">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <strong>En-Bus SAS</strong><br>
+                                        123 Avenue de la République<br>
+                                        Brazzaville, Congo
+                                    </td>
+                                    <td style="text-align:right;">
+                                        <strong>${texts.billed_to}</strong><br>
+                                        ${passenger.name}<br>
+                                        ${passenger.email || passenger.phone}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr class="heading"><td>${texts.description}</td><td>${texts.qty}</td><td>${texts.unit_price}</td><td style="text-align:right;">${texts.total}</td></tr>
+                    <tr class="item"><td>Billet(s) Adulte: ${reservation.route.from} → ${reservation.route.to}</td><td>${adultTickets}</td><td>${ticketPrice} FCFA</td><td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td></tr>
+                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.subtotal}</strong></td><td style="text-align:right;">${subtotal} FCFA</td></tr>
+                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.vat} (0%)</strong></td><td style="text-align:right;">0 FCFA</td></tr>
+                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.total_paid}</strong></td><td style="text-align:right;"><strong>${reservation.totalPrice}</strong></td></tr>
+                </table>
+                <div style="text-align:center; margin-top: 40px;">
+                    <p><strong>${texts.payment_method}:</strong> ${reservation.paymentMethod}</p>
+                    <p class="status">${texts.status_paid}</p>
+                </div>
+            </div>
+        </body>
+    </html>
+    `;
+}
+
+// Route pour générer et télécharger une facture
+app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+        const lang = req.query.lang || 'fr'; // Récupère la langue depuis l'URL
+
+        const reservation = await reservationsCollection.findOne({ bookingNumber });
+
+        if (!reservation) {
+            return res.status(404).send('Reservation not found');
+        }
+        
+        if (reservation.status !== 'Confirmé') {
+            return res.status(403).send('Invoice is only available for confirmed bookings.');
+        }
+
+        const htmlContent = generateInvoiceHTML(reservation, lang);
+        
+        const html_pdf = require('html-pdf-node');
+        const options = { format: 'A4' };
+        const file = { content: htmlContent };
+        
+        html_pdf.generatePdf(file, options).then(pdfBuffer => {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename=facture-${bookingNumber}.pdf`);
+            res.send(pdfBuffer);
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur génération facture:", error);
+        res.status(500).send('Server Error');
+    }
+});
 
 // ============================================
 // --- GESTION DES MODÈLES DE TRAJETS (ADMIN) ---

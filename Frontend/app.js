@@ -1620,6 +1620,7 @@ const ticketHTML = `
         populatePopularDestinations();
         setupPaymentMethodToggle();
         addToastStyles();
+        addKebabMenuStyles(); 
         setupAmenitiesFilters(); 
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
@@ -1759,6 +1760,61 @@ function addToastStyles() {
         document.head.appendChild(style);
     }
 }
+
+
+function addKebabMenuStyles() {
+    if (!document.getElementById('kebab-menu-styles')) {
+        const style = document.createElement('style');
+        style.id = 'kebab-menu-styles';
+        style.textContent = `
+            .kebab-menu-container {
+                position: relative;
+                display: inline-block;
+            }
+            .kebab-menu-button {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: var(--color-text-secondary);
+                padding: 0 8px;
+            }
+            .kebab-dropdown {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 100%;
+                background-color: var(--color-surface-dark);
+                min-width: 180px;
+                box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+                z-index: 10;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                border: 1px solid var(--color-border);
+            }
+            .kebab-dropdown.show {
+                display: block;
+            }
+            .kebab-dropdown-item {
+                color: var(--color-text-primary);
+                padding: 12px 16px;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 0.9rem;
+                cursor: pointer;
+            }
+            .kebab-dropdown-item:hover {
+                background-color: var(--color-accent-glow-transparent);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+
+
 
 function setupMobileMenu() {
     const hamburgerBtn = document.getElementById("hamburger-btn");
@@ -3897,6 +3953,34 @@ async function displayReservations() {
                     actionsButtons = `<button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>`;
                 }
 
+                    // ✅ NOUVELLE LOGIQUE POUR LE MENU KEBAB
+                let kebabMenuItems = '';
+                if (isConfirmed) {
+                    kebabMenuItems += `<div class="kebab-dropdown-item" onclick="downloadInvoice('${res.bookingNumber}')">📄 <span>Voir la Facture</span></div>`;
+                    if (trackerIdentifier) {
+                        kebabMenuItems += `<a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="kebab-dropdown-item">🛰️ <span>${translation.button_track}</span></a>`;
+                    }
+                    const reportCount = res.reportCount || 0;
+                    if (!res.returnRoute && reportCount < 2) {
+                        kebabMenuItems += `<div class="kebab-dropdown-item" onclick="initiateReport('${res.bookingNumber}')">🔄 <span>${translation.button_report}</span></div>`;
+                    }
+                }
+
+                if (kebabMenuItems) {
+                    actionsButtons += `
+                        <div class="kebab-menu-container">
+                            <button class="kebab-menu-button" onclick="toggleKebabMenu(event)">⋮</button>
+                            <div class="kebab-dropdown">${kebabMenuItems}</div>
+                        </div>
+                    `;
+                }
+
+
+
+
+
+
+
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
                      deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
@@ -3944,6 +4028,36 @@ async function displayReservations() {
         listContainer.innerHTML = `<div class="no-results error"><h3>Erreur de chargement.</h3></div>`;
     }
 }
+
+
+
+// Affiche ou cache le menu kebab
+function toggleKebabMenu(event) {
+    event.stopPropagation(); // Empêche le clic de fermer immédiatement le menu
+    closeAllKebabMenus(event.currentTarget.nextElementSibling); // Ferme les autres menus
+    event.currentTarget.nextElementSibling.classList.toggle('show');
+}
+
+// Ferme tous les menus kebab (sauf celui qu'on vient d'ouvrir)
+function closeAllKebabMenus(exceptThisOne = null) {
+    document.querySelectorAll('.kebab-dropdown').forEach(dropdown => {
+        if (dropdown !== exceptThisOne && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    });
+}
+
+// Action pour télécharger la facture
+function downloadInvoice(bookingNumber) {
+    const lang = getLanguage();
+    const url = `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/invoice?lang=${lang}`;
+    window.open(url, '_blank');
+}
+
+// Ajoute un écouteur pour fermer les menus en cliquant n'importe où
+window.addEventListener('click', () => {
+    closeAllKebabMenus();
+});
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
 async function viewTicket(bookingNumber) {
