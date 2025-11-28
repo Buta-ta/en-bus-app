@@ -1443,7 +1443,7 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         }
 
         // 1. Récupérer le profil du membre
-        const member = await database.collection('crew').findOne({ _id: new ObjectId(id) });
+        const member = await dbClient.db("en-bus-db").collection('crew').findOne({ _id: new ObjectId(id) });
         
         if (!member) {
             return res.status(404).json({ error: "Membre du personnel introuvable" });
