@@ -1213,19 +1213,50 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
 });
 
 
-
-
 app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
-  try {
-    const { search } = req.query; // On récupère le paramètre 'search' de l'URL
+    try {
+        const { search } = req.query;
 
-    let query = {
-      $or: [
-        { status: "En attente de report" },
-        { status: "Reporté" },
-        { originalReservation: { $exists: true, $ne: null } },
-      ],
-    };
+        // On définit la requête de base
+        let query = {
+            $or: [
+                { status: "En attente de report" },
+                { status: "Reporté" },
+                { originalReservation: { $exists: true, $ne: null } },
+            ],
+        };
+
+        // Si un terme de recherche est fourni, on ajoute une condition supplémentaire
+        if (search) {
+            query.$and = [
+                // On garde la condition de base
+                { ...query }, 
+                // Et on ajoute la condition de recherche
+                {
+                    $or: [
+                        { bookingNumber: { $regex: search, $options: "i" } },
+                        { "passengers.0.name": { $regex: search, $options: "i" } },
+                    ]
+                }
+            ];
+            // On supprime le $or initial pour éviter les conflits
+            delete query.$or;
+        }
+
+        const reports = await reservationsCollection.find(query).sort({ createdAt: -1 }).toArray();
+
+        res.json({
+            success: true,
+            count: reports.length,
+            reports: reports,
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération historique reports:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+}); // ✅ NE PAS OUBLIER DE FERMER LA FONCTION DE LA ROUTE
+
 
 app.get("/api/admin/settings/report", authenticateToken, async (req, res) => {
   try {
@@ -1795,55 +1826,42 @@ app.patch(
   }
 );
 
-
-
-
 // ICI
+// ============================================
+// --- ROUTES ADMIN (Suite) ---
+// ============================================
 
-
+// --- D. Routes d'action spécifiques (PATCH) ---
 
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED']),
-    // On rend la validation conditionnelle
     body('delayMinutes').if(body('status').equals('DELAYED')).isInt({ min: 1 }).withMessage('Le retard doit être un nombre positif.'),
     body('reason').if(body('status').equals('CANCELLED')).notEmpty().withMessage('La raison est requise pour une annulation.'),
     body('reason').optional().isString().trim()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        // Renvoie la première erreur de validation
         return res.status(400).json({ error: errors.array()[0].msg });
     }
-
     try {
         const { tripId } = req.params;
         const { status, delayMinutes, reason } = req.body;
-        
         if (!ObjectId.isValid(tripId)) {
             return res.status(400).json({ error: "ID de voyage invalide." });
         }
-
         const liveStatus = {
-            status: status,
+            status,
             delayMinutes: status === 'DELAYED' ? (parseInt(delayMinutes) || 0) : 0,
             reason: reason || '',
             lastUpdated: new Date(),
             updatedBy: req.user.username
         };
-
-        const result = await tripsCollection.updateOne(
-            { _id: new ObjectId(tripId) },
-            { $set: { liveStatus: liveStatus } }
-        );
-
+        const result = await tripsCollection.updateOne({ _id: new ObjectId(tripId) }, { $set: { liveStatus } });
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Voyage non trouvé." });
         }
-        
-        console.log(`📢 Statut du voyage ${tripId} mis à jour par ${req.user.username}: ${status}`);
-
+        console.log(`📢 Statut du voyage ${tripId} mis à jour : ${status}`);
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
-
     } catch (error) {
         console.error("❌ Erreur mise à jour statut voyage:", error);
         res.status(500).json({ error: "Erreur serveur." });
@@ -1851,96 +1869,39 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
 });
 
 
-app.patch(
-  "/api/admin/reservations/:id/confirm-payment",
-  authenticateToken,
-  async (req, res) => {
+// --- E. Routes de suppression (DELETE) ---
+
+app.delete("/api/admin/route-templates/:id", authenticateToken, async (req, res) => {
     try {
-      const { id } = req.params;
-      const { transactionProof } = req.body;
-      const reservation = await reservationsCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      if (!reservation)
-        return res.status(404).json({ error: "Réservation introuvable." });
-      if (reservation.status !== "En attente de paiement")
-        return res.status(400).json({ error: "Pas en attente de paiement." });
-
-      await reservationsCollection.updateOne(
-        { _id: reservation._id },
-        {
-          $set: {
-            status: "Confirmé",
-            confirmedAt: new Date(),
-            "paymentDetails.transactionProof": transactionProof,
-            "paymentDetails.confirmedByAdmin": req.user.username,
-          },
-        }
-      );
-      const updatedReservation = await reservationsCollection.findOne({
-        _id: reservation._id,
-      });
-
-      console.log("-> Envoi de l'email de paiement confirmé...");
-      sendPaymentConfirmedEmail(updatedReservation);
-
-      return res.json({ success: true, message: "Paiement confirmé !" });
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+        const result = await routeTemplatesCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) return res.status(404).json({ error: "Modèle non trouvé" });
+        res.json({ success: true, message: "Modèle supprimé." });
     } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+        res.status(500).json({ error: "Erreur serveur" });
     }
-  }
-);
-
-
-// ROUTES DELETE
-
-app.delete(
-  "/api/admin/route-templates/:id",
-  authenticateToken,
-  async (req, res) => {
-    const { id } = req.params;
-    if (!ObjectId.isValid(id))
-      return res.status(400).json({ error: "ID invalide" });
-    try {
-      const result = await routeTemplatesCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      if (result.deletedCount === 0)
-        return res.status(404).json({ error: "Modèle non trouvé" });
-      res.json({ success: true, message: "Modèle supprimé." });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur" });
-    }
-  }
-);
-
-
-app.delete("/api/admin/trips/:id", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!ObjectId.isValid(id))
-      return res.status(400).json({ error: "ID de voyage invalide" });
-    const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-    if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
-    if (trip.seats.some((s) => s.status === "occupied"))
-      return res
-        .status(400)
-        .json({ error: "Impossible de supprimer : des sièges sont réservés" });
-    await tripsCollection.deleteOne({ _id: new ObjectId(id) });
-    res.json({ success: true, message: "Voyage supprimé avec succès" });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
 });
 
+app.delete("/api/admin/trips/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de voyage invalide" });
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
+        if (trip.seats.some((s) => s.status === "occupied")) return res.status(400).json({ error: "Impossible de supprimer : des sièges sont réservés" });
+        await tripsCollection.deleteOne({ _id: new ObjectId(id) });
+        res.json({ success: true, message: "Voyage supprimé avec succès" });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
 
 app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
-        
-        // TODO: Ajouter une vérification pour s'assurer que la ville n'est pas utilisée dans un trajet avant de la supprimer.
-        
+        // TODO: Vérifier si la ville est utilisée avant de supprimer
         await destinationsCollection.deleteOne({ _id: new ObjectId(id) });
         res.json({ success: true, message: "Destination supprimée." });
     } catch (error) {
@@ -1948,51 +1909,72 @@ app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) =>
     }
 });
 
+// --- F. La route générique 'action' à la toute fin ---
+// --- F. La route générique 'action' à la toute fin ---
 
+app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, res) => {
+    const { id, action } = req.params;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de réservation invalide." });
 
+    try {
+        const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+        if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
 
+        // --- CAS 1 : Confirmation de paiement ---
+        if (action === "confirm-payment") {
+            if (reservation.status !== "En attente de paiement") return res.status(400).json({ error: "Cette réservation n'est pas en attente de paiement." });
+            
+            const { transactionProof } = req.body;
+            if (!transactionProof || transactionProof.trim() === '') return res.status(400).json({ error: "Une preuve de transaction est requise." });
 
-    // ✅ Ajout du filtre de recherche s'il est fourni
-    if (search) {
-      // On cherche dans le numéro de réservation, le nom du passager ou le code de paiement agence
-      query.$and = [
-        // On combine la condition de base avec la recherche
-        {
-          $or: [
-            { bookingNumber: { $regex: search, $options: "i" } },
-            { "passengers.0.name": { $regex: search, $options: "i" } },
-            {
-              "reportRequest.agencyPaymentCode": {
-                $regex: search,
-                $options: "i",
-              },
-            },
-          ],
-        },
-      ];
+            await reservationsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: "Confirmé", confirmedAt: new Date(), "paymentDetails.transactionProof": transactionProof.trim(), "paymentDetails.confirmedByAdmin": req.user.username } }
+            );
+            
+            const updatedReservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
+            sendPaymentConfirmedEmail(updatedReservation);
+            return res.json({ success: true, message: "Paiement confirmé !" });
+        }
+
+        // --- CAS 2 : Annulation de la réservation ---
+        if (action === "cancel") {
+            if (['Annulé', 'Expiré'].includes(reservation.status)) return res.status(400).json({ error: "Cette réservation est déjà annulée ou expirée." });
+            
+            // Libérer les sièges du trajet aller
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(reservation.route.id) },
+                { $set: { "seats.$[elem].status": "available" } },
+                { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] }
+            );
+
+            // Libérer les sièges du trajet retour si applicable
+            if (reservation.returnRoute) {
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(reservation.returnRoute.id) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: reservation.returnSeats.map(s => parseInt(s)) } }] }
+                );
+            }
+
+            await reservationsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: "Annulé", cancelledAt: new Date(), cancelledBy: "admin" } }
+            );
+            
+            // TODO: Envoyer un email d'annulation au client
+            
+            return res.json({ success: true, message: "Réservation annulée avec succès." });
+        }
+
+        // Si l'action n'est ni "confirm-payment" ni "cancel"
+        return res.status(400).json({ error: "Action non valide ou non reconnue." });
+
+    } catch (error) {
+        console.error(`❌ Erreur lors de l'action '${action}' sur la réservation ${id}:`, error);
+        res.status(500).json({ error: "Erreur serveur." });
     }
-
-    const reports = await reservationsCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    res.json({
-      success: true,
-      count: reports.length,
-      reports: reports,
-    });
-  } catch (error) {
-    console.error("❌ Erreur récupération historique reports:", error);
-    res.status(500).json({ error: "Erreur serveur." });
-  }
 });
-
-
-// ... (toutes vos autres routes admin)
-
-
-
 
 
 // ============================================
@@ -2000,9 +1982,6 @@ app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) =>
 // ============================================
 
 // Lister toutes les destinations pour l'admin
-
-
-
 
 // Mettre à jour une destination (notamment pour l'activer/désactiver)
 app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => {
@@ -2017,22 +1996,6 @@ app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => 
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
-
-// Supprimer une destination
-
-
-
-
-
-
-
-
-
-
-// DANS server.js, avec les autres routes admin
-
-
-
 
 
 // ============================================
@@ -2108,21 +2071,9 @@ app.post(
   }
 );
 
-
-
-
-
-// DANS server.js
-
-
-
-
-// ============================================
-// --- GESTION DES PARAMÈTRES (ADMIN) ---
-// ============================================
-
-
-
+// ===============================================
+// --- ROUTE ADMIN LA PLUS GÉNÉRIQUE (ACTION) ---
+// ===============================================
 
 // --- CRON JOB & WEBSOCKET ---
 if (
