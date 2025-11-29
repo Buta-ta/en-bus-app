@@ -2787,6 +2787,12 @@ h3 {
 }
 
 
+.destination-swap-container {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* Départ | Bouton | Arrivée */
+    /* ... */
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .method-content {
