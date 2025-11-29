@@ -1825,37 +1825,60 @@ function setupContactPage() {
         });
     });
 
-        // Logique pour le formulaire de contact avec "mailto"
+       // Logique pour le formulaire de contact avec Formspree
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // Empêche le rechargement de la page
-
-            // 1. Récupérer les valeurs des champs
-            const name = document.getElementById('contact-name').value;
-            const email = document.getElementById('contact-email').value;
-            const subjectSelect = document.getElementById('contact-subject');
-            // Récupérer le texte de l'option sélectionnée (ex: "Question générale")
-            const subjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
-            const message = document.getElementById('contact-message').value;
-
-            // 2. Construire le lien mailto
-            // On encode chaque partie pour gérer les espaces et caractères spéciaux
-            const mailtoLink = `mailto:contact@en-bus.com?subject=${encodeURIComponent(subjectText)} - ${encodeURIComponent(name)}&body=${encodeURIComponent(message)}%0A%0A---%0AEmail de l'expéditeur : ${encodeURIComponent(email)}`;
-            
-            // 3. Rediriger l'utilisateur vers son client email
-            window.location.href = mailtoLink;
-
-            // (Optionnel) Afficher une notification pour informer l'utilisateur
-            Utils.showToast("Ouverture de votre application d'email...", 'info');
-
-            // Vider le formulaire après une petite pause
-            setTimeout(() => {
-                contactForm.reset();
-            }, 1000);
-        });
+        contactForm.addEventListener('submit', handleFormspreeSubmit);
     }
 }
+
+async function handleFormspreeSubmit(event) {
+    event.preventDefault(); // Empêche le rechargement de la page
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    // Désactiver le bouton pour éviter les doubles clics
+    submitButton.disabled = true;
+    submitButton.textContent = 'Envoi en cours...';
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method,
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            // L'envoi a réussi
+            Utils.showToast("Message envoyé avec succès !", 'success');
+            form.reset(); // Vider le formulaire
+        } else {
+            // L'envoi a échoué (problème côté Formspree ou validation)
+            const responseData = await response.json();
+            if (responseData.errors) {
+                const errorMessage = responseData.errors.map(error => error.message).join(', ');
+                throw new Error(errorMessage);
+            } else {
+                throw new Error('Une erreur est survenue lors de l\'envoi.');
+            }
+        }
+    } catch (error) {
+        // Erreur réseau ou autre problème
+        Utils.showToast(`Erreur : ${error.message}`, 'error');
+    } finally {
+        // Réactiver le bouton dans tous les cas
+        submitButton.disabled = false;
+        // Remettre le texte traduit
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        submitButton.textContent = translation.contact_form_button || 'Envoyer le message';
+    }
+}
+
 
 
 function addToastStyles() {
