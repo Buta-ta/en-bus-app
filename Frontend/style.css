@@ -316,16 +316,15 @@ h3 {
 }
 
 /* ============================================
-   5. HERO & RECHERCHE - ✅ VERSION ULTRA-COMPACTE
+   5. HERO & RECHERCHE - ✅ ESPACEMENT CORRECT
    ============================================ */
 
 .hero { 
-  padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
+  padding: var(--space-48) 0; 
   text-align: center; 
   position: relative; 
   overflow: hidden; 
 }
-
 
 .hero::before { 
   content: ''; 
@@ -334,7 +333,6 @@ h3 {
   background: radial-gradient(circle at center, rgba(16,16,26,0.45), rgba(16,16,26,0.85) 80%); 
   z-index: 1; 
 }
-
 
 .hero-content { 
   position: relative; 
@@ -351,20 +349,18 @@ h3 {
   text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4); 
 }
 
-
 .hero p { 
   font-size: 18px; 
   margin-bottom: var(--space-40); 
   color: var(--color-text-secondary); 
 }
 
-/* Barre de recherche intelligente */
-/* Barre de recherche intelligente */
+/* ❌ SUPPRIME LE MARGIN-TOP DE 2REM */
 .smart-search-wrapper {
     position: relative;
     width: 100%;
     max-width: 600px;
-    margin: 2rem auto 0;
+    margin: 0 auto; /* ✅ SANS margin-top */
     z-index: 50;
 }
 
@@ -373,7 +369,6 @@ h3 {
     display: flex;
     align-items: center;
 }
-
 
 #smart-search-input {
     width: 100%;
@@ -387,7 +382,6 @@ h3 {
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
-
 
 #smart-search-input:focus {
     outline: none;
@@ -441,7 +435,7 @@ h3 {
 .smart-result-item:hover {
     background-color: var(--color-background);
 }
-/* Box de recherche détaillée */
+
 /* Box de recherche détaillée */
 .search-box {
     opacity: 0;
@@ -455,65 +449,6 @@ h3 {
     visibility: visible;
     transform: translateY(0);
 }
-
-.search-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-20);
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-16);
-}
-
-.destination-swap-container .form-group {
-    text-align: center;
-}
-
-/* Toggle type de trajet */
-.trip-type-toggle {
-    position: relative;
-    display: flex;
-    background-color: var(--color-background);
-    border-radius: var(--radius-base);
-    padding: 4px;
-    border: 1px solid var(--color-border);
-}
-
-.toggle-option {
-    flex: 1;
-    text-align: center;
-    padding: 8px 12px;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    font-weight: 600;
-    transition: color 0.3s;
-    z-index: 2;
-    font-size: 14px;
-}
-
-.toggle-option.active {
-    color: var(--color-background);
-}
-
-.toggle-switch {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: calc(50% - 4px);
-    height: calc(100% - 8px);
-    background-color: var(--color-accent-glow);
-    border-radius: var(--radius-base);
-    transition: transform 0.3s ease;
-    z-index: 1;
-}
-
-.trip-type-toggle[data-mode="round-trip"] .toggle-switch {
-    transform: translateX(100%);
-}
-
 /* ============================================
    6. CARTES & COMPOSANTS
    ============================================ */
@@ -563,27 +498,47 @@ h3 {
 }
 
 /* ============================================
-   6. SECTIONS POPULAIRES - ✅ ESPACEMENT CORRECT
+   ✅ SECTIONS POPULAIRES - ESPACEMENT CORRECT
    ============================================ */
 
 .popular-destinations,
 .why-en-bus { 
-  padding: var(--space-48) 0;
+  padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
   position: relative;
   z-index: 10;
 }
+
+/* ❌ SUPPRIME CETTE RÈGLE COMPLÈTEMENT */
+/* .popular-destinations .container {
+    padding-top: 24px;
+} */
 
 .popular-destinations h2,
 .why-en-bus h2 {
     font-family: var(--font-logo), sans-serif;
     font-size: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
-    margin-bottom: var(--space-32);
+    margin-bottom: var(--space-32); /* ✅ 32px en bas du titre */
     line-height: 1.2;
     background: linear-gradient(145deg, var(--color-text-primary, #fff) 60%, var(--color-text-secondary, #ccc));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.destinations-grid,
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-24);
+}
+
+/* Feature cards */
+.feature-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-16);
+    color: var(--color-accent-glow);
+    text-shadow: 0 0 15px rgba(var(--color-accent-glow-rgb), 0.5);
 }
 
 /* ============================================
