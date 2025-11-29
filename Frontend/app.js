@@ -1836,34 +1836,38 @@ async function handleFormspreeSubmit(event) {
 
     const form = event.target;
     const submitButton = form.querySelector('button[type="submit"]');
+    
+    // Récupérer les traductions au début
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
     // 1. Désactiver le bouton
     submitButton.disabled = true;
-    submitButton.textContent = 'Envoi en cours...';
+    submitButton.textContent = translation.toast_sending_message || 'Envoi en cours...';
 
-    // 2. Construire l'objet de données manuellement
+    // 2. Construire l'objet de données
     const data = {
         name: document.getElementById('contact-name').value,
-        _replyto: document.getElementById('contact-email').value, // Utilise _replyto
+        _replyto: document.getElementById('contact-email').value,
         subject: document.getElementById('contact-subject').value,
         message: document.getElementById('contact-message').value,
     };
 
-    console.log("📤 Données envoyées à Formspree :", data); // Log pour déboguer
+    console.log("📤 Données envoyées à Formspree :", data);
 
     // 3. Envoyer les données
     try {
         const response = await fetch(form.action, {
             method: form.method,
-            body: JSON.stringify(data), // On envoie en format JSON
+            body: JSON.stringify(data),
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json' // IMPORTANT : Spécifier le type de contenu
+                'Content-Type': 'application/json'
             }
         });
 
         if (response.ok) {
-            Utils.showToast("Message envoyé avec succès !", 'success');
+            Utils.showToast(translation.toast_message_sent_success || "Message envoyé avec succès !", 'success');
             form.reset();
         } else {
             const responseData = await response.json();
@@ -1880,12 +1884,9 @@ async function handleFormspreeSubmit(event) {
     } finally {
         // 4. Réactiver le bouton
         submitButton.disabled = false;
-        const lang = getLanguage();
-        const translation = translations[lang] || translations.fr;
         submitButton.textContent = translation.contact_form_button || 'Envoyer le message';
     }
 }
-
 
 function addToastStyles() {
     if (!document.getElementById('toast-styles')) {
@@ -4398,7 +4399,13 @@ window.addEventListener('click', () => {
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
 async function viewTicket(bookingNumber) {
-    Utils.showToast("Chargement du billet...", "info");
+
+
+    // ✅ TRADUCTION
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    Utils.showToast(translation.loading_ticket || "Chargement du billet...", "info");
+    
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
         const data = await response.json();

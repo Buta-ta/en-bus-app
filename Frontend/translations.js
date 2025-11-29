@@ -498,8 +498,11 @@ const translations = {
     faq_q3_title: "Je n'ai pas reçu mon billet, que faire ?",
     faq_q3_answer: "Après un paiement confirmé, votre billet est disponible dans \"Mes Réservations\". Si vous ne le voyez pas, vérifiez le statut de votre paiement ou contactez-nous.",
                         
-
-  },
+        // --- Traductions manquantes ---
+    toast_sending_message: "Envoi en cours...",
+    toast_message_sent_success: "Message envoyé avec succès !",
+    loading_ticket: "Chargement de votre billet...",
+    },
   // ===================================
   // LANGUE ANGLAISE (EN)
   // ===================================
@@ -988,7 +991,10 @@ const translations = {
     faq_q3_answer: "After a confirmed payment, your ticket is available in the \"My Bookings\" section of the app. If you don't see it, please check your payment status or contact us.",
 
 
-
+        // --- Missing translations ---
+    toast_sending_message: "Sending message...",
+    toast_message_sent_success: "Message sent successfully!",
+    loading_ticket: "Loading your ticket...",
      
   }
 }
