@@ -68,14 +68,40 @@ main {
 }
 
 
-/* Conteneur principal */
 .nav-content { 
   display: flex;
-  justify-content: center; /* ✅ Tout est centré */
+  justify-content: center; /* Centre tout le bloc */
   align-items: center; 
-  padding: var(--space-16) 0;
-  gap: var(--space-40); /* Espacement uniforme entre tous les éléments */
-  position: relative;
+  padding: var(--space-16) 0; 
+  gap: 40px; /* Espace entre les blocs (Gauche - Logo - Droite) */
+}
+
+
+/* Force les liens de gauche et droite à s'afficher */
+.desktop-links {
+  display: flex;
+  gap: 20px; /* Espace entre les liens */
+}
+
+/* Cache les éléments desktop sur mobile */
+@media (max-width: 768px) {
+    .desktop-links, .language-selector.desktop-only {
+        display: none !important;
+    }
+    
+    .nav-content {
+        justify-content: space-between; /* Ecarte Logo et Hamburger sur mobile */
+    }
+    
+    .hamburger {
+        display: block;
+    }
+}
+
+/* Affiche le sélecteur mobile uniquement sur mobile */
+.mobile-lang-selector { display: none; }
+@media (max-width: 768px) {
+    .mobile-lang-selector { display: block; border-top: 1px solid #333; margin-top: 10px; }
 }
 
 
@@ -92,7 +118,7 @@ main {
   align-items: center; 
   gap: var(--space-12); 
   cursor: pointer;
-  order: 2; /* ✅ Positionné au milieu dans le flex */
+   /* ✅ Positionné au milieu dans le flex */
 }
 
 .logo-svg { 
@@ -119,10 +145,6 @@ main {
 }
 
 
-/* Liens de gauche */
-.nav-links:first-of-type {
-  order: 1; /* ✅ Avant le logo */
-}
 
 
 
@@ -130,10 +152,7 @@ main {
   justify-self: end; 
 }
 
-/* Liens de droite */
-.nav-links:nth-of-type(2) {
-  order: 3; /* ✅ Après le logo */
-}
+
 
 
 /* Liens de navigation à droite */
