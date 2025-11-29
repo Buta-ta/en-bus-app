@@ -174,11 +174,36 @@ h3 {
 
 .nav-content {
     display: flex;
-    justify-content: center;
+    justify-content: space-between; /* ✅ Espace entre gauche et droite */
     align-items: center;
     padding: var(--space-16) 0;
-    gap: var(--space-48); /* ✅ Plus d'espace entre les éléments (était 40px) */
+    gap: var(--space-24);
     position: relative;
+}
+
+/* Liens de navigation (Gauche sur Desktop) */
+.nav-links {
+    display: flex;
+    gap: var(--space-32); /* ✅ Espace entre les liens */
+    align-items: center;
+}
+
+.nav-links a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--duration-fast);
+    white-space: nowrap;
+}
+
+.nav-links a:hover {
+    color: var(--color-accent-glow);
+}
+
+/* Groupe de droite (Logo + Langues) */
+.nav-content > .logo,
+.nav-content > .language-selector {
+    margin-left: auto; /* ✅ Pousse à droite */
 }
 
 /* Logo */
@@ -187,7 +212,7 @@ h3 {
     align-items: center;
     gap: var(--space-12);
     cursor: pointer;
-    order: 2;
+    margin-right: var(--space-24); /* ✅ Espace entre logo et langues */
 }
 
 .logo-svg {
@@ -210,40 +235,11 @@ h3 {
     animation: textGlow 3s ease-in-out infinite;
 }
 
-/* Liens de navigation */
-.nav-links {
-    display: flex;
-    gap: var(--space-40); /* ✅ Plus d'espace entre les liens (était 32px) */
-}
-
-.nav-links a {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: color var(--duration-fast);
-    white-space: nowrap;
-}
-
-.nav-links a:hover {
-    color: var(--color-accent-glow);
-}
-
-/* Liens gauche */
-.nav-left {
-    order: 1;
-}
-
-/* Liens droite */
-.nav-right {
-    order: 3;
-}
-
-/* Sélecteur de langue (Desktop uniquement) */
+/* Sélecteur de langue (Desktop) */
 .language-selector {
     display: flex;
-    gap: var(--space-12); /* ✅ Plus d'espace entre les drapeaux (était 8px) */
+    gap: var(--space-12);
     align-items: center;
-    order: 4;
 }
 
 .lang-btn {
@@ -302,7 +298,7 @@ h3 {
     max-height: 500px;
 }
 
-/* ✅ Sélecteur de langue mobile (dans le menu hamburger) */
+/* Sélecteur de langue mobile */
 .mobile-lang-selector {
     display: flex;
     flex-direction: column;
@@ -340,15 +336,14 @@ h3 {
     
     /* Navbar mobile : Logo à gauche, Hamburger à droite */
     .nav-content {
-        display: flex;
         justify-content: space-between;
         padding: var(--space-12) 0;
         gap: 0;
     }
     
     .logo {
-        order: 1;
-        justify-self: start;
+        margin-right: 0;
+        margin-left: 0;
     }
     
     .logo-svg {
@@ -369,7 +364,6 @@ h3 {
         border: none;
         cursor: pointer;
         padding: 8px;
-        order: 2;
     }
     
     .hamburger span {

@@ -241,19 +241,20 @@
 </head>
 
 <body>
- <nav class="navbar">
+  <nav class="navbar">
   <div class="container">
     <div class="nav-content">
       
-      <!-- 1. GAUCHE : Accueil & Réservations (Desktop uniquement) -->
-      <div class="nav-links desktop-links nav-left">
+      <!-- 1. GAUCHE : Tous les liens de navigation (Desktop) -->
+      <div class="nav-links desktop-links">
         <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
         <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+        <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
+        <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
       </div>
       
-      <!-- 2. CENTRE : Logo -->
+      <!-- 2. DROITE : Logo -->
       <div class="logo" onclick="showPage('home')">
-        
         <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
             xmlns="http://www.w3.org/2000/svg" aria-label="Logo En-Bus">
             <defs>
@@ -306,34 +307,28 @@
           </svg>
         <span class="logo-text">En-Bus</span>
       </div>
-      
-      <!-- 3. DROITE : À propos & Contact (Desktop uniquement) -->
-      <div class="nav-links desktop-links nav-right">
-        <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
-        <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
-      </div>
 
-      <!-- 4. LANGUES : Desktop uniquement -->
+      <!-- 3. DROITE : Boutons langues (Desktop) -->
       <div class="language-selector desktop-only">
         <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷</button>
         <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧</button>
       </div>
       
-      <!-- 5. HAMBURGER : Mobile uniquement -->
+      <!-- 4. HAMBURGER : Mobile uniquement -->
       <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
 
     </div>
     
-    <!-- Menu Mobile (AVEC les langues) -->
+    <!-- Menu Mobile -->
     <div id="mobile-nav-menu" class="mobile-nav">
       <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
       <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
       <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
       <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
       
-      <!-- ✅ Langues dans le menu mobile -->
+      <!-- Langues dans le menu mobile -->
       <div class="mobile-lang-selector">
         <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷 Français</button>
         <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧 English</button>
