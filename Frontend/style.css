@@ -824,7 +824,6 @@ h3 {
 .btn-home:hover {
     background: rgba(var(--color-accent-glow-rgb), 0.1);
 }
-
 /* ============================================
    📱 RESPONSIVE MOBILE - ✅ VERSION ULTRA-COMPACTE
    ============================================ */
@@ -893,32 +892,47 @@ h3 {
         background-color: rgba(16, 16, 26, 0.95);
     }
     
-    /* Hero section mobile */
+    /* ✅ Hero section mobile - ESPACEMENT SERRÉ */
     .hero {
-        padding: 24px 0; /* ✅ 24px en haut ET en bas */
+        padding-top: 16px;
+        padding-bottom: 0; /* ✅ ZÉRO en bas */
     }
     
     .hero h1 {
         font-size: 28px;
         line-height: 1.2;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
     
     .hero p {
         font-size: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 12px; /* ✅ Réduit à 12px */
     }
     
-    /* Sections mobiles */
-    .popular-destinations,
-    .why-en-bus {
-        padding: 24px 0; /* ✅ 24px en haut ET en bas */
+    .smart-search-wrapper {
+        margin: 0 auto; /* ✅ Pas de marge en haut */
+    }
+    
+    /* ✅ Sections mobiles - ESPACEMENT SERRÉ */
+    .popular-destinations {
+        padding-top: 12px !important; /* ✅ Ultra-serré : 12px */
+        padding-bottom: 24px !important;
+    }
+    
+    .why-en-bus,
+    .map-section {
+        padding: 24px 0;
     }
     
     .popular-destinations h2,
     .why-en-bus h2 {
         font-size: 20px;
-        margin-bottom: 16px;
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+    
+    .destinations-grid {
+        gap: 12px;
     }
 }
 
@@ -934,7 +948,6 @@ h3 {
         display: none;
     }
 }
-
 /* ============================================
    9. RÉSULTATS DE RECHERCHE
    ============================================ */
