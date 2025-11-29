@@ -1831,33 +1831,41 @@ function setupContactPage() {
         contactForm.addEventListener('submit', handleFormspreeSubmit);
     }
 }
-
 async function handleFormspreeSubmit(event) {
-    event.preventDefault(); // Empêche le rechargement de la page
+    event.preventDefault();
 
     const form = event.target;
-    const formData = new FormData(form);
     const submitButton = form.querySelector('button[type="submit"]');
 
-    // Désactiver le bouton pour éviter les doubles clics
+    // 1. Désactiver le bouton
     submitButton.disabled = true;
     submitButton.textContent = 'Envoi en cours...';
 
+    // 2. Construire l'objet de données manuellement
+    const data = {
+        name: document.getElementById('contact-name').value,
+        _replyto: document.getElementById('contact-email').value, // Utilise _replyto
+        subject: document.getElementById('contact-subject').value,
+        message: document.getElementById('contact-message').value,
+    };
+
+    console.log("📤 Données envoyées à Formspree :", data); // Log pour déboguer
+
+    // 3. Envoyer les données
     try {
         const response = await fetch(form.action, {
             method: form.method,
-            body: formData,
+            body: JSON.stringify(data), // On envoie en format JSON
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json' // IMPORTANT : Spécifier le type de contenu
             }
         });
 
         if (response.ok) {
-            // L'envoi a réussi
             Utils.showToast("Message envoyé avec succès !", 'success');
-            form.reset(); // Vider le formulaire
+            form.reset();
         } else {
-            // L'envoi a échoué (problème côté Formspree ou validation)
             const responseData = await response.json();
             if (responseData.errors) {
                 const errorMessage = responseData.errors.map(error => error.message).join(', ');
@@ -1867,18 +1875,16 @@ async function handleFormspreeSubmit(event) {
             }
         }
     } catch (error) {
-        // Erreur réseau ou autre problème
         Utils.showToast(`Erreur : ${error.message}`, 'error');
+        console.error("❌ Erreur Formspree:", error);
     } finally {
-        // Réactiver le bouton dans tous les cas
+        // 4. Réactiver le bouton
         submitButton.disabled = false;
-        // Remettre le texte traduit
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
         submitButton.textContent = translation.contact_form_button || 'Envoyer le message';
     }
 }
-
 
 
 function addToastStyles() {
