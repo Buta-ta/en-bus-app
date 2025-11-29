@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#73d700" />
@@ -355,67 +355,85 @@
                 </button>
               </div>
               <!-- ✅ ASSUREZ-VOUS QUE CE DIV EST BIEN LÀ -->
-    <div id="smart-search-results"></div>
+              <div id="smart-search-results"></div>
             </div>
 
             <!-- ================================================ -->
-    <!-- ✅ FORMULAIRE DÉTAILLÉ CORRIGÉ ET FUSIONNÉ -->
-    <!-- ================================================ -->
-    <div id="detailed-search-box" class="search-box"> <!-- Un seul div avec le bon ID -->
-        <div class="search-form">
-            <div class="form-row">
-                <div class="form-group">
+            <!-- ✅ FORMULAIRE DÉTAILLÉ CORRIGÉ ET FUSIONNÉ -->
+            <!-- ================================================ -->
+            <div id="detailed-search-box" class="search-box"> <!-- Un seul div avec le bon ID -->
+              <div class="search-form">
+                <!-- ✅ On utilise le nouveau conteneur que le CSS va reconnaître -->
+                <div class="destination-swap-container">
+
+                  <div class="form-group">
                     <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
                     <select id="origin" class="form-control"></select>
-                </div>
-                <div class="form-group">
+                  </div>
+
+                  <button type="button" id="swap-destinations-btn" class="swap-btn" title="Inverser les destinations">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"></path>
+                    </svg>
+                  </button>
+
+                  <div class="form-group">
                     <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
                     <select id="destination" class="form-control"></select>
+                  </div>
+
                 </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
+                <div class="form-row">
+                  <div class="form-group">
                     <label data-i18n="search_form_trip_type">Type de voyage</label>
                     <div class="trip-type-toggle" data-mode="one-way">
-                      <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller simple</label>
-                      <label class="toggle-option" data-value="round-trip" data-i18n="search_form_round_trip">Aller-retour</label>
+                      <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller
+                        simple</label>
+                      <label class="toggle-option" data-value="round-trip"
+                        data-i18n="search_form_round_trip">Aller-retour</label>
                       <div class="toggle-switch"></div>
                     </div>
-                </div>
-                <div class="form-group">
+                  </div>
+                  <div class="form-group">
                     <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
-                    <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder" placeholder="Sélectionnez vos dates" />
+                    <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder"
+                      placeholder="Sélectionnez vos dates" />
+                  </div>
                 </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
+                <div class="form-row">
+                  <div class="form-group">
                     <label data-i18n="search_form_passengers">Passagers</label>
                     <div id="passenger-input" class="form-control passenger-selector">
                       <span id="passenger-summary">1 Adulte</span>
                     </div>
                     <div id="passenger-dropdown" class="passenger-dropdown-menu">
-                        <div class="passenger-row">
-                            <label data-i18n="search_form_adults">Adultes</label>
-                            <div class="passenger-counter">
-                                <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
-                                <span id="adults-count">1</span>
-                                <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
-                            </div>
+                      <div class="passenger-row">
+                        <label data-i18n="search_form_adults">Adultes</label>
+                        <div class="passenger-counter">
+                          <button type="button" class="counter-btn" data-type="adults"
+                            data-action="decrement">-</button>
+                          <span id="adults-count">1</span>
+                          <button type="button" class="counter-btn" data-type="adults"
+                            data-action="increment">+</button>
                         </div>
-                        <div class="passenger-row">
-                            <label data-i18n="search_form_children">Enfants <small>(0-6 ans)</small></label>
-                            <div class="passenger-counter">
-                                <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
-                                <span id="children-count">0</span>
-                                <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
-                            </div>
+                      </div>
+                      <div class="passenger-row">
+                        <label data-i18n="search_form_children">Enfants <small>(0-6 ans)</small></label>
+                        <div class="passenger-counter">
+                          <button type="button" class="counter-btn" data-type="children"
+                            data-action="decrement">-</button>
+                          <span id="children-count">0</span>
+                          <button type="button" class="counter-btn" data-type="children"
+                            data-action="increment">+</button>
                         </div>
+                      </div>
                     </div>
+                  </div>
                 </div>
+                <button class="btn btn-primary btn-large" onclick="searchBuses()"
+                  data-i18n="search_form_button">Rechercher</button>
+              </div>
             </div>
-            <button class="btn btn-primary btn-large" onclick="searchBuses()" data-i18n="search_form_button">Rechercher</button>
-        </div>
-    </div>
 
           </div>
         </div>
@@ -458,16 +476,16 @@
 
 
       <!-- ============================================ -->
-<!-- ✅ NOUVELLE SECTION POUR LA CARTE -->
-<!-- ============================================ -->
-<section class="map-section">
-    <div class="container">
-        <h2 data-i18n="map_section_title">Notre Réseau en un coup d'œil</h2>
-        
-        <!-- C'est ce div que Leaflet utilisera pour dessiner la carte -->
-        <div id="interactive-map"></div>
-    </div>
-</section>
+      <!-- ✅ NOUVELLE SECTION POUR LA CARTE -->
+      <!-- ============================================ -->
+      <section class="map-section">
+        <div class="container">
+          <h2 data-i18n="map_section_title">Notre Réseau en un coup d'œil</h2>
+
+          <!-- C'est ce div que Leaflet utilisera pour dessiner la carte -->
+          <div id="interactive-map"></div>
+        </div>
+      </section>
 
 
     </div>
@@ -986,7 +1004,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
 
   <!-- ✅ AJOUTER CETTE LIGNE AVANT translations.js ET app.js -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script src="translations.js"></script>
   <script src="app.js"></script>

@@ -1620,6 +1620,8 @@ const ticketHTML = `
         populatePopularDestinations();
         setupPaymentMethodToggle();
         addToastStyles();
+        addSwapButtonStyles();
+        setupSwapButton();
         setupAmenitiesFilters(); 
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
@@ -1644,6 +1646,41 @@ const ticketHTML = `
         console.error('Erreur lors de l\'initialisation:', error);
     }
 }
+
+
+
+// ============================================
+// 🔄 ÉCHANGE DES DESTINATIONS
+// ============================================
+
+function setupSwapButton() {
+    const swapBtn = document.getElementById('swap-destinations-btn');
+    if (swapBtn) {
+        swapBtn.addEventListener('click', swapDestinations);
+    }
+}
+
+function swapDestinations() {
+    const originSelect = document.getElementById('origin');
+    const destinationSelect = document.getElementById('destination');
+
+    if (!originSelect || !destinationSelect) return;
+
+    const originValue = originSelect.value;
+    const destinationValue = destinationSelect.value;
+
+    // Inverser les valeurs
+    originSelect.value = destinationValue;
+    destinationSelect.value = originValue;
+    
+    // Animer le bouton pour donner un retour visuel
+    const btn = document.getElementById('swap-destinations-btn');
+    if (btn) {
+        btn.style.transform += ' rotate(180deg)';
+    }
+}
+
+
 
 
 // DANS app.js
@@ -1760,6 +1797,64 @@ function addToastStyles() {
     }
 }
 
+
+function addSwapButtonStyles() {
+    if (document.getElementById('swap-button-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'swap-button-styles';
+    style.textContent = `
+        .destination-swap-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* Colonnes pour départ, bouton, arrivée */
+            gap: 1rem;
+            align-items: end; /* Aligne les champs et le bouton en bas */
+        }
+        .swap-btn {
+            background: var(--color-surface-dark);
+            border: 1px solid var(--color-border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            padding: 0;
+            margin-bottom: 0.5rem; /* Pour l'aligner avec les champs de texte */
+        }
+        .swap-btn:hover {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            transform: rotate(180deg) scale(1.1);
+        }
+        .swap-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--color-text-secondary);
+        }
+        .swap-btn:hover svg {
+            fill: var(--color-background);
+        }
+
+        /* Adaptation pour les petits écrans */
+        @media (max-width: 768px) {
+            .destination-swap-container {
+                grid-template-columns: 1fr; /* Une seule colonne */
+                gap: 0.5rem;
+            }
+            .swap-btn {
+                grid-row: 2; /* Place le bouton entre les deux champs */
+                margin: 0.5rem auto; /* Centre le bouton */
+                transform: rotate(90deg); /* L'icône pointe vers le bas */
+            }
+            .swap-btn:hover {
+                transform: rotate(270deg) scale(1.1);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 
 
