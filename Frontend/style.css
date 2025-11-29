@@ -4084,6 +4084,7 @@ body.pwa-installed textarea {
 
 
 
+
 /* ============================================
    🔄 STYLES MODALE DE REPORT
    ============================================ */
@@ -4738,6 +4739,200 @@ body.pwa-installed textarea {
     }
 }
 
+
+
+
+
+/* ============================================
+   📱 OPTIMISATION COMPACTE POUR MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* 1. Réduire les marges globales */
+    :root {
+        --space-48: 24px;  /* Au lieu de 48px */
+        --space-32: 16px;  /* Au lieu de 32px */
+        --space-24: 12px;  /* Au lieu de 24px */
+        --space-16: 10px;  /* Au lieu de 16px */
+    }
+    
+    /* 2. Hero section plus compacte */
+    .hero {
+        padding: 16px 0 24px; /* Au lieu de 48px */
+    }
+    
+    .hero h1 {
+        font-size: 24px; /* Au lieu de 42px */
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+    
+    .hero p {
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    /* 3. Sections plus compactes */
+    .popular-destinations,
+    .why-en-bus,
+    .map-section {
+        padding: 24px 0; /* Au lieu de 48px */
+    }
+    
+    .popular-destinations h2,
+    .why-en-bus h2 {
+        font-size: 20px; /* Au lieu de 32px */
+        margin-bottom: 16px;
+    }
+    
+    /* 4. Cartes moins espacées */
+    .destinations-grid,
+    .features-grid,
+    .results-list {
+        gap: 12px; /* Au lieu de 24px */
+    }
+    
+    .destination-card,
+    .feature-card,
+    .bus-card {
+        padding: 12px; /* Au lieu de 24px */
+    }
+    
+    /* 5. Formulaire de recherche compact */
+    .search-box {
+        padding: 12px;
+        margin: 0 -12px; /* Utilise toute la largeur */
+    }
+    
+    .form-group {
+        margin-bottom: 8px; /* Au lieu de 12px */
+    }
+    
+    .form-control {
+        padding: 10px; /* Au lieu de 12px */
+        font-size: 15px;
+    }
+    
+    /* 6. Boutons plus compacts */
+    .btn {
+        padding: 10px 16px; /* Au lieu de 14px 20px */
+        font-size: 14px;
+    }
+    
+    /* 7. Navbar plus fine */
+    .nav-content {
+        padding: 10px 0; /* Au lieu de 16px */
+    }
+    
+    .logo-svg {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .logo-text {
+        font-size: 18px;
+    }
+    
+    /* 8. Cartes de résultats bus compactes */
+    .bus-card-wrapper {
+        padding: 10px;
+    }
+    
+    .bus-card-time {
+        font-size: 16px;
+        gap: 10px;
+    }
+    
+    .bus-price {
+        font-size: 22px;
+    }
+    
+    /* 9. Footer compact */
+    .footer {
+        padding: 24px 0 12px;
+    }
+    
+    .footer-content {
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    
+    /* 10. Espacement global réduit */
+    .page-header {
+        padding: 16px 0;
+    }
+    
+    .page-header h2 {
+        font-size: 22px;
+        margin-top: 8px;
+    }
+}
+
+
+/* ============================================
+   📱 STYLE "APP NATIVE" QUAND INSTALLÉE
+   ============================================ */
+
+body.pwa-installed {
+    /* Cache les éléments "web" */
+    --navbar-height: 56px; /* Navbar plus fine style app */
+}
+
+/* Navbar style app native quand installée */
+body.pwa-installed .navbar {
+    height: var(--navbar-height);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+body.pwa-installed .nav-content {
+    padding: 8px 0;
+}
+
+body.pwa-installed .logo-text {
+    font-size: 16px;
+}
+
+/* Cache le footer en mode app */
+body.pwa-installed .footer {
+    display: none;
+}
+
+/* Ajuste le padding du contenu */
+body.pwa-installed main {
+    padding-bottom: 16px; /* Au lieu de 48px */
+}
+
+/* Cartes avec effet "Material Design" */
+body.pwa-installed .bus-card,
+body.pwa-installed .destination-card,
+body.pwa-installed .feature-card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+}
+
+/* Retire les espaces inutiles en mode app */
+body.pwa-installed .hero {
+    padding: 12px 0 16px;
+}
+
+body.pwa-installed .container {
+    padding: 0 12px;
+}
+
+
+/* ============================================
+   📱 POLICES NATIVES MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+                     'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
+        font-size: 14px; /* Au lieu de 15px */
+        line-height: 1.5;
+    }
+}
 
 }
 
