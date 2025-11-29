@@ -174,10 +174,10 @@ h3 {
 
 .nav-content {
     display: flex;
-    justify-content: center;
+    justify-content: space-between; /* ✅ Changé de center à space-between */
     align-items: center;
     padding: var(--space-16) 0;
-    gap: var(--space-40);
+    gap: var(--space-16); /* ✅ Réduit pour mobile */
     position: relative;
 }
 
@@ -187,7 +187,7 @@ h3 {
     align-items: center;
     gap: var(--space-12);
     cursor: pointer;
-    order: 2;
+    order: 2; /* Centre sur desktop */
 }
 
 .logo-svg {
@@ -216,28 +216,6 @@ h3 {
     gap: var(--space-32);
 }
 
-.nav-links.desktop-links:first-of-type {
-    display: flex;
-    gap: var(--space-32);
-    margin-right: auto;
-}
-
-.nav-links:first-of-type {
-    order: 1;
-}
-
-.nav-links:nth-of-type(2) {
-    order: 3;
-    justify-self: end;
-    display: flex;
-    gap: var(--space-32);
-    margin-right: var(--space-24);
-}
-
-.nav-links:last-of-type {
-    justify-self: end;
-}
-
 .nav-links a {
     color: var(--color-text-secondary);
     text-decoration: none;
@@ -250,12 +228,22 @@ h3 {
     color: var(--color-accent-glow);
 }
 
-/* Sélecteur de langue */
+/* ✅ Liens gauche (Desktop) */
+.nav-left {
+    order: 1;
+}
+
+/* ✅ Liens droite (Desktop) */
+.nav-right {
+    order: 3;
+}
+
+/* ✅ Sélecteur de langue (TOUJOURS VISIBLE) */
 .language-selector {
     display: flex;
     gap: var(--space-8);
     align-items: center;
-    order: 4;
+    order: 4; /* Desktop : après les liens */
 }
 
 .lang-btn {
@@ -278,9 +266,10 @@ h3 {
     transform: scale(1.1);
 }
 
-/* Hamburger */
+/* Hamburger (Desktop : caché) */
 .hamburger {
     display: none;
+    order: 5;
 }
 
 /* Navigation mobile */
@@ -314,19 +303,105 @@ h3 {
     max-height: 500px;
 }
 
-.mobile-lang-selector {
-    display: block;
-    padding: 16px;
-    margin-top: 12px;
-    border-top: 1px solid var(--color-border);
-    text-align: center;
+/* ============================================
+   📱 RESPONSIVE MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* ✅ Cacher les liens desktop */
+    .nav-links.desktop-links {
+        display: none !important;
+    }
+    
+    /* ✅ Navbar mobile : Logo | Langues | Hamburger */
+    .nav-content {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto; /* Logo flexible, langues et hamburger à droite */
+        gap: 12px;
+        padding: 12px 0;
+    }
+    
+    .logo {
+        order: 1;
+        justify-self: start;
+    }
+    
+    .logo-svg {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .logo-text {
+        font-size: 20px;
+    }
+    
+    /* ✅ Langues restent visibles sur mobile */
+    .language-selector {
+        order: 2;
+        justify-self: end;
+    }
+    
+    .lang-btn {
+        font-size: 16px;
+        padding: 4px 8px;
+    }
+    
+    /* ✅ Hamburger visible sur mobile */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        order: 3;
+    }
+    
+    .hamburger span {
+        display: block;
+        width: 25px;
+        height: 3px;
+        background: var(--color-accent-glow);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+    
+    .mobile-nav {
+        background-color: rgba(16, 16, 26, 0.95);
+    }
 }
 
-.mobile-lang-selector .lang-btn {
-    font-size: 14px;
-    padding: 10px 16px;
+/* Desktop (> 768px) */
+@media (min-width: 769px) {
+    
+    .nav-content {
+        display: flex;
+        justify-content: center;
+        gap: var(--space-40);
+    }
+    
+    .hamburger {
+        display: none;
+    }
+    
+    .mobile-nav {
+        display: none;
+    }
 }
-
 /* ============================================
    5. HERO & RECHERCHE
    ============================================ */
