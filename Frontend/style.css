@@ -382,6 +382,14 @@ h3 {
     .mobile-nav {
         background-color: rgba(16, 16, 26, 0.95);
     }
+
+    .hero {
+        padding: 16px 0 0; /* ✅ Très compact sur mobile */
+    }
+    
+    .popular-destinations {
+        padding: 16px 0; /* ✅ Très compact sur mobile */
+    }
 }
 
 /* Desktop (> 768px) */
@@ -401,7 +409,7 @@ h3 {
    ============================================ */
 
 .hero {
-    padding: var(--space-48) 0;
+    padding: var(--space-48) 0 var(--space-24); /* ✅ Réduit le padding bottom de 48px à 24px */
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -640,9 +648,10 @@ h3 {
 /* Sections populaires */
 .popular-destinations,
 .why-en-bus {
-    padding: var(--space-48) 0;
+    padding: var(--space-32) 0; /* ✅ Réduit le padding top de 48px à 32px */
     position: relative;
     z-index: 10;
+
 }
 
 .popular-destinations h2,
