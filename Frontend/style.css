@@ -2793,6 +2793,11 @@ h3 {
     /* ... */
 }
 
+ /* ✅ AJOUTER CETTE RÈGLE */
+.destination-swap-container .form-group {
+            text-align: center;
+        }
+
 /* Responsive */
 @media (max-width: 768px) {
     .method-content {
