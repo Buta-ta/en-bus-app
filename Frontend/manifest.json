@@ -70,8 +70,6 @@
       "url": "/index.html",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
-
-
     {
       "name": "Mes réservations",
       "short_name": "Réservations",
@@ -79,8 +77,6 @@
       "url": "/index.html#reservations",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }, 
-
-    
     {
       "name": "Suivre mon bus",
       "short_name": "Suivi GPS",
@@ -88,8 +84,6 @@
       "url": "/suivi.html",
       "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
-
-
   ],
   "share_target": {
     "action": "/index.html",
@@ -102,5 +96,3 @@
     }
   }
 }
-
-
