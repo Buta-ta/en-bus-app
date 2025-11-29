@@ -4387,7 +4387,7 @@ function downloadInvoice(bookingNumber) {
 
 // Ajoute un écouteur pour fermer les menus en cliquant n'importe où
 window.addEventListener('click', () => {
-    closeAllKebabMenus();
+
 });
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
