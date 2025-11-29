@@ -319,50 +319,52 @@ h3 {
    5. HERO & RECHERCHE - ✅ VERSION ULTRA-COMPACTE
    ============================================ */
 
-.hero {
-    padding: var(--space-24) 0 0; /* ✅ Padding minimal en haut, ZÉRO en bas */
-    text-align: center;
-    position: relative;
-    overflow: visible; /* ✅ Changé de hidden à visible pour éviter les coupures */
+.hero { 
+  padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
+  text-align: center; 
+  position: relative; 
+  overflow: hidden; 
 }
 
-.hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(16, 16, 26, 0.45), rgba(16, 16, 26, 0.85) 80%);
-    z-index: 1;
+
+.hero::before { 
+  content: ''; 
+  position: absolute; 
+  inset: 0; 
+  background: radial-gradient(circle at center, rgba(16,16,26,0.45), rgba(16,16,26,0.85) 80%); 
+  z-index: 1; 
 }
 
-.hero-content {
-    position: relative;
-    z-index: 2;
-    max-width: 900px;
-    margin: 0 auto 0; /* ✅ ZÉRO marge en bas */
-    padding: 0; /* ✅ ZÉRO padding */
+
+.hero-content { 
+  position: relative; 
+  z-index: 2; 
+  max-width: 900px; 
+  margin: 0 auto; 
 }
 
-.hero h1 {
-    font-family: var(--font-logo);
-    font-size: 42px;
-    font-weight: 700;
-    margin-bottom: 8px; /* ✅ Minimal */
-    text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4);
+.hero h1 { 
+  font-family: var(--font-logo); 
+  font-size: 42px; 
+  font-weight: 700; 
+  margin-bottom: var(--space-16); 
+  text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4); 
 }
 
-.hero p {
-    font-size: 18px;
-    margin-bottom: 16px; /* ✅ Minimal */
-    color: var(--color-text-secondary);
+
+.hero p { 
+  font-size: 18px; 
+  margin-bottom: var(--space-40); 
+  color: var(--color-text-secondary); 
 }
 
+/* Barre de recherche intelligente */
 /* Barre de recherche intelligente */
 .smart-search-wrapper {
     position: relative;
     width: 100%;
     max-width: 600px;
-    margin: 0 auto; /* ✅ ZÉRO marge top et bottom */
-    padding: 0; /* ✅ ZÉRO padding */
+    margin: 2rem auto 0;
     z-index: 50;
 }
 
@@ -371,6 +373,7 @@ h3 {
     display: flex;
     align-items: center;
 }
+
 
 #smart-search-input {
     width: 100%;
@@ -384,6 +387,7 @@ h3 {
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
+
 
 #smart-search-input:focus {
     outline: none;
@@ -437,22 +441,19 @@ h3 {
 .smart-result-item:hover {
     background-color: var(--color-background);
 }
-
+/* Box de recherche détaillée */
 /* Box de recherche détaillée */
 .search-box {
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
     transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
-    margin: 0; /* ✅ ZÉRO marge */
-    padding: var(--space-24);
 }
 
 .search-box.visible {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
-    margin: 0; /* ✅ ZÉRO marge */
 }
 
 .search-form {
@@ -565,11 +566,12 @@ h3 {
    ✅ SECTIONS POPULAIRES - COLLÉ À LA RECHERCHE
    ============================================ */
 
-.popular-destinations {
-    padding: 0; /* ✅ ZÉRO padding */
-    margin: 0; /* ✅ ZÉRO marge */
-    position: relative;
-    z-index: 10;
+/* Sections populaires */
+.popular-destinations,
+.why-en-bus { 
+  padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
+  position: relative;
+  z-index: 10;
 }
 
 /* ✅ CONTAINER de la section (si utilisé dans ton HTML) */
@@ -588,8 +590,7 @@ h3 {
     font-family: var(--font-logo), sans-serif;
     font-size: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
-    margin: 0 0 var(--space-16); /* ✅ ZÉRO en haut, 16px en bas */
-    padding: 0; /* ✅ ZÉRO padding */
+    margin-bottom: var(--space-32); /* ✅ 32px en bas du titre */
     line-height: 1.2;
     background: linear-gradient(145deg, var(--color-text-primary, #fff) 60%, var(--color-text-secondary, #ccc));
     -webkit-background-clip: text;
@@ -964,53 +965,32 @@ h3 {
         background-color: rgba(16, 16, 26, 0.95);
     }
     
-    /* ✅ HERO ULTRA-COMPACT MOBILE */
+    /* Hero section mobile */
     .hero {
-        padding: 12px 0 0; /* ✅ Minimal */
-    }
-    
-    .hero-content {
-        margin: 0; /* ✅ ZÉRO marge */
-        padding: 0; /* ✅ ZÉRO padding */
+        padding: 24px 0; /* ✅ 24px en haut ET en bas */
     }
     
     .hero h1 {
-        font-size: 24px;
-        margin-bottom: 4px; /* ✅ Ultra-réduit */
+        font-size: 28px;
+        line-height: 1.2;
+        margin-bottom: 12px;
     }
     
     .hero p {
-        font-size: 14px;
-        margin-bottom: 12px; /* ✅ Ultra-réduit */
+        font-size: 16px;
+        margin-bottom: 24px;
     }
     
-    .smart-search-wrapper {
-        margin: 0 auto; /* ✅ ZÉRO marge */
+    /* Sections mobiles */
+    .popular-destinations,
+    .why-en-bus {
+        padding: 24px 0; /* ✅ 24px en haut ET en bas */
     }
     
-    .search-box {
-        padding: 12px; /* ✅ Réduit */
-        margin: 0; /* ✅ ZÉRO marge */
-    }
-    
-    /* ✅ DESTINATIONS POPULAIRES COLLÉES MOBILE */
-    .popular-destinations {
-        margin: 0; /* ✅ ZÉRO marge */
-        padding: 0; /* ✅ ZÉRO padding */
-    }
-    
-    .popular-destinations .container {
-        padding-top: 16px; /* ✅ Un peu d'espace pour respirer */
-    }
-    
-    .popular-destinations h2 {
-        font-size: 18px;
-        margin: 0 0 12px; /* ✅ ZÉRO en haut */
-        padding: 0; /* ✅ ZÉRO padding */
-    }
-    
-    .destinations-grid {
-        gap: 12px; /* ✅ Réduit */
+    .popular-destinations h2,
+    .why-en-bus h2 {
+        font-size: 20px;
+        margin-bottom: 16px;
     }
 }
 
