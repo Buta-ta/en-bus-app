@@ -306,6 +306,14 @@
           <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
           <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
         </div>
+
+                <!-- ✅ Boutons langues DESKTOP uniquement -->
+      <div class="language-selector desktop-only">
+        <button class="lang-btn" onclick="changeLanguage('fr')">🇫🇷</button>
+        <button class="lang-btn" onclick="changeLanguage('en')">🇬🇧</button>
+      </div>
+      
+
         <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -318,10 +326,13 @@
         <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
       </div>
 
-      <!-- ✅ AJOUTER CE SÉLECTEUR DE LANGUE ICI -->
-      <div class="language-selector">
-        <button class="lang-btn" onclick="changeLanguage('fr')">🇫🇷</button>
-        <button class="lang-btn" onclick="changeLanguage('en')">🇬🇧</button>
+       <!-- ✅ NOUVEAU : Langues intégrées dans le menu mobile -->
+      <div class="mobile-lang-selector">
+        <span style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase;">Langue</span>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
+          <button class="lang-btn" onclick="changeLanguage('fr'); closeMenuAndShowPage('home')">🇫🇷 Français</button>
+          <button class="lang-btn" onclick="changeLanguage('en'); closeMenuAndShowPage('home')">🇬🇧 English</button>
+        </div>
       </div>
     </div>
   </nav>

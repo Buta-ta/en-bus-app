@@ -4934,6 +4934,112 @@ body.pwa-installed .container {
     }
 }
 
+
+/* Cacher les langues desktop sur mobile */
+@media (max-width: 768px) {
+    .language-selector.desktop-only {
+        display: none;
+    }
+}
+
+/* Style du sélecteur de langue mobile */
+.mobile-lang-selector {
+    padding: 16px;
+    margin-top: 12px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+
+.mobile-lang-selector .lang-btn {
+    flex: 1;
+    max-width: 140px;
+    font-size: 14px;
+    padding: 10px 16px;
+}
+
+/* Cacher sur desktop */
+@media (min-width: 769px) {
+    .mobile-lang-selector {
+        display: none;
+    }
+}
+
+
+
+
+@media (max-width: 768px) {
+    
+    /* Formulaire de recherche compact */
+    #detailed-search-box {
+        padding: 12px;
+        margin: 0;
+    }
+    
+    .search-form {
+        gap: 10px; /* Au lieu de 20px */
+    }
+    
+    /* Conteneur swap ultra-compact */
+    .destination-swap-container {
+        gap: 8px;
+    }
+    
+    .swap-btn {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 0;
+    }
+    
+    /* Labels plus petits */
+    .form-group label {
+        font-size: 11px;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    
+    /* Inputs plus compacts */
+    .form-control {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    /* Toggle trajet compact */
+    .trip-type-toggle {
+        padding: 3px;
+    }
+    
+    .toggle-option {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    /* Dropdown passagers compact */
+    .passenger-dropdown-menu {
+        width: 280px;
+        padding: 12px;
+    }
+    
+    .passenger-row {
+        padding: 8px 0;
+    }
+    
+    .passenger-row label {
+        font-size: 13px;
+    }
+    
+    .counter-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 18px;
+    }
+    
+    /* Bouton recherche compact */
+    .btn-large {
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+}
+
 }
 
 
