@@ -1625,6 +1625,8 @@ const ticketHTML = `
         setupAmenitiesFilters(); 
         addAboutPageStyles();
          animateCountersOnScroll();
+         addContactPageStyles(); 
+         setupContactPage();
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
@@ -1790,6 +1792,53 @@ async function initInteractiveMap() {
         mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555;">Erreur de chargement de la carte.</p>`;
     }
 }
+
+
+
+// ============================================
+// 📞 LOGIQUE PAGE CONTACT
+// ============================================
+function setupContactPage() {
+    // Logique pour la FAQ (accordéon)
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    faqQuestions.forEach(button => {
+        button.addEventListener('click', () => {
+            const answer = button.nextElementSibling;
+            const isActive = button.classList.contains('active');
+
+            // Fermer tous les autres
+            document.querySelectorAll('.faq-question.active').forEach(activeButton => {
+                if (activeButton !== button) {
+                    activeButton.classList.remove('active');
+                    activeButton.nextElementSibling.style.maxHeight = null;
+                }
+            });
+
+            // Ouvrir ou fermer l'élément cliqué
+            if (isActive) {
+                button.classList.remove('active');
+                answer.style.maxHeight = null;
+            } else {
+                button.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + "px";
+            }
+        });
+    });
+
+    // Logique pour le formulaire de contact
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Pour l'instant, on affiche juste une alerte.
+            // Plus tard, on pourra lier ça à un service comme Formspree ou un email.
+            Utils.showToast("Message envoyé avec succès ! Nous vous répondrons bientôt.", 'success');
+            contactForm.reset();
+        });
+    }
+}
+
+
 function addToastStyles() {
     if (!document.getElementById('toast-styles')) {
         const style = document.createElement('style');
@@ -1956,6 +2005,82 @@ function addAboutPageStyles() {
     document.head.appendChild(style);
 }
 
+
+function addContactPageStyles() {
+    if (document.getElementById('contact-page-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'contact-page-styles';
+    style.textContent = `
+        .contact-main-title { font-size: 2.5rem; color: var(--color-text-primary); }
+        .contact-main-subtitle { font-size: 1.1rem; color: var(--color-text-secondary); max-width: 500px; margin: 0 auto; }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .contact-info-cards .info-card {
+            background: var(--color-surface);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--color-accent);
+        }
+        .info-card-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .info-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .info-card p { color: var(--color-text-secondary); margin-bottom: 1rem; }
+        .info-card-link { color: var(--color-accent); font-weight: 600; text-decoration: none; }
+        
+        .contact-form-card {
+            background: var(--color-surface);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+        }
+        .contact-form-card h3 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+        .contact-form-card .form-group { margin-bottom: 1rem; }
+        .contact-form-card button { width: 100%; margin-top: 1rem; }
+        
+        .faq-section { margin: 4rem 0; text-align: center; }
+        .faq-section h2 { font-size: 2rem; margin-bottom: 2rem; }
+        .faq-container { max-width: 800px; margin: 0 auto; text-align: left; }
+        .faq-item { border-bottom: 1px solid var(--color-border); }
+        .faq-question {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            padding: 1.5rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            cursor: pointer;
+            position: relative;
+        }
+        .faq-question::after {
+            content: '+';
+            position: absolute;
+            right: 1rem;
+            font-size: 1.5rem;
+            transition: transform 0.3s;
+        }
+        .faq-question.active::after {
+            transform: rotate(45deg);
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+        .faq-answer p { padding: 0 1rem 1.5rem 1rem; color: var(--color-text-secondary); }
+
+        @media (max-width: 992px) {
+            .contact-grid { grid-template-columns: 1fr; }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 function addSwapButtonStyles() {
     if (document.getElementById('swap-button-styles')) return;

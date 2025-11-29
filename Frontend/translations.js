@@ -472,6 +472,33 @@ const translations = {
       about_cta_button: "Rechercher un billet",
 
 
+         // --- Page Contact (Nouvelles clés) ---
+    contact_main_title: "Contactez-nous",
+    contact_main_subtitle: "Une question ? Une suggestion ? Notre équipe est là pour vous aider.",
+    contact_email_title: "Par Email",
+    contact_email_desc: "Pour toute demande générale ou support.",
+    contact_phone_title: "Par Téléphone",
+    contact_phone_desc: "Assistance immédiate du Lundi au Samedi.",
+    contact_hq_title: "Siège Social",
+    contact_hq_address: "Avenue de la République, Brazzaville, Congo",
+    contact_form_title: "Envoyez-nous un message",
+    contact_form_name: "Votre Nom",
+    contact_form_email: "Votre Email",
+    contact_form_subject: "Sujet",
+    contact_subject_general: "Question générale",
+    contact_subject_booking: "Aide à la réservation",
+    contact_subject_partnership: "Partenariat",
+    contact_form_message: "Message",
+    contact_form_button: "Envoyer le message",
+    contact_faq_title: "Questions Fréquentes",
+    faq_q1_title: "Comment puis-je payer ma réservation ?",
+    faq_q1_answer: "Vous pouvez payer par MTN Mobile Money, Airtel Money, ou directement dans l'une de nos agences partenaires. Toutes les options vous seront proposées au moment du paiement.",
+    faq_q2_title: "Puis-je annuler ou modifier mon billet ?",
+    faq_q2_answer: "Oui, il est possible de reporter votre voyage sous certaines conditions via la section \"Mes Réservations\". Les annulations avec remboursement dépendent de la politique de chaque compagnie.",
+    faq_q3_title: "Je n'ai pas reçu mon billet, que faire ?",
+    faq_q3_answer: "Après un paiement confirmé, votre billet est disponible dans \"Mes Réservations\". Si vous ne le voyez pas, vérifiez le statut de votre paiement ou contactez-nous.",
+                        
+
   },
   // ===================================
   // LANGUE ANGLAISE (EN)
@@ -932,7 +959,37 @@ const translations = {
     about_cta_title: "Ready to travel?",
     about_cta_subtitle: "Find your next trip right now.",
     about_cta_button: "Search for a ticket",
-                    
+
+
+        // --- Contact Page (New keys) ---
+    contact_main_title: "Get in Touch",
+    contact_main_subtitle: "Have a question? A suggestion? Our team is here to help you.",
+    contact_email_title: "By Email",
+    contact_email_desc: "For any general inquiry or support.",
+    contact_phone_title: "By Phone",
+    contact_phone_desc: "Immediate assistance from Monday to Saturday.",
+    contact_hq_title: "Headquarters",
+    contact_hq_address: "Avenue de la République, Brazzaville, Congo",
+    contact_form_title: "Send us a message",
+    contact_form_name: "Your Name",
+    contact_form_email: "Your Email",
+    contact_form_subject: "Subject",
+    contact_subject_general: "General Inquiry",
+    contact_subject_booking: "Booking Assistance",
+    contact_subject_partnership: "Partnership",
+    contact_form_message: "Message",
+    contact_form_button: "Send Message",
+    contact_faq_title: "Frequently Asked Questions",
+    faq_q1_title: "How can I pay for my booking?",
+    faq_q1_answer: "You can pay via MTN Mobile Money, Airtel Money, or directly at one of our partner agencies. All options will be presented to you at checkout.",
+    faq_q2_title: "Can I cancel or change my ticket?",
+    faq_q2_answer: "Yes, you can reschedule your trip under certain conditions via the \"My Bookings\" section. Cancellations with refunds depend on each bus company's policy.",
+    faq_q3_title: "I haven't received my ticket, what should I do?",
+    faq_q3_answer: "After a confirmed payment, your ticket is available in the \"My Bookings\" section of the app. If you don't see it, please check your payment status or contact us.",
+
+
+
+     
   }
 }
 

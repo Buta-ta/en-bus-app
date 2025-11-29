@@ -994,33 +994,99 @@
 
   </div>
 </div>
-    <div id="contact-page" class="page">
-      <!-- ... (Contenu de la page Contact, inchangé) ... -->
-      <div class="container">
-        <div class="page-header">
-          <h2 data-i18n="contact_title">Contact</h2>
+
+    <!-- ============================================
+     📞 PAGE CONTACT (MODERNE)
+     ============================================ -->
+<div id="contact-page" class="page">
+    <div class="container">
+        
+        <!-- 1. En-tête de la page -->
+        <div class="page-header" style="text-align: center; margin-bottom: 3rem;">
+            <h1 class="contact-main-title" data-i18n="contact_main_title">Contactez-nous</h1>
+            <p class="contact-main-subtitle" data-i18n="contact_main_subtitle">Une question ? Une suggestion ? Notre équipe est là pour vous aider.</p>
         </div>
-        <div class="content-card">
-          <h3 data-i18n="contact_header">Contactez-nous</h3>
-          <p data-i18n="contact_intro">
-            Pour toute question ou assistance, n'hésitez pas à nous contacter
-            :
-          </p>
-          <div class="contact-info">
-            <div class="contact-item">
-              <strong>📧 Email:</strong> <span>contact@en-bus.com</span>
+
+        <!-- 2. Conteneur principal (Formulaire + Infos) -->
+        <div class="contact-grid">
+            
+            <!-- Colonne de gauche : Infos de contact -->
+            <div class="contact-info-cards">
+                <div class="info-card">
+                    <div class="info-card-icon">📧</div>
+                    <h3 data-i18n="contact_email_title">Par Email</h3>
+                    <p data-i18n="contact_email_desc">Pour toute demande générale ou support.</p>
+                    <a href="mailto:contact@en-bus.com" class="info-card-link">contact@en-bus.com</a>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">📞</div>
+                    <h3 data-i18n="contact_phone_title">Par Téléphone</h3>
+                    <p data-i18n="contact_phone_desc">Assistance immédiate du Lundi au Samedi.</p>
+                    <a href="tel:+242061234567" class="info-card-link">+242 06 123 4567</a>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-icon">📍</div>
+                    <h3 data-i18n="contact_hq_title">Siège Social</h3>
+                    <p data-i18n="contact_hq_address">Avenue de la République, Brazzaville, Congo</p>
+                </div>
             </div>
-            <div class="contact-item">
-              <strong>📱 Téléphone:</strong> <span>+242 06 123 4567</span>
+
+            <!-- Colonne de droite : Formulaire de contact -->
+            <div class="contact-form-card">
+                <h3 data-i18n="contact_form_title">Envoyez-nous un message</h3>
+                <form id="contact-form">
+                    <div class="form-group">
+                        <label for="contact-name" data-i18n="contact_form_name">Votre Nom</label>
+                        <input type="text" id="contact-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-email" data-i18n="contact_form_email">Votre Email</label>
+                        <input type="email" id="contact-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-subject" data-i18n="contact_form_subject">Sujet</label>
+                        <select id="contact-subject" class="form-control" required>
+                            <option value="general" data-i18n="contact_subject_general">Question générale</option>
+                            <option value="booking" data-i18n="contact_subject_booking">Aide à la réservation</option>
+                            <option value="partnership" data-i18n="contact_subject_partnership">Partenariat</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-message" data-i18n="contact_form_message">Message</label>
+                        <textarea id="contact-message" class="form-control" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" data-i18n="contact_form_button">Envoyer le message</button>
+                </form>
             </div>
-            <div class="contact-item">
-              <strong>📍 Siège Social:</strong>
-              <span data-i18n="contact_hq">Brazzaville, République du Congo</span>
-            </div>
-          </div>
         </div>
-      </div>
+
+        <!-- 3. Section FAQ (Foire Aux Questions) -->
+        <div class="faq-section">
+            <h2 data-i18n="contact_faq_title">Questions Fréquentes</h2>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <button class="faq-question" data-i18n="faq_q1_title">Comment puis-je payer ma réservation ?</button>
+                    <div class="faq-answer">
+                        <p data-i18n="faq_q1_answer">Vous pouvez payer par MTN Mobile Money, Airtel Money, ou directement dans l'une de nos agences partenaires. Toutes les options vous seront proposées au moment du paiement.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" data-i18n="faq_q2_title">Puis-je annuler ou modifier mon billet ?</button>
+                    <div class="faq-answer">
+                        <p data-i18n="faq_q2_answer">Oui, il est possible de reporter votre voyage sous certaines conditions via la section "Mes Réservations". Les annulations avec remboursement ne sont généralement pas possibles, mais dépendent de la politique de la compagnie de bus.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" data-i18n="faq_q3_title">Je n'ai pas reçu mon billet, que faire ?</button>
+                    <div class="faq-answer">
+                        <p data-i18n="faq_q3_answer">Après un paiement confirmé, votre billet est immédiatement disponible dans la section "Mes Réservations" de l'application. Si vous ne le voyez pas, veuillez vérifier le statut de votre paiement ou nous contacter.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
+</div>
   </main>
 
   <footer class="footer">
