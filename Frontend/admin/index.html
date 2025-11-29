@@ -2028,35 +2028,38 @@
                             </div>
 
 
-                   <!-- ✅ ÉQUIPAGE - CHAUFFEURS -->
-<div class="form-group">
-    <label for="trip-driver1" class="form-label">🚗 Chauffeur principal (optionnel)</label>
-    <select id="trip-driver1" class="form-control">
-        <option value="">-- Aucun chauffeur --</option>
-    </select>
-</div>
+                            <!-- ✅ ÉQUIPAGE - CHAUFFEURS -->
+                            <div class="form-group">
+                                <label for="trip-driver1" class="form-label">🚗 Chauffeur principal (optionnel)</label>
+                                <select id="trip-driver1" class="form-control">
+                                    <option value="">-- Aucun chauffeur --</option>
+                                </select>
+                            </div>
 
-<div class="form-group">
-    <label for="trip-driver2" class="form-label">🚗 Chauffeur secondaire (trajets longs)</label>
-    <select id="trip-driver2" class="form-control">
-        <option value="">-- Aucun chauffeur --</option>
-    </select>
-</div>
+                            <div class="form-group">
+                                <label for="trip-driver2" class="form-label">🚗 Chauffeur secondaire (trajets
+                                    longs)</label>
+                                <select id="trip-driver2" class="form-control">
+                                    <option value="">-- Aucun chauffeur --</option>
+                                </select>
+                            </div>
 
-<!-- ✅ ÉQUIPAGE - CONTRÔLEURS -->
-<div class="form-group">
-    <label for="trip-controller1" class="form-label">🎫 Contrôleur principal (optionnel)</label>
-    <select id="trip-controller1" class="form-control">
-        <option value="">-- Aucun contrôleur --</option>
-    </select>
-</div>
+                            <!-- ✅ ÉQUIPAGE - CONTRÔLEURS -->
+                            <div class="form-group">
+                                <label for="trip-controller1" class="form-label">🎫 Contrôleur principal
+                                    (optionnel)</label>
+                                <select id="trip-controller1" class="form-control">
+                                    <option value="">-- Aucun contrôleur --</option>
+                                </select>
+                            </div>
 
-<div class="form-group">
-    <label for="trip-controller2" class="form-label">🎫 Contrôleur secondaire (trajets longs)</label>
-    <select id="trip-controller2" class="form-control">
-        <option value="">-- Aucun contrôleur --</option>
-    </select>
-</div>
+                            <div class="form-group">
+                                <label for="trip-controller2" class="form-label">🎫 Contrôleur secondaire (trajets
+                                    longs)</label>
+                                <select id="trip-controller2" class="form-control">
+                                    <option value="">-- Aucun contrôleur --</option>
+                                </select>
+                            </div>
 
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
@@ -2122,7 +2125,7 @@
                                     <!-- ✅ NOUVELLE COLONNE -->
                                     <th>Disponibilité</th>
                                     <th>Statut</th>
-                                     <th>Équipage</th> <!-- ✅ NOUVELLE COLONNE -->
+                                    <th>Équipage</th> <!-- ✅ NOUVELLE COLONNE -->
                                     <th style="min-width: 180px">Actions</th>
                                 </tr>
                             </thead>
@@ -2192,10 +2195,11 @@
                                 </div>
 
                                 <!-- ✅ NOUVEAU CHAMP DISTANCE -->
-<div class="form-group">
-    <label for="template-distance" class="form-label">Distance (km)</label>
-    <input type="number" id="template-distance" class="form-control" placeholder="Ex: 510" required />
-</div>
+                                <div class="form-group">
+                                    <label for="template-distance" class="form-label">Distance (km)</label>
+                                    <input type="number" id="template-distance" class="form-control"
+                                        placeholder="Ex: 510" required />
+                                </div>
 
                                 <div class="form-group">
                                     <label for="template-departure" class="form-label">Heure de départ</label>
@@ -2600,6 +2604,8 @@
 
         async function handleLogin(e) {
             e.preventDefault();
+            // ✅ CORRECTION : ON DÉCLARE 'errorDiv' AU DÉBUT
+            const errorDiv = document.getElementById('login-error');
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
 
@@ -3492,60 +3498,60 @@
 
 
         // ============================================
-// 👥 AFFICHAGE DE L'ÉQUIPAGE
-// ============================================
-function getCrewDisplay(crew) {
-    if (!crew) {
-        return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
-    }
+        // 👥 AFFICHAGE DE L'ÉQUIPAGE
+        // ============================================
+        function getCrewDisplay(crew) {
+            if (!crew) {
+                return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
+            }
 
-    let html = '';
+            let html = '';
 
-    // Afficher les chauffeurs
-    if (crew.drivers && crew.drivers.length > 0) {
-        html += '<div style="margin-bottom: 6px;">';
-        crew.drivers.forEach((driver, index) => {
-            html += `
+            // Afficher les chauffeurs
+            if (crew.drivers && crew.drivers.length > 0) {
+                html += '<div style="margin-bottom: 6px;">';
+                crew.drivers.forEach((driver, index) => {
+                    html += `
                 <div style="display: flex; align-items: center; gap: 6px; ${index > 0 ? 'margin-top: 4px;' : ''}">
                     <span style="font-size: 1rem;">🚗</span>
                     <span style="font-size: 0.875rem; font-weight: 600;">${driver.name}</span>
                 </div>
             `;
-        });
-        html += '</div>';
-    }
+                });
+                html += '</div>';
+            }
 
-    // Afficher les contrôleurs
-    if (crew.controllers && crew.controllers.length > 0) {
-        crew.controllers.forEach((controller, index) => {
-            html += `
+            // Afficher les contrôleurs
+            if (crew.controllers && crew.controllers.length > 0) {
+                crew.controllers.forEach((controller, index) => {
+                    html += `
                 <div style="display: flex; align-items: center; gap: 6px; ${index > 0 ? 'margin-top: 4px;' : ''}">
                     <span style="font-size: 1rem;">🎫</span>
                     <span style="font-size: 0.875rem; font-weight: 600;">${controller.name}</span>
                 </div>
             `;
-        });
-    }
+                });
+            }
 
-    // Si aucun équipage assigné
-    if (!html) {
-        return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
-    }
+            // Si aucun équipage assigné
+            if (!html) {
+                return '<span style="color: var(--text-muted); font-size: 0.875rem;">Non assigné</span>';
+            }
 
-    return html;
-}
+            return html;
+        }
 
 
-function renderTripsTable() {
-    const tbody = document.getElementById("trips-body");
+        function renderTripsTable() {
+            const tbody = document.getElementById("trips-body");
 
-    if (!tbody) {
-        console.error("L'élément 'trips-body' est introuvable.");
-        return;
-    }
+            if (!tbody) {
+                console.error("L'élément 'trips-body' est introuvable.");
+                return;
+            }
 
-    if (allTrips.length === 0) {
-        tbody.innerHTML = `
+            if (allTrips.length === 0) {
+                tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="text-center" style="padding:3rem;">
                     <div style="font-size:3rem;margin-bottom:1rem;">🚌</div>
@@ -3553,20 +3559,20 @@ function renderTripsTable() {
                 </td>
             </tr>
         `;
-        return;
-    }
+                return;
+            }
 
-    tbody.innerHTML = allTrips.map((trip) => {
-        const availableSeats = trip.seats.filter(s => s.status === "available").length;
-        const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
-        const percentage = trip.seats.length > 0 ? (availableSeats / trip.seats.length) * 100 : 100;
-        const canBeDeleted = occupiedSeats === 0;
+            tbody.innerHTML = allTrips.map((trip) => {
+                const availableSeats = trip.seats.filter(s => s.status === "available").length;
+                const occupiedSeats = trip.seats.filter(s => s.status === "occupied").length;
+                const percentage = trip.seats.length > 0 ? (availableSeats / trip.seats.length) * 100 : 100;
+                const canBeDeleted = occupiedSeats === 0;
 
-        const deleteButtonHTML = canBeDeleted
-            ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
-            : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
+                const deleteButtonHTML = canBeDeleted
+                    ? `<button class="btn btn-icon btn-danger" onclick="deleteTrip('${trip._id}')" title="Supprimer le voyage">🗑️</button>`
+                    : `<button class="btn btn-icon btn-ghost" disabled title="Impossible de supprimer : des réservations sont actives" style="opacity:0.3;cursor:not-allowed;">🔒</button>`;
 
-        return `
+                return `
             <tr>
                 <td class="font-bold">${new Date(trip.date).toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" })}</td>
                 <td>
@@ -3596,82 +3602,82 @@ function renderTripsTable() {
                 </td>
             </tr>
         `;
-    }).join("");
-}
+            }).join("");
+        }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
-async function handleCreateTrips(e) {
-    e.preventDefault();
+        async function handleCreateTrips(e) {
+            e.preventDefault();
 
-    // 1. Récupération des valeurs du formulaire
-    const routeId = document.getElementById("route-template").value;
-    const dateValue = document.getElementById("trip-dates").value;
-    const seatCount = parseInt(document.getElementById("seat-count").value);
-    const busIdentifier = document.getElementById("bus-identifier").value.trim();
-    const highlightBadge = document.getElementById('highlight-badge').value.trim();
+            // 1. Récupération des valeurs du formulaire
+            const routeId = document.getElementById("route-template").value;
+            const dateValue = document.getElementById("trip-dates").value;
+            const seatCount = parseInt(document.getElementById("seat-count").value);
+            const busIdentifier = document.getElementById("bus-identifier").value.trim();
+            const highlightBadge = document.getElementById('highlight-badge').value.trim();
 
-    // 2. Validations
-    if (!routeId || !dateValue || !seatCount) {
-        showNotification("Modèle, dates et sièges sont requis.", "warning");
-        return;
-    }
+            // 2. Validations
+            if (!routeId || !dateValue || !seatCount) {
+                showNotification("Modèle, dates et sièges sont requis.", "warning");
+                return;
+            }
 
-    // 3. Logique des dates
-    let startDate, endDate;
-    if (dateValue.includes(" au ")) {
-        [startDate, endDate] = dateValue.split(" au ");
-    } else {
-        startDate = endDate = dateValue;
-    }
+            // 3. Logique des dates
+            let startDate, endDate;
+            if (dateValue.includes(" au ")) {
+                [startDate, endDate] = dateValue.split(" au ");
+            } else {
+                startDate = endDate = dateValue;
+            }
 
-    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
-    const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
+            const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+            const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
 
-    if (daysToSend.length === 0) {
-        showNotification("Veuillez sélectionner au moins un jour.", "warning");
-        return;
-    }
+            if (daysToSend.length === 0) {
+                showNotification("Veuillez sélectionner au moins un jour.", "warning");
+                return;
+            }
 
-    // ✅ 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
-    const driver1Select = document.getElementById('trip-driver1');
-    const driver2Select = document.getElementById('trip-driver2');
-    const controller1Select = document.getElementById('trip-controller1');
-    const controller2Select = document.getElementById('trip-controller2');
+            // ✅ 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
+            const driver1Select = document.getElementById('trip-driver1');
+            const driver2Select = document.getElementById('trip-driver2');
+            const controller1Select = document.getElementById('trip-controller1');
+            const controller2Select = document.getElementById('trip-controller2');
 
-    const driver1Id = driver1Select?.value || null;
-    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
+            const driver1Id = driver1Select?.value || null;
+            const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
 
-    const driver2Id = driver2Select?.value || null;
-    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
+            const driver2Id = driver2Select?.value || null;
+            const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
 
-    const controller1Id = controller1Select?.value || null;
-    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
+            const controller1Id = controller1Select?.value || null;
+            const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
 
-    const controller2Id = controller2Select?.value || null;
-    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
+            const controller2Id = controller2Select?.value || null;
+            const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
 
-    // 5. Construction de l'objet de données
-    const tripData = {
-        routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
-        busIdentifier: busIdentifier || null,
-        highlightBadge: highlightBadge || null,
-        driver1Id, driver1Name,
-        driver2Id, driver2Name,
-        controller1Id, controller1Name,
-        controller2Id, controller2Name
-    };
+            // 5. Construction de l'objet de données
+            const tripData = {
+                routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
+                busIdentifier: busIdentifier || null,
+                highlightBadge: highlightBadge || null,
+                driver1Id, driver1Name,
+                driver2Id, driver2Name,
+                controller1Id, controller1Name,
+                controller2Id, controller2Name
+            };
 
-    console.log("📤 Envoi des données de création de voyage :", tripData);
+            console.log("📤 Envoi des données de création de voyage :", tripData);
 
-    // 6. Appel API
-    const data = await apiCall("/admin/trips", "POST", tripData);
+            // 6. Appel API
+            const data = await apiCall("/admin/trips", "POST", tripData);
 
-    if (data && data.success) {
-        showNotification(data.message || "Voyages programmés !", "success");
-        e.target.reset();
-        loadAllTrips();
-    }
-}  // Dans Admin/index.html (section <script>)
+            if (data && data.success) {
+                showNotification(data.message || "Voyages programmés !", "success");
+                e.target.reset();
+                loadAllTrips();
+            }
+        }  // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
@@ -4511,54 +4517,54 @@ async function handleCreateTrips(e) {
         /**
  * Ouvre une modale pour modifier l'équipage d'un voyage existant
  */
-async function openEditCrewModal(tripId) {
-    console.log(`▶️ Clic sur "Modifier l'équipage" pour le voyage : ${tripId}`);
-    
-    try {
-        // 1. Trouver le voyage
-        const trip = allTrips.find(t => t._id === tripId);
-        if (!trip) {
-            showNotification("Erreur : Voyage introuvable.", "error");
-            console.error("❌ Voyage non trouvé dans 'allTrips'.");
-            return;
-        }
-        console.log("   -> ✅ Voyage trouvé:", trip);
+        async function openEditCrewModal(tripId) {
+            console.log(`▶️ Clic sur "Modifier l'équipage" pour le voyage : ${tripId}`);
 
-        // 2. S'assurer que la liste du personnel est chargée
-        if (allCrewMembers.length === 0) {
-            console.log("   -> ⏳ Liste du personnel vide, chargement en cours...");
-            const crewData = await apiCall('/admin/crew');
-            if (crewData && crewData.success) {
-                allCrewMembers = crewData.crew;
-                console.log("   -> ✅ Liste du personnel chargée avec succès.");
-            } else {
-                showNotification("Impossible de charger la liste du personnel.", "error");
-                return;
-            }
-        }
+            try {
+                // 1. Trouver le voyage
+                const trip = allTrips.find(t => t._id === tripId);
+                if (!trip) {
+                    showNotification("Erreur : Voyage introuvable.", "error");
+                    console.error("❌ Voyage non trouvé dans 'allTrips'.");
+                    return;
+                }
+                console.log("   -> ✅ Voyage trouvé:", trip);
 
-        const allDrivers = allCrewMembers.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
-        const allControllers = allCrewMembers.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
-        console.log(`   -> Personnel actif trouvé: ${allDrivers.length} chauffeurs, ${allControllers.length} contrôleurs.`);
-        
-        // 3. Récupérer l'équipage actuel
-        const currentDrivers = trip.crew?.drivers?.map(d => d.id) || [];
-        const currentControllers = trip.crew?.controllers?.map(c => c.id) || [];
-        console.log("   -> Équipage actuel:", { currentDrivers, currentControllers });
+                // 2. S'assurer que la liste du personnel est chargée
+                if (allCrewMembers.length === 0) {
+                    console.log("   -> ⏳ Liste du personnel vide, chargement en cours...");
+                    const crewData = await apiCall('/admin/crew');
+                    if (crewData && crewData.success) {
+                        allCrewMembers = crewData.crew;
+                        console.log("   -> ✅ Liste du personnel chargée avec succès.");
+                    } else {
+                        showNotification("Impossible de charger la liste du personnel.", "error");
+                        return;
+                    }
+                }
 
-        // 4. Ouvrir la modale
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
-        modalTitle.textContent = `Modifier l'équipage - ${trip.route.from} → ${trip.route.to}`;
+                const allDrivers = allCrewMembers.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
+                const allControllers = allCrewMembers.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
+                console.log(`   -> Personnel actif trouvé: ${allDrivers.length} chauffeurs, ${allControllers.length} contrôleurs.`);
 
-        const createOptions = (items, selectedId) => {
-            return items.map(item => {
-                const isSelected = item._id === selectedId ? 'selected' : '';
-                return `<option value="${item._id}" data-name="${item.name}" ${isSelected}>${item.name} (${item.matricule})</option>`;
-            }).join('');
-        };
+                // 3. Récupérer l'équipage actuel
+                const currentDrivers = trip.crew?.drivers?.map(d => d.id) || [];
+                const currentControllers = trip.crew?.controllers?.map(c => c.id) || [];
+                console.log("   -> Équipage actuel:", { currentDrivers, currentControllers });
 
-        modalBody.innerHTML = `
+                // 4. Ouvrir la modale
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
+                modalTitle.textContent = `Modifier l'équipage - ${trip.route.from} → ${trip.route.to}`;
+
+                const createOptions = (items, selectedId) => {
+                    return items.map(item => {
+                        const isSelected = item._id === selectedId ? 'selected' : '';
+                        return `<option value="${item._id}" data-name="${item.name}" ${isSelected}>${item.name} (${item.matricule})</option>`;
+                    }).join('');
+                };
+
+                modalBody.innerHTML = `
             <form id="edit-crew-form">
                 <p>Date du voyage : <strong>${new Date(trip.date).toLocaleDateString('fr-FR')}</strong></p>
                 <div class="form-grid">
@@ -4574,41 +4580,41 @@ async function openEditCrewModal(tripId) {
             </form>
         `;
 
-        document.getElementById('details-modal').classList.add('active');
-        console.log("   -> ✅ Modale affichée.");
+                document.getElementById('details-modal').classList.add('active');
+                console.log("   -> ✅ Modale affichée.");
 
-        // 5. Gérer la soumission du formulaire
-        document.getElementById('edit-crew-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const getSelectData = (id) => {
-                const select = document.getElementById(id);
-                const value = select.value || null;
-                const name = value ? select.options[select.selectedIndex].dataset.name : null;
-                return { id: value, name: name };
-            };
+                // 5. Gérer la soumission du formulaire
+                document.getElementById('edit-crew-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
 
-            const crewUpdate = {
-                driver1Id: getSelectData('edit-driver1').id, driver1Name: getSelectData('edit-driver1').name,
-                driver2Id: getSelectData('edit-driver2').id, driver2Name: getSelectData('edit-driver2').name,
-                controller1Id: getSelectData('edit-controller1').id, controller1Name: getSelectData('edit-controller1').name,
-                controller2Id: getSelectData('edit-controller2').id, controller2Name: getSelectData('edit-controller2').name,
-            };
+                    const getSelectData = (id) => {
+                        const select = document.getElementById(id);
+                        const value = select.value || null;
+                        const name = value ? select.options[select.selectedIndex].dataset.name : null;
+                        return { id: value, name: name };
+                    };
 
-            const data = await apiCall(`/admin/trips/${tripId}/crew`, 'PATCH', crewUpdate);
+                    const crewUpdate = {
+                        driver1Id: getSelectData('edit-driver1').id, driver1Name: getSelectData('edit-driver1').name,
+                        driver2Id: getSelectData('edit-driver2').id, driver2Name: getSelectData('edit-driver2').name,
+                        controller1Id: getSelectData('edit-controller1').id, controller1Name: getSelectData('edit-controller1').name,
+                        controller2Id: getSelectData('edit-controller2').id, controller2Name: getSelectData('edit-controller2').name,
+                    };
 
-            if (data && data.success) {
-                showNotification(data.message, 'success');
-                closeModal();
-                loadAllTrips();
+                    const data = await apiCall(`/admin/trips/${tripId}/crew`, 'PATCH', crewUpdate);
+
+                    if (data && data.success) {
+                        showNotification(data.message, 'success');
+                        closeModal();
+                        loadAllTrips();
+                    }
+                });
+
+            } catch (error) {
+                console.error("❌ Erreur critique dans openEditCrewModal:", error);
+                showNotification("Une erreur critique est survenue. Vérifiez la console.", "error");
             }
-        });
-
-    } catch (error) {
-        console.error("❌ Erreur critique dans openEditCrewModal:", error);
-        showNotification("Une erreur critique est survenue. Vérifiez la console.", "error");
-    }
-}
+        }
         /**
          * Désactive un membre (suppression douce)
          */
@@ -4644,29 +4650,29 @@ async function openEditCrewModal(tripId) {
         /**
  * Affiche les détails d'un membre du personnel et son historique
  */
-async function viewCrewDetails(memberId) {
-    showNotification('Chargement des détails...', 'info');
+        async function viewCrewDetails(memberId) {
+            showNotification('Chargement des détails...', 'info');
 
-    try {
-        const data = await apiCall(`/admin/crew/${memberId}`);
+            try {
+                const data = await apiCall(`/admin/crew/${memberId}`);
 
-        if (!data || !data.success) {
-            showNotification('Impossible de charger les détails du membre.', 'error');
-            return;
-        }
+                if (!data || !data.success) {
+                    showNotification('Impossible de charger les détails du membre.', 'error');
+                    return;
+                }
 
-        const member = data.member;
-        const history = data.history;
+                const member = data.member;
+                const history = data.history;
 
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
 
-        modalTitle.textContent = `Fiche détaillée - ${member.name}`;
+                modalTitle.textContent = `Fiche détaillée - ${member.name}`;
 
-        // --- Construction de l'historique ---
-        let historyHTML = '';
-        if (history.length > 0) {
-            historyHTML = history.map(trip => `
+                // --- Construction de l'historique ---
+                let historyHTML = '';
+                if (history.length > 0) {
+                    historyHTML = history.map(trip => `
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--dark-border);">
                     <div>
                         <span style="font-weight: 600;">${new Date(trip.date).toLocaleDateString('fr-FR')}</span>
@@ -4682,12 +4688,12 @@ async function viewCrewDetails(memberId) {
                     </div>
                 </li>
             `).join('');
-        } else {
-            historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
-        }
+                } else {
+                    historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
+                }
 
-        // --- Construction du HTML de la modale ---
-        modalBody.innerHTML = `
+                // --- Construction du HTML de la modale ---
+                modalBody.innerHTML = `
             <!-- Section Informations générales -->
             <div style="background: var(--dark-elevated); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
@@ -4729,13 +4735,13 @@ async function viewCrewDetails(memberId) {
             </div>
         `;
 
-        document.getElementById('details-modal').classList.add('active');
+                document.getElementById('details-modal').classList.add('active');
 
-    } catch (error) {
-        console.error('❌ Erreur affichage détails membre:', error);
-        showNotification('Erreur lors de l\'affichage des détails', 'error');
-    }
-}
+            } catch (error) {
+                console.error('❌ Erreur affichage détails membre:', error);
+                showNotification('Erreur lors de l\'affichage des détails', 'error');
+            }
+        }
 
 
 
@@ -4974,12 +4980,12 @@ async function viewCrewDetails(memberId) {
                     loadReportRequests();
                     break;
                 case 'trips':
-                        loadAllTemplates().then(() => {
-        // Ensuite, on charge la liste des voyages
-        loadAllTrips();
-        // ET on remplit les selects du personnel en même temps
-        populateCrewSelects();
-    });
+                    loadAllTemplates().then(() => {
+                        // Ensuite, on charge la liste des voyages
+                        loadAllTrips();
+                        // ET on remplit les selects du personnel en même temps
+                        populateCrewSelects();
+                    });
 
                     break;
                 case 'templates':
@@ -5212,7 +5218,7 @@ async function viewCrewDetails(memberId) {
                 });
             }
 
-           
+
 
             // ===================================
         });
@@ -5222,64 +5228,64 @@ async function viewCrewDetails(memberId) {
         /**
  * Remplit les selects de chauffeur/contrôleur dans le formulaire voyage
  */async function populateCrewSelects() {
-    try {
-        // ✅ On s'assure d'abord d'avoir la liste à jour
-        if (allCrewMembers.length === 0) {
-            const crewData = await apiCall('/admin/crew');
-            if (crewData && crewData.success) {
-                allCrewMembers = crewData.crew;
+            try {
+                // ✅ On s'assure d'abord d'avoir la liste à jour
+                if (allCrewMembers.length === 0) {
+                    const crewData = await apiCall('/admin/crew');
+                    if (crewData && crewData.success) {
+                        allCrewMembers = crewData.crew;
+                    }
+                }
+
+                const drivers = allCrewMembers.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
+                const controllers = allCrewMembers.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
+
+                const driver1Select = document.getElementById('trip-driver1');
+                const driver2Select = document.getElementById('trip-driver2');
+                const controller1Select = document.getElementById('trip-controller1');
+                const controller2Select = document.getElementById('trip-controller2');
+
+                const fillSelect = (select, items, defaultText) => {
+                    if (!select) return;
+                    select.innerHTML = `<option value="">${defaultText}</option>`;
+                    items.forEach(item => {
+                        select.innerHTML += `<option value="${item._id}" data-name="${item.name}">${item.name} (${item.matricule})</option>`;
+                    });
+                };
+
+                fillSelect(driver1Select, drivers, "-- Chauffeur Principal --");
+                fillSelect(driver2Select, drivers, "-- Chauffeur Secondaire --");
+                fillSelect(controller1Select, controllers, "-- Contrôleur Principal --");
+                fillSelect(controller2Select, controllers, "-- Contrôleur Secondaire --");
+
+                const updateSelectOptions = (primarySelect, secondarySelect) => {
+                    if (!primarySelect || !secondarySelect) return;
+
+                    const handler = () => {
+                        const primaryValue = primarySelect.value;
+                        const secondaryValue = secondarySelect.value;
+
+                        Array.from(secondarySelect.options).forEach(option => {
+                            option.disabled = (primaryValue !== '' && option.value === primaryValue);
+                        });
+                        Array.from(primarySelect.options).forEach(option => {
+                            option.disabled = (secondaryValue !== '' && option.value === secondaryValue);
+                        });
+                    };
+
+                    primarySelect.addEventListener('change', handler);
+                    secondarySelect.addEventListener('change', handler);
+                };
+
+                updateSelectOptions(driver1Select, driver2Select);
+                updateSelectOptions(controller1Select, controller2Select);
+
+                console.log(`✅ Selects équipage remplis : ${drivers.length} chauffeurs, ${controllers.length} contrôleurs`);
+
+            } catch (error) {
+                console.error('❌ Erreur chargement personnel pour selects:', error);
             }
         }
-        
-        const drivers = allCrewMembers.filter(m => m.role === 'Chauffeur' && m.status === 'Actif');
-        const controllers = allCrewMembers.filter(m => m.role === 'Contrôleur' && m.status === 'Actif');
-
-        const driver1Select = document.getElementById('trip-driver1');
-        const driver2Select = document.getElementById('trip-driver2');
-        const controller1Select = document.getElementById('trip-controller1');
-        const controller2Select = document.getElementById('trip-controller2');
-
-        const fillSelect = (select, items, defaultText) => {
-            if (!select) return;
-            select.innerHTML = `<option value="">${defaultText}</option>`;
-            items.forEach(item => {
-                select.innerHTML += `<option value="${item._id}" data-name="${item.name}">${item.name} (${item.matricule})</option>`;
-            });
-        };
-
-        fillSelect(driver1Select, drivers, "-- Chauffeur Principal --");
-        fillSelect(driver2Select, drivers, "-- Chauffeur Secondaire --");
-        fillSelect(controller1Select, controllers, "-- Contrôleur Principal --");
-        fillSelect(controller2Select, controllers, "-- Contrôleur Secondaire --");
-
-        const updateSelectOptions = (primarySelect, secondarySelect) => {
-            if (!primarySelect || !secondarySelect) return;
-            
-            const handler = () => {
-                const primaryValue = primarySelect.value;
-                const secondaryValue = secondarySelect.value;
-
-                Array.from(secondarySelect.options).forEach(option => {
-                    option.disabled = (primaryValue !== '' && option.value === primaryValue);
-                });
-                Array.from(primarySelect.options).forEach(option => {
-                    option.disabled = (secondaryValue !== '' && option.value === secondaryValue);
-                });
-            };
-
-            primarySelect.addEventListener('change', handler);
-            secondarySelect.addEventListener('change', handler);
-        };
-
-        updateSelectOptions(driver1Select, driver2Select);
-        updateSelectOptions(controller1Select, controller2Select);
-
-        console.log(`✅ Selects équipage remplis : ${drivers.length} chauffeurs, ${controllers.length} contrôleurs`);
-
-    } catch (error) {
-        console.error('❌ Erreur chargement personnel pour selects:', error);
-    }
-}
 
 
         // ============================================
