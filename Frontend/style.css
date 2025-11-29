@@ -158,7 +158,6 @@ h3 {
     gap: var(--space-16);
     margin-top: var(--space-24);
 }
-
 /* ============================================
    4. NAVIGATION
    ============================================ */
@@ -174,17 +173,16 @@ h3 {
 
 .nav-content {
     display: flex;
-    justify-content: space-between; /* ✅ Espace entre gauche et droite */
+    justify-content: space-between;
     align-items: center;
     padding: var(--space-16) 0;
-    gap: var(--space-24);
     position: relative;
 }
 
 /* Liens de navigation (Gauche sur Desktop) */
 .nav-links {
     display: flex;
-    gap: var(--space-32); /* ✅ Espace entre les liens */
+    gap: var(--space-40); /* ✅ Espace entre les liens (40px) */
     align-items: center;
 }
 
@@ -200,19 +198,14 @@ h3 {
     color: var(--color-accent-glow);
 }
 
-/* Groupe de droite (Logo + Langues) */
-.nav-content > .logo,
-.nav-content > .language-selector {
-    margin-left: auto; /* ✅ Pousse à droite */
-}
-
-/* Logo */
+/* Logo (à droite des liens) */
 .logo {
     display: flex;
     align-items: center;
     gap: var(--space-12);
     cursor: pointer;
-    margin-right: var(--space-24); /* ✅ Espace entre logo et langues */
+    margin-left: auto; /* ✅ Pousse le logo à droite */
+    margin-right: var(--space-48); /* ✅ Grand espace entre le logo et les langues (48px) */
 }
 
 .logo-svg {
@@ -238,7 +231,7 @@ h3 {
 /* Sélecteur de langue (Desktop) */
 .language-selector {
     display: flex;
-    gap: var(--space-12);
+    gap: var(--space-16); /* ✅ Espace entre les drapeaux (16px) */
     align-items: center;
 }
 
@@ -338,7 +331,6 @@ h3 {
     .nav-content {
         justify-content: space-between;
         padding: var(--space-12) 0;
-        gap: 0;
     }
     
     .logo {
