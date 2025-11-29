@@ -563,10 +563,9 @@ h3 {
 }
 
 /* ============================================
-   ✅ SECTIONS POPULAIRES - COLLÉ À LA RECHERCHE
+   ✅ SECTIONS POPULAIRES - ESPACEMENT CORRECT
    ============================================ */
 
-/* Sections populaires */
 .popular-destinations,
 .why-en-bus { 
   padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
@@ -574,16 +573,10 @@ h3 {
   z-index: 10;
 }
 
-/* ✅ CONTAINER de la section (si utilisé dans ton HTML) */
-.popular-destinations .container {
-    padding-top: 24px; /* ✅ UN PEU d'espace en haut pour respirer */
-}
-
-.why-en-bus {
-    padding: var(--space-48) 0;
-    position: relative;
-    z-index: 10;
-}
+/* ❌ SUPPRIME CETTE RÈGLE COMPLÈTEMENT */
+/* .popular-destinations .container {
+    padding-top: 24px;
+} */
 
 .popular-destinations h2,
 .why-en-bus h2 {
