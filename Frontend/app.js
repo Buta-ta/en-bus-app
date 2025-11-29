@@ -1627,6 +1627,7 @@ const ticketHTML = `
          animateCountersOnScroll();
          addContactPageStyles(); 
          setupContactPage();
+         addRoutingMachineStyles();
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
@@ -1726,7 +1727,7 @@ async function initInteractiveMap() {
     const mapContainer = document.getElementById('interactive-map');
     if (!mapContainer || mapContainer._leaflet_id) return;
 
-    console.log("🗺️ Initialisation de la carte interactive...");
+    console.log("🗺️ Initialisation de la carte interactive avec routage...");
     const map = L.map('interactive-map').setView([2.8, 17.3], 4);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: 'CARTO & OpenStreetMap',
@@ -1761,12 +1762,9 @@ async function initInteractiveMap() {
             const fromCoords = cityCoordsMap.get(route.from);
             const toCoords = cityCoordsMap.get(route.to);
 
-            // ===================================
-            // ✅ CORRECTION DE SÉCURITÉ ICI
-            // ===================================
-            // On ne dessine le trajet que si les deux villes ont des coordonnées valides
             if (fromCoords && fromCoords.length === 2 && toCoords && toCoords.length === 2) {
                 
+                // On ajoute les marqueurs de bus comme avant
                 if (!addedMarkers.has(route.from)) {
                     L.marker(fromCoords, { icon: busIcon }).addTo(map)
                         .bindPopup(`<div class="popup-city-name">${route.from}</div>`);
@@ -1779,10 +1777,21 @@ async function initInteractiveMap() {
                     addedMarkers.add(route.to);
                 }
 
-                L.polyline([fromCoords, toCoords], { color: '#73d700', weight: 3, opacity: 0.7 }).addTo(map);
-            
+                // ========================================================
+                // ✅ REMPLACEMENT DE L.polyline PAR LE ROUTAGE
+                // ========================================================
+                L.Routing.control({
+                    waypoints: [
+                        L.latLng(fromCoords[0], fromCoords[1]),
+                        L.latLng(toCoords[0], toCoords[1])
+                    ],
+                    routeWhileDragging: false,
+                    addWaypoints: false, // Empêche l'utilisateur d'ajouter des points
+                    draggableWaypoints: false, // Empêche de bouger les points
+                    createMarker: function() { return null; } // N'ajoute pas de marqueurs A et B
+                }).addTo(map);
+
             } else {
-                // On affiche un avertissement dans la console pour le debug
                 console.warn(`⚠️ Trajet populaire ignoré car coordonnées manquantes pour : ${route.from} ou ${route.to}`);
             }
         });
@@ -1792,7 +1801,6 @@ async function initInteractiveMap() {
         mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555;">Erreur de chargement de la carte.</p>`;
     }
 }
-
 
 
 // ============================================
@@ -1931,6 +1939,34 @@ function addToastStyles() {
     }
 }
 
+
+function addRoutingMachineStyles() {
+    if (document.getElementById('routing-machine-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'routing-machine-styles';
+    style.textContent = `
+        /* Cache le panneau d'instructions de navigation */
+        .leaflet-routing-container {
+            display: none;
+        }
+
+        /* Personnalise la ligne de la route */
+        .leaflet-routing-line {
+            stroke: var(--color-accent, #00d9ff); /* Utilise la couleur accent de ton site */
+            stroke-width: 5px;
+            stroke-opacity: 0.8;
+            stroke-dasharray: 10, 5;
+            animation: move-dash 1s linear infinite;
+        }
+
+        @keyframes move-dash {
+            to {
+                stroke-dashoffset: -15;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 
 function addAboutPageStyles() {
