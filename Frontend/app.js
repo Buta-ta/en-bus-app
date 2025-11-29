@@ -1825,15 +1825,34 @@ function setupContactPage() {
         });
     });
 
-    // Logique pour le formulaire de contact
+        // Logique pour le formulaire de contact avec "mailto"
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
         contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Pour l'instant, on affiche juste une alerte.
-            // Plus tard, on pourra lier ça à un service comme Formspree ou un email.
-            Utils.showToast("Message envoyé avec succès ! Nous vous répondrons bientôt.", 'success');
-            contactForm.reset();
+            e.preventDefault(); // Empêche le rechargement de la page
+
+            // 1. Récupérer les valeurs des champs
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subjectSelect = document.getElementById('contact-subject');
+            // Récupérer le texte de l'option sélectionnée (ex: "Question générale")
+            const subjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+            const message = document.getElementById('contact-message').value;
+
+            // 2. Construire le lien mailto
+            // On encode chaque partie pour gérer les espaces et caractères spéciaux
+            const mailtoLink = `mailto:contact@en-bus.com?subject=${encodeURIComponent(subjectText)} - ${encodeURIComponent(name)}&body=${encodeURIComponent(message)}%0A%0A---%0AEmail de l'expéditeur : ${encodeURIComponent(email)}`;
+            
+            // 3. Rediriger l'utilisateur vers son client email
+            window.location.href = mailtoLink;
+
+            // (Optionnel) Afficher une notification pour informer l'utilisateur
+            Utils.showToast("Ouverture de votre application d'email...", 'info');
+
+            // Vider le formulaire après une petite pause
+            setTimeout(() => {
+                contactForm.reset();
+            }, 1000);
         });
     }
 }
