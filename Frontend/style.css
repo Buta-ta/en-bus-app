@@ -67,13 +67,14 @@ main {
   border-bottom: 1px solid var(--color-border); 
 }
 
-
 .nav-content { 
   display: flex;
-  justify-content: center; /* Centre tout le bloc */
+  justify-content: center; /* Centre tout horizontalement */
   align-items: center; 
   padding: var(--space-16) 0; 
-  gap: 40px; /* Espace entre les blocs (Gauche - Logo - Droite) */
+  position: relative;
+  /* C'est ici qu'on règle l'écartement global autour du logo */
+  gap: 60px; 
 }
 
 
@@ -117,8 +118,9 @@ main {
   display: flex; 
   align-items: center; 
   gap: var(--space-12); 
-  cursor: pointer;
-   /* ✅ Positionné au milieu dans le flex */
+  cursor: pointer; 
+  /* On enlève tout justify-self ou margin qui traînerait */
+  margin: 0;
 }
 
 .logo-svg { 
@@ -139,9 +141,11 @@ main {
   text-shadow: 0 0 5px #fff, 0 0 15px rgba(255, 150, 40, 0.6), 0 0 25px rgba(255, 80, 40, 0.6); 
 }
 
+/* 3. Les Liens : On supprime les comportements qui les poussent aux bords */
 .nav-links { 
   display: flex; 
   gap: var(--space-32); 
+  margin: 0; /* Important : supprime les marges automatiques */
 }
 
 
@@ -155,13 +159,17 @@ main {
 
 
 
-/* Liens de navigation à droite */
-.nav-links:nth-of-type(2) { 
-  justify-self: end;
-  display: flex;
-  gap: var(--space-32);
-  margin-right: var(--space-24); /* ✅ Marge avant les boutons langues */
+.nav-links:nth-of-type(2) {
+    margin-left: 20px; /* Ajoute un peu d'air supplémentaire à droite du logo */
 }
+
+.language-selector.desktop-only {
+  position: absolute; /* On le sort du flux pour ne pas décentrer le logo */
+  right: 0;
+  display: flex;
+  gap: 10px;
+}
+
 
 
 .nav-links a { 
