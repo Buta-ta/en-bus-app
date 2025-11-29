@@ -1,4 +1,4 @@
-:root {
+ :root {
     color-scheme: dark;
   --font-logo: 'Audiowide', cursive; 
   --font-body: 'Exo 2', sans-serif; 
@@ -67,20 +67,32 @@ main {
   border-bottom: 1px solid var(--color-border); 
 }
 
+
+/* Conteneur principal */
 .nav-content { 
-  display: grid; 
-  grid-template-columns: 1fr auto 1fr; 
+  display: flex;
+  justify-content: center; /* ✅ Tout est centré */
   align-items: center; 
-  padding: var(--space-16) 0; 
-  position: relative; 
+  padding: var(--space-16) 0;
+  gap: var(--space-40); /* Espacement uniforme entre tous les éléments */
+  position: relative;
 }
 
+
+/* Liens de gauche - largeur fixe */
+.nav-links.desktop-links:first-of-type {
+  display: flex;
+  gap: var(--space-32);
+  margin-right: auto; /* ✅ Pousse le reste vers la droite */
+}
+
+/* Logo au centre */
 .logo { 
   display: flex; 
   align-items: center; 
   gap: var(--space-12); 
-  cursor: pointer; 
-  justify-self: center; 
+  cursor: pointer;
+  order: 2; /* ✅ Positionné au milieu dans le flex */
 }
 
 .logo-svg { 
@@ -106,20 +118,41 @@ main {
   gap: var(--space-32); 
 }
 
-.nav-links:first-of-type { 
-  justify-self: start; 
+
+/* Liens de gauche */
+.nav-links:first-of-type {
+  order: 1; /* ✅ Avant le logo */
 }
+
+
 
 .nav-links:last-of-type { 
   justify-self: end; 
 }
+
+/* Liens de droite */
+.nav-links:nth-of-type(2) {
+  order: 3; /* ✅ Après le logo */
+}
+
+
+/* Liens de navigation à droite */
+.nav-links:nth-of-type(2) { 
+  justify-self: end;
+  display: flex;
+  gap: var(--space-32);
+  margin-right: var(--space-24); /* ✅ Marge avant les boutons langues */
+}
+
 
 .nav-links a { 
   color: var(--color-text-secondary); 
   text-decoration: none; 
   font-weight: 600; 
   transition: color var(--duration-fast); 
+  white-space: nowrap; /* Empêche le retour à la ligne */
 }
+
 
 .nav-links a:hover { 
   color: var(--color-accent-glow); 
@@ -158,6 +191,130 @@ main {
 .mobile-nav.open { 
   max-height: 500px; 
 }
+
+
+
+/* ============================================
+   📱 RESPONSIVE - MOBILE (< 768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+  
+  /* Cacher tous les éléments desktop */
+  .nav-links.desktop-links,
+  .language-selector {
+    display: none !important;
+  }
+  
+  /* Nouvelle disposition mobile : Logo + Hamburger */
+  .nav-content {
+    display: flex;
+    justify-content: space-between; /* Logo à gauche, hamburger à droite */
+    padding: var(--space-12) 0;
+    gap: 0;
+  }
+  
+  /* Logo mobile */
+  .logo {
+    order: 1;
+    justify-self: start;
+  }
+  
+  .logo-svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .logo-text {
+    font-size: 20px;
+  }
+  
+  /* Afficher le hamburger */
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    order: 2;
+  }
+  
+  .hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: var(--color-accent-glow);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  
+  /* Animation hamburger actif */
+  .hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+  
+  .hamburger.active span:nth-child(2) {
+    opacity: 0;
+  }
+  
+  .hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+  }
+  
+  /* Menu mobile */
+  .mobile-nav { 
+    max-height: 0; 
+    overflow: hidden; 
+    transition: max-height 0.5s var(--ease-standard); 
+    background-color: rgba(16, 16, 26, 0.95); 
+    backdrop-filter: blur(10px); 
+  }
+  
+  .mobile-nav.open { 
+    max-height: 500px; 
+  }
+  
+  .mobile-nav a { 
+    display: block; 
+    text-align: center; 
+    padding: var(--space-16); 
+    color: var(--color-text-primary); 
+    text-decoration: none; 
+    font-weight: 600; 
+    border-bottom: 1px solid var(--color-border); 
+  }
+  
+  .mobile-nav a:last-child { 
+    border-bottom: none; 
+  }
+  
+  .mobile-nav a:hover { 
+    background-color: rgba(var(--color-accent-glow-rgb), 0.1); 
+  }
+  
+  /* Sélecteur de langue mobile */
+  .mobile-lang-selector {
+    display: block;
+    padding: 16px;
+    margin-top: 12px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+  }
+  
+  .mobile-lang-selector .lang-btn {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+}
+
+
+
+
+
+
+
 
 .hero { 
   padding: var(--space-48) 0; 
@@ -4084,6 +4241,7 @@ body.pwa-installed textarea {
 
 
 
+
 /* ============================================
    🔄 STYLES MODALE DE REPORT
    ============================================ */
@@ -4606,28 +4764,34 @@ body.pwa-installed textarea {
     text-fill-color: transparent;
 }
 
-
+/* ✅ Positionnement du sélecteur de langue */
+/* Sélecteur de langue */
 .language-selector {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.lang-btn {
-    background: none;
-    border: 2px solid var(--color-border);
-    color: var(--color-text-secondary);
-    padding: 6px 10px;
-    border-radius: var(--radius-base);
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.2s;
-}
-.lang-btn:hover {
-    background: var(--color-surface);
-    color: var(--color-accent-glow);
-    border-color: var(--color-accent-glow);
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+  order: 4; /* ✅ Tout à droite */
 }
 
+.lang-btn {
+  background: none;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 18px; /* Taille des drapeaux */
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.lang-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-accent-glow);
+  border-color: var(--color-accent-glow);
+  transform: scale(1.1);
+}
 
 
 
@@ -4738,5 +4902,344 @@ body.pwa-installed textarea {
     }
 }
 
+
+
+
+
+/* ============================================
+   📱 OPTIMISATION COMPACTE POUR MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* 1. Réduire les marges globales */
+    :root {
+        --space-48: 24px;  /* Au lieu de 48px */
+        --space-32: 16px;  /* Au lieu de 32px */
+        --space-24: 12px;  /* Au lieu de 24px */
+        --space-16: 10px;  /* Au lieu de 16px */
+    }
+    
+    /* 2. Hero section plus compacte */
+    .hero {
+        padding: 16px 0 24px; /* Au lieu de 48px */
+    }
+    
+    .hero h1 {
+        font-size: 24px; /* Au lieu de 42px */
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+    
+    .hero p {
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    /* 3. Sections plus compactes */
+    .popular-destinations,
+    .why-en-bus,
+    .map-section {
+        padding: 24px 0; /* Au lieu de 48px */
+    }
+    
+    .popular-destinations h2,
+    .why-en-bus h2 {
+        font-size: 20px; /* Au lieu de 32px */
+        margin-bottom: 16px;
+    }
+    
+    /* 4. Cartes moins espacées */
+    .destinations-grid,
+    .features-grid,
+    .results-list {
+        gap: 12px; /* Au lieu de 24px */
+    }
+    
+    .destination-card,
+    .feature-card,
+    .bus-card {
+        padding: 12px; /* Au lieu de 24px */
+    }
+    
+    /* 5. Formulaire de recherche compact */
+    .search-box {
+        padding: 12px;
+        margin: 0 -12px; /* Utilise toute la largeur */
+    }
+    
+    .form-group {
+        margin-bottom: 8px; /* Au lieu de 12px */
+    }
+    
+    .form-control {
+        padding: 10px; /* Au lieu de 12px */
+        font-size: 15px;
+    }
+    
+    /* 6. Boutons plus compacts */
+    .btn {
+        padding: 10px 16px; /* Au lieu de 14px 20px */
+        font-size: 14px;
+    }
+    
+    /* 7. Navbar plus fine */
+    .nav-content {
+        padding: 10px 0; /* Au lieu de 16px */
+    }
+    
+    .logo-svg {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .logo-text {
+        font-size: 18px;
+    }
+    
+    /* 8. Cartes de résultats bus compactes */
+    .bus-card-wrapper {
+        padding: 10px;
+    }
+    
+    .bus-card-time {
+        font-size: 16px;
+        gap: 10px;
+    }
+    
+    .bus-price {
+        font-size: 22px;
+    }
+    
+    /* 9. Footer compact */
+    .footer {
+        padding: 24px 0 12px;
+    }
+    
+    .footer-content {
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    
+    /* 10. Espacement global réduit */
+    .page-header {
+        padding: 16px 0;
+    }
+    
+    .page-header h2 {
+        font-size: 22px;
+        margin-top: 8px;
+    }
+}
+
+
+/* ============================================
+   📱 STYLE "APP NATIVE" QUAND INSTALLÉE
+   ============================================ */
+
+body.pwa-installed {
+    /* Cache les éléments "web" */
+    --navbar-height: 56px; /* Navbar plus fine style app */
+}
+
+/* Navbar style app native quand installée */
+body.pwa-installed .navbar {
+    height: var(--navbar-height);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+body.pwa-installed .nav-content {
+    padding: 8px 0;
+}
+
+body.pwa-installed .logo-text {
+    font-size: 16px;
+}
+
+/* Cache le footer en mode app */
+body.pwa-installed .footer {
+    display: none;
+}
+
+/* Ajuste le padding du contenu */
+body.pwa-installed main {
+    padding-bottom: 16px; /* Au lieu de 48px */
+}
+
+/* Cartes avec effet "Material Design" */
+body.pwa-installed .bus-card,
+body.pwa-installed .destination-card,
+body.pwa-installed .feature-card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 12px;
+}
+
+/* Retire les espaces inutiles en mode app */
+body.pwa-installed .hero {
+    padding: 12px 0 16px;
+}
+
+body.pwa-installed .container {
+    padding: 0 12px;
+}
+
+
+/* ============================================
+   📱 POLICES NATIVES MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+                     'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
+        font-size: 14px; /* Au lieu de 15px */
+        line-height: 1.5;
+    }
+}
+
+
+/* Cacher les langues desktop sur mobile */
+@media (max-width: 768px) {
+    .language-selector.desktop-only {
+        display: none;
+    }
+}
+
+/* Style du sélecteur de langue mobile */
+.mobile-lang-selector {
+    padding: 16px;
+    margin-top: 12px;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+
+.mobile-lang-selector .lang-btn {
+    flex: 1;
+    max-width: 140px;
+    font-size: 14px;
+    padding: 10px 16px;
+}
+
+/* Cacher sur desktop */
+@media (min-width: 769px) {
+    .mobile-lang-selector {
+        display: none;
+    }
+}
+
+
+
+
+@media (max-width: 768px) {
+    
+    /* Formulaire de recherche compact */
+    #detailed-search-box {
+        padding: 12px;
+        margin: 0;
+    }
+    
+    .search-form {
+        gap: 10px; /* Au lieu de 20px */
+    }
+    
+    /* Conteneur swap ultra-compact */
+    .destination-swap-container {
+        gap: 8px;
+    }
+    
+    .swap-btn {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 0;
+    }
+    
+    /* Labels plus petits */
+    .form-group label {
+        font-size: 11px;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    
+    /* Inputs plus compacts */
+    .form-control {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    /* Toggle trajet compact */
+    .trip-type-toggle {
+        padding: 3px;
+    }
+    
+    .toggle-option {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    /* Dropdown passagers compact */
+    .passenger-dropdown-menu {
+        width: 280px;
+        padding: 12px;
+    }
+    
+    .passenger-row {
+        padding: 8px 0;
+    }
+    
+    .passenger-row label {
+        font-size: 13px;
+    }
+    
+    .counter-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 18px;
+    }
+    
+    /* Bouton recherche compact */
+    .btn-large {
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+}
+
+
+
+/* ============================================
+   🌍 SÉLECTEUR DE LANGUE - RESPONSIVE
+   ============================================ */
+
+/* Sur DESKTOP : afficher uniquement les boutons classiques */
+@media (min-width: 769px) {
+    .language-selector {
+        display: flex; /* Visible sur desktop */
+    }
+    
+    .mobile-lang-selector {
+        display: none !important; /* Caché sur desktop */
+    }
+}
+
+/* Sur MOBILE : cacher les boutons desktop, afficher ceux du menu */
+@media (max-width: 768px) {
+    .language-selector {
+        display: none !important; /* Caché sur mobile */
+    }
+    
+    .mobile-lang-selector {
+        display: block; /* Visible dans le menu mobile */
+        padding: 16px;
+        margin-top: 12px;
+        border-top: 1px solid var(--color-border);
+        text-align: center;
+    }
+    
+    .mobile-lang-selector .lang-btn {
+        flex: 1;
+        max-width: 140px;
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+}
 
 }
