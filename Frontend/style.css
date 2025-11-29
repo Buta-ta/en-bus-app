@@ -58,123 +58,122 @@ main {
   padding: 0 var(--space-16); 
 }
 
-
-
 /* ============================================
-   📱 RESPONSIVE - MOBILE (< 768px)
+   NAVBAR - CORRECTION ORDRE ET ESPACEMENT
    ============================================ */
 
-@media (max-width: 768px) {
-  
-  /* Cacher tous les éléments desktop */
-  .nav-links.desktop-links,
-  .language-selector {
-    display: none !important;
-  }
-  
-  /* Nouvelle disposition mobile : Logo + Hamburger */
-  .nav-content {
-    display: flex;
-    justify-content: space-between; /* Logo à gauche, hamburger à droite */
-    padding: var(--space-12) 0;
-    gap: 0;
-  }
-  
-  /* Logo mobile */
-  .logo {
-    order: 1;
-    justify-self: start;
-  }
-  
-  .logo-svg {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .logo-text {
-    font-size: 20px;
-  }
-  
-  /* Afficher le hamburger */
-  .hamburger {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    order: 2;
-  }
-  
-  .hamburger span {
-    display: block;
-    width: 25px;
-    height: 3px;
-    background: var(--color-accent-glow);
-    border-radius: 2px;
-    transition: all 0.3s ease;
-  }
-  
-  /* Animation hamburger actif */
-  .hamburger.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-  }
-  
-  .hamburger.active span:nth-child(2) {
-    opacity: 0;
-  }
-  
-  .hamburger.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(7px, -6px);
-  }
-  
-  /* Menu mobile */
-  .mobile-nav { 
-    max-height: 0; 
-    overflow: hidden; 
-    transition: max-height 0.5s var(--ease-standard); 
-    background-color: rgba(16, 16, 26, 0.95); 
-    backdrop-filter: blur(10px); 
-  }
-  
-  .mobile-nav.open { 
-    max-height: 500px; 
-  }
-  
-  .mobile-nav a { 
-    display: block; 
-    text-align: center; 
-    padding: var(--space-16); 
-    color: var(--color-text-primary); 
-    text-decoration: none; 
-    font-weight: 600; 
-    border-bottom: 1px solid var(--color-border); 
-  }
-  
-  .mobile-nav a:last-child { 
-    border-bottom: none; 
-  }
-  
-  .mobile-nav a:hover { 
-    background-color: rgba(var(--color-accent-glow-rgb), 0.1); 
-  }
-  
-  /* Sélecteur de langue mobile */
-  .mobile-lang-selector {
-    display: block;
-    padding: 16px;
-    margin-top: 12px;
-    border-top: 1px solid var(--color-border);
-    text-align: center;
-  }
-  
-  .mobile-lang-selector .lang-btn {
-    font-size: 14px;
-    padding: 10px 16px;
-  }
+.navbar { 
+  background-color: rgba(16, 16, 26, 0.7); 
+  backdrop-filter: blur(10px); 
+  position: sticky; 
+  top: 0; 
+  z-index: 1000; 
+  border-bottom: 1px solid var(--color-border); 
 }
 
+.nav-content { 
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+  padding: var(--space-16) 0; 
+  position: relative;
+  /* Espace égal autour du logo central */
+  gap: 60px; 
+}
+
+/* --- LOGO (CENTRE) --- */
+.logo { 
+  display: flex; 
+  align-items: center; 
+  gap: var(--space-12); 
+  cursor: pointer;
+  /* On enlève l'order: 2 qui causait le désordre */
+  order: initial; 
+}
+
+.logo-svg { 
+  border-radius: 50%; 
+  width: 44px; height: 44px;
+}
+
+.logo-text { 
+  font-family: var(--font-logo); 
+  font-size: 28px; 
+  color: var(--color-text-primary); 
+}
+
+/* --- LIENS (GAUCHE ET DROITE) --- */
+.nav-links.desktop-links { 
+  display: flex; 
+  gap: 32px;
+  /* On enlève l'order: 1 et 3 */
+  order: initial;
+}
+
+.nav-links a { 
+  color: var(--color-text-secondary); 
+  text-decoration: none; 
+  font-weight: 600; 
+  transition: color var(--duration-fast); 
+  white-space: nowrap;
+}
+
+.nav-links a:hover { color: var(--color-accent-glow); }
+
+/* --- LANGUES (POSITION ABSOLUE) --- */
+.language-selector.desktop-only {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.lang-btn {
+  background: none;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+/* --- HAMBURGER (MOBILE) --- */
+.hamburger { display: none; }
+
+/* ============================================
+   📱 MOBILE (< 768px)
+   ============================================ */
+@media (max-width: 768px) {
+    
+    /* Cache les éléments desktop */
+    .nav-links.desktop-links, 
+    .language-selector.desktop-only {
+        display: none !important;
+    }
+    
+    /* Réorganise la navbar pour mobile */
+    .nav-content {
+        justify-content: space-between;
+        gap: 0; /* Supprime l'espace de 60px */
+    }
+    
+    /* Affiche le hamburger */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+    }
+    
+    .hamburger span {
+        display: block; width: 25px; height: 3px; background: #73d700; border-radius: 2px;
+    }
+}
 
 
 
