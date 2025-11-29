@@ -182,7 +182,7 @@ h3 {
 /* Liens de navigation (Gauche sur Desktop) */
 .nav-links {
     display: flex;
-    gap: var(--space-40); /* ✅ Espace entre les liens (40px) */
+    gap: var(--space-40);
     align-items: center;
 }
 
@@ -204,8 +204,8 @@ h3 {
     align-items: center;
     gap: var(--space-12);
     cursor: pointer;
-    margin-left: auto; /* ✅ Pousse le logo à droite */
-    margin-right: var(--space-48); /* ✅ Grand espace entre le logo et les langues (48px) */
+    margin-left: auto;
+    margin-right: var(--space-48);
 }
 
 .logo-svg {
@@ -231,7 +231,7 @@ h3 {
 /* Sélecteur de langue (Desktop) */
 .language-selector {
     display: flex;
-    gap: var(--space-16); /* ✅ Espace entre les drapeaux (16px) */
+    gap: var(--space-16);
     align-items: center;
 }
 
@@ -316,143 +316,14 @@ h3 {
 }
 
 /* ============================================
-   📱 RESPONSIVE MOBILE
-   ============================================ */
-
-@media (max-width: 768px) {
-    
-    /* Cacher les éléments desktop */
-    .nav-links.desktop-links,
-    .language-selector.desktop-only {
-        display: none !important;
-    }
-    
-    /* Navbar mobile : Logo à gauche, Hamburger à droite */
-    .nav-content {
-        justify-content: space-between;
-        padding: var(--space-12) 0;
-    }
-    
-    .logo {
-        margin-right: 0;
-        margin-left: 0;
-    }
-    
-    .logo-svg {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .logo-text {
-        font-size: 20px;
-    }
-    
-    /* Hamburger visible sur mobile */
-    .hamburger {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 8px;
-    }
-    
-    .hamburger span {
-        display: block;
-        width: 25px;
-        height: 3px;
-        background: var(--color-accent-glow);
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-    
-    .hamburger.active span:nth-child(1) {
-        transform: rotate(45deg) translate(5px, 5px);
-    }
-    
-    .hamburger.active span:nth-child(2) {
-        opacity: 0;
-    }
-    
-    .hamburger.active span:nth-child(3) {
-        transform: rotate(-45deg) translate(7px, -6px);
-    }
-    
-    .mobile-nav {
-        background-color: rgba(16, 16, 26, 0.95);
-    }
-
-    .hero {
-        padding: 16px 0 0; /* ✅ Très compact sur mobile */
-    }
-    
-    .popular-destinations {
-        padding: 16px 0; /* ✅ Très compact sur mobile */
-    }
-
-      .hero {
-        padding: 12px 0 0; /* ✅ Minimal */
-    }
-    
-    .hero h1 {
-        font-size: 24px;
-        margin-bottom: 4px; /* ✅ Ultra-réduit */
-    }
-    
-    .hero p {
-        font-size: 14px;
-        margin-bottom: 12px; /* ✅ Ultra-réduit */
-    }
-    
-    .smart-search-wrapper {
-        margin: 0 auto;
-    }
-    
-    .search-box {
-        padding: 12px; /* ✅ Réduit aussi le padding interne */
-    }
-    
-    .popular-destinations {
-        margin-top: 0; /* ✅ ZERO marge */
-        padding-top: 0;
-    }
-    
-    .popular-destinations h2 {
-        font-size: 18px;
-        margin-bottom: 8px; /* ✅ Ultra-réduit */
-        padding-top: 12px; /* ✅ Juste un petit padding */
-    }
-    
-    .destinations-grid {
-        gap: 12px; /* ✅ Réduit aussi l'espace entre les cartes */
-    }
-
-    
-}
-
-/* Desktop (> 768px) */
-@media (min-width: 769px) {
-    
-    /* Cacher le sélecteur de langue mobile */
-    .mobile-lang-selector {
-        display: none !important;
-    }
-    
-    .mobile-nav {
-        display: none;
-    }
-}
-
-/* ============================================
-   5. HERO & RECHERCHE
+   5. HERO & RECHERCHE - ✅ VERSION ULTRA-COMPACTE
    ============================================ */
 
 .hero {
-    padding: var(--space-24) 0 0; /* ✅ Réduit encore le padding top */
+    padding: var(--space-24) 0 0; /* ✅ Padding minimal en haut, ZÉRO en bas */
     text-align: center;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* ✅ Changé de hidden à visible pour éviter les coupures */
 }
 
 .hero::before {
@@ -467,22 +338,21 @@ h3 {
     position: relative;
     z-index: 2;
     max-width: 900px;
-    margin: 0 auto;
-    padding-bottom: 0;
-     margin-bottom: 0; /* ✅ Pas de marge en bas */
+    margin: 0 auto 0; /* ✅ ZÉRO marge en bas */
+    padding: 0; /* ✅ ZÉRO padding */
 }
 
 .hero h1 {
     font-family: var(--font-logo);
     font-size: 42px;
     font-weight: 700;
-     margin-bottom: var(--space-8); /* ✅ Réduit à 8px */
+    margin-bottom: 8px; /* ✅ Minimal */
     text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4);
 }
 
 .hero p {
     font-size: 18px;
-    margin-bottom: var(--space-16); /* ✅ Réduit à 16px */
+    margin-bottom: 16px; /* ✅ Minimal */
     color: var(--color-text-secondary);
 }
 
@@ -491,7 +361,8 @@ h3 {
     position: relative;
     width: 100%;
     max-width: 600px;
-    margin: 0 auto 0; 
+    margin: 0 auto; /* ✅ ZÉRO marge top et bottom */
+    padding: 0; /* ✅ ZÉRO padding */
     z-index: 50;
 }
 
@@ -567,20 +438,21 @@ h3 {
     background-color: var(--color-background);
 }
 
-/* Box de recherche */
+/* Box de recherche détaillée */
 .search-box {
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
     transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
-    margin: 0; /* ✅ Pas de marge */
+    margin: 0; /* ✅ ZÉRO marge */
+    padding: var(--space-24);
 }
 
 .search-box.visible {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
-    margin: 0; /* ✅ Pas de marge */
+    margin: 0; /* ✅ ZÉRO marge */
 }
 
 .search-form {
@@ -689,12 +561,20 @@ h3 {
     margin-top: var(--space-8);
 }
 
-/* Sections populaires */
+/* ============================================
+   ✅ SECTIONS POPULAIRES - COLLÉ À LA RECHERCHE
+   ============================================ */
+
 .popular-destinations {
-    padding: 0; /* ✅ Pas de padding */
-    margin-top: 0; /* ✅ PAS DE MARGE DU TOUT */
+    padding: 0; /* ✅ ZÉRO padding */
+    margin: 0; /* ✅ ZÉRO marge */
     position: relative;
     z-index: 10;
+}
+
+/* ✅ CONTAINER de la section (si utilisé dans ton HTML) */
+.popular-destinations .container {
+    padding-top: 24px; /* ✅ UN PEU d'espace en haut pour respirer */
 }
 
 .why-en-bus {
@@ -706,11 +586,10 @@ h3 {
 .popular-destinations h2,
 .why-en-bus h2 {
     font-family: var(--font-logo), sans-serif;
-    font-size: clamp(1.5rem, 5vw, 2.5rem); /* ✅ Corrigé (était 0.5rem au max) */
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
-    margin-top: 0; /* ✅ Pas de marge en haut */
-    margin-bottom: var(--space-12); /* ✅ Très réduit : 12px */
-    padding-top: var(--space-16); /* ✅ Un tout petit padding pour respirer */
+    margin: 0 0 var(--space-16); /* ✅ ZÉRO en haut, 16px en bas */
+    padding: 0; /* ✅ ZÉRO padding */
     line-height: 1.2;
     background: linear-gradient(145deg, var(--color-text-primary, #fff) 60%, var(--color-text-secondary, #ccc));
     -webkit-background-clip: text;
@@ -1015,6 +894,137 @@ h3 {
 
 .btn-home:hover {
     background: rgba(var(--color-accent-glow-rgb), 0.1);
+}
+
+/* ============================================
+   📱 RESPONSIVE MOBILE - ✅ VERSION ULTRA-COMPACTE
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* Cacher les éléments desktop */
+    .nav-links.desktop-links,
+    .language-selector.desktop-only {
+        display: none !important;
+    }
+    
+    /* Navbar mobile : Logo à gauche, Hamburger à droite */
+    .nav-content {
+        justify-content: space-between;
+        padding: var(--space-12) 0;
+    }
+    
+    .logo {
+        margin-right: 0;
+        margin-left: 0;
+    }
+    
+    .logo-svg {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .logo-text {
+        font-size: 20px;
+    }
+    
+    /* Hamburger visible sur mobile */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+    }
+    
+    .hamburger span {
+        display: block;
+        width: 25px;
+        height: 3px;
+        background: var(--color-accent-glow);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+    
+    .mobile-nav {
+        background-color: rgba(16, 16, 26, 0.95);
+    }
+    
+    /* ✅ HERO ULTRA-COMPACT MOBILE */
+    .hero {
+        padding: 12px 0 0; /* ✅ Minimal */
+    }
+    
+    .hero-content {
+        margin: 0; /* ✅ ZÉRO marge */
+        padding: 0; /* ✅ ZÉRO padding */
+    }
+    
+    .hero h1 {
+        font-size: 24px;
+        margin-bottom: 4px; /* ✅ Ultra-réduit */
+    }
+    
+    .hero p {
+        font-size: 14px;
+        margin-bottom: 12px; /* ✅ Ultra-réduit */
+    }
+    
+    .smart-search-wrapper {
+        margin: 0 auto; /* ✅ ZÉRO marge */
+    }
+    
+    .search-box {
+        padding: 12px; /* ✅ Réduit */
+        margin: 0; /* ✅ ZÉRO marge */
+    }
+    
+    /* ✅ DESTINATIONS POPULAIRES COLLÉES MOBILE */
+    .popular-destinations {
+        margin: 0; /* ✅ ZÉRO marge */
+        padding: 0; /* ✅ ZÉRO padding */
+    }
+    
+    .popular-destinations .container {
+        padding-top: 16px; /* ✅ Un peu d'espace pour respirer */
+    }
+    
+    .popular-destinations h2 {
+        font-size: 18px;
+        margin: 0 0 12px; /* ✅ ZÉRO en haut */
+        padding: 0; /* ✅ ZÉRO padding */
+    }
+    
+    .destinations-grid {
+        gap: 12px; /* ✅ Réduit */
+    }
+}
+
+/* Desktop (> 768px) */
+@media (min-width: 769px) {
+    
+    /* Cacher le sélecteur de langue mobile */
+    .mobile-lang-selector {
+        display: none !important;
+    }
+    
+    .mobile-nav {
+        display: none;
+    }
 }
 
 /* ============================================
