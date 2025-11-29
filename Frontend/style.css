@@ -68,12 +68,20 @@ main {
 }
 
 .nav-content { 
-  display: grid; 
-  grid-template-columns: 1fr auto 1fr auto; /* ✅ Ajout d'une 4ème colonne pour les langues */
+  display: flex; /* ✅ Flexbox au lieu de Grid pour plus de contrôle */
   align-items: center; 
-  padding: var(--space-16) 0; 
+  padding: var(--space-16) 0;
+  gap: var(--space-32);
   position: relative;
-  gap: var(--space-48); /* ✅ Es /* ✅ Espacement entre les colonnes */
+  max-width: 1400px; /* ✅ Limite la largeur maximale */
+  margin: 0 auto; /* ✅ Centre le contenu */
+}
+
+/* Liens de gauche - largeur fixe */
+.nav-links.desktop-links:first-of-type {
+  display: flex;
+  gap: var(--space-32);
+  margin-right: auto; /* ✅ Pousse le reste vers la droite */
 }
 
 .logo { 
