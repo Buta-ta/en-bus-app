@@ -242,15 +242,18 @@
 
 <body>
   <nav class="navbar">
-    <!-- ... (votre navbar est correcte et reste inchangée) ... -->
-    <div class="container">
-      <div class="nav-content">
-        <div class="nav-links desktop-links">
-          <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
-          <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-        </div>
-        <div class="logo" onclick="showPage('home')">
-          <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
+  <div class="container">
+    <div class="nav-content">
+      
+      <!-- Liens navigation DESKTOP (gauche) -->
+      <div class="nav-links desktop-links">
+        <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
+        <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+      </div>
+      
+      <!-- Logo central -->
+      <div class="logo" onclick="showPage('home')">
+        <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
             xmlns="http://www.w3.org/2000/svg" aria-label="Logo En-Bus">
             <defs>
               <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
@@ -300,40 +303,38 @@
               </g>
             </g>
           </svg>
-          <span class="logo-text">En-Bus</span>
-        </div>
-        <div class="nav-links desktop-links">
-          <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
-          <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
-        </div>
-
-                <!-- ✅ Boutons langues DESKTOP uniquement -->
-      <div class="language-selector desktop-only">
-        <button class="lang-btn" onclick="changeLanguage('fr')">🇫🇷</button>
-        <button class="lang-btn" onclick="changeLanguage('en')">🇬🇧</button>
+        <span class="logo-text">En-Bus</span>
       </div>
       
-
-        <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-      <div id="mobile-nav-menu" class="mobile-nav">
-        <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
-        <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-
+      <!-- Liens navigation DESKTOP (droite) -->
+      <div class="nav-links desktop-links">
         <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
         <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
       </div>
 
-     <!-- Menu mobile -->
+      <!-- ✅ Boutons langues DESKTOP uniquement -->
+      <div class="language-selector">
+        <button class="lang-btn" onclick="changeLanguage('fr')">🇫🇷</button>
+        <button class="lang-btn" onclick="changeLanguage('en')">🇬🇧</button>
+      </div>
+      
+      <!-- Bouton hamburger MOBILE -->
+      <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+    </div>
+    
+    <!-- ✅ UN SEUL menu mobile (suppression du doublon) -->
     <div id="mobile-nav-menu" class="mobile-nav">
       <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
       <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
       <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
       <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
       
-      <!-- ✅ NOUVEAU : Langues intégrées dans le menu mobile -->
+      <!-- Sélecteur de langue pour MOBILE -->
       <div class="mobile-lang-selector">
         <span style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase;">Langue</span>
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
@@ -342,6 +343,7 @@
         </div>
       </div>
     </div>
+    
   </div>
 </nav>
 
