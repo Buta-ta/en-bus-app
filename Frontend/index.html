@@ -326,7 +326,14 @@
         <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
       </div>
 
-       <!-- ✅ NOUVEAU : Langues intégrées dans le menu mobile -->
+     <!-- Menu mobile -->
+    <div id="mobile-nav-menu" class="mobile-nav">
+      <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
+      <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+      <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
+      <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
+      
+      <!-- ✅ NOUVEAU : Langues intégrées dans le menu mobile -->
       <div class="mobile-lang-selector">
         <span style="color: var(--color-text-secondary); font-size: 12px; text-transform: uppercase;">Langue</span>
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
@@ -335,7 +342,8 @@
         </div>
       </div>
     </div>
-  </nav>
+  </div>
+</nav>
 
   <main>
     <!-- Toutes les pages de l'application -->
