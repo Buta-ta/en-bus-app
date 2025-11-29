@@ -69,10 +69,11 @@ main {
 
 .nav-content { 
   display: grid; 
-  grid-template-columns: 1fr auto 1fr; 
+  grid-template-columns: 1fr auto 1fr auto; /* ✅ Ajout d'une 4ème colonne pour les langues */
   align-items: center; 
   padding: var(--space-16) 0; 
-  position: relative; 
+  position: relative;
+  gap: var(--space-32); /* ✅ Espacement entre les colonnes */
 }
 
 .logo { 
@@ -4607,28 +4608,34 @@ body.pwa-installed textarea {
     text-fill-color: transparent;
 }
 
-
+/* ✅ Positionnement du sélecteur de langue */
 .language-selector {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.lang-btn {
-    background: none;
-    border: 2px solid var(--color-border);
-    color: var(--color-text-secondary);
-    padding: 6px 10px;
-    border-radius: var(--radius-base);
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.2s;
-}
-.lang-btn:hover {
-    background: var(--color-surface);
-    color: var(--color-accent-glow);
-    border-color: var(--color-accent-glow);
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+  justify-self: end; /* Aligne tout à droite */
+  margin-left: var(--space-16); /* Espace avec le menu */
 }
 
+.lang-btn {
+  background: none;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 18px; /* Taille des drapeaux */
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.lang-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-accent-glow);
+  border-color: var(--color-accent-glow);
+  transform: scale(1.1);
+}
 
 
 
