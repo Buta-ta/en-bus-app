@@ -409,7 +409,7 @@ h3 {
    ============================================ */
 
 .hero {
-    padding: var(--space-48) 0 0; /* ✅ Supprime complètement le padding bottom */
+     padding: var(--space-32) 0 0; /* ✅ Réduit aussi le padding top */
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -653,10 +653,11 @@ h3 {
 /* Sections populaires */
 .popular-destinations,
 .why-en-bus {
-     padding: var(--space-16) 0; /* ✅ Seulement 16px en haut (au lieu de 48px) */
+     padding: 0; /* ✅ Seulement 16px en haut (au lieu de 48px) */
     position: relative;
     z-index: 10;
-    margin-top: 0; /* ✅ Pas de marge en haut */
+    margin-top: var(--space-16); /* ✅ Juste une petite marge */
+
 }
 
 .popular-destinations h2,
