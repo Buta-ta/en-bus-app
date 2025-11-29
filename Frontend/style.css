@@ -5040,6 +5040,45 @@ body.pwa-installed .container {
     }
 }
 
+
+
+/* ============================================
+   🌍 SÉLECTEUR DE LANGUE - RESPONSIVE
+   ============================================ */
+
+/* Sur DESKTOP : afficher uniquement les boutons classiques */
+@media (min-width: 769px) {
+    .language-selector {
+        display: flex; /* Visible sur desktop */
+    }
+    
+    .mobile-lang-selector {
+        display: none !important; /* Caché sur desktop */
+    }
+}
+
+/* Sur MOBILE : cacher les boutons desktop, afficher ceux du menu */
+@media (max-width: 768px) {
+    .language-selector {
+        display: none !important; /* Caché sur mobile */
+    }
+    
+    .mobile-lang-selector {
+        display: block; /* Visible dans le menu mobile */
+        padding: 16px;
+        margin-top: 12px;
+        border-top: 1px solid var(--color-border);
+        text-align: center;
+    }
+    
+    .mobile-lang-selector .lang-btn {
+        flex: 1;
+        max-width: 140px;
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+}
+
 }
 
 
