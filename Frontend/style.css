@@ -174,10 +174,10 @@ h3 {
 
 .nav-content {
     display: flex;
-    justify-content: space-between; /* ✅ Changé de center à space-between */
+    justify-content: center;
     align-items: center;
     padding: var(--space-16) 0;
-    gap: var(--space-16); /* ✅ Réduit pour mobile */
+    gap: var(--space-48); /* ✅ Plus d'espace entre les éléments (était 40px) */
     position: relative;
 }
 
@@ -187,7 +187,7 @@ h3 {
     align-items: center;
     gap: var(--space-12);
     cursor: pointer;
-    order: 2; /* Centre sur desktop */
+    order: 2;
 }
 
 .logo-svg {
@@ -213,7 +213,7 @@ h3 {
 /* Liens de navigation */
 .nav-links {
     display: flex;
-    gap: var(--space-32);
+    gap: var(--space-40); /* ✅ Plus d'espace entre les liens (était 32px) */
 }
 
 .nav-links a {
@@ -228,22 +228,22 @@ h3 {
     color: var(--color-accent-glow);
 }
 
-/* ✅ Liens gauche (Desktop) */
+/* Liens gauche */
 .nav-left {
     order: 1;
 }
 
-/* ✅ Liens droite (Desktop) */
+/* Liens droite */
 .nav-right {
     order: 3;
 }
 
-/* ✅ Sélecteur de langue (TOUJOURS VISIBLE) */
+/* Sélecteur de langue (Desktop uniquement) */
 .language-selector {
     display: flex;
-    gap: var(--space-8);
+    gap: var(--space-12); /* ✅ Plus d'espace entre les drapeaux (était 8px) */
     align-items: center;
-    order: 4; /* Desktop : après les liens */
+    order: 4;
 }
 
 .lang-btn {
@@ -266,10 +266,9 @@ h3 {
     transform: scale(1.1);
 }
 
-/* Hamburger (Desktop : caché) */
+/* Hamburger (caché sur desktop) */
 .hamburger {
     display: none;
-    order: 5;
 }
 
 /* Navigation mobile */
@@ -303,23 +302,48 @@ h3 {
     max-height: 500px;
 }
 
+/* ✅ Sélecteur de langue mobile (dans le menu hamburger) */
+.mobile-lang-selector {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding: var(--space-16);
+    margin-top: var(--space-12);
+    border-top: 1px solid var(--color-border);
+}
+
+.mobile-lang-selector .lang-btn {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    text-align: center;
+    border: 2px solid var(--color-border);
+    background: rgba(var(--color-surface-rgb), 0.5);
+}
+
+.mobile-lang-selector .lang-btn:hover {
+    background: rgba(var(--color-accent-glow-rgb), 0.1);
+    border-color: var(--color-accent-glow);
+}
+
 /* ============================================
    📱 RESPONSIVE MOBILE
    ============================================ */
 
 @media (max-width: 768px) {
     
-    /* ✅ Cacher les liens desktop */
-    .nav-links.desktop-links {
+    /* Cacher les éléments desktop */
+    .nav-links.desktop-links,
+    .language-selector.desktop-only {
         display: none !important;
     }
     
-    /* ✅ Navbar mobile : Logo | Langues | Hamburger */
+    /* Navbar mobile : Logo à gauche, Hamburger à droite */
     .nav-content {
-        display: grid;
-        grid-template-columns: auto 1fr auto auto; /* Logo flexible, langues et hamburger à droite */
-        gap: 12px;
-        padding: 12px 0;
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-12) 0;
+        gap: 0;
     }
     
     .logo {
@@ -336,18 +360,7 @@ h3 {
         font-size: 20px;
     }
     
-    /* ✅ Langues restent visibles sur mobile */
-    .language-selector {
-        order: 2;
-        justify-self: end;
-    }
-    
-    .lang-btn {
-        font-size: 16px;
-        padding: 4px 8px;
-    }
-    
-    /* ✅ Hamburger visible sur mobile */
+    /* Hamburger visible sur mobile */
     .hamburger {
         display: flex;
         flex-direction: column;
@@ -356,7 +369,7 @@ h3 {
         border: none;
         cursor: pointer;
         padding: 8px;
-        order: 3;
+        order: 2;
     }
     
     .hamburger span {
@@ -388,14 +401,9 @@ h3 {
 /* Desktop (> 768px) */
 @media (min-width: 769px) {
     
-    .nav-content {
-        display: flex;
-        justify-content: center;
-        gap: var(--space-40);
-    }
-    
-    .hamburger {
-        display: none;
+    /* Cacher le sélecteur de langue mobile */
+    .mobile-lang-selector {
+        display: none !important;
     }
     
     .mobile-nav {

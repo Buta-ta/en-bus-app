@@ -241,7 +241,7 @@
 </head>
 
 <body>
-  <nav class="navbar">
+ <nav class="navbar">
   <div class="container">
     <div class="nav-content">
       
@@ -253,6 +253,7 @@
       
       <!-- 2. CENTRE : Logo -->
       <div class="logo" onclick="showPage('home')">
+        
         <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
             xmlns="http://www.w3.org/2000/svg" aria-label="Logo En-Bus">
             <defs>
@@ -312,8 +313,8 @@
         <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
       </div>
 
-      <!-- 4. LANGUES : Toujours visibles (Desktop ET Mobile) -->
-      <div class="language-selector">
+      <!-- 4. LANGUES : Desktop uniquement -->
+      <div class="language-selector desktop-only">
         <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷</button>
         <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧</button>
       </div>
@@ -325,13 +326,18 @@
 
     </div>
     
-    <!-- Menu Mobile (SANS les langues) -->
+    <!-- Menu Mobile (AVEC les langues) -->
     <div id="mobile-nav-menu" class="mobile-nav">
       <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
       <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
       <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
       <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
-      <!-- ✅ Plus de sélecteur de langue ici -->
+      
+      <!-- ✅ Langues dans le menu mobile -->
+      <div class="mobile-lang-selector">
+        <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷 Français</button>
+        <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧 English</button>
+      </div>
     </div>
   </div>
 </nav>
