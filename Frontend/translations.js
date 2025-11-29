@@ -452,6 +452,24 @@ const translations = {
 // ex: email_pending_subject: (bookingNum) => `⏳ Action Required for your booking #${bookingNum}`
 
 
+      // --- Page À Propos (Nouvelles clés) ---
+      about_hero_title: "Connecter l'Afrique, un voyage à la fois.",
+      about_hero_subtitle: "Notre mission est de simplifier les voyages en bus sur le continent, en offrant une plateforme fiable, sécurisée et facile à utiliser.",
+      about_mission_title: "Notre Mission",
+      about_mission_desc: "Rendre la réservation de billets de bus en Afrique aussi simple que quelques clics, pour tout le monde, partout.",
+      about_vision_title: "Notre Vision",
+      about_vision_desc: "Devenir la plateforme de référence pour tous les déplacements terrestres en Afrique, en connectant les villes et les peuples.",
+      about_values_title: "Nos Valeurs",
+      about_values_desc: "Confiance, sécurité, simplicité et innovation sont au cœur de tout ce que nous faisons.",
+      about_stats_title: "En-Bus en chiffres",
+      about_stats_passengers: "Passagers Transportés",
+      about_stats_destinations: "Destinations",
+      about_stats_partners: "Compagnies Partenaires",
+      about_stats_satisfaction: "Satisfaction Client (%)",
+      about_partners_title: "Nos compagnies partenaires",
+      about_cta_title: "Prêt à voyager ?",
+      about_cta_subtitle: "Trouvez votre prochain trajet dès maintenant.",
+      about_cta_button: "Rechercher un billet",
 
 
   },
@@ -894,7 +912,27 @@ const translations = {
     email_report_outro: "Please use this new ticket for your travel.",
 
     info_loading_popular: "Loading best deals...",
-                
+
+
+    // --- About Us Page (New keys) ---
+    about_hero_title: "Connecting Africa, one journey at a time.",
+    about_hero_subtitle: "Our mission is to simplify bus travel across the continent, offering a reliable, secure, and easy-to-use platform.",
+    about_mission_title: "Our Mission",
+    about_mission_desc: "To make booking bus tickets in Africa as simple as a few clicks, for everyone, everywhere.",
+    about_vision_title: "Our Vision",
+    about_vision_desc: "To become the leading platform for all ground travel in Africa, connecting cities and people.",
+    about_values_title: "Our Values",
+    about_values_desc: "Trust, safety, simplicity, and innovation are at the core of everything we do.",
+    about_stats_title: "En-Bus in Numbers",
+    about_stats_passengers: "Passengers Transported",
+    about_stats_destinations: "Destinations",
+    about_stats_partners: "Partner Companies",
+    about_stats_satisfaction: "Customer Satisfaction (%)",
+    about_partners_title: "Our Partner Companies",
+    about_cta_title: "Ready to travel?",
+    about_cta_subtitle: "Find your next trip right now.",
+    about_cta_button: "Search for a ticket",
+                    
   }
 }
 

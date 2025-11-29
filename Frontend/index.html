@@ -915,35 +915,85 @@
       </div>
     </div>
 
-    <div id="about-page" class="page">
-      <!-- ... (Contenu de la page À Propos, inchangé) ... -->
-      <div class="container">
-        <div class="page-header">
-          <h2 data-i18n="about_title">À propos d'En-Bus</h2>
+    <!-- ============================================
+     📄 PAGE À PROPOS (MODERNE)
+     ============================================ -->
+<div id="about-page" class="page">
+  
+  <!-- 1. Section Héros Visuelle -->
+  <div class="about-hero">
+    <div class="container">
+      <h1 data-i18n="about_hero_title">Connecter l'Afrique, un voyage à la fois.</h1>
+      <p data-i18n="about_hero_subtitle">Notre mission est de simplifier les voyages en bus sur le continent, en offrant une plateforme fiable, sécurisée et facile à utiliser.</p>
+    </div>
+  </div>
+
+  <div class="container">
+    
+    <!-- 2. Section Mission, Vision, Valeurs -->
+    <div class="about-features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3 data-i18n="about_mission_title">Notre Mission</h3>
+        <p data-i18n="about_mission_desc">Rendre la réservation de billets de bus en Afrique aussi simple que quelques clics, pour tout le monde, partout.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔭</div>
+        <h3 data-i18n="about_vision_title">Notre Vision</h3>
+        <p data-i18n="about_vision_desc">Devenir la plateforme de référence pour tous les déplacements terrestres en Afrique, en connectant les villes et les peuples.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">❤️</div>
+        <h3 data-i18n="about_values_title">Nos Valeurs</h3>
+        <p data-i18n="about_values_desc">Confiance, sécurité, simplicité et innovation sont au cœur de tout ce que nous faisons.</p>
+      </div>
+    </div>
+
+    <!-- 3. Section Chiffres Clés -->
+    <div class="stats-section">
+      <h2 data-i18n="about_stats_title">En-Bus en chiffres</h2>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number" data-target="50000">0</span>
+          <span class="stat-label" data-i18n="about_stats_passengers">Passagers Transportés</span>
         </div>
-        <div class="content-card">
-          <p data-i18n="about_intro">
-
-            En-Bus est la plateforme de réservation de billets de bus en ligne
-            pour l'Afrique. Notre mission est de rendre les voyages en bus
-            plus accessibles et plus faciles pour tous.
-          </p>
-          <h3 data-i18n="about_vision_title">Notre vision</h3>
-          <p data-i18n="about_vision_desc">
-
-            Connecter les grandes villes d'Afrique et faciliter les
-            déplacements des populations à travers le continent.
-          </p>
-          <h3 data-i18n="about_partners_title">Nos partenaires</h3>
-          <ul>
-            <li>Océan du Nord</li>
-            <li>Trans Bony Voyage</li>
-            <li>Stellimac</li>
-          </ul>
+        <div class="stat-item">
+          <span class="stat-number" data-target="50">0</span>
+          <span class="stat-label" data-i18n="about_stats_destinations">Destinations</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-target="15">0</span>
+          <span class="stat-label" data-i18n="about_stats_partners">Compagnies Partenaires</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-target="98">0</span>
+          <span class="stat-label" data-i18n="about_stats_satisfaction">Satisfaction Client (%)</span>
         </div>
       </div>
     </div>
 
+    <!-- 4. Section Partenaires -->
+    <div class="partners-section">
+      <h2 data-i18n="about_partners_title">Nos compagnies partenaires</h2>
+      <div class="logos-container">
+        <!-- Remplace par les vrais chemins de tes images -->
+        <img src="https://via.placeholder.com/150x60/cccccc/888888?text=Ocean+du+Nord" alt="Océan du Nord">
+        <img src="https://via.placeholder.com/150x60/cccccc/888888?text=Trans+Bony" alt="Trans Bony">
+        <img src="https://via.placeholder.com/150x60/cccccc/888888?text=Stellimac" alt="Stellimac">
+        <img src="https://via.placeholder.com/150x60/cccccc/888888?text=United+Express" alt="United Express">
+        <img src="https://via.placeholder.com/150x60/cccccc/888888?text=Buca+Voyages" alt="Buca Voyages">
+      </div>
+    </div>
+
+    <!-- 5. Appel à l'Action (CTA) -->
+    <div class="cta-section">
+      <h2 data-i18n="about_cta_title">Prêt à voyager ?</h2>
+      <p data-i18n="about_cta_subtitle">Trouvez votre prochain trajet dès maintenant.</p>
+      <button class="btn btn-primary" onclick="showPage('home')" data-i18n="about_cta_button">Rechercher un billet</button>
+    </div>
+
+  </div>
+</div>
     <div id="contact-page" class="page">
       <!-- ... (Contenu de la page Contact, inchangé) ... -->
       <div class="container">

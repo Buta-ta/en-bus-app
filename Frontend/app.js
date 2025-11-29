@@ -1623,6 +1623,8 @@ const ticketHTML = `
         addSwapButtonStyles();
         setupSwapButton();
         setupAmenitiesFilters(); 
+        addAboutPageStyles();
+         animateCountersOnScroll();
          // ✅ AJOUTER CET APPEL
         initInteractiveMap();
         applyLanguage();// ✅ AJOUTER CETTE LIGNE
@@ -1648,6 +1650,40 @@ const ticketHTML = `
 }
 
 
+function animateCountersOnScroll() {
+    const counters = document.querySelectorAll('.stat-number');
+    const speed = 200; // Vitesse de l'animation
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target;
+                const target = +counter.getAttribute('data-target');
+                
+                const updateCount = () => {
+                    const count = +counter.innerText;
+                    const inc = target / speed;
+
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + inc);
+                        setTimeout(updateCount, 15);
+                    } else {
+                        counter.innerText = target.toLocaleString('fr-FR');
+                    }
+                };
+
+                updateCount();
+                observer.unobserve(counter); // Animer une seule fois
+            }
+        });
+    }, {
+        threshold: 0.5 // Se déclenche quand 50% de l'élément est visible
+    });
+
+    counters.forEach(counter => {
+        observer.observe(counter);
+    });
+}
 
 // ============================================
 // 🔄 ÉCHANGE DES DESTINATIONS
@@ -1795,6 +1831,129 @@ function addToastStyles() {
         `;
         document.head.appendChild(style);
     }
+}
+
+
+
+function addAboutPageStyles() {
+    if (document.getElementById('about-page-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'about-page-styles';
+    style.textContent = `
+        /* Section Héros */
+        .about-hero {
+            background: linear-gradient(rgba(10, 14, 39, 0.8), rgba(10, 14, 39, 0.95)), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800') center/cover no-repeat;
+            padding: 6rem 0;
+            text-align: center;
+            color: #fff;
+        }
+        .about-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--color-accent);
+        }
+        .about-hero p {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            color: var(--color-text-secondary);
+        }
+
+        /* Section Features (Mission, Vision, Valeurs) */
+        .about-features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+        .feature-card {
+            background: var(--color-surface);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            border: 1px solid var(--color-border);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-primary);
+        }
+        .feature-card p {
+            color: var(--color-text-secondary);
+        }
+
+        /* Section Chiffres Clés */
+        .stats-section {
+            background: var(--color-surface-dark);
+            padding: 4rem 2rem;
+            border-radius: var(--radius-xl);
+            text-align: center;
+            margin: 4rem 0;
+        }
+        .stats-section h2 {
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            color: var(--color-text-primary);
+        }
+        .stats-section .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        .stat-item .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            display: block;
+        }
+        .stat-item .stat-label {
+            color: var(--color-text-secondary);
+        }
+
+        /* Section Partenaires */
+        .partners-section {
+            text-align: center;
+            margin: 4rem 0;
+        }
+        .partners-section h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+        .logos-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+        .logos-container img {
+            max-height: 50px;
+            filter: grayscale(1) brightness(1.5);
+            opacity: 0.7;
+            transition: all 0.3s;
+        }
+        .logos-container img:hover {
+            filter: none;
+            opacity: 1;
+        }
+
+        /* Section CTA */
+        .cta-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            margin: 4rem 0;
+        }
+        .cta-section h2 { font-size: 2rem; color: var(--color-text-primary); }
+        .cta-section p { color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+    `;
+    document.head.appendChild(style);
 }
 
 
