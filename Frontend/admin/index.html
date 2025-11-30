@@ -5856,18 +5856,18 @@ async function loadReportRequests() {
 
         const searchTerm = searchInput ? searchInput.value.trim() : "";
         
-        // Utilise API_CONFIG.baseUrl si API_BASE_URL n'existe pas
+        // Utilisation robuste de l'URL
         const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : API_CONFIG.baseUrl;
-        
         const endpoint = searchTerm
             ? `${baseUrl}/api/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
             : `${baseUrl}/api/admin/reports/history`;
 
-        const token = localStorage.getItem('adminToken');
+        // ✅ CORRECTION : ON UTILISE 'admin_token'
+        const token = localStorage.getItem('admin_token');
         
         if (!token) {
-            console.error("❌ Pas de token. Redirection login.");
-            logout();
+            console.error("❌ Pas de token (admin_token). Redirection login.");
+            if (typeof handleLogout === 'function') handleLogout();
             return;
         }
 
@@ -5878,11 +5878,10 @@ async function loadReportRequests() {
             }
         });
 
-        // ✅ GESTION CLAIRE DES ERREURS HTTP
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 console.error("❌ Session expirée.");
-                logout(); // Déconnexion forcée
+                if (typeof handleLogout === 'function') handleLogout();
                 return;
             }
             throw new Error(`Erreur serveur: ${response.statusText}`);
@@ -5901,75 +5900,18 @@ async function loadReportRequests() {
             return;
         }
 
-        // Mise à jour des stats
         displayReportRequestsStats(data.reports);
 
-        // Rendu du tableau
-        tbody.innerHTML = data.reports.map(res => {
-            const req = res.reportRequest || {}; 
-            const isPending = res.status === "En attente de report";
-            const isReported = res.status === "Reporté";
-            
-            const oldDate = new Date(res.date).toLocaleDateString('fr-FR');
-            const newDate = req.targetTrip ? new Date(req.targetTrip.date).toLocaleDateString('fr-FR') : "N/A";
-            const requestDate = req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('fr-FR') : "N/A";
-
-            let paymentInfo = `<span class="badge badge-gray">Gratuit</span>`;
-            if (req.cost && req.cost.totalCost > 0) {
-                const method = req.paymentMethod || "N/A";
-                const txId = req.transactionId || req.agencyPaymentCode || "Non fourni";
-                paymentInfo = `
-                    <div style="font-size: 0.85rem;">
-                        <strong style="color: var(--primary);">${formatPrice(req.cost.totalCost)} FCFA</strong><br>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">${method}</span><br>
-                        <span class="transaction-id-display ${isPending ? 'pending' : ''}">${txId}</span>
-                    </div>
-                `;
-            }
-
-            let actions = '';
-            if (isPending) {
-                actions = `
-                    <div class="actions-cell">
-                        <button class="btn btn-sm btn-success" onclick="approveReport('${res.bookingNumber}')" title="Valider">✅</button>
-                        <button class="btn btn-sm btn-danger" onclick="alert('Fonctionnalité à venir')" title="Refuser">❌</button>
-                    </div>
-                `;
-            } else if (isReported) {
-                actions = `<span class="badge badge-success">Validé</span>`;
-            } else {
-                actions = `<span class="badge badge-gray">${res.status}</span>`;
-            }
-
-            const oldTrip = `${res.route.from} → ${res.route.to}`;
-            const newTrip = req.targetTrip ? `${req.targetTrip.route.from} → ${req.targetTrip.route.to}` : "N/A";
-
-            return `
-                <tr style="${isPending ? 'background: rgba(255, 167, 38, 0.05); border-left: 3px solid #ffa726;' : ''}">
-                    <td class="font-mono font-bold">${res.bookingNumber}</td>
-                    <td>
-                        <div class="font-bold">${res.passengers[0].name}</div>
-                        <div class="text-xs text-muted">${res.customerPhone || "N/A"}</div>
-                    </td>
-                    <td>
-                        <div class="text-xs">${oldTrip}</div>
-                        <div style="color: #ef5350; font-weight: bold;">${oldDate}</div>
-                    </td>
-                    <td>
-                        <div class="text-xs">${newTrip}</div>
-                        <div style="color: #73d700; font-weight: bold;">${newDate}</div>
-                    </td>
-                    <td>${paymentInfo}</td>
-                    <td class="text-xs">${requestDate}</td>
-                    <td>${actions}</td>
-                </tr>
-            `;
-        }).join('');
+        // Utiliser votre fonction de rendu existante qui est très bien
+        renderReportRequestsTable(
+            data.reports.filter(r => r.status === 'En attente de report'),
+            data.reports.filter(r => r.status !== 'En attente de report')
+        );
 
     } catch (error) {
         console.error('❌ Erreur chargement historique:', error);
         const tbody = document.getElementById('report-requests-body');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erreur technique : ${error.message}</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erreur technique.</td></tr>`;
     }
 }
 
