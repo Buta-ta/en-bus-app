@@ -160,9 +160,16 @@ let refreshPassengerSelectorUI = () => {}; // Variable globale initialisée avec
 // UTILITAIRES
 // ============================================
 const Utils = {
-    formatPrice(price) {
-        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-    },
+   // DANS app.js, objet Utils
+
+formatPrice(price) {
+    // Sécurité : Si price est null, undefined ou pas un nombre, on met 0
+    if (price === undefined || price === null || isNaN(price)) {
+        console.warn("⚠️ formatPrice a reçu une valeur invalide:", price);
+        return "0";
+    }
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+},
 
     formatDate(date, lang = 'fr') { // On ajoute 'lang' comme paramètre
     const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; // On choisit la locale

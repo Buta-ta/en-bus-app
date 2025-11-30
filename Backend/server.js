@@ -908,7 +908,6 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
         res.status(500).json({ error: "Erreur serveur interne lors de la recherche." });
     }
 });
-
 app.post(
   "/api/reservations/:bookingNumber/calculate-report-cost",
   strictLimiter,
@@ -917,18 +916,25 @@ app.post(
     const errors = validationResult(req);
     if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
+
     try {
       const { newTripId } = req.body;
+      
+      // 1. Récupération de la réservation
       const reservation = await reservationsCollection.findOne({
         bookingNumber: req.params.bookingNumber,
       });
       if (!reservation)
         return res.status(404).json({ error: "Réservation introuvable." });
+
+      // 2. Récupération du nouveau voyage
       const newTrip = await tripsCollection.findOne({
         _id: new ObjectId(newTripId),
       });
       if (!newTrip)
         return res.status(404).json({ error: "Voyage cible introuvable." });
+
+      // 3. Configuration des frais
       const settings = await systemSettingsCollection.findOne({
         key: "reportSettings",
       });
@@ -937,6 +943,7 @@ app.post(
         secondReportFee: 2000,
         thirdReportFee: 5000,
       };
+
       const reportCount = reservation.reportCount || 0;
       const reportFee =
         reportCount === 0 && config.firstReportFree
@@ -944,27 +951,51 @@ app.post(
           : reportCount === 1
           ? config.secondReportFee
           : config.thirdReportFee;
-      const currentPrice = reservation.totalPriceNumeric || 0;
-      const newPrice =
-        (newTrip.route.price || 0) * reservation.passengers.length;
+
+      // 4. ✅ CORRECTION MAJEURE : Calcul robuste du prix actuel
+      // On privilégie la valeur numérique stockée
+      let currentPrice = reservation.totalPriceNumeric;
+      
+      // Si elle n'existe pas, on essaie de parser la chaîne "5 000 FCFA" -> 5000
+      if ((currentPrice === undefined || currentPrice === null) && reservation.totalPrice) {
+          // Enlève tout ce qui n'est pas un chiffre
+          currentPrice = parseInt(reservation.totalPrice.toString().replace(/\D/g, '')); 
+      }
+      
+      // Fallback final à 0 pour éviter le crash
+      currentPrice = Number.isFinite(currentPrice) ? currentPrice : 0;
+
+      // 5. Calcul du nouveau prix
+      const seatPrice = parseInt(newTrip.route.price) || 0;
+      // Sécurité si passengers est mal défini
+      const passengersCount = (reservation.passengers && Array.isArray(reservation.passengers)) 
+          ? reservation.passengers.length 
+          : 1; 
+      
+      const newPrice = seatPrice * passengersCount;
+
+      // 6. Calcul final
       const priceDifference = newPrice - currentPrice;
       const totalCost = reportFee + priceDifference;
+
       res.json({
         success: true,
         calculation: {
-          reportFee,
-          currentPrice,
-          newPrice,
-          priceDifference,
-          totalCost,
+          reportFee: reportFee,
+          currentPrice: currentPrice,
+          newPrice: newPrice,
+          priceDifference: priceDifference,
+          totalCost: totalCost,
           isPaymentRequired: totalCost > 0,
           isCreditGenerated: totalCost < 0,
           creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0,
         },
         reportNumber: reportCount + 1,
       });
+
     } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+      console.error("❌ Erreur API calculate-report-cost:", error); // Log l'erreur précise
+      res.status(500).json({ error: "Erreur serveur lors du calcul." });
     }
   }
 );
