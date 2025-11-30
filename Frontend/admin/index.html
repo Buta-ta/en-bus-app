@@ -2647,6 +2647,32 @@ console.log("🔗 API Configurée sur :", BASE_URL);
             }
         }
 
+        // ============================================
+// 🚪 FONCTION DE DÉCONNEXION (MANQUANTE)
+// ============================================
+function logout() {
+    console.log("🚪 Déconnexion en cours...");
+    localStorage.removeItem('adminToken'); // Supprime le token
+    
+    // Affiche l'écran de connexion
+    const dashboard = document.getElementById('dashboard');
+    const loginScreen = document.getElementById('login-screen');
+    
+    if (dashboard) dashboard.classList.remove('active');
+    if (loginScreen) loginScreen.style.display = 'flex';
+    
+    // Optionnel : Recharger la page pour être propre
+    window.location.reload();
+}
+
+// Ajoutez aussi l'écouteur sur le bouton de déconnexion du menu
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+});
+
         function handleLogout() {
             localStorage.removeItem("admin_token");
             stopInactivityDetection();
