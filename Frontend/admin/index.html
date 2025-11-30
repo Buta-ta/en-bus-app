@@ -2969,12 +2969,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="badge" style="background: rgba(0, 217, 255, 0.15); color: #00d9ff; font-size: 0.65rem; border: 1px solid rgba(0, 217, 255, 0.3); margin-top: 4px;">Aller-Retour</span>` 
             : `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: #b0bac9; font-size: 0.65rem; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 4px;">Aller Simple</span>`;
 
-        const outboundInfo = `
-            <div style="margin-bottom: 6px;">
-                <strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br>
-                <small class="text-muted">🕐 ${r.route.departure}</small>
-            </div>
-        `;
+    
 
         const returnInfo = isRoundTrip ? `
             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);">
