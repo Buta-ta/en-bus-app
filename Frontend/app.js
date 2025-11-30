@@ -711,64 +711,39 @@ function addBookingToLocalHistory(bookingNumber) {
 // 🛠️ VERSION DE DIAGNOSTIC
 // ============================================
 async function removeBookingFromLocalHistory(bookingNumber) {
-    console.log("1️⃣ Début suppression pour :", bookingNumber);
-
-    // --- TEST 1 : Vérification des traductions ---
-    let title = "Confirmation";
-    let message = "Voulez-vous supprimer cette réservation ?";
+    // 1. Traductions
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     
-    try {
-        const lang = getLanguage();
-        const translation = translations[lang] || translations.fr;
-        
-        // On essaie de récupérer les textes, mais on prévoit un filet de sécurité
-        if (translation.confirm_remove_booking_title) title = translation.confirm_remove_booking_title;
-        
-        // Attention : c'est souvent ici que ça plante si c'est une fonction
-        if (typeof translation.confirm_remove_booking_desc === 'function') {
-            message = translation.confirm_remove_booking_desc(bookingNumber);
-        } else if (translation.confirm_remove_booking_desc) {
-            message = translation.confirm_remove_booking_desc;
-        }
-    } catch (err) {
-        console.warn("⚠️ Erreur de traduction ignorée :", err);
-    }
+    // 2. Appel de la modale (C'est ici que ça bloquait avant)
+    const confirmed = await showCustomConfirm({
+        title: translation.confirm_remove_booking_title || "Confirmation",
+        message: (typeof translation.confirm_remove_booking_desc === 'function') 
+            ? translation.confirm_remove_booking_desc(bookingNumber) 
+            : `Voulez-vous supprimer la réservation ${bookingNumber} ?`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: translation.button_remove || "Supprimer",
+        cancelText: translation.button_cancel_alt || "Annuler",
+        confirmClass: 'btn-danger'
+    });
 
-    console.log("2️⃣ Textes prêts. Titre:", title);
-
-    // --- TEST 2 : Utilisation de window.confirm (Pas de blocage possible) ---
-    // On contourne showCustomConfirm pour voir si le reste fonctionne
-    const confirmed = window.confirm(`${title}\n\n${message}`);
-
-    if (!confirmed) {
-        console.log("3️⃣ Annulation par l'utilisateur");
-        return;
-    }
+    // 3. Si l'utilisateur annule, on arrête tout
+    if (!confirmed) return;
     
-    console.log("4️⃣ Confirmation reçue. Suppression du stockage...");
-
-    // --- 3. Logique de suppression ---
+    // 4. Suppression
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        console.log("   - Historique avant:", history);
-        
         const newHistory = history.filter(bn => bn !== bookingNumber);
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
         
-        console.log("   - Historique après:", newHistory);
-        console.log("5️⃣ Suppression réussie !");
-        
-        Utils.showToast("Réservation supprimée (Test)", "success");
-        
-        // Rafraîchissement
-        displayReservations();
+        Utils.showToast(translation.toast_booking_removed || "Réservation supprimée", "success");
+        displayReservations(); // Rafraîchir l'écran
 
     } catch (e) {
-        console.error("❌ ERREUR CRITIQUE pendant la suppression:", e);
-        alert("Erreur technique : " + e.message);
+        console.error("Erreur suppression:", e);
     }
 }
-
 // DANS app.js
 
 // Variable pour garder une référence au décompteur
@@ -985,27 +960,26 @@ function stopAgencySpecificCountdown() {
 // ============================================
 // 🪟 MODALE DE CONFIRMATION (AUTO-GÉNÉRÉE)
 // ============================================
+// DANS app.js
+
 function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
     return new Promise((resolve) => {
-        // 1. Vérifier si la modale existe déjà
         let modal = document.getElementById('custom-confirm-modal');
 
-        // 2. Si elle n'existe pas, on la crée dynamiquement (Protection contre l'oubli de HTML)
+        // --- A. Injection HTML si manquant ---
         if (!modal) {
-            console.log("🔧 Création dynamique de la modale de confirmation...");
+            console.log("🔧 Injection de la modale de secours...");
             const modalHTML = `
-                <div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
-                    <div class="custom-modal-card">
-                        <div class="custom-modal-header">
-                            <div id="custom-confirm-icon" class="custom-modal-icon"></div>
-                            <h3 id="custom-confirm-title"></h3>
+                <div id="custom-confirm-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+                    <div style="background: #1C1C27; border: 1px solid rgba(115, 215, 0, 0.3); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                            <div id="custom-confirm-icon" style="font-size: 32px;"></div>
+                            <h3 id="custom-confirm-title" style="margin: 0; color: white; font-family: 'Audiowide', cursive;"></h3>
                         </div>
-                        <div class="custom-modal-body">
-                            <p id="custom-confirm-message"></p>
-                        </div>
-                        <div class="custom-modal-footer">
-                            <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
-                            <button id="custom-confirm-ok-btn" class="btn">Confirmer</button>
+                        <p id="custom-confirm-message" style="color: #A9A9B8; margin-bottom: 24px; line-height: 1.5;"></p>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button id="custom-confirm-cancel-btn" style="background: transparent; border: 1px solid #A9A9B8; color: #A9A9B8; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Annuler</button>
+                            <button id="custom-confirm-ok-btn" style="background: #d32f2f; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Confirmer</button>
                         </div>
                     </div>
                 </div>
@@ -1014,42 +988,48 @@ function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warni
             modal = document.getElementById('custom-confirm-modal');
         }
 
-        // 3. Récupération des éléments
+        // --- B. Mise à jour du contenu ---
         const titleEl = document.getElementById('custom-confirm-title');
         const messageEl = document.getElementById('custom-confirm-message');
         const iconEl = document.getElementById('custom-confirm-icon');
         const okBtn = document.getElementById('custom-confirm-ok-btn');
         const cancelBtn = document.getElementById('custom-confirm-cancel-btn');
 
-        // 4. Mise à jour du contenu
         if (titleEl) titleEl.textContent = title;
-        if (messageEl) messageEl.innerHTML = message.replace(/\n/g, '<br>'); // Gère les sauts de ligne
-        if (iconEl) {
-            iconEl.textContent = icon;
-            iconEl.className = `custom-modal-icon ${iconClass}`;
-        }
+        if (messageEl) messageEl.innerHTML = message;
+        if (iconEl) iconEl.textContent = icon;
 
-        // 5. Gestion de la fermeture et résolution de la Promesse
-        const close = (result) => {
+        // --- C. Gestion des clics (Résolution de la Promesse) ---
+        const cleanup = () => {
             modal.style.display = 'none';
-            // Nettoyage pour éviter les doubles clics futurs
-            okBtn.onclick = null;
-            cancelBtn.onclick = null;
-            resolve(result);
+            okBtn.replaceWith(okBtn.cloneNode(true)); // Retire les anciens event listeners
+            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
         };
 
-        if (okBtn) {
-            okBtn.textContent = confirmText;
-            okBtn.className = `btn ${confirmClass}`;
-            okBtn.onclick = () => close(true);
+        // Bouton Confirmer
+        okBtn.textContent = confirmText;
+        // Si c'est pas une suppression (pas rouge), on met vert par défaut
+        if (confirmClass !== 'btn-danger') {
+            okBtn.style.backgroundColor = '#73d700'; 
+            okBtn.style.color = '#000';
+        } else {
+            okBtn.style.backgroundColor = '#d32f2f';
+            okBtn.style.color = '#fff';
         }
 
-        if (cancelBtn) {
-            cancelBtn.textContent = cancelText;
-            cancelBtn.onclick = () => close(false);
-        }
+        okBtn.onclick = () => {
+            modal.style.display = 'none';
+            resolve(true); // ✅ DÉBLOQUE L'AWAIT
+        };
 
-        // 6. Affichage
+        // Bouton Annuler
+        cancelBtn.textContent = cancelText;
+        cancelBtn.onclick = () => {
+            modal.style.display = 'none';
+            resolve(false); // ✅ DÉBLOQUE L'AWAIT
+        };
+
+        // --- D. Affichage forcé ---
         modal.style.display = 'flex';
     });
 }
