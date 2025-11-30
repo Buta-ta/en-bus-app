@@ -2422,6 +2422,51 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     }
 });
 
+
+// ============================================
+// ✅ ROUTE MANQUANTE : MODIFIER UN VOYAGE (DATE, BUS, ETC.)
+// ============================================
+app.patch("/api/admin/trips/:id", authenticateToken, [
+    body('date').optional().isISO8601().withMessage('Format de date invalide'),
+    body('busIdentifier').optional().isString().trim(),
+    body('highlightBadge').optional().isString().trim()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
+    try {
+        const { id } = req.params;
+        const updates = req.body; // Contient { date: "...", busIdentifier: "..." }
+
+        // Vérification de l'ID
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID de voyage invalide." });
+        }
+
+        // On nettoie l'objet updates pour ne pas écraser l'ID par erreur
+        delete updates._id;
+
+        // Mise à jour dans la base de données
+        const result = await tripsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { ...updates, updatedAt: new Date() } } // On met à jour les champs envoyés
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Voyage introuvable." });
+        }
+
+        console.log(`✅ Voyage ${id} mis à jour avec succès.`);
+        res.json({ success: true, message: "Voyage mis à jour." });
+
+    } catch (error) {
+        console.error("❌ Erreur lors de la modification du voyage:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
 // Modifier l'équipage d'un voyage spécifique
 app.patch("/api/admin/trips/:tripId/crew", authenticateToken, async (req, res) => {
     try {
