@@ -4505,3 +4505,8 @@ body.pwa-installed .container {
         line-height: 1.5;
     }
 }
+
+.toggle-switch {
+    background-color: red !important; /* Juste pour voir s'il apparaît en rouge */
+    border: 2px solid white;
+}
