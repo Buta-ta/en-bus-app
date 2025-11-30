@@ -2019,7 +2019,7 @@ app.post("/api/admin/destinations", authenticateToken, [
     body('name').notEmpty().withMessage("Le nom est requis."),
     body('country').notEmpty().withMessage("Le pays est requis."),
     // On rend le champ 'coords' complètement optionnel et on accepte qu'il soit vide
-    body('coords').optional({ checkFalsy: true }).isString()
+    body('coords').optional
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
