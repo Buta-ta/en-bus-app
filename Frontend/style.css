@@ -3921,71 +3921,74 @@ body.pwa-installed .container {
         font-size: 14px;
     }
 
+    /* Le conteneur global du toggle */
     .trip-type-toggle {
         position: relative;
         display: flex;
-        align-items: center;
         background-color: rgba(255, 255, 255, 0.05);
-        /* Fond sombre léger */
         border: 1px solid var(--color-border);
         border-radius: 50px;
-        /* Forme arrondie parfaite */
+        /* Forme arrondie */
         padding: 4px;
         width: 100%;
+        max-width: 300px;
+        /* ✅ Empêche qu'il devienne géant en desktop */
+        height: 44px;
+        /* Hauteur standard */
         cursor: pointer;
-        overflow: hidden;
-        /* Garde tout à l'intérieur */
-        height: 48px;
-        /* Hauteur fixe pour la consistance */
+        user-select: none;
     }
+
 
     .toggle-option {
         flex: 1;
-        /* Chaque option prend 50% de la largeur */
+        /* Chaque moitié prend 50% */
         display: flex;
         align-items: center;
         justify-content: center;
-        text-align: center;
         font-size: 14px;
         font-weight: 600;
         color: var(--color-text-secondary);
         z-index: 2;
-        /* Au-dessus du curseur vert */
+        /* Au-dessus du fond vert */
         transition: color 0.3s ease;
-        cursor: pointer;
-        height: 100%;
-        user-select: none;
-        /* Empêche la sélection de texte */
+        white-space: nowrap;
+        /* Empêche le texte de passer à la ligne */
     }
 
 
+
+    /* Texte actif (couleur sombre pour contraste sur vert) */
     .toggle-option.active {
-        color: #000;
-        /* Texte noir sur fond vert (plus lisible) */
+        color: #10101A;
+        /* Noir/Sombre */
         font-weight: 700;
     }
 
-
+    /* Le fond vert qui bouge */
     .toggle-switch {
         position: absolute;
         top: 4px;
         left: 4px;
         width: calc(50% - 4px);
-        /* Exactement la moitié moins le padding */
+        /* Moitié exacte moins le padding */
         height: calc(100% - 8px);
         background-color: var(--color-accent-glow);
         border-radius: 50px;
         transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         z-index: 1;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
 
-
-
-    /* Animation du curseur */
+    /* Position quand c'est Aller-retour */
     .trip-type-toggle[data-mode="round-trip"] .toggle-switch {
         transform: translateX(100%);
-        /* Glisse vers la droite */
+    }
+
+    /* --- AJUSTEMENT LAYOUT DESKTOP --- */
+    /* Si le toggle est écrasé, on donne de l'espace à son conteneur parent */
+    .form-group {
+        min-width: 0;
+        /* Empêche le débordement flex */
     }
 
     .passenger-dropdown-menu {
