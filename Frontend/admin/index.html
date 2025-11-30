@@ -6048,42 +6048,50 @@ function renderReportRequestsTable(pending, processed) {
     tbody.innerHTML = htmlContent;
 }
 
-        async function approveReportRequest(bookingNumber, proofFromTable) {
-            // 1. Log pour être sûr que le clic fonctionne
-            console.log(`▶️ Validation demandée pour ${bookingNumber}. Preuve reçue: "${proofFromTable}"`);
+      // ============================================
+// ✅ FONCTION DE VALIDATION (ADMIN)
+// ============================================
+async function approveReportRequest(bookingNumber, proof) {
+    console.log(`✅ Validation demandée pour ${bookingNumber} avec preuve: ${proof}`);
 
-            // 2. Demander une confirmation simple à l'admin
-            const confirmed = await showAdminConfirm({
-                title: "Confirmer la validation ?",
-                message: `Vous êtes sur le point de valider le report pour la réservation ${bookingNumber}.\n\nAvez-vous vérifié le paiement ?`,
-                icon: '✅',
-                iconClass: 'success',
-                confirmText: 'Oui, valider'
-            });
+    // 1. Demander confirmation (surtout si pas de preuve)
+    let message = `Confirmer le report pour ${bookingNumber} ?`;
+    if (!proof) {
+        message += `\n⚠️ ATTENTION : Aucune preuve de paiement fournie. Confirmez-vous avoir reçu l'argent ?`;
+    } else {
+        message += `\nPreuve : ${proof}`;
+    }
 
-            if (!confirmed) {
-                showNotification('Validation annulée.', 'info');
-                return;
-            }
+    if (!confirm(message)) return;
 
-            // 3. Appel de l'API avec la preuve récupérée
-            try {
-                const data = await apiCall(
-                    `/admin/report-requests/${bookingNumber}/approve`,
-                    'POST',
-                    { transactionProof: proofFromTable } // On envoie simplement la preuve, le backend fera le tri
-                );
+    // 2. Envoi au backend
+    try {
+        const token = localStorage.getItem("admin_token");
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({ transactionProof: proof || "VALIDATED_MANUALLY" }) 
+        });
 
-                if (data && data.success) {
-                    showNotification('Report validé avec succès !', 'success');
-                    loadReportRequests(); // Recharger la liste
-                } else {
-                    showNotification(data?.error || 'La validation a échoué.', 'error');
-                }
-            } catch (error) {
-                showNotification(`Erreur: ${error.message}`, 'error');
-            }
+        const result = await response.json();
+
+        if (result.success) {
+            // Succès !
+            alert("✅ Report validé ! Un nouveau billet a été émis.");
+            loadReportRequests(); // Rafraîchir le tableau
+        } else {
+            // Erreur backend
+            alert("❌ Erreur : " + (result.error || "Inconnue"));
         }
+
+    } catch (error) {
+        console.error("Erreur réseau:", error);
+        alert("Erreur de connexion au serveur.");
+    }
+}
         // Rejeter une demande de report
         async function rejectReportRequest(bookingNumber) {
             const confirmed = await showAdminConfirm({
