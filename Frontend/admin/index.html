@@ -2576,21 +2576,12 @@
         // ============================================
         // 🔧 CONFIGURATION
         // ============================================
-        // ============================================
-// ⚙️ CONFIGURATION API (ADMIN)
-// ============================================
+        const API_URL =
+            window.location.hostname === "localhost" ||
+                window.location.hostname === "127.0.0.1"
+                ? "http://localhost:3000/api"
+                : "https://en-bus-app.onrender.com/api";
 
-// Détecte si on est en local ou en production
-const API_CONFIG = {
-    baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000' 
-        : 'https://en-bus-app.onrender.com' // Votre URL backend Render
-};
-
-// Pour la compatibilité avec vos fonctions existantes
-const API_BASE_URL = API_CONFIG.baseUrl;
-
-console.log("🔗 API Admin connectée à :", API_BASE_URL);
         let allReservations = [];
         let allTrips = [];
         let allTemplates = [];
