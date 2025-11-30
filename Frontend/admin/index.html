@@ -6391,66 +6391,6 @@ window.toggleDestinationStatus = async function(id, isActive) {
 };
 
 
-        // ============================================
-// 🏙️ CRÉATION DE DESTINATION (CORRIGÉE)
-// ============================================
-document.addEventListener('DOMContentLoaded', () => {
-    const destForm = document.getElementById('destination-creation-form');
-    
-    if (destForm) {
-        destForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Empêche le rechargement de la page
-
-            // 1. Récupération des valeurs
-            const name = document.getElementById('dest-name').value.trim();
-            const country = document.getElementById('dest-country').value.trim();
-            const coords = document.getElementById('dest-coords').value.trim();
-
-            // 2. Validation Client basique
-            if (!name || !country) {
-                alert("⚠️ Le nom de la ville et le pays sont obligatoires.");
-                return;
-            }
-
-            // 3. Envoi au serveur
-            try {
-                const token = localStorage.getItem('admin_token'); // Utilise bien votre clé de token
-                
-                // On utilise API_CONFIG.baseUrl pour être sûr de l'URL
-                const url = `${API_CONFIG.baseUrl}/api/admin/destinations`;
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        country: country,
-                        coords: coords // Le serveur s'attend à une string "lat, lon" ou vide
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    alert("✅ Destination ajoutée avec succès !");
-                    destForm.reset(); // Vide le formulaire
-                    loadDestinations(); // Rafraîchit le tableau (assurez-vous d'avoir cette fonction)
-                } else {
-                    // Affiche l'erreur précise renvoyée par le serveur (ex: "Format coordonnées invalide")
-                    console.error("Erreur serveur:", data);
-                    alert("❌ Erreur : " + (data.error || "Requête invalide (400)"));
-                }
-
-            } catch (error) {
-                console.error("Erreur réseau:", error);
-                alert("❌ Erreur de connexion au serveur.");
-            }
-        });
-    }
-});
 
     </script>
 
