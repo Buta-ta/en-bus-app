@@ -2221,6 +2221,8 @@
                                     <option value="direct">Direct (sans arrêt)</option>
                                     <option value="stops">Avec arrêts</option>
                                     <option value="connections">Avec correspondances</option>
+                                    <!-- ✅ NOUVELLE OPTION -->
+        <option value="mixed">Mixte (Arrêts + Correspondances)</option>
                                 </select>
                             </div>
 
@@ -5292,64 +5294,163 @@
         // 🛑 GESTION DYNAMIQUE DES ARRÊTS
         // ============================================
 
-        function toggleTripOptions() {
-            const tripType = document.getElementById("template-trip-type").value;
-            const stopsSection = document.getElementById("stops-section");
-            const connectionsSection = document.getElementById(
-                "connections-section"
-            );
+        // 1. Gérer l'affichage des sections
+function toggleTripOptions() {
+    const type = document.getElementById("template-trip-type").value;
+    const stopsSection = document.getElementById("stops-section");
+    const connSection = document.getElementById("connections-section");
 
-            stopsSection.style.display = tripType === "stops" ? "block" : "none";
-            connectionsSection.style.display =
-                tripType === "connections" ? "block" : "none";
-        }
+    // Reset
+    stopsSection.style.display = "none";
+    connSection.style.display = "none";
+
+    if (type === "stops") {
+        stopsSection.style.display = "block";
+    } else if (type === "connections") {
+        connSection.style.display = "block";
+    } else if (type === "mixed") {
+        // ✅ Affiche les deux pour le mode mixte
+        stopsSection.style.display = "block";
+        connSection.style.display = "block";
+    }
+}
+
 
         let stopCounter = 0;
         function addStop() {
-            const container = document.getElementById("stops-container");
-            const stopId = `stop-${stopCounter++}`;
-
-            const stopDiv = document.createElement("div");
-            stopDiv.className = "stop-item";
-            stopDiv.id = stopId;
-            stopDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; padding: 12px; background: var(--dark-elevated); border-radius: 8px; margin-bottom: 12px;">
-            <input type="text" placeholder="Ville de l'arrêt" class="form-control stop-city" required>
-            <input type="time" placeholder="Arrivée" class="form-control stop-arrival" required>
-            <input type="time" placeholder="Départ" class="form-control stop-departure" required>
-            <input type="text" placeholder="Durée (ex: 15min)" class="form-control stop-duration" required>
-            <button type="button" class="btn btn-danger btn-icon" onclick="removeStop('${stopId}')">🗑️</button>
-        </div>
+    const container = document.getElementById("stops-container");
+    const div = document.createElement("div");
+    div.className = "stop-row";
+    div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;";
+    
+    div.innerHTML = `
+        <input type="text" class="form-control stop-city" placeholder="Ville (ex: Edéa)">
+        <input type="text" class="form-control stop-arrival" placeholder="Arr. (10:00)">
+        <input type="text" class="form-control stop-departure" placeholder="Dép. (10:15)">
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
     `;
-            container.appendChild(stopDiv);
-        }
-
+    container.appendChild(div);
+}
         function removeStop(stopId) {
             document.getElementById(stopId).remove();
         }
 
         let connectionCounter = 0;
         // Dans Admin/index.html (section <script>)
-        function addConnection() {
-            const container = document.getElementById("connections-container");
-            const connId = `connection-${connectionCounter++}`;
-
-            const connDiv = document.createElement("div");
-            connDiv.className = "connection-item";
-            connDiv.id = connId;
-            connDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 12px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; margin-bottom: 12px; border: 1px solid #ffc107;">
-            <input type="text" placeholder="Ville" class="form-control conn-city" required>
-            <input type="time" placeholder="Arrivée" class="form-control conn-arrival" required>
-            <input type="text" placeholder="Attente" class="form-control conn-wait" required>
-            <input type="time" placeholder="Prochain départ" class="form-control conn-next-departure" required>
-            <input type="text" placeholder="Compagnie partenaire" class="form-control conn-next-company" required>
-            <input type="text" placeholder="N° Bus partenaire" class="form-control conn-next-bus-number">
-            <button type="button" class="btn btn-danger btn-icon" onclick="removeConnection('${connId}')">🗑️</button>
+       function addConnection() {
+    const container = document.getElementById("connections-container");
+    const div = document.createElement("div");
+    div.className = "connection-row";
+    div.style.cssText = "background: rgba(0, 217, 255, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.2);";
+    
+    div.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="text" class="form-control conn-location" placeholder="Lieu (ex: Yaoundé)">
+            <input type="text" class="form-control conn-wait" placeholder="Attente (ex: 2h)">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <input type="text" class="form-control conn-company" placeholder="Prochaine Cie">
+            <input type="text" class="form-control conn-bus" placeholder="N° Bus">
+            <input type="text" class="form-control conn-time" placeholder="Prochain Départ">
+        </div>
+        <div style="text-align: right; margin-top: 5px;">
+            <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">Supprimer</button>
         </div>
     `;
-            container.appendChild(connDiv);
+    container.appendChild(div);
+}
+
+// 4. ✅ Mise à jour de la soumission du formulaire
+document.getElementById("template-creation-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    // Récupération des données de base
+    const templateData = {
+        from: document.getElementById("template-from").value,
+        to: document.getElementById("template-to").value,
+        departureLocation: document.getElementById("template-departure-location").value,
+        arrivalLocation: document.getElementById("template-arrival-location").value,
+        company: document.getElementById("template-company").value,
+        price: parseInt(document.getElementById("template-price").value),
+        distance: parseInt(document.getElementById("template-distance").value) || 0,
+        departure: document.getElementById("template-departure").value,
+        arrival: document.getElementById("template-arrival").value,
+        tripType: document.getElementById("template-trip-type").value,
+        
+        // Gestion des bagages
+        standardBaggageIncluded: document.getElementById("standard-baggage-included").value,
+        standardBaggageMax: document.getElementById("standard-baggage-max").value,
+        standardBaggagePrice: document.getElementById("standard-baggage-price").value,
+        oversizedBaggageMax: document.getElementById("oversized-baggage-max").value,
+        oversizedBaggagePrice: document.getElementById("oversized-baggage-price").value,
+        
+        // Gestion des équipements (checkboxes)
+        amenities: Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(cb => cb.value),
+        
+        stops: [],
+        connections: []
+    };
+
+    // ✅ Extraction des Arrêts Multiples
+    document.querySelectorAll(".stop-row").forEach(row => {
+        const city = row.querySelector(".stop-city").value;
+        if (city) {
+            templateData.stops.push({
+                city: city,
+                arrivalTime: row.querySelector(".stop-arrival").value,
+                departureTime: row.querySelector(".stop-departure").value,
+                duration: "15 min" // Calculable si besoin
+            });
         }
+    });
+
+    // ✅ Extraction des Correspondances Multiples
+    document.querySelectorAll(".connection-row").forEach(row => {
+        const location = row.querySelector(".conn-location").value;
+        if (location) {
+            templateData.connections.push({
+                at: location,
+                waitTime: row.querySelector(".conn-wait").value,
+                nextCompany: row.querySelector(".conn-company").value,
+                nextBusNumber: row.querySelector(".conn-bus").value,
+                nextDeparture: row.querySelector(".conn-time").value
+            });
+        }
+    });
+
+    // Envoi au backend (Le code existant server.js gère déjà ça car il sauvegarde tout l'objet)
+    try {
+        const token = localStorage.getItem("adminToken");
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/route-templates`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(templateData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert("Modèle créé avec succès !");
+            // Reset form
+            e.target.reset();
+            document.getElementById("stops-container").innerHTML = "";
+            document.getElementById("connections-container").innerHTML = "";
+            toggleTripOptions(); // Reset visibilité
+            loadRouteTemplates(); // Rafraîchir la liste
+        } else {
+            alert("Erreur: " + result.error);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Erreur de connexion");
+    }
+});
+
+
+
+
 
         function removeConnection(connId) {
             document.getElementById(connId).remove();
