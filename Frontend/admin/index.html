@@ -1727,6 +1727,38 @@
 
         /* Réduction spécifique des boutons d'action du tableau */
 
+
+        /* ============================================
+   🔥 FIX D'AFFICHAGE FORCE POUR DESTINATIONS
+   ============================================ */
+
+/* Force le conteneur à être visible */
+#tab-destinations .table-container {
+    display: block !important;
+    min-height: 200px !important;
+    overflow: auto !important;
+    background: var(--dark-surface) !important; /* Assure un fond visible */
+    border: 1px solid var(--dark-border);
+}
+
+/* Force le corps du tableau à être visible */
+#destinations-body {
+    display: table-row-group !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Force les lignes à être visibles */
+#destinations-body tr {
+    display: table-row !important;
+    visibility: visible !important;
+}
+
+/* Force le texte à être blanc */
+#destinations-body td {
+    color: var(--text-primary) !important;
+    padding: 1rem !important;
+}
     </style>
 </head>
 
@@ -6476,6 +6508,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.loadDestinations();
     }
 });
+
+
+// Force le chargement au démarrage si on est sur l'onglet (ou juste pour tester)
+setTimeout(() => {
+    if (document.getElementById('tab-destinations')) {
+        window.loadDestinations();
+    }
+}, 1000);
 
     </script>
 
