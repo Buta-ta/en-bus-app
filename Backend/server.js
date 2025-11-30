@@ -820,62 +820,94 @@ app.get("/api/reservations/:bookingNumber/can-report", async (req, res) => {
 // ============================================
 // --- ROUTE PUBLIQUE POUR LES DESTINATIONS ---
 // ============================================
-
-app.get(
-  "/api/reservations/:bookingNumber/available-trips",
-  async (req, res) => {
+// ============================================
+// 🔄 ROUTE REPORT : RECHERCHE VOYAGES DISPONIBLES (CORRIGÉE)
+// ============================================
+app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => {
     try {
-      const { bookingNumber } = req.params;
-      const reservation = await reservationsCollection.findOne({
-        bookingNumber,
-      });
-      if (!reservation)
-        return res.status(404).json({ error: "Réservation introuvable." });
-      const settings = await systemSettingsCollection.findOne({
-        key: "reportSettings",
-      });
-      const config = settings?.value || { maxDaysInFuture: 30 };
-      const minDate = new Date();
-      minDate.setDate(minDate.getDate() + 2);
-      const maxDate = new Date(reservation.date);
-      maxDate.setDate(maxDate.getDate() + config.maxDaysInFuture);
-      const availableTrips = await tripsCollection
-        .find({
-          "route.from": reservation.route.from,
-          "route.to": reservation.route.to,
-          date: {
-            $gte: minDate.toISOString().split("T")[0],
-            $lte: maxDate.toISOString().split("T")[0],
-            $ne: reservation.date,
-          },
-        })
-        .sort({ date: 1 })
-        .toArray();
-      const formattedTrips = availableTrips.map((trip) => ({
-        id: trip._id.toString(),
-        date: trip.date,
-        route: {
-          from: trip.route.from,
-          to: trip.route.to,
-          company: trip.route.company,
-          price: trip.route.price,
-          departure: trip.route.departure,
-          arrival: trip.route.arrival,
-        },
-        availableSeats: trip.seats.filter((s) => s.status === "available")
-          .length,
-      }));
-      res.json({
-        success: true,
-        currentTrip: { date: reservation.date, price: reservation.route.price },
-        availableTrips: formattedTrips,
-        count: formattedTrips.length,
-      });
+        const { bookingNumber } = req.params;
+        
+        // 1. Récupérer la réservation
+        const reservation = await reservationsCollection.findOne({ bookingNumber });
+        if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
+
+        // Sécurité : Vérifier que la réservation a bien une route
+        if (!reservation.route || !reservation.route.from || !reservation.route.to) {
+            console.error("❌ Réservation corrompue (pas de route):", bookingNumber);
+            return res.status(500).json({ error: "Données de réservation invalides." });
+        }
+
+        // 2. Config et Dates
+        const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+        const config = settings?.value || { maxDaysInFuture: 60 };
+
+        const minDateStr = new Date().toISOString().split("T")[0]; // Aujourd'hui YYYY-MM-DD
+        
+        const maxDateObj = new Date();
+        maxDateObj.setDate(maxDateObj.getDate() + (config.maxDaysInFuture || 60));
+        const maxDateStr = maxDateObj.toISOString().split("T")[0];
+
+        console.log(`🔍 Recherche report pour ${bookingNumber} (${reservation.route.from} -> ${reservation.route.to}) entre ${minDateStr} et ${maxDateStr}`);
+
+        // 3. Recherche MongoDB
+        const availableTrips = await tripsCollection
+            .find({
+                "route.from": reservation.route.from,
+                "route.to": reservation.route.to,
+                date: {
+                    $gte: minDateStr,
+                    $lte: maxDateStr,
+                    $ne: reservation.date // Pas le même jour que l'original
+                },
+            })
+            .sort({ date: 1 })
+            .toArray();
+
+        // 4. Filtrage post-requête (Heure et Sièges)
+        const now = new Date();
+        const validTrips = availableTrips.filter(trip => {
+            // Vérifier structure du trip
+            if (!trip.route || !trip.route.departure || !trip.seats) return false;
+
+            // Vérifier heure si c'est aujourd'hui
+            const tripDateTime = new Date(`${trip.date}T${trip.route.departure}:00`);
+            if (tripDateTime <= now) return false;
+
+            // Vérifier s'il reste des sièges
+            const availableSeatsCount = trip.seats.filter(s => s.status === "available").length;
+            return availableSeatsCount > 0;
+        });
+
+        // 5. Formatage réponse
+        const formattedTrips = validTrips.map((trip) => ({
+            id: trip._id.toString(),
+            date: trip.date,
+            route: {
+                from: trip.route.from,
+                to: trip.route.to,
+                company: trip.route.company,
+                price: trip.route.price,
+                departure: trip.route.departure,
+                arrival: trip.route.arrival,
+            },
+            availableSeats: trip.seats.filter((s) => s.status === "available").length,
+        }));
+
+        res.json({
+            success: true,
+            currentTrip: { 
+                date: reservation.date, 
+                price: reservation.totalPriceNumeric || reservation.route.price // Fallback si totalPriceNumeric manque
+            },
+            availableTrips: formattedTrips,
+            count: formattedTrips.length,
+        });
+
     } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+        console.error("❌ ERREUR CRITIQUE REPORT:", error); // Affiche l'erreur exacte dans les logs serveur
+        res.status(500).json({ error: "Erreur serveur interne lors de la recherche." });
     }
-  }
-);
+});
 
 app.post(
   "/api/reservations/:bookingNumber/calculate-report-cost",
