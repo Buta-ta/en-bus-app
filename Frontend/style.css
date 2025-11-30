@@ -1351,9 +1351,9 @@ h3 {
 
 /* Carte de bus */
 .bus-card {
-    padding-top: 35px !important; /* Espace suffisant pour ne pas chevaucher */
+    /* On crée de l'espace en haut pour que le badge ne chevauche pas le texte */
+    padding-top: 36px !important; 
     position: relative;
-    overflow: hidden;
 }
 
 .bus-card-content-wrapper {
@@ -1575,27 +1575,28 @@ h3 {
 
 .highlight-badge {
     position: absolute;
-    /* 🔧 AJUSTEMENTS CLÉS ICI */
-    top: 20px;        /* On le descend un peu */
-    left: -55px;      /* On le tire vers la gauche pour le centrer */
-    width: 180px;     /* ✅ On élargit beaucoup le ruban pour que le texte tienne */
-    padding: 7px 0;
+    top: 0;
+    left: 0; /* Collé au coin haut gauche */
+    z-index: 10;
     
-    /* Rotation */
-    transform: rotate(-45deg);
+    /* ✅ Style "Étiquette" au lieu de ruban diagonal */
+    width: auto; /* La largeur s'adapte au texte (plus de texte coupé) */
+    padding: 6px 16px;
     
-    /* Style du texte */
+    /* Arrondi uniquement le coin bas-droit pour le style */
+    border-radius: var(--radius-lg) 0 var(--radius-lg) 0; 
+    
+    /* Pas de rotation = pas de conflit avec l'heure */
+    transform: none; 
+    
+    /* Texte */
     text-align: center;
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: white;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-    z-index: 10;
-    
-    /* Empêche le texte de se couper */
-    white-space: nowrap; 
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
 }
 
 .highlight-badge:hover {
@@ -4310,17 +4311,16 @@ body.pwa-installed .container {
     /* Cartes bus */
     
 
-   .highlight-badge {
-        top: 16px;
-        left: -50px;
-        width: 160px; /* Un peu moins large sur mobile */
-        font-size: 10px;
-        padding: 5px 0;
+   .bus-card {
+        padding-top: 32px !important; /* Un peu moins d'espace sur mobile */
     }
     
-    .bus-card {
-        padding-top: 30px !important;
+    .highlight-badge {
+        font-size: 10px;
+        padding: 4px 12px;
+        border-radius: 12px 0 12px 0; /* Arrondis adaptés au design mobile */
     }
+    
 
     .bus-card-wrapper,
     .bus-card-content-wrapper {
