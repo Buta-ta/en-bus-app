@@ -939,24 +939,33 @@ app.post(
       });
       if (!newTrip)
         return res.status(404).json({ error: "Voyage cible introuvable." });
+// 3. Config frais (VERSION SÉCURISÉE)
+let settings = null;
+try {
+    settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+} catch (e) {
+    console.warn("⚠️ Impossible de lire les settings report, utilisation défaut.");
+}
 
-      // 3. Config frais
-      const settings = await systemSettingsCollection.findOne({
-        key: "reportSettings",
-      });
-      const config = settings?.value || {
-        firstReportFree: true,
-        secondReportFee: 2000,
-        thirdReportFee: 5000,
-      };
+// Valeurs par défaut obligatoires si la DB est vide ou settings.value est null
+const defaults = { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
+const config = (settings && settings.value) ? settings.value : defaults;
 
-      const reportCount = reservation.reportCount || 0;
-      const reportFee =
-        reportCount === 0 && config.firstReportFree
-          ? 0
-          : reportCount === 1
-          ? config.secondReportFee
-          : config.thirdReportFee;
+// S'assurer que les valeurs sont bien des nombres
+config.secondReportFee = parseInt(config.secondReportFee) || 2000;
+config.thirdReportFee = parseInt(config.thirdReportFee) || 5000;
+
+const reportCount = reservation.reportCount || 0;
+
+// Calcul des frais (garanti d'être un nombre)
+let reportFee = 0;
+if (reportCount === 0 && config.firstReportFree) {
+    reportFee = 0;
+} else if (reportCount === 1) {
+    reportFee = config.secondReportFee;
+} else {
+    reportFee = config.thirdReportFee;
+}
 
       // 4. ✅ NETTOYAGE PRIX ACTUEL (OLD)
       let currentPrice = reservation.totalPriceNumeric;
@@ -983,7 +992,8 @@ app.post(
 
       // 6. Calculs finaux
       const priceDifference = newPrice - currentPrice;
-      const totalCost = reportFee + priceDifference;
+// On force (reportFee || 0) pour éviter undefined + number = NaN
+const totalCost = (reportFee || 0) + priceDifference; 
 
       // Debug (visible dans les logs Render)
       console.log(`💰 Calcul Report: Old=${currentPrice}, New=${newPrice} (Seat:${seatPrice} x ${passengersCount}), Diff=${priceDifference}, Fee=${reportFee}, Total=${totalCost}`);
