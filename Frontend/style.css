@@ -4737,7 +4737,7 @@ body.pwa-installed .container {
         font-size: 9px !important;
     }
 
-    
+
 
     /* PWA */
     .install-pwa-btn {
@@ -4868,4 +4868,87 @@ body.pwa-installed .container {
         font-size: 14px;
         line-height: 1.5;
     }
+
+
+    /* ============================================
+   📱 FIX MOBILE : LARGEUR ÉCRAN
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* 1. Conteneur principal */
+    .container {
+        width: 100% !important;
+        max-width: 100vw !important;
+        padding: 0 12px !important; /* Marges latérales fixes */
+        overflow-x: hidden !important; /* Coupe tout ce qui dépasse */
+    }
+
+    /* 2. Cartes de bus (Résultats) */
+    .bus-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Empêcher les infos flexibles de pousser la largeur */
+    .bus-card-content-wrapper {
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    .bus-card-main, .bus-card-pricing {
+        width: 100% !important;
+        min-width: 0 !important; /* Astuce Flexbox pour empêcher le débordement */
+    }
+
+    /* Réduire la taille des prix/heures si nécessaire */
+    .bus-card-time {
+        font-size: 1.1rem !important;
+        flex-wrap: wrap; /* Permet de passer à la ligne si trop long */
+    }
+}
+
+
+@media (max-width: 768px) {
+
+    /* 3. Plan du bus (Sélection sièges) */
+    .modern-bus-container {
+        width: 100% !important;
+        max-width: 340px !important; /* Largeur idéale pour un smartphone standard */
+        margin: 0 auto !important;   /* Centrer */
+        padding: 10px !important;
+        box-sizing: border-box !important;
+        transform: scale(0.95); /* Réduit légèrement tout le bus si vraiment trop large */
+        transform-origin: top center;
+    }
+
+    /* Réduire la taille des sièges */
+    .seat-row {
+        gap: 4px !important; /* Réduire l'espace entre les sièges */
+        justify-content: center !important;
+    }
+
+    .modern-seat {
+        width: 36px !important;  /* Forcer une largeur plus petite */
+        height: 36px !important; /* Forcer une hauteur plus petite */
+        font-size: 10px !important; /* Texte plus petit */
+    }
+
+    /* Réduire l'allée centrale */
+    .aisle-space {
+        width: 20px !important;
+    }
+    
+    /* Ajuster le header du bus (infos trajet) */
+    .bus-info-header {
+        padding: 12px !important;
+    }
+    
+    .bus-info-header h3 {
+        font-size: 1.1rem !important;
+        word-break: break-word; /* Coupe les noms de villes trop longs */
+    }
+}
 }
