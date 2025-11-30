@@ -911,6 +911,9 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
 // ============================================
 // 💰 ROUTE CALCUL COÛT REPORT (CORRIGÉE)
 // ============================================
+// ============================================
+// 💰 ROUTE CALCUL COÛT REPORT (CORRIGÉE)
+// ============================================
 app.post(
   "/api/reservations/:bookingNumber/calculate-report-cost",
   strictLimiter,
