@@ -4506,3 +4506,10 @@ body.pwa-installed .container {
 }
 
 
+.trip-type-toggle::before,
+.trip-type-toggle::after,
+.toggle-option::before,
+.toggle-option::after {
+    content: none !important;
+    display: none !important;
+}
