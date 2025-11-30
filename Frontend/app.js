@@ -707,46 +707,67 @@ function addBookingToLocalHistory(bookingNumber) {
 
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 
-// DANS app.js, REMPLACEZ la fonction removeBookingFromLocalHistory
+// ============================================
+// 🛠️ VERSION DE DIAGNOSTIC
+// ============================================
 async function removeBookingFromLocalHistory(bookingNumber) {
-    // --- 1. Récupération des traductions ---
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+    console.log("1️⃣ Début suppression pour :", bookingNumber);
+
+    // --- TEST 1 : Vérification des traductions ---
+    let title = "Confirmation";
+    let message = "Voulez-vous supprimer cette réservation ?";
     
-    // --- 2. Affichage de la modale de confirmation traduite ---
-    const confirmed = await showCustomConfirm({
-        title: translation.confirm_remove_booking_title,
-        message: translation.confirm_remove_booking_desc(bookingNumber),
-        icon: '🗑️',
-        iconClass: 'danger',
-        confirmText: translation.button_remove,
-        cancelText: translation.button_cancel_alt,
-        confirmClass: 'btn-danger'
-    });
+    try {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        
+        // On essaie de récupérer les textes, mais on prévoit un filet de sécurité
+        if (translation.confirm_remove_booking_title) title = translation.confirm_remove_booking_title;
+        
+        // Attention : c'est souvent ici que ça plante si c'est une fonction
+        if (typeof translation.confirm_remove_booking_desc === 'function') {
+            message = translation.confirm_remove_booking_desc(bookingNumber);
+        } else if (translation.confirm_remove_booking_desc) {
+            message = translation.confirm_remove_booking_desc;
+        }
+    } catch (err) {
+        console.warn("⚠️ Erreur de traduction ignorée :", err);
+    }
+
+    console.log("2️⃣ Textes prêts. Titre:", title);
+
+    // --- TEST 2 : Utilisation de window.confirm (Pas de blocage possible) ---
+    // On contourne showCustomConfirm pour voir si le reste fonctionne
+    const confirmed = window.confirm(`${title}\n\n${message}`);
 
     if (!confirmed) {
+        console.log("3️⃣ Annulation par l'utilisateur");
         return;
     }
     
-    // --- 3. Logique de suppression (inchangée) ---
+    console.log("4️⃣ Confirmation reçue. Suppression du stockage...");
+
+    // --- 3. Logique de suppression ---
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        console.log("   - Historique avant:", history);
+        
         const newHistory = history.filter(bn => bn !== bookingNumber);
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
         
-        console.log(`🗑️ Réservation ${bookingNumber} retirée de l'historique local.`);
+        console.log("   - Historique après:", newHistory);
+        console.log("5️⃣ Suppression réussie !");
         
-        // --- 4. Toast de succès traduit ---
-        Utils.showToast(translation.toast_booking_removed, "success");
+        Utils.showToast("Réservation supprimée (Test)", "success");
         
+        // Rafraîchissement
         displayReservations();
 
     } catch (e) {
-        console.error("Erreur lors de la suppression de l'historique local:", e);
-        Utils.showToast(translation.error_generic, "error");
+        console.error("❌ ERREUR CRITIQUE pendant la suppression:", e);
+        alert("Erreur technique : " + e.message);
     }
 }
-
 
 // DANS app.js
 
