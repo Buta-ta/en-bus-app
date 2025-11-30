@@ -4661,6 +4661,82 @@ body.pwa-installed .container {
         -webkit-tap-highlight-color: transparent;
     }
 
+
+
+
+     /* 1. Conteneur du bus plus serré */
+    .modern-bus-container {
+        padding: 8px 4px !important; /* Moins de padding interne */
+        max-width: 340px !important; /* Force une largeur max pour éviter l'étalement */
+        margin: 0 auto !important;   /* Centre le bus */
+    }
+
+    /* 2. Réduction de la taille des sièges */
+    .seat-row {
+        /* Réduit l'espace entre les sièges et l'allée */
+        grid-template-columns: 1fr 1fr 20px 1fr 1fr 20px !important; 
+        gap: 4px !important; /* Espace vertical entre les rangées réduit */
+        margin-bottom: 4px !important;
+    }
+
+    .modern-seat {
+        height: 34px !important; /* Hauteur réduite (était ~40px) */
+        border-radius: 6px !important; /* Arrondi plus petit */
+    }
+
+    .modern-seat .seat-label {
+        font-size: 9px !important; /* Texte du numéro plus petit */
+        font-weight: 700 !important;
+    }
+
+    .seat-cross {
+        font-size: 16px !important; /* Croix "occupé" plus petite */
+    }
+
+    /* 3. Zone chauffeur et porte plus compacte */
+    .bus-front-zone {
+        padding: 6px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .driver-section, .front-door-section {
+        padding: 4px 8px !important;
+    }
+
+    .driver-icon, .door-icon, .toilet-icon {
+        font-size: 14px !important;
+    }
+
+    .driver-label, .door-label, .toilet-label {
+        font-size: 9px !important;
+    }
+
+    /* 4. Zone toilettes et rangée arrière */
+    .toilet-section {
+        padding: 6px !important;
+        margin: 8px 0 !important;
+        height: 36px !important;
+    }
+
+    .back-row-container {
+        padding: 6px !important;
+        margin-top: 8px !important;
+    }
+
+    .back-row-label {
+        font-size: 9px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .back-row-seats {
+        gap: 4px !important;
+    }
+    
+    /* 5. Indicateur de rangée (le numéro au milieu) */
+    .row-indicator {
+        font-size: 9px !important;
+    }
+
     /* PWA */
     .install-pwa-btn {
         bottom: 10px;

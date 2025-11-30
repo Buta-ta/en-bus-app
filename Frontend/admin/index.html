@@ -5295,18 +5295,25 @@
         // ============================================
 
         function toggleTripOptions() {
-            const tripType = document.getElementById("template-trip-type").value;
-            const stopsSection = document.getElementById("stops-section");
-            const connectionsSection = document.getElementById(
-                "connections-section"
-            );
+    const type = document.getElementById("template-trip-type").value;
+    const stopsSection = document.getElementById("stops-section");
+    const connSection = document.getElementById("connections-section");
 
-            stopsSection.style.display = tripType === "stops" ? "block" : "none";
-            connectionsSection.style.display =
-                tripType === "connections" ? "block" : "none";
+    // 1. On cache tout par défaut
+    stopsSection.style.display = "none";
+    connSection.style.display = "none";
 
-                
-        }
+    // 2. On affiche selon le choix
+    if (type === "stops") {
+        stopsSection.style.display = "block";
+    } else if (type === "connections") {
+        connSection.style.display = "block";
+    } else if (type === "mixed") {
+        // ✅ Pour le mixte, on affiche LES DEUX
+        stopsSection.style.display = "block";
+        connSection.style.display = "block";
+    }
+}
 
         let stopCounter = 0;
         function addStop() {
