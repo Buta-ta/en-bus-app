@@ -6112,30 +6112,37 @@ async function approveReportRequest(bookingNumber, proof) {
 }
         // Rejeter une demande de report
         async function rejectReportRequest(bookingNumber) {
-            const confirmed = await showAdminConfirm({
-                title: "Rejeter cette demande ?",
-                message: `Voulez-vous vraiment rejeter la demande de report pour ${bookingNumber} ?\n\nLa réservation reviendra à son état initial.`,
-                icon: '❌',
-                iconClass: 'danger',
-                confirmText: 'Oui, rejeter',
-                confirmClass: 'btn-danger'
-            });
+    const confirmed = await showAdminConfirm({
+        title: "Refuser le report ?",
+        message: "La demande sera annulée et le billet initial restera valide.",
+        icon: '❌',
+        confirmText: "Refuser la demande",
+        confirmColor: '#ef5350'
+    });
 
-            if (!confirmed) return;
+    if (!confirmed) return;
 
-            try {
-                const data = await apiCall(`/admin/report-requests/${bookingNumber}`, 'DELETE');
-
-                if (data && data.success) {
-                    showNotification('Demande rejetée', 'success');
-                    loadReportRequests();
-                }
-
-            } catch (error) {
-                console.error('❌ Erreur rejet demande:', error);
-                showNotification('Erreur lors du rejet', 'error');
+    try {
+        const token = localStorage.getItem("admin_token");
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/reject`, {
+            method: "POST",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
             }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            await showAdminConfirm({ title: "Refusé", message: "La demande a été rejetée.", icon: '🗑️', confirmText: "OK", cancelText: "" });
+            loadReportRequests();
+        } else {
+            alert("Erreur: " + result.error);
         }
+    } catch (e) {
+        console.error(e);
+    }
+}
 
         // Afficher les détails d'une demande
         function showReportRequestDetails(bookingNumber) {

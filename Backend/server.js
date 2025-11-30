@@ -2175,6 +2175,44 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
 );
 
 
+// ============================================
+// ❌ REFUSER DEMANDE REPORT (ROUTE REQUISE)
+// ============================================
+app.post("/api/admin/report-requests/:bookingNumber/reject", authenticateToken, async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+        
+        console.log(`🚫 Tentative de refus pour ${bookingNumber}`);
+
+        // 1. Trouver la réservation en attente
+        const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
+        
+        if (!reservation) {
+            return res.status(404).json({ error: "Demande introuvable ou déjà traitée." });
+        }
+
+        // 2. Remettre l'ancien statut "Confirmé"
+        // (On annule juste la demande, le billet original reste valide)
+        await reservationsCollection.updateOne(
+            { _id: reservation._id },
+            { 
+                $set: { 
+                    status: "Confirmé", // Retour au statut normal
+                    "reportRequest.status": "Refusé",
+                    "reportRequest.rejectedAt": new Date(),
+                    "reportRequest.rejectedBy": req.user.username
+                } 
+            }
+        );
+
+        res.json({ success: true, message: "Demande refusée. Le billet original reste valide." });
+
+    } catch (error) {
+        console.error("Erreur refus report:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
 
 // Routes de mise à jour PATCH
 
