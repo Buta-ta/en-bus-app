@@ -1774,17 +1774,21 @@ function swapDestinations() {
 
 
 // DANS app.js
+// ============================================
+// 🗺️ CARTE INTERACTIVE (VERSION ROBUSTE)
+// ============================================
 async function initInteractiveMap() {
     const mapContainer = document.getElementById('interactive-map');
     if (!mapContainer || mapContainer._leaflet_id) return;
 
-    console.log("🗺️ Initialisation de la carte interactive avec routage...");
-    const map = L.map('interactive-map').setView([2.8, 17.3], 4);
+    console.log("🗺️ Initialisation carte...");
+    const map = L.map('interactive-map').setView([0, 15], 5); // Vue large par défaut
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: 'CARTO & OpenStreetMap',
     }).addTo(map);
 
     try {
+        // 1. Récupérer les données
         const [popularRes, allDestinationsRes] = await Promise.all([
             fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`),
             fetch(`${API_CONFIG.baseUrl}/api/destinations`)
@@ -1793,66 +1797,102 @@ async function initInteractiveMap() {
         const popularData = await popularRes.json();
         const allDestinationsData = await allDestinationsRes.json();
 
-        if (!popularData.success || !allDestinationsData.success) throw new Error("Données de carte invalides.");
+        if (!popularData.success || !allDestinationsData.success) throw new Error("Données API invalides.");
         
         const popularRoutes = popularData.destinations;
         const allCities = allDestinationsData.destinations;
-        
-        const cityCoordsMap = new Map(allCities.map(city => [city.name, city.coords]));
-        
-        const busIcon = L.icon({
-            iconUrl: './icons/bus-marker.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-            popupAnchor: [0, -42]
-        });
-        
-        let addedMarkers = new Set();
 
-        popularRoutes.forEach(route => {
-            const fromCoords = cityCoordsMap.get(route.from);
-            const toCoords = cityCoordsMap.get(route.to);
+        console.log(`   - ${popularRoutes.length} trajets populaires trouvés.`);
+        console.log(`   - ${allCities.length} villes avec coordonnées trouvées.`);
 
-            if (fromCoords && fromCoords.length === 2 && toCoords && toCoords.length === 2) {
-                
-                // On ajoute les marqueurs de bus comme avant
-                if (!addedMarkers.has(route.from)) {
-                    L.marker(fromCoords, { icon: busIcon }).addTo(map)
-                        .bindPopup(`<div class="popup-city-name">${route.from}</div>`);
-                    addedMarkers.add(route.from);
+        // 2. Créer un dictionnaire de coordonnées (Normalisé)
+        // On stocke : "brazzaville" -> [-4.26, 15.24]
+        const cityCoordsMap = new Map();
+        allCities.forEach(city => {
+            if (city.coords && (Array.isArray(city.coords) || typeof city.coords === 'string')) {
+                let latlng = city.coords;
+                // Si c'est une chaîne "lat,lon", on convertit
+                if (typeof latlng === 'string' && latlng.includes(',')) {
+                    latlng = latlng.split(',').map(Number);
                 }
-                
-                if (!addedMarkers.has(route.to)) {
-                    L.marker(toCoords, { icon: busIcon }).addTo(map)
-                        .bindPopup(`<div class="popup-city-name">${route.to}</div>`);
-                    addedMarkers.add(route.to);
+                // Si valide, on ajoute
+                if (Array.isArray(latlng) && latlng.length === 2 && !isNaN(latlng[0])) {
+                    cityCoordsMap.set(city.name.toLowerCase().trim(), latlng);
                 }
-
-                // ========================================================
-                // ✅ REMPLACEMENT DE L.polyline PAR LE ROUTAGE
-                // ========================================================
-                L.Routing.control({
-                    waypoints: [
-                        L.latLng(fromCoords[0], fromCoords[1]),
-                        L.latLng(toCoords[0], toCoords[1])
-                    ],
-                    routeWhileDragging: false,
-                    addWaypoints: false, // Empêche l'utilisateur d'ajouter des points
-                    draggableWaypoints: false, // Empêche de bouger les points
-                    createMarker: function() { return null; } // N'ajoute pas de marqueurs A et B
-                }).addTo(map);
-
-            } else {
-                console.warn(`⚠️ Trajet populaire ignoré car coordonnées manquantes pour : ${route.from} ou ${route.to}`);
             }
         });
 
+        // 3. Tracer les routes
+        const busIcon = L.icon({
+            iconUrl: './icons/bus-marker.png', // Assurez-vous que cette image existe
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30]
+        });
+
+        let addedMarkers = new Set();
+        let hasRoutes = false;
+
+        popularRoutes.forEach(route => {
+            // Recherche insensible à la casse
+            const fromKey = route.from.toLowerCase().trim();
+            const toKey = route.to.toLowerCase().trim();
+
+            const fromCoords = cityCoordsMap.get(fromKey);
+            const toCoords = cityCoordsMap.get(toKey);
+
+            if (fromCoords && toCoords) {
+                hasRoutes = true;
+                console.log(`   ✅ Tracé: ${route.from} -> ${route.to}`);
+
+                // Marqueurs (si pas déjà ajoutés)
+                if (!addedMarkers.has(fromKey)) {
+                    L.marker(fromCoords, { icon: busIcon }).addTo(map).bindPopup(`<b>${route.from}</b>`);
+                    addedMarkers.add(fromKey);
+                }
+                if (!addedMarkers.has(toKey)) {
+                    L.marker(toCoords, { icon: busIcon }).addTo(map).bindPopup(`<b>${route.to}</b>`);
+                    addedMarkers.add(toKey);
+                }
+
+                // Ligne de route (Routing Machine ou Polyline simple si erreur)
+                try {
+                    L.Routing.control({
+                        waypoints: [L.latLng(fromCoords), L.latLng(toCoords)],
+                        routeWhileDragging: false,
+                        addWaypoints: false,
+                        draggableWaypoints: false,
+                        fitSelectedRoutes: false, // On gère le zoom nous-mêmes
+                        show: false, // Cache le panneau d'instructions
+                        lineOptions: {
+                            styles: [{ color: '#73d700', opacity: 0.7, weight: 4 }]
+                        },
+                        createMarker: function() { return null; } // Pas de marqueurs par défaut
+                    }).addTo(map);
+                } catch (e) {
+                    // Fallback : Ligne simple si Routing Machine plante
+                    L.polyline([fromCoords, toCoords], { color: '#73d700', weight: 3, dashArray: '10, 10' }).addTo(map);
+                }
+            } else {
+                console.warn(`   ⚠️ Ignoré: ${route.from} -> ${route.to} (Coordonnées manquantes pour l'un des deux)`);
+            }
+        });
+
+        // 4. Centrer la carte
+        if (hasRoutes && allCities.length > 0) {
+            // On centre sur la première ville trouvée, ou une vue globale
+            // Idéalement, on utilise un L.latLngBounds pour englober tous les points
+            const group = new L.featureGroup([...addedMarkers].map(key => L.marker(cityCoordsMap.get(key))));
+            if (addedMarkers.size > 0) {
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+        }
+
     } catch (error) {
-        console.error("❌ Erreur lors de l'initialisation de la carte:", error);
-        mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555;">Erreur de chargement de la carte.</p>`;
+        console.error("❌ Erreur Carte:", error);
+        mapContainer.innerHTML = `<p style="text-align:center; color: #ff5555; padding-top: 200px;">Carte indisponible.</p>`;
     }
 }
-
 
 // ============================================
 // 📞 LOGIQUE PAGE CONTACT
