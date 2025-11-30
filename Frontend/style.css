@@ -3922,83 +3922,67 @@ body.pwa-installed .container {
     }
 
 /* ============================================
-   🔄 TOGGLE TYPE DE TRAJET - VERSION BLINDÉE
+   🔄 TOGGLE TYPE DE TRAJET - CORRIGÉ
    ============================================ */
 
 .trip-type-toggle {
-    position: relative; /* Parent de référence */
-    display: flex;
-    flex-direction: row;
+    position: relative; /* ✅ Indispensable pour le switch absolu */
+    display: flex;      /* ✅ Force l'alignement horizontal */
     align-items: center;
-    width: 100%;
-    height: 48px; /* Hauteur fixe */
+    width: 100%;        /* Prend la largeur dispo */
+    max-width: 300px;   /* ✅ Empêche de devenir trop large en desktop */
+    height: 48px;       /* ✅ Hauteur fixe pour éviter l'écrasement */
     background-color: var(--color-background);
     border: 1px solid var(--color-border);
     border-radius: 50px;
     padding: 4px;
     box-sizing: border-box;
-    isolation: isolate; /* Crée un contexte d'empilement propre */
+    cursor: pointer;
+    /* ✅ Assure que le toggle ne s'écrase pas dans un flex parent */
+    flex-shrink: 0; 
 }
 
 /* Le bouton vert (Switch) */
 .toggle-switch {
-    position: absolute; /* Sort du flux flex */
+    position: absolute; /* ✅ Positionnement par rapport au parent */
     top: 4px;
     left: 4px;
-    width: calc(50% - 4px); /* Largeur calculée */
-    height: calc(100% - 8px); /* Hauteur calculée */
-    
-    /* Force la couleur et l'affichage */
-    background-color: var(--color-accent-glow) !important; 
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background-color: var(--color-accent-glow);
     border-radius: 50px;
-    
-    /* Animation */
     transition: transform 0.3s ease;
-    z-index: 1; /* Derrière le texte */
-    
-    /* Force les dimensions si écrasé */
-    min-width: 50px; 
-    min-height: 30px;
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    z-index: 1;
+    display: block; /* ✅ Force l'affichage */
 }
 
-/* Les textes (Options) */
+/* Les textes */
 .toggle-option {
-    flex: 1; /* Prend 50% de l'espace */
+    flex: 1; /* ✅ Chaque option prend 50% */
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    
-    /* Style du texte */
+    text-align: center;
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text-secondary);
-    text-align: center;
-    
-    /* Positionnement */
-    z-index: 2; /* Devant le switch */
-    position: relative; /* Nécessaire pour le z-index */
+    z-index: 2;
+    position: relative; /* ✅ Nécessaire pour le z-index */
     cursor: pointer;
     user-select: none;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0;
+    padding: 0;
 }
 
 .toggle-option.active {
-    color: #10101A; /* Texte noir sur vert */
+    color: #10101A;
     font-weight: 700;
 }
 
-/* Déplacement du switch */
 .trip-type-toggle[data-mode="round-trip"] .toggle-switch {
     transform: translateX(100%);
 }
-
-
-
     .passenger-dropdown-menu {
         width: 280px;
         padding: 12px;
@@ -4505,11 +4489,3 @@ body.pwa-installed .container {
     }
 }
 
-
-.trip-type-toggle::before,
-.trip-type-toggle::after,
-.toggle-option::before,
-.toggle-option::after {
-    content: none !important;
-    display: none !important;
-}
