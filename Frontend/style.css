@@ -1576,22 +1576,28 @@ h3 {
 /* Badge promotionnel */
 .highlight-badge {
     position: absolute;
-    top: -4px;
-    left: -4px;
+    top: 12px; /* Descendu légèrement */
+    left: -30px; /* Décalé vers la gauche pour l'effet ruban */
     z-index: 10;
-    padding: 10px;
-    width: 140px;
-    background: #e53935;
-    color: white;
-    font-size: 14px;
-    font-weight: 800;
+    padding: 6px 0; /* Hauteur ajustée */
+    width: 120px; /* Largeur du ruban */
+    
+    /* Style du texte */
     text-align: center;
+    font-size: 10px; /* Texte plus petit et discret */
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-    clip-path: polygon(0% 0%, 100% 0%, 85% 50%, 100% 100%, 0% 100%);
-    transition: transform 0.2s ease-out;
+    color: white;
+    
+    /* Rotation pour l'effet coin */
+    transform: rotate(-45deg);
+    
+    /* Ombre pour la lisibilité */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    
+    /* Suppression du clip-path complexe qui gênait */
+    clip-path: none; 
 }
 
 .highlight-badge:hover {
