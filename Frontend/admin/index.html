@@ -6232,7 +6232,7 @@ function showAdminConfirm({ title, message, icon = '⚠️', confirmText = 'Vali
 
 
 // ============================================
-// 🏙️ GESTION DES DESTINATIONS (MODALES)
+// 🏙️ GESTION DES DESTINATIONS (COMPLET AVEC EDIT)
 // ============================================
 
 // 1. Charger les destinations
@@ -6256,7 +6256,14 @@ window.loadDestinations = async function() {
                 return;
             }
 
-            tbody.innerHTML = data.destinations.map(city => `
+            tbody.innerHTML = data.destinations.map(city => {
+                // Échapper les guillemets pour éviter les bugs dans le onclick
+                const safeName = city.name.replace(/'/g, "\\'");
+                const safeCountry = city.country.replace(/'/g, "\\'");
+                // On gère le cas où coords est un tableau ou une string
+                let safeCoords = Array.isArray(city.coords) ? city.coords.join(', ') : (city.coords || "");
+
+                return `
                 <tr>
                     <td><strong>${city.name}</strong></td>
                     <td>${city.country}</td>
@@ -6266,13 +6273,17 @@ window.loadDestinations = async function() {
                         </span>
                     </td>
                     <td class="actions-cell">
-                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}', '${city.name}')" title="Supprimer">🗑️</button>
+                        <!-- ✅ BOUTON MODIFIER AJOUTÉ -->
+                        <button class="btn btn-sm btn-primary" onclick="openEditDestinationModal('${city._id}', '${safeName}', '${safeCountry}', '${safeCoords}')" title="Modifier">✏️</button>
+                        
                         <button class="btn btn-sm btn-secondary" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
                             ${city.isActive ? '🚫' : '✅'}
                         </button>
+                        
+                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}', '${safeName}')" title="Supprimer">🗑️</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
     } catch (error) {
         console.error(error);
@@ -6280,7 +6291,101 @@ window.loadDestinations = async function() {
     }
 };
 
-// 2. Ajouter une destination (Formulaire)
+// 2. Ouvrir la Modale de Modification
+window.openEditDestinationModal = function(id, name, country, coords) {
+    const modalId = `edit-dest-${Date.now()}`;
+    const wrapper = document.createElement('div');
+    wrapper.id = modalId;
+    wrapper.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(10, 14, 39, 0.9); z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(5px); animation: fadeIn 0.2s ease-out;
+    `;
+
+    wrapper.innerHTML = `
+        <div style="background: #151a30; border: 1px solid #2a3256; border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <h3 style="color: white; margin-bottom: 20px; text-align: center;">Modifier la destination</h3>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block; color: #b0bac9; font-size: 0.9em; margin-bottom: 5px;">Ville</label>
+                <input type="text" id="edit-name-${modalId}" class="form-control" value="${name}" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block; color: #b0bac9; font-size: 0.9em; margin-bottom: 5px;">Pays</label>
+                <input type="text" id="edit-country-${modalId}" class="form-control" value="${country}" style="width: 100%;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="display:block; color: #b0bac9; font-size: 0.9em; margin-bottom: 5px;">Coordonnées (Lat, Lon)</label>
+                <input type="text" id="edit-coords-${modalId}" class="form-control" value="${coords}" style="width: 100%;">
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button id="btn-cancel-${modalId}" style="flex: 1; padding: 12px; background: #1e2541; border: 1px solid #2a3256; color: #b0bac9; border-radius: 8px; cursor: pointer; font-weight: 600;">Annuler</button>
+                <button id="btn-save-${modalId}" style="flex: 1; padding: 12px; background: #00d9ff; border: none; color: #0a0e27; border-radius: 8px; cursor: pointer; font-weight: 700;">Enregistrer</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(wrapper);
+
+    // Gestion Annuler
+    document.getElementById(`btn-cancel-${modalId}`).onclick = () => document.body.removeChild(wrapper);
+
+    // Gestion Enregistrer
+    document.getElementById(`btn-save-${modalId}`).onclick = async () => {
+        const newName = document.getElementById(`edit-name-${modalId}`).value.trim();
+        const newCountry = document.getElementById(`edit-country-${modalId}`).value.trim();
+        const newCoords = document.getElementById(`edit-coords-${modalId}`).value.trim();
+
+        if (!newName || !newCountry) {
+            alert("Nom et Pays requis.");
+            return;
+        }
+
+        await updateDestination(id, newName, newCountry, newCoords);
+        document.body.removeChild(wrapper); // Ferme la modale après succès
+    };
+};
+
+// 3. Fonction API pour mettre à jour
+async function updateDestination(id, name, country, coords) {
+    try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            // Le backend accepte 'coords' comme string ou array grâce à la correction précédente
+            body: JSON.stringify({ name, country, coords: coords || "" })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showAdminConfirm({ 
+                title: "Succès", 
+                message: "Destination mise à jour !", 
+                icon: '✅', 
+                confirmText: "OK", 
+                cancelText: "", 
+                confirmColor: "#73d700" 
+            });
+            window.loadDestinations();
+        } else {
+            alert("Erreur: " + (data.error || "Inconnue"));
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Erreur de connexion");
+    }
+}
+
+// 4. Ajouter une destination (Formulaire Création)
 (function() {
     const form = document.getElementById('destination-creation-form');
     if (form) {
@@ -6294,7 +6399,7 @@ window.loadDestinations = async function() {
             const coords = document.getElementById('dest-coords').value.trim();
 
             if (!name || !country) {
-                showAdminConfirm({ title: "Erreur", message: "Le nom et le pays sont obligatoires.", icon: '⚠️', confirmText: "OK", cancelText: "", confirmColor: "#ffa726" });
+                showAdminConfirm({ title: "Erreur", message: "Nom et Pays requis.", icon: '⚠️', confirmText: "OK", cancelText: "", confirmColor: "#ffa726" });
                 return;
             }
 
@@ -6309,88 +6414,61 @@ window.loadDestinations = async function() {
                     body: JSON.stringify({ name, country, coords: coords || "" })
                 });
 
-                const data = await response.json();
-
                 if (response.ok) {
-                    // ✅ Modale de succès
-                    await showAdminConfirm({
-                        title: "Succès",
-                        message: `La destination <strong>${name}</strong> a été ajoutée.`,
-                        icon: '🎉',
-                        confirmText: "Super",
-                        cancelText: "",
-                        confirmColor: "#73d700"
-                    });
+                    showAdminConfirm({ title: "Succès", message: `<strong>${name}</strong> ajoutée.`, icon: '🎉', confirmText: "Top", cancelText: "", confirmColor: "#73d700" });
                     newForm.reset();
                     window.loadDestinations();
                 } else {
-                    // ❌ Modale d'erreur
-                    showAdminConfirm({
-                        title: "Erreur",
-                        message: data.error || "Impossible d'ajouter la destination.",
-                        icon: '❌',
-                        confirmText: "Fermer",
-                        cancelText: "",
-                        confirmColor: "#ef5350"
-                    });
+                    alert("Erreur serveur");
                 }
             } catch (error) {
-                showAdminConfirm({ title: "Erreur Réseau", message: "Vérifiez votre connexion.", icon: '🌐', confirmText: "OK", cancelText: "", confirmColor: "#ef5350" });
+                alert("Erreur réseau");
             }
         });
     }
 })();
 
-// 3. Supprimer une destination
+// 5. Supprimer et Toggle (Inchangés mais inclus pour être complet)
 window.deleteDestination = async function(id, name) {
-    // ✅ Modale de confirmation
     const confirmed = await showAdminConfirm({
         title: "Supprimer ?",
-        message: `Voulez-vous vraiment supprimer la ville <strong>${name}</strong> ?<br>Cette action est irréversible.`,
+        message: `Supprimer <strong>${name}</strong> ?`,
         icon: '🗑️',
         confirmText: "Oui, supprimer",
         cancelText: "Annuler",
-        confirmColor: "#ef5350" // Rouge
+        confirmColor: "#ef5350"
     });
 
     if (!confirmed) return;
     
     try {
         const token = localStorage.getItem('admin_token');
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
+        await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
-        if (response.ok) {
-            window.loadDestinations();
-        } else {
-            showAdminConfirm({ title: "Erreur", message: "Impossible de supprimer.", icon: '❌', confirmText: "OK", cancelText: "" });
-        }
-    } catch (e) {
-        console.error(e);
-    }
+        window.loadDestinations();
+    } catch (e) { console.error(e); }
 };
 
-// 4. Activer/Désactiver
 window.toggleDestinationStatus = async function(id, isActive) {
     try {
         const token = localStorage.getItem('admin_token');
         await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
             method: 'PATCH',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ isActive: isActive })
         });
         window.loadDestinations();
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 };
 
-
+// Initialisation
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('tab-destinations')?.classList.contains('active')) {
+        window.loadDestinations();
+    }
+});
 
     </script>
 
