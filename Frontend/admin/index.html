@@ -6232,13 +6232,13 @@ function showAdminConfirm({ title, message, icon = '⚠️', confirmText = 'Vali
 
 
 // ============================================
-// 🏙️ GESTION DES DESTINATIONS (COMPLET)
+// 🏙️ GESTION DES DESTINATIONS (MODALES)
 // ============================================
 
-// 1. Fonction pour CHARGER et AFFICHER le tableau
-async function loadDestinations() {
+// 1. Charger les destinations
+window.loadDestinations = async function() {
     const tbody = document.getElementById('destinations-body');
-    if (!tbody) return; // Sécurité si on n'est pas sur la bonne page
+    if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Chargement...</td></tr>';
 
@@ -6252,7 +6252,7 @@ async function loadDestinations() {
 
         if (data.success) {
             if (data.destinations.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination trouvée.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination.</td></tr>';
                 return;
             }
 
@@ -6266,35 +6266,37 @@ async function loadDestinations() {
                         </span>
                     </td>
                     <td class="actions-cell">
-                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}')" title="Supprimer">🗑️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}', '${city.name}')" title="Supprimer">🗑️</button>
                         <button class="btn btn-sm btn-secondary" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
                             ${city.isActive ? '🚫' : '✅'}
                         </button>
                     </td>
                 </tr>
             `).join('');
-        } else {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Erreur: ${data.error}</td></tr>`;
         }
     } catch (error) {
-        console.error("Erreur chargement destinations:", error);
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur de connexion.</td></tr>';
+        console.error(error);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur de chargement.</td></tr>';
     }
-}
+};
 
-// 2. Fonction pour AJOUTER une destination (Correction Erreur 400)
-document.addEventListener('DOMContentLoaded', () => {
+// 2. Ajouter une destination (Formulaire)
+(function() {
     const form = document.getElementById('destination-creation-form');
     if (form) {
-        form.addEventListener('submit', async (e) => {
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        
+        newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const name = document.getElementById('dest-name').value.trim();
             const country = document.getElementById('dest-country').value.trim();
-            let coords = document.getElementById('dest-coords').value.trim();
+            const coords = document.getElementById('dest-coords').value.trim();
 
-            // CORRECTION CRITIQUE : Si coords est vide, on envoie une chaîne vide, pas null
-            if (!coords) coords = "";
+            if (!name || !country) {
+                showAdminConfirm({ title: "Erreur", message: "Le nom et le pays sont obligatoires.", icon: '⚠️', confirmText: "OK", cancelText: "", confirmColor: "#ffa726" });
+                return;
+            }
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -6304,54 +6306,74 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ name, country, coords })
+                    body: JSON.stringify({ name, country, coords: coords || "" })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert("✅ Destination ajoutée !");
-                    form.reset();
-                    loadDestinations(); // Appel de la fonction qu'on vient de créer
+                    // ✅ Modale de succès
+                    await showAdminConfirm({
+                        title: "Succès",
+                        message: `La destination <strong>${name}</strong> a été ajoutée.`,
+                        icon: '🎉',
+                        confirmText: "Super",
+                        cancelText: "",
+                        confirmColor: "#73d700"
+                    });
+                    newForm.reset();
+                    window.loadDestinations();
                 } else {
-                    alert("❌ Erreur : " + (data.error || "Données invalides"));
+                    // ❌ Modale d'erreur
+                    showAdminConfirm({
+                        title: "Erreur",
+                        message: data.error || "Impossible d'ajouter la destination.",
+                        icon: '❌',
+                        confirmText: "Fermer",
+                        cancelText: "",
+                        confirmColor: "#ef5350"
+                    });
                 }
             } catch (error) {
-                console.error(error);
-                alert("Erreur réseau.");
+                showAdminConfirm({ title: "Erreur Réseau", message: "Vérifiez votre connexion.", icon: '🌐', confirmText: "OK", cancelText: "", confirmColor: "#ef5350" });
             }
         });
     }
-    
-    // Chargement initial si on est sur l'onglet
-    if (document.getElementById('tab-destinations')?.classList.contains('active')) {
-        loadDestinations();
-    }
-    
-    // Écouteur d'onglets pour recharger quand on clique
-    document.querySelectorAll('.nav-link[data-tab="destinations"]').forEach(btn => {
-        btn.addEventListener('click', loadDestinations);
-    });
-});
+})();
 
-// 3. Fonction pour SUPPRIMER
-async function deleteDestination(id) {
-    if (!confirm("Supprimer cette destination ?")) return;
+// 3. Supprimer une destination
+window.deleteDestination = async function(id, name) {
+    // ✅ Modale de confirmation
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer ?",
+        message: `Voulez-vous vraiment supprimer la ville <strong>${name}</strong> ?<br>Cette action est irréversible.`,
+        icon: '🗑️',
+        confirmText: "Oui, supprimer",
+        cancelText: "Annuler",
+        confirmColor: "#ef5350" // Rouge
+    });
+
+    if (!confirmed) return;
     
     try {
         const token = localStorage.getItem('admin_token');
-        await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        loadDestinations(); // Rafraîchir
+        
+        if (response.ok) {
+            window.loadDestinations();
+        } else {
+            showAdminConfirm({ title: "Erreur", message: "Impossible de supprimer.", icon: '❌', confirmText: "OK", cancelText: "" });
+        }
     } catch (e) {
         console.error(e);
     }
-}
+};
 
-// 4. Fonction pour ACTIVER/DÉSACTIVER (Toggle)
-async function toggleDestinationStatus(id, isActive) {
+// 4. Activer/Désactiver
+window.toggleDestinationStatus = async function(id, isActive) {
     try {
         const token = localStorage.getItem('admin_token');
         await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
@@ -6362,11 +6384,11 @@ async function toggleDestinationStatus(id, isActive) {
             },
             body: JSON.stringify({ isActive: isActive })
         });
-        loadDestinations(); // Rafraîchir
+        window.loadDestinations();
     } catch (e) {
         console.error(e);
     }
-}
+};
 
 
         // ============================================
