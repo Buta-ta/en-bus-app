@@ -908,6 +908,9 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
         res.status(500).json({ error: "Erreur serveur interne lors de la recherche." });
     }
 });
+// ============================================
+// 💰 ROUTE CALCUL COÛT REPORT (CORRIGÉE)
+// ============================================
 app.post(
   "/api/reservations/:bookingNumber/calculate-report-cost",
   strictLimiter,
@@ -920,21 +923,21 @@ app.post(
     try {
       const { newTripId } = req.body;
       
-      // 1. Récupération de la réservation
+      // 1. Récupération réservation
       const reservation = await reservationsCollection.findOne({
         bookingNumber: req.params.bookingNumber,
       });
       if (!reservation)
         return res.status(404).json({ error: "Réservation introuvable." });
 
-      // 2. Récupération du nouveau voyage
+      // 2. Récupération nouveau voyage
       const newTrip = await tripsCollection.findOne({
         _id: new ObjectId(newTripId),
       });
       if (!newTrip)
         return res.status(404).json({ error: "Voyage cible introuvable." });
 
-      // 3. Configuration des frais
+      // 3. Config frais
       const settings = await systemSettingsCollection.findOne({
         key: "reportSettings",
       });
@@ -952,31 +955,35 @@ app.post(
           ? config.secondReportFee
           : config.thirdReportFee;
 
-      // 4. ✅ CORRECTION MAJEURE : Calcul robuste du prix actuel
-      // On privilégie la valeur numérique stockée
+      // 4. ✅ NETTOYAGE PRIX ACTUEL (OLD)
       let currentPrice = reservation.totalPriceNumeric;
-      
-      // Si elle n'existe pas, on essaie de parser la chaîne "5 000 FCFA" -> 5000
+      // Si pas de numérique, on nettoie la chaîne (ex: "10 000 FCFA" -> 10000)
       if ((currentPrice === undefined || currentPrice === null) && reservation.totalPrice) {
-          // Enlève tout ce qui n'est pas un chiffre
           currentPrice = parseInt(reservation.totalPrice.toString().replace(/\D/g, '')); 
       }
-      
-      // Fallback final à 0 pour éviter le crash
       currentPrice = Number.isFinite(currentPrice) ? currentPrice : 0;
 
-      // 5. Calcul du nouveau prix
-      const seatPrice = parseInt(newTrip.route.price) || 0;
-      // Sécurité si passengers est mal défini
+      // 5. ✅ NETTOYAGE PRIX NOUVEAU (NEW)
+      let rawNewPrice = newTrip.route.price;
+      // Si c'est une chaîne, on enlève les espaces et lettres
+      if (typeof rawNewPrice === 'string') {
+          rawNewPrice = rawNewPrice.replace(/\D/g, '');
+      }
+      const seatPrice = parseInt(rawNewPrice) || 0;
+
+      // Sécurité passagers
       const passengersCount = (reservation.passengers && Array.isArray(reservation.passengers)) 
           ? reservation.passengers.length 
           : 1; 
       
       const newPrice = seatPrice * passengersCount;
 
-      // 6. Calcul final
+      // 6. Calculs finaux
       const priceDifference = newPrice - currentPrice;
       const totalCost = reportFee + priceDifference;
+
+      // Debug (visible dans les logs Render)
+      console.log(`💰 Calcul Report: Old=${currentPrice}, New=${newPrice} (Seat:${seatPrice} x ${passengersCount}), Diff=${priceDifference}, Fee=${reportFee}, Total=${totalCost}`);
 
       res.json({
         success: true,
@@ -986,7 +993,7 @@ app.post(
           newPrice: newPrice,
           priceDifference: priceDifference,
           totalCost: totalCost,
-          isPaymentRequired: totalCost > 0,
+          isPaymentRequired: totalCost > 0, // Si > 0, le front affichera le paiement
           isCreditGenerated: totalCost < 0,
           creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0,
         },
@@ -994,12 +1001,11 @@ app.post(
       });
 
     } catch (error) {
-      console.error("❌ Erreur API calculate-report-cost:", error); // Log l'erreur précise
+      console.error("❌ Erreur API calculate-report-cost:", error);
       res.status(500).json({ error: "Erreur serveur lors du calcul." });
     }
   }
 );
-
 app.post(
   "/api/reservations/:bookingNumber/confirm-report",
   strictLimiter,
