@@ -480,14 +480,10 @@ app.get("/api/route-templates", async (req, res) => {
 
 
 
-// ============================================
-// ✅ ROUTE SEARCH CORRIGÉE (CALCUL DURÉE)
-// ============================================
 app.get("/api/search", async (req, res) => {
   let { from, to, date } = req.query;
   if (!from || !to || !date)
     return res.status(400).json({ error: "Paramètres manquants" });
-
   try {
     const trips = await tripsCollection
       .find({
@@ -497,7 +493,8 @@ app.get("/api/search", async (req, res) => {
       })
       .toArray();
 
-    // Fonction utilitaire pour calculer la durée
+
+       // Fonction utilitaire pour calculer la durée
     const calculateDuration = (start, end) => {
         if (!start || !end) return "N/A";
         const [h1, m1] = start.split(':').map(Number);
@@ -538,14 +535,12 @@ app.get("/api/search", async (req, res) => {
       baggageOptions: trip.route.baggageOptions,
       highlightBadge: trip.highlightBadge || null,
     }));
-
     res.json({ success: true, count: results.length, results });
   } catch (error) {
     console.error("❌ Erreur recherche:", error);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
 
 app.get("/api/trips/:id/seats", async (req, res) => {
   try {
