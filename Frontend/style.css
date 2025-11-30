@@ -438,16 +438,30 @@ h3 {
 
 /* Box de recherche détaillée */
 .search-box {
+    display: none; /* ✅ On l'enlève du flux (plus d'espace pris) */
     opacity: 0;
-    visibility: hidden;
     transform: translateY(20px);
-    transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    margin: 0;
+    padding: var(--space-24);
 }
 
+
+
 .search-box.visible {
+    display: block; /* ✅ On le fait réapparaître */
     opacity: 1;
-    visibility: visible;
     transform: translateY(0);
+    margin: 0;
+    
+    /* Petite astuce pour l'animation avec display: block */
+    animation: fadeInBox 0.4s forwards; 
+}
+
+
+@keyframes fadeInBox {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 /* ============================================
    6. CARTES & COMPOSANTS
