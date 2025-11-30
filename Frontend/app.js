@@ -4170,6 +4170,19 @@ window.confirmBooking = async function(buttonElement) {
         console.groupEnd();
     }
 };
+
+
+
+function calculateDuration(start, end) {
+    if (!start || !end) return "N/A";
+    const [h1, m1] = start.split(':').map(Number);
+    const [h2, m2] = end.split(':').map(Number);
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 1440; // Gestion nuit
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return `${h}h ${m > 0 ? String(m).padStart(2, '0') : ''}`;
+}
 // ============================================
 // 📄 AFFICHAGE DE LA PAGE DE CONFIRMATION
 // ============================================
@@ -4264,7 +4277,9 @@ async function displayConfirmation(reservation) {
                     <div class="route-connector">
                         <div class="connector-line"></div>
                         <div class="connector-icon">🚌</div>
-                        <div class="connector-duration">${route.duration || 'N/A'}</div>
+                        <div class="connector-duration">
+    ${route.duration && route.duration !== 'N/A' ? route.duration : calculateDuration(route.departure, route.arrival)}
+</div>
                     </div>
                     <div class="route-point route-destination">
                         <div class="point-icon">🏁</div>
