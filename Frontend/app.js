@@ -961,52 +961,77 @@ function stopAgencySpecificCountdown() {
 // DANS app.js, à ajouter avec vos autres fonctions utilitaires
 // DANS app.js
 
+// ============================================
+// 🪟 MODALE DE CONFIRMATION (AUTO-GÉNÉRÉE)
+// ============================================
 function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
     return new Promise((resolve) => {
-        const modal = document.getElementById('custom-confirm-modal');
-        
-        // 🚨 SÉCURITÉ : Si le HTML n'existe pas, on utilise la confirmation native du navigateur
+        // 1. Vérifier si la modale existe déjà
+        let modal = document.getElementById('custom-confirm-modal');
+
+        // 2. Si elle n'existe pas, on la crée dynamiquement (Protection contre l'oubli de HTML)
         if (!modal) {
-            console.warn("⚠️ Modale custom introuvable, utilisation de window.confirm");
-            const result = window.confirm(`${title}\n\n${message}`);
-            resolve(result);
-            return;
+            console.log("🔧 Création dynamique de la modale de confirmation...");
+            const modalHTML = `
+                <div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
+                    <div class="custom-modal-card">
+                        <div class="custom-modal-header">
+                            <div id="custom-confirm-icon" class="custom-modal-icon"></div>
+                            <h3 id="custom-confirm-title"></h3>
+                        </div>
+                        <div class="custom-modal-body">
+                            <p id="custom-confirm-message"></p>
+                        </div>
+                        <div class="custom-modal-footer">
+                            <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
+                            <button id="custom-confirm-ok-btn" class="btn">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            modal = document.getElementById('custom-confirm-modal');
         }
 
+        // 3. Récupération des éléments
         const titleEl = document.getElementById('custom-confirm-title');
         const messageEl = document.getElementById('custom-confirm-message');
         const iconEl = document.getElementById('custom-confirm-icon');
         const okBtn = document.getElementById('custom-confirm-ok-btn');
         const cancelBtn = document.getElementById('custom-confirm-cancel-btn');
 
+        // 4. Mise à jour du contenu
         if (titleEl) titleEl.textContent = title;
-        if (messageEl) messageEl.textContent = message;
+        if (messageEl) messageEl.innerHTML = message.replace(/\n/g, '<br>'); // Gère les sauts de ligne
         if (iconEl) {
             iconEl.textContent = icon;
             iconEl.className = `custom-modal-icon ${iconClass}`;
         }
-        
+
+        // 5. Gestion de la fermeture et résolution de la Promesse
+        const close = (result) => {
+            modal.style.display = 'none';
+            // Nettoyage pour éviter les doubles clics futurs
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+            resolve(result);
+        };
+
         if (okBtn) {
             okBtn.textContent = confirmText;
             okBtn.className = `btn ${confirmClass}`;
-            okBtn.onclick = () => {
-                modal.style.display = 'none';
-                resolve(true);
-            };
+            okBtn.onclick = () => close(true);
         }
 
         if (cancelBtn) {
             cancelBtn.textContent = cancelText;
-            cancelBtn.onclick = () => {
-                modal.style.display = 'none';
-                resolve(false);
-            };
+            cancelBtn.onclick = () => close(false);
         }
 
+        // 6. Affichage
         modal.style.display = 'flex';
     });
 }
-
 // ============================================
 // ⏰ CALCUL DU DÉLAI PAIEMENT MOBILE MONEY
 // ============================================
