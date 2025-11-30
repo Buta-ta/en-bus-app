@@ -4498,3 +4498,24 @@ body.pwa-installed .container {
         line-height: 1.5;
     }
 }
+
+
+/* 🔥 TEST DE FORCE POUR LE TOGGLE */
+.trip-type-toggle {
+    display: flex !important;       /* Force l'alignement horizontal */
+    flex-direction: row !important; /* Force la ligne (pas colonne) */
+    width: 100% !important;         /* Force la largeur */
+    min-width: 200px !important;    /* Empêche l'écrasement */
+    height: 48px !important;        /* Force la hauteur */
+    box-sizing: border-box !important;
+}
+
+.toggle-option {
+    flex: 1 1 0 !important;         /* Force l'égalité des largeurs */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 50% !important;          /* Force 50% */
+    margin: 0 !important;
+    padding: 0 !important;
+}
