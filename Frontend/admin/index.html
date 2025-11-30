@@ -2647,6 +2647,14 @@ console.log("🔗 API Configurée sur :", BASE_URL);
             }
         }
 
+        function handleLogout() {
+            localStorage.removeItem("admin_token");
+            stopInactivityDetection();
+            showNotification("Déconnexion réussie", "info");
+            setTimeout(showLogin, 500);
+        }
+
+
         // ============================================
 // 🚪 FONCTION DE DÉCONNEXION (MANQUANTE)
 // ============================================
@@ -2673,12 +2681,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-        function handleLogout() {
-            localStorage.removeItem("admin_token");
-            stopInactivityDetection();
-            showNotification("Déconnexion réussie", "info");
-            setTimeout(showLogin, 500);
-        }
+
+
 
         function showLogin() {
             document.getElementById("login-screen").style.display = "flex";
