@@ -3991,6 +3991,7 @@ body.pwa-installed .container {
         /* Empêche le débordement flex */
     }
 
+    
 
     .form-row {
     grid-template-columns: 1fr 1fr; /* 50% - 50% */
