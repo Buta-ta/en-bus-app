@@ -4811,22 +4811,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+function renderDestinationsTable(destinations) {
+    const tbody = document.getElementById('destinations-body');
+    if (!tbody) return;
 
-        function renderDestinationsTable(destinations) {
-            const tbody = document.getElementById('destinations-body');
-            if (!tbody) {
-                console.error("L'élément 'destinations-body' n'a pas été trouvé.");
-                return;
-            }
+    if (!destinations || destinations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination.</td></tr>';
+        return;
+    }
 
-            if (!destinations || destinations.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4">Aucune destination.</td></tr>';
-                return;
-            }
+    let html = '';
+    destinations.forEach(dest => {
+        // ✅ CORRECTION DE SÉCURITÉ
+        let safeCoords = "";
+        if (Array.isArray(dest.coords)) {
+            safeCoords = dest.coords.join(', ');
+        } else if (dest.coords) {
+            safeCoords = dest.coords.toString();
+        }
 
-            let html = '';
-            destinations.forEach(dest => {
-                html += `
+        // Échappement des guillemets pour le JS inline
+        const safeName = dest.name.replace(/'/g, "\\'");
+        const safeCountry = dest.country.replace(/'/g, "\\'");
+
+        html += `
             <tr>
                 <td><strong class="font-bold">${dest.name}</strong></td>
                 <td>${dest.country}</td>
@@ -4836,26 +4844,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     </span>
                 </td>
                 <td class="actions-cell">
-                    <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})">
-                        ${dest.isActive ? 'Désactiver' : 'Activer'}
+                    <!-- ✅ Bouton Modifier corrigé -->
+                    <button class="btn btn-sm btn-ghost" onclick="openEditDestinationModal('${dest._id}', '${safeName}', '${safeCountry}', '${safeCoords}')" title="Modifier">
+                        ✏️
+                    </button>
+                    
+                    <button class="btn btn-sm btn-ghost" onclick="toggleDestinationStatus('${dest._id}', ${!dest.isActive})" title="${dest.isActive ? 'Désactiver' : 'Activer'}">
+                        ${dest.isActive ? '🚫' : '✅'}
                     </button>
 
-                    <!-- ✅ NOUVEAU BOUTON -->
-    <button class="btn btn-sm btn-ghost" onclick="openEditDestinationModal('${dest._id}', '${dest.name}', '${dest.country}', '${dest.coords.join(',')}')">
-        ✏️ Modifier
-    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteDestination('${dest._id}', '${dest.name}')">
-                        Supprimer
+                    <button class="btn btn-sm btn-ghost" style="color: #ef5350;" onclick="deleteDestination('${dest._id}', '${safeName}')" title="Supprimer">
+                        🗑️
                     </button>
                 </td>
             </tr>
         `;
-            });
+    });
 
-            tbody.innerHTML = html;
-        }
-
-
+    tbody.innerHTML = html;
+}
         //render destination table 
 
 
