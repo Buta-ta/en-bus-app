@@ -3922,76 +3922,83 @@ body.pwa-installed .container {
     }
 
     /* ============================================
-   🔄 TOGGLE TYPE DE TRAJET - VERSION ROBUSTE
+   🔄 TOGGLE TYPE DE TRAJET - CORRECTION FINALE
    ============================================ */
 
     .trip-type-toggle {
         position: relative;
+        /* Indispensable pour le positionnement absolute du switch */
         display: flex;
-        /* Force l'alignement horizontal */
+        align-items: center;
         width: 100%;
-        /* Prend toute la largeur du parent */
-        height: 44px;
+        height: 48px;
         /* Hauteur fixe */
         background-color: var(--color-background);
+        /* Fond sombre */
         border: 1px solid var(--color-border);
         border-radius: 50px;
         padding: 4px;
         cursor: pointer;
-        overflow: hidden;
         box-sizing: border-box;
-        /* Important ! */
+        isolation: isolate;
+        /* Crée un nouveau contexte d'empilement */
     }
 
+    /* Le fond vert (Switch) */
+    .toggle-switch {
+        position: absolute;
+        /* Absolu par rapport au parent .trip-type-toggle */
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        /* Moitié exacte moins padding */
+        height: calc(100% - 8px);
+        /* Hauteur moins padding */
+        background-color: var(--color-accent-glow);
+        /* Vert fluo */
+        border-radius: 50px;
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        z-index: 1;
+        /* Niveau 1 */
+        display: block !important;
+        /* Force l'affichage */
+        content: '';
+        /* Au cas où */
+    }
+
+    /* Les textes */
     .toggle-option {
         flex: 1;
-        /* Force chaque option à prendre 50% */
         display: flex;
         align-items: center;
         justify-content: center;
+        height: 100%;
         text-align: center;
         font-size: 14px;
         font-weight: 600;
         color: var(--color-text-secondary);
         z-index: 2;
+        /* Niveau 2 (au-dessus du switch) */
         transition: color 0.3s ease;
         cursor: pointer;
         user-select: none;
-        margin: 0;
-        /* Enlève toute marge parasite */
-        padding: 0;
-        /* Enlève tout padding parasite */
+        margin: 0 !important;
+        /* Reset marges */
     }
 
+    /* Texte actif */
     .toggle-option.active {
         color: #10101A;
-        /* Texte sombre sur fond vert */
+        /* Texte noir pour contraste sur vert */
         font-weight: 700;
     }
 
-    .toggle-switch {
-        position: absolute;
-        top: 4px;
-        left: 4px;
-        width: calc(50% - 4px);
-        /* Calcul précis */
-        height: calc(100% - 8px);
-        background-color: var(--color-accent-glow);
-        border-radius: 50px;
-        transition: transform 0.3s ease;
-        z-index: 1;
-    }
-
-    /* Animation */
+    /* Animation du switch */
     .trip-type-toggle[data-mode="round-trip"] .toggle-switch {
         transform: translateX(100%);
     }
 
-    .trip-type-toggle label.toggle-option {
-    margin-bottom: 0 !important; /* Annule la marge des labels de formulaires */
-    text-transform: none !important; /* Annule la casse majuscule si présente */
-    letter-spacing: normal !important;
-}
+
 
     .passenger-dropdown-menu {
         width: 280px;
@@ -4502,20 +4509,27 @@ body.pwa-installed .container {
 
 /* 🔥 TEST DE FORCE POUR LE TOGGLE */
 .trip-type-toggle {
-    display: flex !important;       /* Force l'alignement horizontal */
-    flex-direction: row !important; /* Force la ligne (pas colonne) */
-    width: 100% !important;         /* Force la largeur */
-    min-width: 200px !important;    /* Empêche l'écrasement */
-    height: 48px !important;        /* Force la hauteur */
+    display: flex !important;
+    /* Force l'alignement horizontal */
+    flex-direction: row !important;
+    /* Force la ligne (pas colonne) */
+    width: 100% !important;
+    /* Force la largeur */
+    min-width: 200px !important;
+    /* Empêche l'écrasement */
+    height: 48px !important;
+    /* Force la hauteur */
     box-sizing: border-box !important;
 }
 
 .toggle-option {
-    flex: 1 1 0 !important;         /* Force l'égalité des largeurs */
+    flex: 1 1 0 !important;
+    /* Force l'égalité des largeurs */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 50% !important;          /* Force 50% */
+    width: 50% !important;
+    /* Force 50% */
     margin: 0 !important;
     padding: 0 !important;
 }
