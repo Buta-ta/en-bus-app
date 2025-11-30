@@ -6260,11 +6260,16 @@ window.loadDestinations = async function() {
             }
 
             tbody.innerHTML = data.destinations.map(city => {
-                // Échapper les guillemets pour éviter les bugs dans le onclick
                 const safeName = city.name.replace(/'/g, "\\'");
                 const safeCountry = city.country.replace(/'/g, "\\'");
-                // On gère le cas où coords est un tableau ou une string
-                let safeCoords = Array.isArray(city.coords) ? city.coords.join(', ') : (city.coords || "");
+                
+                // ✅ CORRECTION ICI : Gestion sécurisée des coordonnées
+                let safeCoords = "";
+                if (Array.isArray(city.coords)) {
+                    safeCoords = city.coords.join(', ');
+                } else if (city.coords) {
+                    safeCoords = city.coords.toString();
+                }
 
                 return `
                 <tr>
@@ -6275,25 +6280,24 @@ window.loadDestinations = async function() {
                             ${city.isActive ? 'Active' : 'Inacive'}
                         </span>
                     </td>
-                    <td class="actions-cell">
-                        <!-- ✅ BOUTON MODIFIER AJOUTÉ -->
+                    <td class="actions-cell" style="display: flex; gap: 5px;">
+                        <!-- Bouton Modifier compact -->
+                        <button class="btn btn-sm btn-ghost" style="padding: 4px 8px;" onclick="openEditDestinationModal('${city._id}', '${safeName}', '${safeCountry}', '${safeCoords}')" title="Modifier">✏️</button>
                         
-<button class="btn btn-sm btn-ghost" style="padding: 4px 8px;" onclick="..." title="Modifier">✏️</button>
-                        <button class="btn btn-sm btn-secondary" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
+                        <button class="btn btn-sm btn-ghost" style="padding: 4px 8px;" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
                             ${city.isActive ? '🚫' : '✅'}
                         </button>
                         
-                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}', '${safeName}')" title="Supprimer">🗑️</button>
+                        <button class="btn btn-sm btn-ghost" style="padding: 4px 8px; color: #ef5350;" onclick="deleteDestination('${city._id}', '${safeName}')" title="Supprimer">🗑️</button>
                     </td>
                 </tr>
             `}).join('');
         }
     } catch (error) {
         console.error(error);
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur de chargement.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur.</td></tr>';
     }
 };
-
 // 2. Ouvrir la Modale de Modification
 window.openEditDestinationModal = function(id, name, country, coords) {
     const modalId = `edit-dest-${Date.now()}`;
