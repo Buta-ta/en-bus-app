@@ -1351,10 +1351,9 @@ h3 {
 
 /* Carte de bus */
 .bus-card {
-    /* On s'assure que le padding gauche est suffisant pour ne pas être caché par le badge */
-    padding-top: 30px !important; /* Plus d'espace en haut */
+    padding-top: 35px !important; /* Espace suffisant pour ne pas chevaucher */
     position: relative;
-    overflow: hidden; /* Pour que le ruban soit coupé net */
+    overflow: hidden;
 }
 
 .bus-card-content-wrapper {
@@ -1574,31 +1573,29 @@ h3 {
     border-bottom: none;
 }
 
-/* Badge promotionnel */
 .highlight-badge {
     position: absolute;
-    top: 12px; /* Descendu légèrement */
-    left: -30px; /* Décalé vers la gauche pour l'effet ruban */
-    z-index: 10;
-    padding: 6px 0; /* Hauteur ajustée */
-    width: 120px; /* Largeur du ruban */
+    /* 🔧 AJUSTEMENTS CLÉS ICI */
+    top: 20px;        /* On le descend un peu */
+    left: -55px;      /* On le tire vers la gauche pour le centrer */
+    width: 180px;     /* ✅ On élargit beaucoup le ruban pour que le texte tienne */
+    padding: 7px 0;
+    
+    /* Rotation */
+    transform: rotate(-45deg);
     
     /* Style du texte */
     text-align: center;
-    font-size: 10px; /* Texte plus petit et discret */
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    z-index: 10;
     
-    /* Rotation pour l'effet coin */
-    transform: rotate(-45deg);
-    
-    /* Ombre pour la lisibilité */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    
-    /* Suppression du clip-path complexe qui gênait */
-    clip-path: none; 
+    /* Empêche le texte de se couper */
+    white-space: nowrap; 
 }
 
 .highlight-badge:hover {
@@ -4311,16 +4308,18 @@ body.pwa-installed .container {
     }
 
     /* Cartes bus */
-    .bus-card {
     
-        padding-top: 24px !important;
-    }
 
-    .highlight-badge {
-        top: 8px;
-        left: -32px;
-        width: 100px;
-        font-size: 9px;
+   .highlight-badge {
+        top: 16px;
+        left: -50px;
+        width: 160px; /* Un peu moins large sur mobile */
+        font-size: 10px;
+        padding: 5px 0;
+    }
+    
+    .bus-card {
+        padding-top: 30px !important;
     }
 
     .bus-card-wrapper,
