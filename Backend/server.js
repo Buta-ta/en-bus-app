@@ -480,10 +480,14 @@ app.get("/api/route-templates", async (req, res) => {
 
 
 
+// ============================================
+// ✅ ROUTE SEARCH CORRIGÉE (CALCUL DURÉE)
+// ============================================
 app.get("/api/search", async (req, res) => {
   let { from, to, date } = req.query;
   if (!from || !to || !date)
     return res.status(400).json({ error: "Paramètres manquants" });
+
   try {
     const trips = await tripsCollection
       .find({
@@ -492,13 +496,32 @@ app.get("/api/search", async (req, res) => {
         date: date,
       })
       .toArray();
+
+    // Fonction utilitaire pour calculer la durée
+    const calculateDuration = (start, end) => {
+        if (!start || !end) return "N/A";
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+        
+        // Gestion des trajets de nuit (arrivée le lendemain)
+        if (diffMinutes < 0) diffMinutes += 1440; 
+
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        
+        // Formatage : "8h" ou "8h 30"
+        return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
+    };
+
     const results = trips.map((trip) => ({
       id: trip._id.toString(),
       from: trip.route.from,
       to: trip.route.to,
       company: trip.route.company,
       price: trip.route.price,
-      duration: trip.route.duration || "N/A",
+      // ✅ CORRECTION ICI : On calcule si non défini
+      duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
       departure: trip.route.departure,
       arrival: trip.route.arrival,
       amenities: trip.route.amenities || [],
@@ -515,12 +538,14 @@ app.get("/api/search", async (req, res) => {
       baggageOptions: trip.route.baggageOptions,
       highlightBadge: trip.highlightBadge || null,
     }));
+
     res.json({ success: true, count: results.length, results });
   } catch (error) {
     console.error("❌ Erreur recherche:", error);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
 
 app.get("/api/trips/:id/seats", async (req, res) => {
   try {
