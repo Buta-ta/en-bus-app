@@ -1211,6 +1211,126 @@ h3 {
     .feature-card {
         border-radius: 6px !important;
     }
+
+
+    /* Container principal */
+  .filters-bar-enhanced {
+    padding: 10px !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  /* Sections de filtres */
+  .filter-section {
+    gap: 6px !important;
+  }
+  
+  /* Labels */
+  .filter-label {
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+    gap: 4px !important;
+  }
+  
+  .filter-icon {
+    font-size: 14px !important;
+  }
+  
+  /* Selects */
+  .filter-select {
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+  
+  /* FILTRE PRIX */
+  .filter-price {
+    grid-column: span 1 !important;
+  }
+  
+  .price-range-container {
+    padding: 8px !important;
+  }
+  
+  .price-inputs {
+    gap: 10px !important;
+  }
+  
+  .price-input-group {
+    gap: 6px !important;
+  }
+  
+  .price-label {
+    font-size: 10px !important;
+  }
+  
+  .price-display {
+    font-size: 13px !important;
+  }
+  
+  /* Range sliders - hauteur optimisée */
+  .price-input-group input[type="range"] {
+    height: 5px !important;
+  }
+  
+  .price-input-group input[type="range"]::-webkit-slider-thumb {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  .price-input-group input[type="range"]::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  /* FILTRE ÉQUIPEMENTS */
+  .filter-amenities {
+    grid-column: span 1 !important;
+  }
+  
+  .amenities-checkboxes {
+    gap: 8px !important;
+  }
+  
+  .amenity-checkbox-label {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    gap: 6px !important;
+  }
+  
+  .amenity-checkbox-label input[type="checkbox"] {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  .amenity-checkbox-label svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  /* LÉGENDE ÉQUIPEMENTS */
+  .amenities-legend {
+    gap: 10px !important;
+    padding: 8px 0 !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .legend-amenity {
+    font-size: 11px !important;
+    gap: 6px !important;
+  }
+  
+  .legend-amenity svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  /* BOUTON RESET */
+  .btn-reset-filters {
+    margin-top: 14px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    gap: 6px !important;
+  }
 }
 
 /* Desktop (> 768px) */
