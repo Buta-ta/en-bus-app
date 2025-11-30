@@ -1037,6 +1037,180 @@ h3 {
     .destinations-grid {
         gap: 12px;
     }
+
+
+
+     /* ===================================
+       FORMULAIRE DÉTAILLÉ - COMPACT
+       =================================== */
+
+    /* Container principal */
+    .search-box {
+        padding: 8px !important;
+        margin: 0 -8px !important;
+    }
+
+    .search-form {
+        gap: 8px !important;
+    }
+
+    /* Form groups */
+    .form-group {
+        gap: 6px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .form-group label {
+        font-size: 10px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .form-control {
+        padding: 7px 10px !important;
+        font-size: 13px !important;
+    }
+
+    /* Toggle trip type */
+    .trip-type-toggle {
+        height: 42px !important;
+    }
+
+    .toggle-option {
+        font-size: 13px !important;
+    }
+
+    .toggle-switch {
+        height: calc(100% - 8px) !important;
+    }
+
+    /* Destination swap */
+    .destination-swap-container {
+        gap: 6px !important;
+    }
+
+    .swap-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 18px !important;
+    }
+
+    /* Passenger selector */
+    .passenger-dropdown-menu {
+        padding: 8px !important;
+        width: 270px !important;
+    }
+
+    .passenger-row {
+        padding: 6px 0 !important;
+    }
+
+    .passenger-row label {
+        font-size: 12px !important;
+    }
+
+    .counter-btn {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: 16px !important;
+    }
+
+    /* Baggage options */
+    #baggage-options {
+        margin-top: 16px !important;
+        gap: 12px !important;
+    }
+
+    .baggage-row {
+        padding: 8px !important;
+        gap: 12px !important;
+    }
+
+    /* Bouton rechercher */
+    .search-box .btn,
+    #detailed-search-box .btn {
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+    }
+
+    /* Date picker specific */
+    .date-picker {
+        padding-right: 36px !important;
+    }
+
+    /* ===================================
+       SECTION POURQUOI EN-BUS - COMPACT
+       =================================== */
+
+    /* Section principale */
+    .why-en-bus {
+        padding: 16px 0 !important;
+    }
+
+    .why-en-bus h2 {
+        font-size: 18px !important;
+        margin-bottom: 12px !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Grille des features */
+    .features-grid {
+        gap: 8px !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Feature cards */
+    .feature-card {
+        padding: 10px !important;
+    }
+
+    .feature-icon {
+        font-size: 36px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .feature-card h3 {
+        font-size: 15px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .feature-card p {
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+    }
+
+    /* ===================================
+       AJUSTEMENTS COMPLEMENTAIRES
+       =================================== */
+
+    /* Réduire espacement entre form-row si présent */
+    .form-row {
+        gap: 8px !important;
+    }
+
+    /* Optimiser les marges des inputs */
+    .form-control:not(:last-child) {
+        margin-bottom: 0 !important;
+    }
+
+    /* Passenger counter - espacement */
+    .passenger-counter {
+        gap: 12px !important;
+    }
+
+    /* Form labels - réduire letter-spacing */
+    .form-group label {
+        letter-spacing: 0.03em !important;
+    }
+
+    /* Boutons uppercase - optimiser */
+    .btn {
+        letter-spacing: 0.03em !important;
+    }
+
+    /* Feature cards - optimiser border-radius */
+    .feature-card {
+        border-radius: 6px !important;
+    }
 }
 
 /* Desktop (> 768px) */
