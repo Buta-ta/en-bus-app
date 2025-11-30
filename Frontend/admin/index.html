@@ -2576,13 +2576,22 @@
         // ============================================
         // 🔧 CONFIGURATION
         // ============================================
-        const API_URL =
-            window.location.hostname === "localhost" ||
-                window.location.hostname === "127.0.0.1"
-                ? "http://localhost:3000/api"
-                : "https://en-bus-app.onrender.com/api";
+        
+        // ============================================
+// ⚙️ CONFIGURATION API UNIFIÉE
+// ============================================
 
-        let allReservations = [];
+// 1. Détection de l'environnement
+const BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000" 
+    : "https://en-bus-app.onrender.com";
+
+// 2. Création de TOUS les alias possibles (pour éviter les erreurs undefined)
+const API_CONFIG = { baseUrl: BASE_URL };
+const API_BASE_URL = BASE_URL;
+const API_URL = `${BASE_URL}/api`; // Si certaines fonctions attendent le /api à la fin
+
+console.log("🔗 API Configurée sur :", BASE_URL);
         let allTrips = [];
         let allTemplates = [];
         let inactivityTimer;
