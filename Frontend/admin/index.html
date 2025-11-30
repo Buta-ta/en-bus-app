@@ -5837,22 +5837,39 @@ async function loadReportRequests() {
         
         if (!tbody) return;
 
-        // 1. Récupération du terme de recherche
         const searchTerm = searchInput ? searchInput.value.trim() : "";
         
-        // 2. Construction de l'URL (avec l'URL de base complète)
+        // Utilise API_CONFIG.baseUrl si API_BASE_URL n'existe pas
+        const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : API_CONFIG.baseUrl;
+        
         const endpoint = searchTerm
-            ? `${API_BASE_URL}/api/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
-            : `${API_BASE_URL}/api/admin/reports/history`;
+            ? `${baseUrl}/api/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
+            : `${baseUrl}/api/admin/reports/history`;
 
-        // 3. Appel API direct (plus sûr que apiCall pour le debug)
         const token = localStorage.getItem('adminToken');
+        
+        if (!token) {
+            console.error("❌ Pas de token. Redirection login.");
+            logout();
+            return;
+        }
+
         const response = await fetch(endpoint, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
+
+        // ✅ GESTION CLAIRE DES ERREURS HTTP
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                console.error("❌ Session expirée.");
+                logout(); // Déconnexion forcée
+                return;
+            }
+            throw new Error(`Erreur serveur: ${response.statusText}`);
+        }
 
         const data = await response.json();
 
@@ -5863,30 +5880,23 @@ async function loadReportRequests() {
 
         if (data.reports.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 20px; color: var(--text-muted);">Aucune demande de report trouvée.</td></tr>`;
-            
-            // Mise à jour des stats à 0
             displayReportRequestsStats([]);
             return;
         }
 
-        // 4. Séparation des demandes
-        const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
-        
-        // 5. Mise à jour des statistiques
-        displayReportRequestsStats(data.reports); // On passe tout pour avoir le total historique si besoin
+        // Mise à jour des stats
+        displayReportRequestsStats(data.reports);
 
-        // 6. Rendu du tableau (DIRECTEMENT ICI)
+        // Rendu du tableau
         tbody.innerHTML = data.reports.map(res => {
             const req = res.reportRequest || {}; 
             const isPending = res.status === "En attente de report";
             const isReported = res.status === "Reporté";
             
-            // Dates
             const oldDate = new Date(res.date).toLocaleDateString('fr-FR');
             const newDate = req.targetTrip ? new Date(req.targetTrip.date).toLocaleDateString('fr-FR') : "N/A";
             const requestDate = req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('fr-FR') : "N/A";
 
-            // Paiement
             let paymentInfo = `<span class="badge badge-gray">Gratuit</span>`;
             if (req.cost && req.cost.totalCost > 0) {
                 const method = req.paymentMethod || "N/A";
@@ -5900,7 +5910,6 @@ async function loadReportRequests() {
                 `;
             }
 
-            // Actions
             let actions = '';
             if (isPending) {
                 actions = `
@@ -5915,7 +5924,6 @@ async function loadReportRequests() {
                 actions = `<span class="badge badge-gray">${res.status}</span>`;
             }
 
-            // Trajet
             const oldTrip = `${res.route.from} → ${res.route.to}`;
             const newTrip = req.targetTrip ? `${req.targetTrip.route.from} → ${req.targetTrip.route.to}` : "N/A";
 
@@ -5945,7 +5953,6 @@ async function loadReportRequests() {
         console.error('❌ Erreur chargement historique:', error);
         const tbody = document.getElementById('report-requests-body');
         if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erreur technique : ${error.message}</td></tr>`;
-        showNotification('Erreur lors du chargement', 'error');
     }
 }
 
