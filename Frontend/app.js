@@ -959,38 +959,51 @@ function stopAgencySpecificCountdown() {
 
 
 // DANS app.js, à ajouter avec vos autres fonctions utilitaires
+// DANS app.js
 
 function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
+        
+        // 🚨 SÉCURITÉ : Si le HTML n'existe pas, on utilise la confirmation native du navigateur
+        if (!modal) {
+            console.warn("⚠️ Modale custom introuvable, utilisation de window.confirm");
+            const result = window.confirm(`${title}\n\n${message}`);
+            resolve(result);
+            return;
+        }
+
         const titleEl = document.getElementById('custom-confirm-title');
         const messageEl = document.getElementById('custom-confirm-message');
         const iconEl = document.getElementById('custom-confirm-icon');
         const okBtn = document.getElementById('custom-confirm-ok-btn');
         const cancelBtn = document.getElementById('custom-confirm-cancel-btn');
 
-        titleEl.textContent = title;
-        messageEl.textContent = message;
-        iconEl.textContent = icon;
-        iconEl.className = `custom-modal-icon ${iconClass}`;
-        okBtn.textContent = confirmText;
-        cancelBtn.textContent = cancelText;
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        if (iconEl) {
+            iconEl.textContent = icon;
+            iconEl.className = `custom-modal-icon ${iconClass}`;
+        }
         
-        // Appliquer la classe de style au bouton de confirmation
-        okBtn.className = `btn ${confirmClass}`;
+        if (okBtn) {
+            okBtn.textContent = confirmText;
+            okBtn.className = `btn ${confirmClass}`;
+            okBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(true);
+            };
+        }
+
+        if (cancelBtn) {
+            cancelBtn.textContent = cancelText;
+            cancelBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(false);
+            };
+        }
 
         modal.style.display = 'flex';
-
-        const close = (result) => {
-            modal.style.display = 'none';
-            // Nettoyer les écouteurs d'événements pour éviter les fuites de mémoire
-            okBtn.onclick = null;
-            cancelBtn.onclick = null;
-            resolve(result);
-        };
-
-        okBtn.onclick = () => close(true);
-        cancelBtn.onclick = () => close(false);
     });
 }
 
