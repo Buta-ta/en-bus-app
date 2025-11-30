@@ -1447,6 +1447,22 @@ async function generateTicketPDF(reservation, isReturn = false) {
         // --- 1. SÉLECTION DES BONNES DONNÉES (ALLER OU RETOUR) ---
         const route = isReturn ? reservation.returnRoute : reservation.route;
         const date = isReturn ? reservation.returnDate : reservation.date;
+
+
+         // ✅ CALCUL DE SECOURS POUR LA DURÉE
+        // Si route.duration est vide ou "N/A", on le recalcule avec les heures
+        let displayDuration = route.duration;
+        if (!displayDuration || displayDuration === 'N/A') {
+            const [h1, m1] = route.departure.split(':').map(Number);
+            const [h2, m2] = route.arrival.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diff < 0) diff += 1440; // Gestion nuit
+            const h = Math.floor(diff / 60);
+            const m = diff % 60;
+            displayDuration = `${h}h ${m > 0 ? String(m).padStart(2, '0') : ''}`;
+        }
+
+        
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
         
             const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
