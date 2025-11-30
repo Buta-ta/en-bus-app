@@ -4878,13 +4878,3 @@ window.resetAndGoHome = function() {
 
 // Dans app.js - Version améliorée avec numéro de réservation
 
-if (reservation.route.trackerId) {
-    actionsContainer.innerHTML += `
-        <a href="Suivi/suivi.html?bus=${reservation.route.trackerId}&booking=${reservation.bookingNumber}" 
-           target="_blank" 
-           class="btn-modern btn-track">
-            <span class="btn-icon">🛰️</span>
-            <span class="btn-text">Suivre mon bus en temps réel</span>
-        </a>
-    `;
-}
