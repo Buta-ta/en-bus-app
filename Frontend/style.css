@@ -3987,6 +3987,12 @@ body.pwa-installed .container {
         transform: translateX(100%);
     }
 
+    .trip-type-toggle label.toggle-option {
+    margin-bottom: 0 !important; /* Annule la marge des labels de formulaires */
+    text-transform: none !important; /* Annule la casse majuscule si présente */
+    letter-spacing: normal !important;
+}
+
     .passenger-dropdown-menu {
         width: 280px;
         padding: 12px;
