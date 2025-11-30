@@ -1462,7 +1462,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
             displayDuration = `${h}h ${m > 0 ? String(m).padStart(2, '0') : ''}`;
         }
 
-        
+
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
         
             const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
@@ -1589,7 +1589,7 @@ const ticketHTML = `
                 </div>
                 <div class="details-grid">
                     <div class="detail-item"><div class="detail-label">${translation.details_label_date}</div><div class="detail-value">${Utils.formatDate(date, lang)}</div></div>
-                    <div class="detail-item"><div class="detail-label">${translation.details_label_duration}</div><div class="detail-value">${route.duration || 'N/A'}</div></div>
+                    <div class="detail-item"><div class="detail-label">${translation.details_label_duration}</div><div class="detail-value">${displayDuration}</div>
                     <div class="detail-item"><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
                     <div class="detail-item"><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busIdentifier}</div></div>
                 </div>
