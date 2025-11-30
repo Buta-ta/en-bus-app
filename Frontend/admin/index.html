@@ -6078,15 +6078,17 @@ async function approveReportRequest(bookingNumber, proof) {
 
     // 3. Envoi au backend (inchangé)
     try {
-        const token = localStorage.getItem("adminToken");
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` 
-            },
-            body: JSON.stringify({ transactionProof: proof || "VALIDATED_MANUALLY" }) 
-        });
+       // ✅ BON (celui utilisé par votre login)
+    const token = localStorage.getItem("admin_token"); 
+
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ transactionProof: proof || "VALIDATED_MANUALLY" }) 
+    });
 
         const result = await response.json();
 
