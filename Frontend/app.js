@@ -962,75 +962,64 @@ function stopAgencySpecificCountdown() {
 // ============================================
 // DANS app.js
 
+// DANS app.js
+
 function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
     return new Promise((resolve) => {
-        let modal = document.getElementById('custom-confirm-modal');
+        console.log("🚀 Ouverture de la modale (Mode Atomique)...");
 
-        // --- A. Injection HTML si manquant ---
-        if (!modal) {
-            console.log("🔧 Injection de la modale de secours...");
-            const modalHTML = `
-                <div id="custom-confirm-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-                    <div style="background: #1C1C27; border: 1px solid rgba(115, 215, 0, 0.3); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                            <div id="custom-confirm-icon" style="font-size: 32px;"></div>
-                            <h3 id="custom-confirm-title" style="margin: 0; color: white; font-family: 'Audiowide', cursive;"></h3>
-                        </div>
-                        <p id="custom-confirm-message" style="color: #A9A9B8; margin-bottom: 24px; line-height: 1.5;"></p>
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button id="custom-confirm-cancel-btn" style="background: transparent; border: 1px solid #A9A9B8; color: #A9A9B8; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Annuler</button>
-                            <button id="custom-confirm-ok-btn" style="background: #d32f2f; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Confirmer</button>
-                        </div>
-                    </div>
+        // 1. Créer un conteneur unique
+        const modalId = `modal-${Date.now()}`;
+        const wrapper = document.createElement('div');
+        wrapper.id = modalId;
+        wrapper.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 2147483647;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        `;
+
+        // 2. Définir les couleurs des boutons
+        const confirmBg = confirmClass === 'btn-danger' ? '#ef5350' : '#73d700';
+        const confirmColor = confirmClass === 'btn-danger' ? '#ffffff' : '#000000';
+
+        // 3. Injecter le HTML interne
+        wrapper.innerHTML = `
+            <div style="background: #1C1C27; border: 1px solid rgba(115, 215, 0, 0.3); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out;">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <div style="font-size: 32px;">${icon}</div>
+                    <h3 style="margin: 0; color: white; font-family: sans-serif; font-size: 20px;">${title}</h3>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            modal = document.getElementById('custom-confirm-modal');
-        }
+                <p style="color: #B0BAC9; margin-bottom: 24px; line-height: 1.6; font-family: sans-serif;">${message}</p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="btn-cancel-${modalId}" style="background: transparent; border: 1px solid #555; color: #B0BAC9; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${cancelText}</button>
+                    <button id="btn-confirm-${modalId}" style="background: ${confirmBg}; border: none; color: ${confirmColor}; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${confirmText}</button>
+                </div>
+            </div>
+        `;
 
-        // --- B. Mise à jour du contenu ---
-        const titleEl = document.getElementById('custom-confirm-title');
-        const messageEl = document.getElementById('custom-confirm-message');
-        const iconEl = document.getElementById('custom-confirm-icon');
-        const okBtn = document.getElementById('custom-confirm-ok-btn');
-        const cancelBtn = document.getElementById('custom-confirm-cancel-btn');
+        // 4. Ajouter au corps de la page
+        document.body.appendChild(wrapper);
 
-        if (titleEl) titleEl.textContent = title;
-        if (messageEl) messageEl.innerHTML = message;
-        if (iconEl) iconEl.textContent = icon;
+        // 5. Attacher les événements (C'est ici que la magie opère)
+        const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
+        const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
-        // --- C. Gestion des clics (Résolution de la Promesse) ---
         const cleanup = () => {
-            modal.style.display = 'none';
-            okBtn.replaceWith(okBtn.cloneNode(true)); // Retire les anciens event listeners
-            cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            document.body.removeChild(wrapper); // On détruit la modale du DOM
         };
 
-        // Bouton Confirmer
-        okBtn.textContent = confirmText;
-        // Si c'est pas une suppression (pas rouge), on met vert par défaut
-        if (confirmClass !== 'btn-danger') {
-            okBtn.style.backgroundColor = '#73d700'; 
-            okBtn.style.color = '#000';
-        } else {
-            okBtn.style.backgroundColor = '#d32f2f';
-            okBtn.style.color = '#fff';
-        }
-
-        okBtn.onclick = () => {
-            modal.style.display = 'none';
-            resolve(true); // ✅ DÉBLOQUE L'AWAIT
+        btnConfirm.onclick = () => {
+            console.log("✅ Clic Confirmer détecté");
+            cleanup();
+            resolve(true); // DÉBLOQUE L'AWAIT
         };
 
-        // Bouton Annuler
-        cancelBtn.textContent = cancelText;
-        cancelBtn.onclick = () => {
-            modal.style.display = 'none';
-            resolve(false); // ✅ DÉBLOQUE L'AWAIT
+        btnCancel.onclick = () => {
+            console.log("❌ Clic Annuler détecté");
+            cleanup();
+            resolve(false); // DÉBLOQUE L'AWAIT
         };
-
-        // --- D. Affichage forcé ---
-        modal.style.display = 'flex';
     });
 }
 // ============================================
