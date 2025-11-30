@@ -6049,64 +6049,59 @@ function renderReportRequestsTable(pending, processed) {
 }
 
 // ============================================
-// ✅ VALIDATION REPORT (VERSION MODALE)
+// ✅ VALIDATION REPORT (CORRIGÉE)
 // ============================================
 async function approveReportRequest(bookingNumber, proof) {
-    // 1. Message personnalisé selon la preuve
-    let msg = `Vous êtes sur le point de valider le report pour la réservation <strong>${bookingNumber}</strong>.`;
-    let warningIcon = '✅';
-    let color = '#73d700'; // Vert
+    // 1. Message confirmation (Modale)
+    let msg = `Confirmer le report pour <strong>${bookingNumber}</strong> ?`;
+    let color = '#73d700';
 
-    if (!proof || proof === 'Non fourni') {
-        msg += `\n\n⚠️ <strong style="color: #ef5350;">ATTENTION :</strong> Aucune preuve de paiement n'a été fournie par le client.\n\nConfirmez-vous avoir reçu le paiement par d'autres moyens ?`;
-        warningIcon = '⚠️';
-        color = '#ef5350'; // Rouge pour alerte
+    if (!proof || proof === 'Non fourni' || proof === '') {
+        msg += `\n\n⚠️ <strong style="color: #ef5350;">ATTENTION :</strong> Aucune preuve de paiement. Confirmez-vous le paiement manuel ?`;
+        color = '#ef5350';
     } else {
-        msg += `\n\nPreuve fournie : <strong style="color: #00d9ff; font-family: monospace;">${proof}</strong>`;
+        msg += `\n\nPreuve : ${proof}`;
     }
 
-    // 2. Afficher la modale et attendre la réponse
     const confirmed = await showAdminConfirm({
-        title: "Confirmer le report ?",
+        title: "Validation",
         message: msg,
-        icon: warningIcon,
+        icon: '✅',
         confirmText: "Oui, Valider",
         confirmColor: color
     });
 
     if (!confirmed) return;
 
-    // 3. Envoi au backend (inchangé)
+    // 2. Envoi au backend
     try {
-       // ✅ BON (celui utilisé par votre login)
-    const token = localStorage.getItem("admin_token"); 
+        // ✅ 1. BON TOKEN (Celui du login)
+        const token = localStorage.getItem("admin_token"); 
 
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ transactionProof: proof || "VALIDATED_MANUALLY" }) 
-    });
+        // ✅ 2. BONNE URL (Avec /approve à la fin)
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            },
+            body: JSON.stringify({ transactionProof: proof || "VALIDATED_MANUALLY" }) 
+        });
 
         const result = await response.json();
 
         if (result.success) {
-            // Modale de succès simple (juste un bouton OK)
             await showAdminConfirm({
                 title: "Succès !",
-                message: "Le report a été validé. Un nouveau billet a été généré et envoyé au client.",
+                message: "Le report a été validé. Nouveau billet généré.",
                 icon: '🎉',
-                confirmText: "Fermer",
-                cancelText: "", // Pas de bouton annuler, cache le bouton
+                confirmText: "OK",
+                cancelText: "",
                 confirmColor: '#73d700'
             });
-            
-            // Si la modale précédente avait un bouton unique, il faut adapter la logique CSS pour cacher le bouton vide, 
-            // ou simplement recharger le tableau ici.
-            loadReportRequests(); 
+            loadReportRequests(); // Rafraîchir le tableau
         } else {
+            // Gestion des erreurs spécifiques (404, 400, etc.)
             alert("❌ Erreur : " + (result.error || "Inconnue"));
         }
 
