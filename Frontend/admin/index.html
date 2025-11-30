@@ -2647,31 +2647,18 @@ console.log("🔗 API Configurée sur :", BASE_URL);
             }
         }
 
-        function handleLogout() {
-            localStorage.removeItem("admin_token");
-            stopInactivityDetection();
-            showNotification("Déconnexion réussie", "info");
-            setTimeout(showLogin, 500);
-        }
-
-
-        // ============================================
-// 🚪 FONCTION DE DÉCONNEXION (MANQUANTE)
-// ============================================
-function logout() {
-    console.log("🚪 Déconnexion en cours...");
-    localStorage.removeItem('adminToken'); // Supprime le token
-    
-    // Affiche l'écran de connexion
-    const dashboard = document.getElementById('dashboard');
-    const loginScreen = document.getElementById('login-screen');
-    
-    if (dashboard) dashboard.classList.remove('active');
-    if (loginScreen) loginScreen.style.display = 'flex';
-    
-    // Optionnel : Recharger la page pour être propre
-    window.location.reload();
+       // Fonction principale de déconnexion
+function handleLogout() {
+    localStorage.removeItem("adminToken"); // ✅ Correction nom clé
+    if (typeof stopInactivityDetection === 'function') stopInactivityDetection();
+    showNotification("Déconnexion réussie", "info");
+    setTimeout(showLogin, 500);
 }
+
+// ✅ Alias pour compatibilité (car mes codes précédents appellent logout())
+const logout = handleLogout;
+
+ 
 
 // Ajoutez aussi l'écouteur sur le bouton de déconnexion du menu
 document.addEventListener('DOMContentLoaded', () => {
