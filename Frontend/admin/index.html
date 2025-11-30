@@ -6048,25 +6048,37 @@ function renderReportRequestsTable(pending, processed) {
     tbody.innerHTML = htmlContent;
 }
 
-      // ============================================
-// ✅ FONCTION DE VALIDATION (ADMIN)
+// ============================================
+// ✅ VALIDATION REPORT (VERSION MODALE)
 // ============================================
 async function approveReportRequest(bookingNumber, proof) {
-    console.log(`✅ Validation demandée pour ${bookingNumber} avec preuve: ${proof}`);
+    // 1. Message personnalisé selon la preuve
+    let msg = `Vous êtes sur le point de valider le report pour la réservation <strong>${bookingNumber}</strong>.`;
+    let warningIcon = '✅';
+    let color = '#73d700'; // Vert
 
-    // 1. Demander confirmation (surtout si pas de preuve)
-    let message = `Confirmer le report pour ${bookingNumber} ?`;
-    if (!proof) {
-        message += `\n⚠️ ATTENTION : Aucune preuve de paiement fournie. Confirmez-vous avoir reçu l'argent ?`;
+    if (!proof || proof === 'Non fourni') {
+        msg += `\n\n⚠️ <strong style="color: #ef5350;">ATTENTION :</strong> Aucune preuve de paiement n'a été fournie par le client.\n\nConfirmez-vous avoir reçu le paiement par d'autres moyens ?`;
+        warningIcon = '⚠️';
+        color = '#ef5350'; // Rouge pour alerte
     } else {
-        message += `\nPreuve : ${proof}`;
+        msg += `\n\nPreuve fournie : <strong style="color: #00d9ff; font-family: monospace;">${proof}</strong>`;
     }
 
-    if (!confirm(message)) return;
+    // 2. Afficher la modale et attendre la réponse
+    const confirmed = await showAdminConfirm({
+        title: "Confirmer le report ?",
+        message: msg,
+        icon: warningIcon,
+        confirmText: "Oui, Valider",
+        confirmColor: color
+    });
 
-    // 2. Envoi au backend
+    if (!confirmed) return;
+
+    // 3. Envoi au backend (inchangé)
     try {
-        const token = localStorage.getItem("admin_token");
+        const token = localStorage.getItem("adminToken");
         const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/report-requests/${bookingNumber}/approve`, {
             method: "POST",
             headers: { 
@@ -6079,11 +6091,20 @@ async function approveReportRequest(bookingNumber, proof) {
         const result = await response.json();
 
         if (result.success) {
-            // Succès !
-            alert("✅ Report validé ! Un nouveau billet a été émis.");
-            loadReportRequests(); // Rafraîchir le tableau
+            // Modale de succès simple (juste un bouton OK)
+            await showAdminConfirm({
+                title: "Succès !",
+                message: "Le report a été validé. Un nouveau billet a été généré et envoyé au client.",
+                icon: '🎉',
+                confirmText: "Fermer",
+                cancelText: "", // Pas de bouton annuler, cache le bouton
+                confirmColor: '#73d700'
+            });
+            
+            // Si la modale précédente avait un bouton unique, il faut adapter la logique CSS pour cacher le bouton vide, 
+            // ou simplement recharger le tableau ici.
+            loadReportRequests(); 
         } else {
-            // Erreur backend
             alert("❌ Erreur : " + (result.error || "Inconnue"));
         }
 
@@ -6143,7 +6164,65 @@ async function approveReportRequest(bookingNumber, proof) {
         }
 
 
+
+        // ============================================
+// 🪟 MODALE DE CONFIRMATION (ADMIN)
+// ============================================
+function showAdminConfirm({ title, message, icon = '⚠️', confirmText = 'Valider', cancelText = 'Annuler', confirmColor = '#73d700' }) {
+    return new Promise((resolve) => {
+        // Création dynamique
+        const modalId = `admin-modal-${Date.now()}`;
+        const wrapper = document.createElement('div');
+        wrapper.id = modalId;
+        wrapper.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 14, 39, 0.9); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px); animation: fadeIn 0.2s ease-out;
+        `;
+
+        wrapper.innerHTML = `
+            <div style="background: #151a30; border: 1px solid #2a3256; border-radius: 16px; width: 90%; max-width: 420px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">${icon}</div>
+                    <h3 style="color: white; margin: 0; font-family: 'Inter', sans-serif; font-size: 1.25rem;">${title}</h3>
+                </div>
+                <div style="color: #b0bac9; margin-bottom: 24px; text-align: center; line-height: 1.6; font-size: 0.95rem;">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button id="btn-cancel-${modalId}" style="flex: 1; padding: 12px; background: #1e2541; border: 1px solid #2a3256; color: #b0bac9; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">${cancelText}</button>
+                    <button id="btn-confirm-${modalId}" style="flex: 1; padding: 12px; background: ${confirmColor}; border: none; color: ${confirmColor === '#ef5350' ? 'white' : '#0a0e27'}; border-radius: 8px; cursor: pointer; font-weight: 700; box-shadow: 0 4px 15px ${confirmColor}40; transition: all 0.2s;">${confirmText}</button>
+                </div>
+            </div>
+            <style>
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes popIn { to { transform: scale(1); } }
+                #btn-confirm-${modalId}:hover { transform: translateY(-2px); box-shadow: 0 6px 20px ${confirmColor}60; }
+                #btn-cancel-${modalId}:hover { background: #2a3256; color: white; }
+            </style>
+        `;
+
+        document.body.appendChild(wrapper);
+
+        const cleanup = () => document.body.removeChild(wrapper);
+
+        document.getElementById(`btn-confirm-${modalId}`).onclick = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        document.getElementById(`btn-cancel-${modalId}`).onclick = () => {
+            cleanup();
+            resolve(false);
+        };
+    });
+}
+
     </script>
+
+
+    
 
     <!-- DANS Admin/index.html, juste avant </body> -->
 
