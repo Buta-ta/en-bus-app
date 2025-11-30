@@ -723,6 +723,13 @@ h3 {
     flex-shrink: 0;
 }
 
+/* ✅ Centrer le toggle en desktop */
+@media (min-width: 769px) {
+    .trip-type-toggle {
+        margin: 0 auto;
+    }
+}
+
 /* Le bouton vert (Switch) */
 .toggle-switch {
     position: absolute;
