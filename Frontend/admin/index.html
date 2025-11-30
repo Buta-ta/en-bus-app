@@ -1724,6 +1724,9 @@
         input:checked+.slider:before {
             transform: translateX(22px);
         }
+
+        /* Réduction spécifique des boutons d'action du tableau */
+
     </style>
 </head>
 
@@ -6274,8 +6277,8 @@ window.loadDestinations = async function() {
                     </td>
                     <td class="actions-cell">
                         <!-- ✅ BOUTON MODIFIER AJOUTÉ -->
-                        <button class="btn btn-sm btn-primary" onclick="openEditDestinationModal('${city._id}', '${safeName}', '${safeCountry}', '${safeCoords}')" title="Modifier">✏️</button>
-                        
+                        // On utilise btn-ghost pour qu'il soit transparent et discret, ou on réduit le padding
+<button class="btn btn-sm btn-ghost" style="padding: 4px 8px;" onclick="..." title="Modifier">✏️</button>
                         <button class="btn btn-sm btn-secondary" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
                             ${city.isActive ? '🚫' : '✅'}
                         </button>
