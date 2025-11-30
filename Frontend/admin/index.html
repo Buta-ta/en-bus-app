@@ -2991,10 +2991,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong class="text-xs" style="color: var(--accent);">Bus: ${r.busIdentifier || 'N/A'}</strong>
                 </td>
                 <td>
+                                        ${outboundInfo}
+
                     ${returnInfo}
                 </td>
-                <td>${r.route.from} → ${r.route.to}</td>
-                <td>
+                
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
                 </td>
