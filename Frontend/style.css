@@ -1,4 +1,3 @@
-
 /* ============================================
    🎨 EN-BUS - FEUILLE DE STYLES PRINCIPALE
    ============================================
@@ -30,42 +29,42 @@
 
 :root {
     color-scheme: dark;
-    
+
     /* Polices */
     --font-logo: 'Audiowide', cursive;
     --font-body: 'Exo 2', sans-serif;
     --font-mono: 'Courier New', monospace;
-    
+
     /* Couleurs principales */
     --color-background: #10101A;
     --color-background-rgb: 16, 16, 26;
     --color-surface: #1C1C27;
     --color-surface-rgb: 28, 28, 39;
-    
+
     /* Texte */
     --color-text-primary: #F0F5F9;
     --color-text-secondary: #A9A9B8;
-    
+
     /* Accent */
     --color-accent-glow: #73d700;
     --color-accent-hover: #98ff2e;
     --color-accent-active: #5fb800;
     --color-accent-glow-rgb: 115, 215, 0;
-    
+
     /* Bordures */
     --color-border: rgba(var(--color-accent-glow-rgb), 0.2);
     --color-border-hover: rgba(var(--color-accent-glow-rgb), 0.5);
-    
+
     /* Rayons */
     --radius-base: 4px;
     --radius-lg: 8px;
     --radius-xl: 16px;
     --radius-full: 9999px;
-    
+
     /* Ombres */
     --shadow-glow: 0 0 15px rgba(var(--color-accent-glow-rgb), 0.3);
     --shadow-glow-hover: 0 0 25px rgba(var(--color-accent-glow-rgb), 0.5);
-    
+
     /* Espacements */
     --space-4: 4px;
     --space-8: 8px;
@@ -77,7 +76,7 @@
     --space-40: 40px;
     --space-48: 48px;
     --space-64: 64px;
-    
+
     /* Transitions */
     --duration-fast: 200ms;
     --duration-normal: 300ms;
@@ -158,6 +157,7 @@ h3 {
     gap: var(--space-16);
     margin-top: var(--space-24);
 }
+
 /* ============================================
    4. NAVIGATION
    ============================================ */
@@ -210,8 +210,8 @@ h3 {
 
 .logo-svg {
     border-radius: 50%;
-    transition: transform var(--duration-normal) var(--ease-standard), 
-                box-shadow var(--duration-normal) var(--ease-standard);
+    transition: transform var(--duration-normal) var(--ease-standard),
+        box-shadow var(--duration-normal) var(--ease-standard);
     box-shadow: 0 0 14px rgba(255, 120, 40, 0.5);
 }
 
@@ -319,40 +319,40 @@ h3 {
    5. HERO & RECHERCHE - ✅ ESPACEMENT CORRECT
    ============================================ */
 
-.hero { 
-  padding: var(--space-48) 0; 
-  text-align: center; 
-  position: relative; 
-  overflow: hidden; 
+.hero {
+    padding: var(--space-48) 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
-.hero::before { 
-  content: ''; 
-  position: absolute; 
-  inset: 0; 
-  background: radial-gradient(circle at center, rgba(16,16,26,0.45), rgba(16,16,26,0.85) 80%); 
-  z-index: 1; 
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(16, 16, 26, 0.45), rgba(16, 16, 26, 0.85) 80%);
+    z-index: 1;
 }
 
-.hero-content { 
-  position: relative; 
-  z-index: 2; 
-  max-width: 900px; 
-  margin: 0 auto; 
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.hero h1 { 
-  font-family: var(--font-logo); 
-  font-size: 42px; 
-  font-weight: 700; 
-  margin-bottom: var(--space-16); 
-  text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4); 
+.hero h1 {
+    font-family: var(--font-logo);
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: var(--space-16);
+    text-shadow: 0 0 10px rgba(var(--color-accent-glow-rgb), 0.4);
 }
 
-.hero p { 
-  font-size: 18px; 
-  margin-bottom: var(--space-40); 
-  color: var(--color-text-secondary); 
+.hero p {
+    font-size: 18px;
+    margin-bottom: var(--space-40);
+    color: var(--color-text-secondary);
 }
 
 /* ❌ SUPPRIME LE MARGIN-TOP DE 2REM */
@@ -360,7 +360,8 @@ h3 {
     position: relative;
     width: 100%;
     max-width: 600px;
-    margin: 0 auto; /* ✅ SANS margin-top */
+    margin: 0 auto;
+    /* ✅ SANS margin-top */
     z-index: 50;
 }
 
@@ -438,7 +439,8 @@ h3 {
 
 /* Box de recherche détaillée */
 .search-box {
-    display: none; /* ✅ On l'enlève du flux (plus d'espace pris) */
+    display: none;
+    /* ✅ On l'enlève du flux (plus d'espace pris) */
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -449,20 +451,29 @@ h3 {
 
 
 .search-box.visible {
-    display: block; /* ✅ On le fait réapparaître */
+    display: block;
+    /* ✅ On le fait réapparaître */
     opacity: 1;
     transform: translateY(0);
     margin: 0;
-    
+
     /* Petite astuce pour l'animation avec display: block */
-    animation: fadeInBox 0.4s forwards; 
+    animation: fadeInBox 0.4s forwards;
 }
 
 
 @keyframes fadeInBox {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
+
 /* ============================================
    6. CARTES & COMPOSANTS
    ============================================ */
@@ -516,10 +527,11 @@ h3 {
    ============================================ */
 
 .popular-destinations,
-.why-en-bus { 
-  padding: var(--space-48) 0; /* ✅ 48px en haut ET en bas */
-  position: relative;
-  z-index: 10;
+.why-en-bus {
+    padding: var(--space-48) 0;
+    /* ✅ 48px en haut ET en bas */
+    position: relative;
+    z-index: 10;
 }
 
 /* ❌ SUPPRIME CETTE RÈGLE COMPLÈTEMENT */
@@ -532,7 +544,8 @@ h3 {
     font-family: var(--font-logo), sans-serif;
     font-size: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
-    margin-bottom: var(--space-32); /* ✅ 32px en bas du titre */
+    margin-bottom: var(--space-32);
+    /* ✅ 32px en bas du titre */
     line-height: 1.2;
     background: linear-gradient(145deg, var(--color-text-primary, #fff) 60%, var(--color-text-secondary, #ccc));
     -webkit-background-clip: text;
@@ -838,38 +851,39 @@ h3 {
 .btn-home:hover {
     background: rgba(var(--color-accent-glow-rgb), 0.1);
 }
+
 /* ============================================
    📱 RESPONSIVE MOBILE - ✅ VERSION ULTRA-COMPACTE
    ============================================ */
 
 @media (max-width: 768px) {
-    
+
     /* Cacher les éléments desktop */
     .nav-links.desktop-links,
     .language-selector.desktop-only {
         display: none !important;
     }
-    
+
     /* Navbar mobile : Logo à gauche, Hamburger à droite */
     .nav-content {
         justify-content: space-between;
         padding: var(--space-12) 0;
     }
-    
+
     .logo {
         margin-right: 0;
         margin-left: 0;
     }
-    
+
     .logo-svg {
         width: 36px;
         height: 36px;
     }
-    
+
     .logo-text {
         font-size: 20px;
     }
-    
+
     /* Hamburger visible sur mobile */
     .hamburger {
         display: flex;
@@ -880,7 +894,7 @@ h3 {
         cursor: pointer;
         padding: 8px;
     }
-    
+
     .hamburger span {
         display: block;
         width: 25px;
@@ -889,64 +903,68 @@ h3 {
         border-radius: 2px;
         transition: all 0.3s ease;
     }
-    
+
     .hamburger.active span:nth-child(1) {
         transform: rotate(45deg) translate(5px, 5px);
     }
-    
+
     .hamburger.active span:nth-child(2) {
         opacity: 0;
 
-        
+
     }
-    
+
     .hamburger.active span:nth-child(3) {
         transform: rotate(-45deg) translate(7px, -6px);
     }
-    
+
     .mobile-nav {
         background-color: rgba(16, 16, 26, 0.95);
     }
-    
+
     /* ✅ Hero section mobile - ESPACEMENT SERRÉ */
     .hero {
         padding-top: 16px;
-        padding-bottom: 0; /* ✅ ZÉRO en bas */
+        padding-bottom: 0;
+        /* ✅ ZÉRO en bas */
     }
-    
+
     .hero h1 {
         font-size: 28px;
         line-height: 1.2;
         margin-bottom: 8px;
     }
-    
+
     .hero p {
         font-size: 16px;
-        margin-bottom: 12px; /* ✅ Réduit à 12px */
+        margin-bottom: 12px;
+        /* ✅ Réduit à 12px */
     }
-    
+
     .smart-search-wrapper {
-        margin: 0 auto; /* ✅ Pas de marge en haut */
+        margin: 0 auto;
+        /* ✅ Pas de marge en haut */
     }
-    
+
     /* ✅ Sections mobiles - ESPACEMENT SERRÉ */
     .popular-destinations {
-        padding-top: 12px !important; /* ✅ Ultra-serré : 12px */
+        padding-top: 12px !important;
+        /* ✅ Ultra-serré : 12px */
         padding-bottom: 24px !important;
     }
-    
+
     .why-en-bus,
     .map-section {
         padding: 24px 0;
     }
-    
+
     .popular-destinations h2,
     .why-en-bus h2 {
         font-size: 20px;
         margin-top: 0;
         margin-bottom: 12px;
     }
-    
+
     .destinations-grid {
         gap: 12px;
     }
@@ -954,16 +972,17 @@ h3 {
 
 /* Desktop (> 768px) */
 @media (min-width: 769px) {
-    
+
     /* Cacher le sélecteur de langue mobile */
     .mobile-lang-selector {
         display: none !important;
     }
-    
+
     .mobile-nav {
         display: none;
     }
 }
+
 /* ============================================
    9. RÉSULTATS DE RECHERCHE
    ============================================ */
@@ -1466,9 +1485,17 @@ h3 {
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.step:nth-child(1) { width: 28px; }
-.step:nth-child(2) { width: 26px; }
-.step:nth-child(3) { width: 24px; }
+.step:nth-child(1) {
+    width: 28px;
+}
+
+.step:nth-child(2) {
+    width: 26px;
+}
+
+.step:nth-child(3) {
+    width: 24px;
+}
 
 /* Grille des sièges */
 .modern-seat-grid {
@@ -1734,7 +1761,7 @@ h3 {
     pointer-events: none;
 }
 
-.payment-method input[type="radio"]:checked + .method-content {
+.payment-method input[type="radio"]:checked+.method-content {
     background: linear-gradient(135deg, rgba(var(--color-accent-glow-rgb), 0.2), rgba(var(--color-accent-glow-rgb), 0.1));
 }
 
@@ -3145,8 +3172,13 @@ h3 {
    ============================================ */
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
@@ -3154,6 +3186,7 @@ h3 {
         opacity: 0;
         transform: translateY(40px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3167,6 +3200,7 @@ h3 {
         padding-top: 0;
         padding-bottom: 0;
     }
+
     to {
         opacity: 1;
         max-height: 500px;
@@ -3180,9 +3214,11 @@ h3 {
         transform: scale(0);
         opacity: 0;
     }
+
     50% {
         transform: scale(1.1);
     }
+
     100% {
         transform: scale(1);
         opacity: 1;
@@ -3194,6 +3230,7 @@ h3 {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3205,6 +3242,7 @@ h3 {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3215,9 +3253,11 @@ h3 {
     0% {
         transform: scale(0) rotate(0deg);
     }
+
     50% {
         transform: scale(1.2) rotate(180deg);
     }
+
     100% {
         transform: scale(1) rotate(360deg);
     }
@@ -3229,16 +3269,19 @@ h3 {
         left: 20px;
         top: 60px;
     }
+
     54% {
         width: 0;
         left: 20px;
         top: 60px;
     }
+
     70% {
         width: 30px;
         left: 15px;
         top: 56px;
     }
+
     100% {
         width: 25px;
         left: 25px;
@@ -3252,16 +3295,19 @@ h3 {
         right: 46px;
         top: 54px;
     }
+
     65% {
         width: 0;
         right: 46px;
         top: 54px;
     }
+
     84% {
         width: 55px;
         right: 10px;
         top: 48px;
     }
+
     100% {
         width: 47px;
         right: 16px;
@@ -3270,27 +3316,36 @@ h3 {
 }
 
 @keyframes seatPulseGlow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 25px rgba(115, 215, 0, 0.7), inset 0 -3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
+
     50% {
         box-shadow: 0 0 35px rgba(115, 215, 0, 0.9), inset 0 -3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
 }
 
 @keyframes toiletShine {
-    0%, 100% {
+
+    0%,
+    100% {
         left: -100%;
     }
+
     50% {
         left: 100%;
     }
 }
 
 @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(-10px);
     }
@@ -3298,14 +3353,19 @@ h3 {
 
 /* Animations logo */
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes sunPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         opacity: 1;
     }
+
     50% {
         transform: scale(1.05);
         opacity: 0.9;
@@ -3321,9 +3381,11 @@ h3 {
     0% {
         transform: translate(20px, 52px);
     }
+
     50% {
         transform: translate(25px, 52px);
     }
+
     100% {
         transform: translate(20px, 52px);
     }
@@ -3337,6 +3399,7 @@ h3 {
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
@@ -3357,6 +3420,7 @@ h3 {
         transform: translateX(0);
         opacity: 0.6;
     }
+
     100% {
         transform: translateX(-24px);
         opacity: 0;
@@ -3376,9 +3440,13 @@ h3 {
 }
 
 @keyframes headlightBlink {
-    0%, 90%, 100% {
+
+    0%,
+    90%,
+    100% {
         opacity: 1;
     }
+
     95% {
         opacity: 0.5;
     }
@@ -3402,9 +3470,12 @@ h3 {
 }
 
 @keyframes textGlow {
-    0%, 100% {
+
+    0%,
+    100% {
         text-shadow: 0 0 5px #fff, 0 0 15px rgba(255, 150, 40, 0.6), 0 0 25px rgba(255, 80, 40, 0.6);
     }
+
     50% {
         text-shadow: 0 0 10px #fff, 0 0 25px rgba(255, 150, 40, 0.8), 0 0 40px rgba(255, 80, 40, 0.8);
     }
@@ -3412,6 +3483,7 @@ h3 {
 
 /* Préférence mouvement réduit */
 @media (prefers-reduced-motion: reduce) {
+
     .modern-seat,
     .aisle-line,
     .toilet-section::before,
@@ -3522,8 +3594,15 @@ body.pwa-installed .install-pwa-btn {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 .splash-text {
@@ -3661,7 +3740,7 @@ body.pwa-installed .container {
 
 /* Mobile (< 768px) */
 @media (max-width: 768px) {
-    
+
     /* Variables ajustées */
     :root {
         --space-48: 24px;
@@ -3669,39 +3748,39 @@ body.pwa-installed .container {
         --space-24: 12px;
         --space-16: 10px;
     }
-    
+
     /* Container */
     .container {
         padding: 0 12px;
     }
-    
+
     /* Navigation */
     .nav-links.desktop-links,
     .language-selector {
         display: none !important;
     }
-    
+
     .nav-content {
         display: flex;
         justify-content: space-between;
         padding: var(--space-12) 0;
         gap: 0;
     }
-    
+
     .logo {
         order: 1;
         justify-self: start;
     }
-    
+
     .logo-svg {
         width: 36px;
         height: 36px;
     }
-    
+
     .logo-text {
         font-size: 20px;
     }
-    
+
     .hamburger {
         display: flex;
         flex-direction: column;
@@ -3712,7 +3791,7 @@ body.pwa-installed .container {
         padding: 8px;
         order: 2;
     }
-    
+
     .hamburger span {
         display: block;
         width: 25px;
@@ -3721,19 +3800,19 @@ body.pwa-installed .container {
         border-radius: 2px;
         transition: all 0.3s ease;
     }
-    
+
     .hamburger.active span:nth-child(1) {
         transform: rotate(45deg) translate(5px, 5px);
     }
-    
+
     .hamburger.active span:nth-child(2) {
         opacity: 0;
     }
-    
+
     .hamburger.active span:nth-child(3) {
         transform: rotate(-45deg) translate(7px, -6px);
     }
-    
+
     .mobile-nav {
         max-height: 0;
         overflow: hidden;
@@ -3741,166 +3820,223 @@ body.pwa-installed .container {
         background-color: rgba(16, 16, 26, 0.95);
         backdrop-filter: blur(10px);
     }
-    
+
     .mobile-nav.open {
         max-height: 500px;
     }
-    
+
     .mobile-lang-selector {
         display: block;
     }
-    
+
     /* Hero */
     .hero {
         padding: 16px 0 24px;
     }
-    
+
     .hero h1 {
         font-size: 24px;
         margin-bottom: 8px;
         line-height: 1.2;
     }
-    
+
     .hero p {
         font-size: 14px;
         margin-bottom: 16px;
     }
-    
+
     /* Sections */
     .popular-destinations,
     .why-en-bus,
     .map-section {
         padding: 24px 0;
     }
-    
+
     .popular-destinations h2,
     .why-en-bus h2 {
         font-size: 20px;
         margin-bottom: 16px;
     }
-    
+
     /* Grilles */
     .destinations-grid,
     .features-grid,
     .results-list {
         gap: 12px;
     }
-    
+
     .destination-card,
     .feature-card,
     .bus-card {
         padding: 12px;
     }
-    
+
     /* Formulaires */
     .search-box {
         padding: 12px;
         margin: 0 -12px;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
         gap: 12px;
     }
-    
+
     .form-group {
         margin-bottom: 8px;
     }
-    
+
     .form-control {
         padding: 10px;
         font-size: 15px;
     }
-    
+
     #detailed-search-box {
         padding: 12px;
         margin: 0;
     }
-    
+
     .search-form {
         gap: 10px;
     }
-    
+
     .destination-swap-container {
         gap: 8px;
     }
-    
+
     .swap-btn {
         width: 36px;
         height: 36px;
         margin-bottom: 0;
     }
-    
+
     .form-group label {
         font-size: 11px;
         margin-bottom: 4px;
         font-weight: 600;
     }
-    
+
     .form-control {
         padding: 8px 12px;
         font-size: 14px;
     }
-    
+
     .trip-type-toggle {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.05);
+        /* Fond sombre léger */
+        border: 1px solid var(--color-border);
+        border-radius: 50px;
+        /* Forme arrondie parfaite */
+        padding: 4px;
         width: 100%;
-        padding: 3px;
+        cursor: pointer;
+        overflow: hidden;
+        /* Garde tout à l'intérieur */
+        height: 48px;
+        /* Hauteur fixe pour la consistance */
     }
-    
+
     .toggle-option {
-        font-size: 13px;
-        padding: 6px 10px;
+        flex: 1;
+        /* Chaque option prend 50% de la largeur */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        z-index: 2;
+        /* Au-dessus du curseur vert */
+        transition: color 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+        user-select: none;
+        /* Empêche la sélection de texte */
     }
-    
+
+
+    .toggle-option.active {
+        color: #000;
+        /* Texte noir sur fond vert (plus lisible) */
+        font-weight: 700;
+    }
+
+
+    .toggle-switch {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        /* Exactement la moitié moins le padding */
+        height: calc(100% - 8px);
+        background-color: var(--color-accent-glow);
+        border-radius: 50px;
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        z-index: 1;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+
+
+    /* Animation du curseur */
+    .trip-type-toggle[data-mode="round-trip"] .toggle-switch {
+        transform: translateX(100%);
+        /* Glisse vers la droite */
+    }
+
     .passenger-dropdown-menu {
         width: 280px;
         padding: 12px;
     }
-    
+
     .passenger-row {
         padding: 8px 0;
     }
-    
+
     .passenger-row label {
         font-size: 13px;
     }
-    
+
     .counter-btn {
         width: 28px;
         height: 28px;
         font-size: 18px;
     }
-    
+
     /* Boutons */
     .btn {
         width: 100%;
         padding: 10px 16px;
         font-size: 14px;
     }
-    
+
     .btn-large {
         padding: 12px 20px;
         font-size: 15px;
     }
-    
+
     /* Cartes bus */
     .bus-card {
         padding: 16px;
     }
-    
+
     .bus-card-wrapper,
     .bus-card-content-wrapper {
         flex-direction: column;
         gap: 16px;
     }
-    
+
     .bus-card-main,
     .bus-card-pricing {
         width: 100%;
         padding: 0;
         border: none;
     }
-    
+
     .bus-card-pricing {
         flex-direction: row;
         justify-content: space-between;
@@ -3910,302 +4046,302 @@ body.pwa-installed .container {
         border-left: none;
         padding-left: 0;
     }
-    
+
     .bus-card-time {
         font-size: 16px;
         gap: 10px;
     }
-    
+
     .bus-price {
         font-size: 22px;
         margin-bottom: 0;
     }
-    
+
     .bus-amenities {
         flex-wrap: wrap;
         gap: 8px;
     }
-    
+
     .amenity-item {
         width: 28px;
         height: 28px;
     }
-    
+
     .amenity-item svg {
         width: 16px;
         height: 16px;
     }
-    
+
     /* Sélection sièges */
     .modern-bus-container {
         padding: 10px 8px;
         max-width: 100%;
     }
-    
+
     .seat-row {
         grid-template-columns: 1fr 1fr 24px 1fr 1fr 20px;
         gap: 6px;
         margin-bottom: 6px;
     }
-    
+
     .modern-seat {
         height: 36px;
     }
-    
+
     .modern-seat .seat-label,
     .seat-label {
         font-size: 10px;
     }
-    
+
     .bus-info-header {
         padding: 16px;
     }
-    
+
     .bus-info-header h3 {
         font-size: 18px;
     }
-    
+
     .price-info {
         flex-direction: column;
         gap: 8px;
         font-size: 13px;
     }
-    
+
     /* Paiement */
     .payment-container {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .method-content {
         flex-direction: column;
         gap: 12px;
         text-align: center;
         padding: 20px;
     }
-    
+
     .method-icon {
         font-size: 40px;
         width: 56px;
         height: 56px;
     }
-    
+
     .method-info strong {
         font-size: 16px;
     }
-    
+
     .payment-details-form {
         padding: 16px;
     }
-    
+
     .payment-instructions-card {
         padding: var(--space-20);
     }
-    
+
     .instruction-title {
         font-size: 22px;
     }
-    
+
     .reference-number {
         font-size: 28px;
     }
-    
+
     .detail-value {
         font-size: 16px;
     }
-    
+
     .detail-value.primary {
         font-size: 22px;
     }
-    
+
     /* Confirmation */
     .confirmation-card-modern {
         padding: 20px;
     }
-    
+
     .confirmation-title {
         font-size: 32px;
     }
-    
+
     .confirmation-header {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .journey-route {
         flex-direction: column;
         gap: 16px;
     }
-    
+
     .route-connector {
         transform: rotate(90deg);
         margin: 16px 0;
     }
-    
+
     .route-arrow,
     .journey-arrow {
         transform: rotate(90deg);
         font-size: 28px;
         margin: 8px 0;
     }
-    
+
     .journey-route .point-info {
         word-break: break-word;
     }
-    
+
     .journey-route .point-city {
         font-size: 1.2rem;
     }
-    
+
     .qr-section-modern {
         padding: 20px;
     }
-    
+
     .qr-code-box {
         padding: 16px;
     }
-    
+
     .qr-code-box canvas,
     .qr-code-box img {
         width: 200px !important;
         height: 200px !important;
     }
-    
+
     .confirmation-actions-modern {
         flex-direction: column;
     }
-    
+
     .btn-modern {
         width: 100%;
         padding: 14px 20px;
     }
-    
+
     /* Filtres */
     .filters-bar-enhanced {
         grid-template-columns: 1fr;
         gap: 12px;
         padding: 16px;
     }
-    
+
     .filter-price,
     .filter-amenities {
         grid-column: span 1;
     }
-    
+
     .price-inputs {
         grid-template-columns: 1fr;
     }
-    
+
     .amenities-checkboxes {
         gap: 8px;
     }
-    
+
     .amenity-checkbox-label {
         padding: 6px 12px;
         font-size: 12px;
     }
-    
+
     .amenities-legend {
         gap: 12px;
         padding: 12px;
         font-size: 12px;
     }
-    
+
     .legend-amenity {
         font-size: 12px;
     }
-    
+
     .legend-amenity svg {
         width: 16px;
         height: 16px;
     }
-    
+
     /* Footer */
     .footer {
         padding: 24px 0 12px;
     }
-    
+
     .footer-content {
         grid-template-columns: 1fr;
         gap: 24px;
         text-align: center;
         margin-bottom: 16px;
     }
-    
+
     /* Pages */
     .page-header {
         padding: 16px 0;
     }
-    
+
     .page-header h2 {
         font-size: 22px;
         margin-top: 8px;
     }
-    
+
     .page-actions {
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .page-actions .btn {
         width: 100%;
     }
-    
+
     /* Modales */
     .modal-content {
         width: 95%;
         max-height: 90vh;
         padding: 0;
     }
-    
+
     .modal-header,
     .modal-body,
     .modal-footer {
         padding: 16px;
     }
-    
+
     .modal-footer {
         flex-direction: column;
     }
-    
+
     .modal-footer .btn {
         width: 100%;
     }
-    
+
     /* Report */
     .report-trip-info,
     .report-trip-details {
         grid-template-columns: 1fr;
     }
-    
+
     /* Historique */
     .history-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
-    
+
     .history-item-status {
         align-self: flex-end;
         margin-left: 0;
         margin-top: -24px;
     }
-    
+
     /* Réservations */
     .reservation-card {
         padding: 16px;
     }
-    
+
     .reservation-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 8px;
     }
-    
+
     .reservation-details {
         font-size: 14px;
     }
-    
+
     /* Touch */
     .btn,
     .modern-seat,
@@ -4215,18 +4351,18 @@ body.pwa-installed .container {
     .passenger-selector {
         min-height: 44px;
     }
-    
+
     .form-control,
     input,
     select,
     textarea {
         font-size: 16px !important;
     }
-    
+
     * {
         -webkit-tap-highlight-color: transparent;
     }
-    
+
     /* PWA */
     .install-pwa-btn {
         bottom: 10px;
@@ -4238,59 +4374,59 @@ body.pwa-installed .container {
 
 /* Très petits écrans (< 480px) */
 @media (max-width: 480px) {
-    
+
     .hero h1 {
         font-size: 24px;
     }
-    
+
     .hero p {
         font-size: 14px;
     }
-    
+
     .logo-text {
         font-size: 18px;
     }
-    
+
     .search-box {
         padding: 12px;
     }
-    
+
     .form-control {
         padding: 10px;
         font-size: 15px;
     }
-    
+
     .btn {
         padding: 12px 16px;
         font-size: 14px;
     }
-    
+
     .bus-card-time {
         font-size: 16px;
     }
-    
+
     .bus-price {
         font-size: 20px;
     }
-    
+
     .seat-row {
         grid-template-columns: 1fr 1fr 20px 1fr 1fr 18px;
         gap: 5px;
     }
-    
+
     .modern-seat {
         height: 34px;
     }
-    
+
     .modern-seat .seat-label,
     .seat-label {
         font-size: 9px;
     }
-    
+
     .row-indicator {
         font-size: 9px;
     }
-    
+
     .journey-date-top {
         font-size: 0.8rem;
         padding: 4px 8px;
@@ -4304,25 +4440,25 @@ body.pwa-installed .container {
 
 /* Paysage mobile */
 @media (max-width: 768px) and (orientation: landscape) {
-    
+
     .hero {
         padding: 16px 0;
     }
-    
+
     .hero h1 {
         font-size: 24px;
     }
-    
+
     .search-box {
         max-width: 600px;
         margin: 0 auto;
     }
-    
+
     .modern-bus-container {
         max-width: 100%;
         overflow-x: auto;
     }
-    
+
     .route-arrow,
     .journey-arrow {
         transform: rotate(0deg);
@@ -4331,19 +4467,19 @@ body.pwa-installed .container {
 
 /* Desktop (> 768px) */
 @media (min-width: 769px) {
-    
+
     .language-selector {
         display: flex;
     }
-    
+
     .mobile-lang-selector {
         display: none !important;
     }
-    
+
     .mobile-nav {
         display: none;
     }
-    
+
     .hamburger {
         display: none;
     }
@@ -4357,9 +4493,3 @@ body.pwa-installed .container {
         line-height: 1.5;
     }
 }
-
-
-
-
-
-
