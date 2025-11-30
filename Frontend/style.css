@@ -3991,6 +3991,12 @@ body.pwa-installed .container {
         /* Empêche le débordement flex */
     }
 
+
+    .form-row {
+    grid-template-columns: 1fr 1fr; /* 50% - 50% */
+    align-items: start; /* Aligne en haut */
+}
+
     .passenger-dropdown-menu {
         width: 280px;
         padding: 12px;
