@@ -6169,6 +6169,145 @@ async function approveReportRequest(bookingNumber, proof) {
 
 
 
+
+// ============================================
+// 🏙️ GESTION DES DESTINATIONS (COMPLET)
+// ============================================
+
+// 1. Fonction pour CHARGER et AFFICHER le tableau
+async function loadDestinations() {
+    const tbody = document.getElementById('destinations-body');
+    if (!tbody) return; // Sécurité si on n'est pas sur la bonne page
+
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Chargement...</td></tr>';
+
+    try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.destinations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">Aucune destination trouvée.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.destinations.map(city => `
+                <tr>
+                    <td><strong>${city.name}</strong></td>
+                    <td>${city.country}</td>
+                    <td>
+                        <span class="badge ${city.isActive ? 'badge-success' : 'badge-danger'}">
+                            ${city.isActive ? 'Active' : 'Inacive'}
+                        </span>
+                    </td>
+                    <td class="actions-cell">
+                        <button class="btn btn-sm btn-danger" onclick="deleteDestination('${city._id}')" title="Supprimer">🗑️</button>
+                        <button class="btn btn-sm btn-secondary" onclick="toggleDestinationStatus('${city._id}', ${!city.isActive})" title="${city.isActive ? 'Désactiver' : 'Activer'}">
+                            ${city.isActive ? '🚫' : '✅'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Erreur: ${data.error}</td></tr>`;
+        }
+    } catch (error) {
+        console.error("Erreur chargement destinations:", error);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur de connexion.</td></tr>';
+    }
+}
+
+// 2. Fonction pour AJOUTER une destination (Correction Erreur 400)
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('destination-creation-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('dest-name').value.trim();
+            const country = document.getElementById('dest-country').value.trim();
+            let coords = document.getElementById('dest-coords').value.trim();
+
+            // CORRECTION CRITIQUE : Si coords est vide, on envoie une chaîne vide, pas null
+            if (!coords) coords = "";
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, country, coords })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("✅ Destination ajoutée !");
+                    form.reset();
+                    loadDestinations(); // Appel de la fonction qu'on vient de créer
+                } else {
+                    alert("❌ Erreur : " + (data.error || "Données invalides"));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Erreur réseau.");
+            }
+        });
+    }
+    
+    // Chargement initial si on est sur l'onglet
+    if (document.getElementById('tab-destinations')?.classList.contains('active')) {
+        loadDestinations();
+    }
+    
+    // Écouteur d'onglets pour recharger quand on clique
+    document.querySelectorAll('.nav-link[data-tab="destinations"]').forEach(btn => {
+        btn.addEventListener('click', loadDestinations);
+    });
+});
+
+// 3. Fonction pour SUPPRIMER
+async function deleteDestination(id) {
+    if (!confirm("Supprimer cette destination ?")) return;
+    
+    try {
+        const token = localStorage.getItem('admin_token');
+        await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        loadDestinations(); // Rafraîchir
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 4. Fonction pour ACTIVER/DÉSACTIVER (Toggle)
+async function toggleDestinationStatus(id, isActive) {
+    try {
+        const token = localStorage.getItem('admin_token');
+        await fetch(`${API_CONFIG.baseUrl}/api/admin/destinations/${id}`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ isActive: isActive })
+        });
+        loadDestinations(); // Rafraîchir
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+
         // ============================================
 // 🏙️ CRÉATION DE DESTINATION (CORRIGÉE)
 // ============================================
