@@ -5818,34 +5818,129 @@
         // 🔄 GESTION DES DEMANDES DE REPORT
         // ============================================
 
-        async function loadReportRequests() {
-            try {
-                // ✅ On récupère la valeur du champ de recherche
-                const searchTerm = document.getElementById('report-search-input').value.trim();
+   // ============================================
+// 🔄 GESTION DES DEMANDES DE REPORT (CORRIGÉE)
+// ============================================
+async function loadReportRequests() {
+    try {
+        const tbody = document.getElementById('report-requests-body');
+        const searchInput = document.getElementById('report-search-input');
+        
+        if (!tbody) return;
 
-                // ✅ On construit l'URL avec le paramètre de recherche
-                const endpoint = searchTerm
-                    ? `/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
-                    : '/admin/reports/history';
+        // 1. Récupération du terme de recherche
+        const searchTerm = searchInput ? searchInput.value.trim() : "";
+        
+        // 2. Construction de l'URL (avec l'URL de base complète)
+        const endpoint = searchTerm
+            ? `${API_BASE_URL}/api/admin/reports/history?search=${encodeURIComponent(searchTerm)}`
+            : `${API_BASE_URL}/api/admin/reports/history`;
 
-                const data = await apiCall(endpoint);
-
-                if (!data) {
-                    document.getElementById('report-requests-body').innerHTML = `<tr><td colspan="7" class="text-center">Erreur de chargement.</td></tr>`;
-                    return;
-                }
-
-                const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
-                const processedReports = data.reports.filter(r => r.status !== 'En attente de report');
-
-                displayReportRequestsStats(pendingRequests);
-                renderReportRequestsTable(pendingRequests, processedReports);
-
-            } catch (error) {
-                console.error('❌ Erreur chargement historique des reports:', error);
-                showNotification('Erreur lors du chargement de l\'historique', 'error');
+        // 3. Appel API direct (plus sûr que apiCall pour le debug)
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(endpoint, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">Erreur API: ${data.error || 'Inconnue'}</td></tr>`;
+            return;
         }
+
+        if (data.reports.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 20px; color: var(--text-muted);">Aucune demande de report trouvée.</td></tr>`;
+            
+            // Mise à jour des stats à 0
+            displayReportRequestsStats([]);
+            return;
+        }
+
+        // 4. Séparation des demandes
+        const pendingRequests = data.reports.filter(r => r.status === 'En attente de report');
+        
+        // 5. Mise à jour des statistiques
+        displayReportRequestsStats(data.reports); // On passe tout pour avoir le total historique si besoin
+
+        // 6. Rendu du tableau (DIRECTEMENT ICI)
+        tbody.innerHTML = data.reports.map(res => {
+            const req = res.reportRequest || {}; 
+            const isPending = res.status === "En attente de report";
+            const isReported = res.status === "Reporté";
+            
+            // Dates
+            const oldDate = new Date(res.date).toLocaleDateString('fr-FR');
+            const newDate = req.targetTrip ? new Date(req.targetTrip.date).toLocaleDateString('fr-FR') : "N/A";
+            const requestDate = req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('fr-FR') : "N/A";
+
+            // Paiement
+            let paymentInfo = `<span class="badge badge-gray">Gratuit</span>`;
+            if (req.cost && req.cost.totalCost > 0) {
+                const method = req.paymentMethod || "N/A";
+                const txId = req.transactionId || req.agencyPaymentCode || "Non fourni";
+                paymentInfo = `
+                    <div style="font-size: 0.85rem;">
+                        <strong style="color: var(--primary);">${formatPrice(req.cost.totalCost)} FCFA</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">${method}</span><br>
+                        <span class="transaction-id-display ${isPending ? 'pending' : ''}">${txId}</span>
+                    </div>
+                `;
+            }
+
+            // Actions
+            let actions = '';
+            if (isPending) {
+                actions = `
+                    <div class="actions-cell">
+                        <button class="btn btn-sm btn-success" onclick="approveReport('${res.bookingNumber}')" title="Valider">✅</button>
+                        <button class="btn btn-sm btn-danger" onclick="alert('Fonctionnalité à venir')" title="Refuser">❌</button>
+                    </div>
+                `;
+            } else if (isReported) {
+                actions = `<span class="badge badge-success">Validé</span>`;
+            } else {
+                actions = `<span class="badge badge-gray">${res.status}</span>`;
+            }
+
+            // Trajet
+            const oldTrip = `${res.route.from} → ${res.route.to}`;
+            const newTrip = req.targetTrip ? `${req.targetTrip.route.from} → ${req.targetTrip.route.to}` : "N/A";
+
+            return `
+                <tr style="${isPending ? 'background: rgba(255, 167, 38, 0.05); border-left: 3px solid #ffa726;' : ''}">
+                    <td class="font-mono font-bold">${res.bookingNumber}</td>
+                    <td>
+                        <div class="font-bold">${res.passengers[0].name}</div>
+                        <div class="text-xs text-muted">${res.customerPhone || "N/A"}</div>
+                    </td>
+                    <td>
+                        <div class="text-xs">${oldTrip}</div>
+                        <div style="color: #ef5350; font-weight: bold;">${oldDate}</div>
+                    </td>
+                    <td>
+                        <div class="text-xs">${newTrip}</div>
+                        <div style="color: #73d700; font-weight: bold;">${newDate}</div>
+                    </td>
+                    <td>${paymentInfo}</td>
+                    <td class="text-xs">${requestDate}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('❌ Erreur chargement historique:', error);
+        const tbody = document.getElementById('report-requests-body');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Erreur technique : ${error.message}</td></tr>`;
+        showNotification('Erreur lors du chargement', 'error');
+    }
+}
+
+// La fonction de stats reste inchangée, elle est bien.
         function displayReportRequestsStats(requests) {
             const statsGrid = document.getElementById('report-stats-grid');
 
