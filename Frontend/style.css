@@ -4880,6 +4880,84 @@ body.pwa-installed .container {
         overflow-x: hidden !important; /* Coupe tout ce qui dépasse */
     }
 
+
+
+
+
+
+     /* ============================================
+   📱 MOBILE : FILTRES PLIABLES (ACCORDÉON)
+   ============================================ */
+
+@media (max-width: 768px) {
+    
+    /* 1. Masquer les filtres par défaut */
+    .filters-bar-enhanced {
+        display: none; /* Caché */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        margin-bottom: 16px;
+    }
+
+    /* 2. Classe pour afficher les filtres */
+    .filters-bar-enhanced.open {
+        display: grid; /* Ou block selon votre layout */
+        opacity: 1;
+        animation: slideDownFilter 0.3s ease-out;
+    }
+
+    /* 3. Style du bouton de bascule (généré par JS) */
+    #mobile-filter-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 12px 16px;
+        background-color: var(--color-surface);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        font-weight: 600;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    #mobile-filter-toggle:hover {
+        background-color: var(--dark-elevated);
+        border-color: var(--color-accent-glow);
+    }
+
+    #mobile-filter-toggle .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+
+    #mobile-filter-toggle.active .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    /* Animation d'ouverture */
+    @keyframes slideDownFilter {
+        from { transform: translateY(-10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+}
+
+/* Cacher le bouton sur Desktop */
+@media (min-width: 769px) {
+    #mobile-filter-toggle {
+        display: none !important;
+    }
+    .filters-bar-enhanced {
+        display: grid !important; /* Toujours visible sur PC */
+    }
+}
+
+
+
+
+
+
     /* 2. Cartes de bus (Résultats) */
     .bus-card {
         width: 100% !important;
@@ -4919,61 +4997,10 @@ body.pwa-installed .container {
 
 }
 
-
-
-
-
-
-
-
-        @media (max-width: 768px) {
-
-    /* 3. Plan du bus (Sélection sièges) */
-    .modern-bus-container {
-        width: 100% !important;
-        max-width: 340px !important; /* Largeur idéale pour un smartphone standard */
-        margin: 0 auto !important;   /* Centrer */
-        padding: 10px !important;
-        box-sizing: border-box !important;
-        transform: scale(0.95); /* Réduit légèrement tout le bus si vraiment trop large */
-        transform-origin: top center;
-    }
-
-    /* Réduire la taille des sièges */
-    .seat-row {
-        gap: 4px !important; /* Réduire l'espace entre les sièges */
-        justify-content: center !important;
-    }
-
-    .modern-seat {
-        width: 36px !important;  /* Forcer une largeur plus petite */
-        height: 36px !important; /* Forcer une hauteur plus petite */
-        font-size: 10px !important; /* Texte plus petit */
-    }
-
-    /* Réduire l'allée centrale */
-    .aisle-space {
-        width: 20px !important;
-    }
-    
-    /* Ajuster le header du bus (infos trajet) */
-    .bus-info-header {
-        padding: 12px !important;
-    }
-    
-    .bus-info-header h3 {
-        font-size: 1.1rem !important;
-        word-break: break-word; /* Coupe les noms de villes trop longs */
-    }
-}
     }
 
 
-    /* ============================================
-   📱 FIX MOBILE : LARGEUR ÉCRAN
-   ============================================ */
-
-
+  
 
 
 }

@@ -1697,6 +1697,7 @@ const ticketHTML = `
 
         // ✅ AJOUTER CET APPEL
     animateSearchPlaceholder();
+    setupMobileFilterToggle(); 
 
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
@@ -3117,6 +3118,57 @@ window.updateFilter = function(filterType, value) {
         Utils.showToast('Aucun trajet ne correspond à vos critères', 'info');
     }
 };
+
+
+
+
+// ============================================
+// 🌪️ GESTION MENU FILTRES MOBILE
+// ============================================
+function setupMobileFilterToggle() {
+    const filterContainer = document.querySelector('.filters-bar-enhanced');
+    
+    // Sécurité : si pas de filtres, on arrête
+    if (!filterContainer) return;
+
+    // Vérifier si le bouton existe déjà pour ne pas le dupliquer
+    if (document.getElementById('mobile-filter-toggle')) return;
+
+    // 1. Création du bouton
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'mobile-filter-toggle';
+    toggleBtn.type = 'button';
+    toggleBtn.innerHTML = `
+        <span style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2em;">🌪️</span> 
+            Filtrer & Trier
+        </span>
+        <span class="toggle-icon">▼</span>
+    `;
+
+    // 2. Insertion avant les filtres
+    filterContainer.parentNode.insertBefore(toggleBtn, filterContainer);
+
+    // 3. Gestion du clic
+    toggleBtn.addEventListener('click', () => {
+        const isOpen = filterContainer.classList.contains('open');
+        
+        if (isOpen) {
+            filterContainer.classList.remove('open');
+            toggleBtn.classList.remove('active');
+        } else {
+            filterContainer.classList.add('open');
+            toggleBtn.classList.add('active');
+        }
+    });
+}
+
+
+
+
+
+
+
 window.resetFilters = function() {
     // 1. Réinitialiser l'objet des filtres actifs
     activeFilters = {
@@ -3859,6 +3911,7 @@ function handleBaggageChange(event) {
 
     updateBookingSummary(); // Mettre à jour le récapitulatif à chaque changement
 }
+
 
 
 // Dans app.js
