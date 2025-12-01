@@ -1636,6 +1636,11 @@ const ticketHTML = `
             downloadLink.click();
             document.body.removeChild(downloadLink);
             setTimeout(() => URL.revokeObjectURL(url), 100);
+
+            const lang = getLanguage(); 
+const translation = translations[lang] || translations.fr;
+
+Utils.showToast(translation.toast_ticket_downloaded, 'success');
             Utils.showToast('Billet téléchargé !', 'success');
 
             if (window.innerWidth > 768) {
@@ -4458,7 +4463,7 @@ async function displayConfirmation(reservation) {
         let actionsHTML = `<button class="btn-modern btn-download" onclick="downloadTicket(false)"><span class="btn-icon">📥</span><span class="btn-text">${translation.button_download_outbound}</span></button>`;
 
          // ✅ AJOUTER LE BOUTON FACTURE ICI
-        actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">Télécharger la Facture</span></button>`;
+       actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
         if (reservation.busIdentifier) {
             actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }

@@ -405,7 +405,11 @@ const translations = {
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
     details_stops_planned: "🛑 Arrêts Prévus",
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
-
+    
+      
+    toast_ticket_downloaded: "Billet téléchargé !",
+    button_download_invoice: "Télécharger la Facture",
+    button_download_invoice_icon: "📄",
 
 
           // DANS L'OBJET 'fr'
@@ -879,8 +883,8 @@ const translations = {
     info_arrive_early_desc: "Please arrive <strong>30 minutes before departure</strong> with a valid ID",
     info_baggage_title: "Baggage Included",
     info_baggage_desc: "1 checked bag (20kg) + 1 carry-on bag",
-    button_download_outbound: "📥 Download Outbound Ticket",
-    button_download_return: "📥 Download Return Ticket",
+    button_download_outbound: " Download Outbound Ticket",
+    button_download_return: " Download Return Ticket",
     button_track_outbound: "🛰️ Track Outbound Bus",
     button_track_return: "🛰️ Track Return Bus",
     button_new_booking_alt: "🏠 New Booking",
@@ -903,6 +907,10 @@ const translations = {
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
     details_stops_planned: "🛑 Scheduled Stops",
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
+    toast_ticket_downloaded: "Ticket downloaded!",
+    button_download_invoice: "Download Invoice",
+    button_download_invoice_icon: "📄",
+    
 
 
     // DANS L'OBJET 'en'
