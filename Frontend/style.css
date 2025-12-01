@@ -5396,4 +5396,108 @@ body.pwa-installed .container {
 }
 
 
+/* ============================================
+   🚌 EMPTY STATE ANIMATION
+   ============================================ */
 
+.empty-state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Le Bus */
+.bus-animation {
+    position: relative;
+    width: 120px;
+    height: 80px;
+    margin-bottom: 30px;
+}
+
+.bus-body {
+    width: 100px;
+    height: 60px;
+    background: var(--color-accent-glow); /* Vert Néon */
+    border-radius: 10px 10px 4px 4px;
+    position: relative;
+    z-index: 2;
+    animation: bounce 2s infinite ease-in-out;
+    box-shadow: 0 0 20px rgba(115, 215, 0, 0.4);
+}
+
+.bus-window {
+    width: 60px;
+    height: 25px;
+    background: var(--color-background);
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border-radius: 4px;
+}
+
+.bus-light {
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    position: absolute;
+    bottom: 10px;
+    right: -2px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #fff;
+    animation: blink 3s infinite;
+}
+
+.road {
+    width: 140px;
+    height: 4px;
+    background: var(--color-border);
+    position: absolute;
+    bottom: 10px;
+    left: -10px;
+    border-radius: 4px;
+}
+
+/* Textes */
+.empty-title {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: var(--color-text-primary);
+    font-family: var(--font-logo);
+}
+
+.empty-desc {
+    color: var(--color-text-secondary);
+    max-width: 300px;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+/* Bouton avec effet pulsation */
+.btn-pulse {
+    padding: 14px 28px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    box-shadow: 0 0 0 0 rgba(115, 215, 0, 0.7);
+    animation: pulse-green 2s infinite;
+}
+
+/* Animations */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes blink {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.3; }
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(115, 215, 0, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(115, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(115, 215, 0, 0); }
+}

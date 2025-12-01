@@ -4495,15 +4495,28 @@ async function displayReservations() {
     }
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+    // ✅ C'EST ICI QUE J'INTÈGRE L'ANIMATION
     if (history.length === 0) {
         listContainer.innerHTML = `
-            <div class="no-results" style="padding: 48px; text-align: center;">
-                <h3>${translation.my_bookings_none_title}</h3>
-                <p>${translation.my_bookings_none_desc}</p>
-                <button class="btn btn-primary" onclick="showPage('home')">${translation.button_new_booking}</button>
+            <div class="empty-state-container">
+                <div class="bus-animation">
+                    <div class="bus-body">
+                        <div class="bus-window"></div>
+                        <div class="bus-light"></div>
+                    </div>
+                    <div class="road"></div>
+                </div>
+                
+                <h3 class="empty-title">${translation.my_bookings_none_title || "C'est calme par ici..."}</h3>
+                <p class="empty-desc">${translation.my_bookings_none_desc || "Vous n'avez aucun voyage prévu pour le moment. Et si on changeait ça ?"}</p>
+                
+                <button class="btn btn-primary btn-pulse" onclick="showPage('home')">
+                    ${translation.button_new_booking || "Réserver un billet"} ➜
+                </button>
             </div>`;
         return;
     }
+
 
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
