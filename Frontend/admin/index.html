@@ -4626,13 +4626,22 @@
             console.log(`▶️ Clic sur "Modifier l'équipage" pour le voyage : ${tripId}`);
 
             try {
-                // 1. Trouver le voyage
-                const trip = allTrips.find(t => t._id === tripId);
-                if (!trip) {
-                    showNotification("Erreur : Voyage introuvable.", "error");
-                    console.error("❌ Voyage non trouvé dans 'allTrips'.");
-                    return;
-                }
+                // 1. Trouver le voyage (Local OU Distant)
+let trip = allTrips.find(t => t._id === tripId);
+
+if (!trip) {
+    console.warn("⚠️ Voyage non trouvé localement. Tentative de récupération API...");
+    // Appel de secours vers l'API (si vous avez une route pour un voyage unique)
+    // Si vous n'en avez pas, on recharge TOUS les voyages pour être sûr
+    await loadAllTrips(); // On force le rechargement
+    trip = allTrips.find(t => t._id === tripId); // On réessaie
+}
+
+if (!trip) {
+    showNotification("Erreur : Voyage introuvable même après rechargement.", "error");
+    console.error("❌ Voyage définitivement introuvable.");
+    return;
+}
                 console.log("   -> ✅ Voyage trouvé:", trip);
 
                 // 2. S'assurer que la liste du personnel est chargée
