@@ -3320,16 +3320,16 @@
             renderTemplatesTable();
             populateRouteTemplateSelector();
         }
-        
+
 
         function renderTemplatesTable() {
-    const tbody = document.getElementById("templates-body");
-    if (!tbody) return;
+            const tbody = document.getElementById("templates-body");
+            if (!tbody) return;
 
-    // 1. Mettre à jour les en-têtes du tableau (Optionnel si déjà dans le HTML)
-    const thead = tbody.previousElementSibling;
-    if (thead) {
-        thead.innerHTML = `
+            // 1. Mettre à jour les en-têtes du tableau (Optionnel si déjà dans le HTML)
+            const thead = tbody.previousElementSibling;
+            if (thead) {
+                thead.innerHTML = `
             <tr>
                 <th>Trajet & Détails</th> <!-- Colonne élargie -->
                 <th>Compagnie</th>
@@ -3340,37 +3340,37 @@
                 <th>Actions</th>
             </tr>
         `;
-    }
+            }
 
-    if (!allTemplates || allTemplates.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 20px;">Aucun modèle créé.</td></tr>`;
-        return;
-    }
+            if (!allTemplates || allTemplates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 20px;">Aucun modèle créé.</td></tr>`;
+                return;
+            }
 
-    tbody.innerHTML = allTemplates.map(t => { // On utilise 't' partout
-        const isChecked = t.isPopular ? 'checked' : '';
+            tbody.innerHTML = allTemplates.map(t => { // On utilise 't' partout
+                const isChecked = t.isPopular ? 'checked' : '';
 
-        // --- Construction des détails (Arrêts & Correspondances) ---
-        let detailsHTML = '';
-        
-        // Arrêts
-        if (t.stops && t.stops.length > 0) {
-            const stopsList = t.stops.map(s => s.city).join(' → ');
-            detailsHTML += `<div style="font-size: 0.8rem; color: #b0bac9; margin-top: 4px;">🛑 Arrêts : ${stopsList}</div>`;
-        }
-        
-        // Correspondances
-        if (t.connections && t.connections.length > 0) {
-            const connList = t.connections.map(c => `${c.at} (vers ${c.nextCompany})`).join(', ');
-            detailsHTML += `<div style="font-size: 0.8rem; color: #00d9ff; margin-top: 4px;">⇄ Corresp. : ${connList}</div>`;
-        }
+                // --- Construction des détails (Arrêts & Correspondances) ---
+                let detailsHTML = '';
 
-        // Direct
-        if (!detailsHTML) {
-            detailsHTML = `<div style="font-size: 0.8rem; color: #73d700; margin-top: 4px;">⚡ Direct</div>`;
-        }
+                // Arrêts
+                if (t.stops && t.stops.length > 0) {
+                    const stopsList = t.stops.map(s => s.city).join(' → ');
+                    detailsHTML += `<div style="font-size: 0.8rem; color: #b0bac9; margin-top: 4px;">🛑 Arrêts : ${stopsList}</div>`;
+                }
 
-        return `
+                // Correspondances
+                if (t.connections && t.connections.length > 0) {
+                    const connList = t.connections.map(c => `${c.at} (vers ${c.nextCompany})`).join(', ');
+                    detailsHTML += `<div style="font-size: 0.8rem; color: #00d9ff; margin-top: 4px;">⇄ Corresp. : ${connList}</div>`;
+                }
+
+                // Direct
+                if (!detailsHTML) {
+                    detailsHTML = `<div style="font-size: 0.8rem; color: #73d700; margin-top: 4px;">⚡ Direct</div>`;
+                }
+
+                return `
             <tr>
                 <td>
                     <strong style="font-size: 1rem;">${t.from} → ${t.to}</strong>
@@ -3394,8 +3394,8 @@
                 </td>
             </tr>
         `;
-    }).join("");
-}
+            }).join("");
+        }
 
         // Dans Admin/index.html (section <script>)
         async function handleCreateTemplate(e) {
@@ -4523,13 +4523,79 @@
                 <td>${statusBadges[member.status] || member.status}</td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="viewCrewDetails('${member._id}')" title="Voir détails">👁️</button>
-                    <button class="btn btn-icon btn-ghost" onclick="openEditCrewModal('${member._id}')" title="Modifier">✏️</button>
+                    // DANS renderCrewTable (partie du bouton Modifier)
+
+<button class="btn btn-icon btn-ghost" 
+    onclick="openEditMemberModal('${member._id}', '${member.name}', '${member.phone}', '${member.role}', '${member.status}')" 
+    title="Modifier">
+    ✏️
+</button>
                     <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}', '${member.name}')" title="Désactiver">🗑️</button>
                 </td>
             </tr>
         `;
             }).join('');
         }
+
+
+        // ============================================
+// ✏️ MODIFIER UN MEMBRE DU PERSONNEL
+// ============================================
+function openEditMemberModal(memberId, name, phone, role, status) {
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    
+    modalTitle.textContent = `Modifier ${name}`;
+    
+    modalBody.innerHTML = `
+        <form id="edit-member-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="edit-member-name" class="form-control" value="${name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="text" id="edit-member-phone" class="form-control" value="${phone}" required>
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select id="edit-member-status" class="form-control">
+                        <option value="Actif" ${status === 'Actif' ? 'selected' : ''}>Actif</option>
+                        <option value="En congé" ${status === 'En congé' ? 'selected' : ''}>En congé</option>
+                        <option value="Inactif" ${status === 'Inactif' ? 'selected' : ''}>Inactif</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    `;
+    
+    document.getElementById('details-modal').classList.add('active');
+    
+    // Gestion soumission
+    document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const updates = {
+            name: document.getElementById('edit-member-name').value,
+            phone: document.getElementById('edit-member-phone').value,
+            status: document.getElementById('edit-member-status').value
+        };
+        
+        const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
+        if(result && result.success) {
+            showNotification("Membre modifié !", "success");
+            closeModal();
+            loadAllCrew(); // Rafraîchir la liste
+        }
+    });
+}
+
+
+
 
         /**
          * Ouvre la modale d'ajout d'un membre
