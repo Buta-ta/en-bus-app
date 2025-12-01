@@ -4524,7 +4524,10 @@ async function displayReservations() {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
-        if (!data.success || !data.reservations) throw new Error("Données invalides");
+        if (!data.success || !Array.isArray(data.reservations)) {
+            throw new Error("Réponse API invalide pour les réservations.");
+        }
+
 
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
