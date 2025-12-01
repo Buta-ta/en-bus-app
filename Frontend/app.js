@@ -4580,7 +4580,22 @@ async function displayReservations() {
                 else if (isPending) statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
                 else if (isReportPending) statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
                 else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
-                else if (isCancelled) statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
+                 // C'EST ICI LA CORRECTION
+    else if (res.status === 'Annulé' || res.status === 'Expiré') {
+        // On utilise la fonction de traduction si elle existe
+        if (typeof translation.status_cancelled === 'function') {
+            statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
+        } else {
+            // Sinon, on met un texte par défaut
+            statusHTML = `<span style="color: #f44336;">${res.status === 'Annulé' ? 'Cancelled' : 'Expired'}</span>`;
+        }
+    } 
+    
+    else { // Fallback pour tout autre statut
+        statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
+    }
+
+
 
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;

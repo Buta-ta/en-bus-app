@@ -619,7 +619,7 @@ const translations = {
     amenity_ac: "AC",
     filter_departure_location: "Departure point",
     filter_all_locations: "All departure locations",
-    filter_toggle_button: "🌪️ Filter & Sort",
+    filter_toggle_button: " Filter & Sort",
 
     
 
