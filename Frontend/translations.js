@@ -381,11 +381,11 @@ const translations = {
     info_arrive_early_desc: "Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide",
     info_baggage_title: "Bagages inclus",
     info_baggage_desc: "1 bagage en soute (20kg) + 1 bagage à main",
-    button_download_outbound: "📥 Télécharger Billet Aller",
-    button_download_return: "📥 Télécharger Billet Retour",
-    button_track_outbound: "🛰️ Suivre Bus Aller",
-    button_track_return: "🛰️ Suivre Bus Retour",
-    button_new_booking_alt: "🏠 Nouvelle Réservation",
+    button_download_outbound: " Télécharger Billet Aller",
+    button_download_return: " Télécharger Billet Retour",
+    button_track_outbound: " Suivre Bus Aller",
+    button_track_return: " Suivre Bus Retour",
+    button_new_booking_alt: " Nouvelle Réservation",
     confirmation_help: "Besoin d'aide ? Contactez-nous :",
     details_label_departure: "Départ",
     details_label_arrival: "Arrivée",
@@ -912,7 +912,7 @@ const translations = {
     button_download_invoice_icon: "📄",
     
 
-    
+
 
     // DANS L'OBJET 'en'
 
