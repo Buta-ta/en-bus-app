@@ -5501,3 +5501,30 @@ body.pwa-installed .container {
     70% { box-shadow: 0 0 0 15px rgba(115, 215, 0, 0); }
     100% { box-shadow: 0 0 0 0 rgba(115, 215, 0, 0); }
 }
+
+
+/* ============================================
+   📅 FIX DATE INPUT MOBILE (PLACEHOLDER)
+   ============================================ */
+
+/* Quand l'input est vide, on affiche le placeholder via CSS */
+#travel-date:not(:focus):invalid {
+    color: transparent; /* Cache le texte par défaut du navigateur */
+}
+
+#travel-date:not(:focus):invalid::before {
+    content: attr(placeholder); /* Affiche notre placeholder */
+    color: var(--color-text-secondary); /* Gris clair */
+    position: absolute;
+    left: 40px; /* Ajustez selon votre icône */
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 16px;
+}
+
+/* Assure que l'input a la place pour l'icône */
+.date-picker {
+    position: relative;
+    min-height: 48px; /* Hauteur confortable */
+}
