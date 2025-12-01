@@ -4867,12 +4867,8 @@ body.pwa-installed .container {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Helvetica Neue', Arial, sans-serif;
         font-size: 14px;
         line-height: 1.5;
-    }
 
 
-    /* ============================================
-   📱 FIX MOBILE : LARGEUR ÉCRAN
-   ============================================ */
 
 @media (max-width: 768px) {
     
@@ -4906,12 +4902,31 @@ body.pwa-installed .container {
     /* Réduire la taille des prix/heures si nécessaire */
     .bus-card-time {
         font-size: 1.1rem !important;
+
+
+
+
         flex-wrap: wrap; /* Permet de passer à la ligne si trop long */
     }
+
+
+
+
+
+
+
+
+
 }
 
 
-@media (max-width: 768px) {
+
+
+
+
+
+
+        @media (max-width: 768px) {
 
     /* 3. Plan du bus (Sélection sièges) */
     .modern-bus-container {
@@ -4951,4 +4966,14 @@ body.pwa-installed .container {
         word-break: break-word; /* Coupe les noms de villes trop longs */
     }
 }
+    }
+
+
+    /* ============================================
+   📱 FIX MOBILE : LARGEUR ÉCRAN
+   ============================================ */
+
+
+
+
 }
