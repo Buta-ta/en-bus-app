@@ -364,10 +364,11 @@ function sendPaymentConfirmedEmail(reservation) {
         
         <p>${translation.email_confirmed_cta}</p>
         
-        <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || '#'}?page=reservations" class="button">${translation.email_confirmed_button}</a>
-        </div>
-        
+      <div style="text-align: center; margin-top: 30px;">
+    <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
+        ${translation.email_confirmed_button}
+    </a>
+</div>
         <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_confirmed_outro}</p>
     `;
 
