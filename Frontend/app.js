@@ -2743,56 +2743,74 @@ function setupAmenitiesFilters() {
         `;
     }).join('');
 }
+// ============================================
+// 🚌 RECHERCHE (AVEC DÉBOGAGE)
+// ============================================
 window.searchBuses = async function() {
+    console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
     
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-
-    const origin = document.getElementById("origin").value;
-    const destination = document.getElementById("destination").value;
-    
-    // ✅ On lit les valeurs des NOUVEAUX inputs cachés
-    // DANS searchBuses
-const departureDate = document.getElementById("departure-date-value").value;
-let returnDate = document.getElementById("return-date-value").value;
-    
-    const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
-    
-    // Validation
-    if (!origin || !destination) {
-        Utils.showToast(translation.error_missing_origin_destination, 'error');
-        return;
-    }
-    if (!departureDate) {
-        Utils.showToast(translation.error_missing_departure_date, 'error');
-        return;
-    }
-    if (tripType === "round-trip" && !returnDate) {
-        // Si le retour est vide en A/R, on le met au même jour que le départ
-        returnDate = departureDate;
-    }
-    
-    appState.currentSearch = { 
-        origin, 
-        destination, 
-        date: departureDate, 
-        returnDate: tripType === "round-trip" ? returnDate : null,
-        passengers: appState.passengerCounts.adults + appState.passengerCounts.children, 
-        tripType 
-    };
-    
     try {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+
+        const origin = document.getElementById("origin").value;
+        const destination = document.getElementById("destination").value;
+        const departureDate = document.getElementById("departure-date-value").value;
+        let returnDate = document.getElementById("return-date-value").value;
+        
+        console.log(`2️⃣ Données saisies: De ${origin} à ${destination}, le ${departureDate}`);
+
+        const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
+        if (tripType === "round-trip" && departureDate && !returnDate) {
+            returnDate = departureDate;
+        }
+
+        // Validation
+        if (!origin || !destination || !departureDate) {
+            Utils.showToast("Veuillez remplir l'origine, la destination et la date.", 'error');
+            console.error("❌ Validation échouée : champs manquants.");
+            return;
+        }
+        
+        appState.currentSearch = { 
+            origin, destination, date: departureDate, returnDate, 
+            passengers: appState.passengerCounts.adults + appState.passengerCounts.children, 
+            tripType 
+        };
+
         Utils.showToast(translation.info_searching, 'info');
+        console.log("3️⃣ Envoi de la requête API...");
         
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
+        console.log("4️⃣ Réponse reçue du serveur :", response.status);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: "Réponse non JSON" }));
+            throw new Error(errorData.error || translation.error_search_failed);
+        }
         
-        // ... (le reste de la fonction est inchangé)
         const data = await response.json();
-        // ...
+        console.log("5️⃣ Données JSON parsées:", data);
         
+        if (data.count === 0) {
+            console.log("   -> Aucun résultat trouvé.");
+            Utils.showToast(translation.info_no_trips_found, 'info');
+            appState.currentResults = [];
+            displayResults([]);
+        } else {
+            console.log(`   -> ${data.count} résultats trouvés.`);
+            appState.currentResults = data.results;
+            displayResults(data.results);
+        }
+        
+        // C'est ici que la magie doit opérer
+        console.log("6️⃣ Affichage de la page 'results'...");
+        showPage("results");
+
     } catch (error) {
-        console.error('❌ Erreur recherche:', error);
+        console.error('❌ Erreur critique dans searchBuses:', error);
+        Utils.showToast(error.message || "Une erreur est survenue.", 'error');
     }
 }
 function setupSmartSearch() {
