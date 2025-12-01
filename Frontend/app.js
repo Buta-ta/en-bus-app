@@ -4587,14 +4587,23 @@ async function displayReservations() {
                     statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported || 'Rescheduled'}</span>`;
                 } 
                 
-                // ✅ LE BLOC CORRIGÉ EST ICI
-                else if (isCancelled) { 
+               // ✅ LOGIQUE DE TRADUCTION CORRIGÉE
+                else if (isCancelled) {
+                    const lang = getLanguage();
+                    let statusText = res.status; // Par défaut, "Annulé" ou "Expiré"
+
+                    // Si on est en anglais, on traduit manuellement les termes du backend
+                    if (lang === 'en') {
+                        if (res.status === 'Annulé') statusText = 'Cancelled';
+                        if (res.status === 'Expiré') statusText = 'Expired';
+                    }
+                    
+                    // On utilise la fonction de traduction avec le texte déjà traduit
                     if (typeof translation.status_cancelled === 'function') {
-                        statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
+                        statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(statusText)}</span>`;
                     } else {
-                        // Fallback pour l'anglais
-                        const defaultText = res.status === 'Annulé' ? 'Cancelled' : 'Expired';
-                        statusHTML = `<span style="color: #f44336;">${defaultText}</span>`;
+                        // Fallback si la fonction n'existe pas
+                        statusHTML = `<span style="color: #f44336;">${statusText}</span>`;
                     }
                 } 
                 
