@@ -5000,7 +5000,66 @@ body.pwa-installed .container {
     }
 
 
-  
 
 
+
+}
+
+
+/* ============================================
+   🌪️ FILTRES PLIABLES (DESKTOP & MOBILE)
+   ============================================ */
+
+/* 1. Les filtres sont cachés par défaut */
+.filters-bar-enhanced {
+    display: none; /* Caché initialement */
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    margin-bottom: 20px;
+}
+
+/* 2. Classe pour afficher les filtres */
+.filters-bar-enhanced.open {
+    display: grid; /* Grid comme prévu pour l'intérieur */
+    opacity: 1;
+    animation: slideDownFilter 0.3s ease-out;
+}
+
+/* 3. Style du bouton de bascule (Visible partout) */
+#mobile-filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: var(--color-surface); /* Fond sombre */
+    color: var(--color-text-primary); /* Texte clair */
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#mobile-filter-toggle:hover {
+    background-color: rgba(115, 215, 0, 0.1); /* Vert léger au survol */
+    border-color: var(--color-accent-glow);
+}
+
+#mobile-filter-toggle .toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+}
+
+#mobile-filter-toggle.active .toggle-icon {
+    transform: rotate(180deg); /* Flèche vers le haut */
+}
+
+/* Animation d'ouverture */
+@keyframes slideDownFilter {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
