@@ -2760,26 +2760,31 @@ window.searchBuses = async function() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // --- 1. Récupération des données ---
     const origin = document.getElementById("origin").value;
     const destination = document.getElementById("destination").value;
+    const travelDates = document.getElementById("travel-date").value;
     
-    // ✅ On lit les valeurs des INPUTS CACHÉS
-    const departureDate = document.getElementById("departure-date").value;
-    let returnDate = document.getElementById("return-date").value; // 'let' pour pouvoir le modifier
+    let departureDate, returnDate;
+
+    // ==========================================================
+    // ✅ CORRECTION DE LA DÉTECTION DE LA PLAGE DE DATES
+    // ==========================================================
+    // Flatpickr utilise " to " en anglais et " au " en français.
+    const separator = (lang === 'en') ? " to " : " au ";
+    
+    if (travelDates.includes(separator)) {
+        [departureDate, returnDate] = travelDates.split(separator).map(date => date.trim());
+    } else {
+        // Sécurité : si le séparateur est incorrect, on considère une date unique
+        departureDate = travelDates;
+        returnDate = null;
+    }
+    // ==========================================================
     
     const totalPassengers = appState.passengerCounts.adults + appState.passengerCounts.children;
     const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode") || "one-way";
     
-    // --- 2. Logique pour l'aller-retour même jour ---
-    if (tripType === "round-trip" && departureDate && !returnDate) {
-        // Si on est en A/R et que seule la date de départ est choisie,
-        // on considère que le retour est le même jour.
-        returnDate = departureDate; 
-        console.log("✈️ Aller-retour le même jour détecté. Date retour forcée à:", returnDate);
-    }
-    
-    // --- 3. Validation ---
+    // --- Validation (votre code est conservé) ---
     if (!origin || !destination) {
         Utils.showToast(translation.error_missing_origin_destination, 'error');
         return;
@@ -2797,21 +2802,11 @@ window.searchBuses = async function() {
         return;
     }
     
-    // --- 4. Sauvegarde de la recherche ---
-    appState.currentSearch = { 
-        origin, 
-        destination, 
-        date: departureDate, 
-        returnDate: tripType === "round-trip" ? returnDate : null, // Ne stocker la date retour que si c'est pertinent
-        passengers: totalPassengers, 
-        tripType 
-    };
+    appState.currentSearch = { origin, destination, date: departureDate, returnDate, passengers: totalPassengers, tripType };
     
-    // --- 5. Appel API (inchangé) ---
     try {
         Utils.showToast(translation.info_searching, 'info');
         
-        // On utilise la date de départ pour la recherche initiale de l'aller
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
         
         if (!response.ok) {
