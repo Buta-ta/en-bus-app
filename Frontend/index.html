@@ -413,9 +413,13 @@
                     <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
                     <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder"
                       placeholder="Sélectionnez vos dates" />
-                      <!-- ✅ AJOUTEZ CET INPUT CACHÉ -->
-<input type="hidden" id="return-date-hidden-input">
+                     
                   </div>
+
+<!-- Inputs cachés pour stocker les vraies dates -->
+<input type="hidden" id="departure-date">
+<input type="hidden" id="return-date">
+
                 </div>
                 <div class="form-row">
                   <div class="form-group">

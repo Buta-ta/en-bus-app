@@ -2525,46 +2525,77 @@ function setupTripTypeToggle() {
     });
 }
 function setupDatePickers() {
+    // Destruction de l'ancienne instance si elle existe
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
     }
 
-    // On récupère la langue actuelle et la traduction
     const lang = getLanguage();
     const placeholderText = translations[lang]?.search_form_dates_placeholder || "Sélectionnez vos dates";
 
+    // Références aux inputs
+    const displayInput = document.getElementById('travel-date-display');
+    const departureInput = document.getElementById('departure-date');
+    const returnInput = document.getElementById('return-date');
+
+    // Mettre le placeholder
+    displayInput.placeholder = placeholderText;
+
+    // Déterminer le mode (simple ou double sélection)
+    const isRoundTrip = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip";
+    
+    // Configuration flatpickr
     const config = {
-        altInput: true,
-        altFormat: "d F Y",
-        dateFormat: "Y-m-d",
+        dateFormat: "Y-m-d", // Format pour nos inputs cachés
         minDate: "today",
         locale: lang,
-        mode: document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip" ? "range" : "single",
-
-
-        // ✅ AJOUTS POUR PERMETTRE LE MÊME JOUR
-    allowInput: true, // Autorise la saisie manuelle (utile pour certains cas)
-    
-    // Cette option est clé : elle permet à la plage de se fermer sur le même jour
-    "plugins": [
-        new rangePlugin({ input: "#return-date-hidden-input" }) // Nécessite un input caché dans le HTML
-    ],
-
+        mode: isRoundTrip ? "multiple" : "single", // ✅ On utilise "multiple" pour l'aller-retour
         
-        // ===========================================
-        // ✅ LE HACK QUI FORCE LE PLACEHOLDER
-        // ===========================================
-        // onReady se déclenche juste après que Flatpickr a créé ses éléments
-        onReady: function(selectedDates, dateStr, instance) {
-            // 'instance.altInput' est le champ de texte visible par l'utilisateur
-            if (instance.altInput) {
-                instance.altInput.placeholder = placeholderText;
-                console.log(`Placeholder forcé en '${lang}': "${placeholderText}"`);
+        // C'est ici que la magie opère
+        onChange: function(selectedDates) {
+            // S'il n'y a pas de dates, on vide tout
+            if (selectedDates.length === 0) {
+                displayInput.value = "";
+                departureInput.value = "";
+                returnInput.value = "";
+                return;
             }
+
+            // Trier les dates pour avoir toujours départ < retour
+            selectedDates.sort((a, b) => a - b);
+            
+            const departureDate = selectedDates[0];
+            const returnDate = selectedDates.length > 1 ? selectedDates[1] : null;
+
+            // Formater les dates pour l'affichage (ex: "15 Juil - 17 Juil")
+            const formatter = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' });
+            
+            // Stocker les vraies dates dans les inputs cachés
+            departureInput.value = departureDate.toISOString().split('T')[0];
+            
+            let displayValue = formatter.format(departureDate);
+
+            if (isRoundTrip) {
+                if (returnDate) {
+                    returnInput.value = returnDate.toISOString().split('T')[0];
+                    // Si le même jour, on affiche "15 Juil (A/R)"
+                    if (departureDate.getTime() === returnDate.getTime()) {
+                        displayValue += " (Aller/Retour)";
+                    } else {
+                        displayValue += ` — ${formatter.format(returnDate)}`;
+                    }
+                } else {
+                    returnInput.value = ""; // Vider si une seule date est choisie
+                }
+            }
+            
+            // Mettre à jour l'input visible par l'utilisateur
+            displayInput.value = displayValue;
         }
     };
     
-    appState.departurePicker = flatpickr("#travel-date", config);
+    // Initialiser flatpickr sur notre champ visible
+    appState.departurePicker = flatpickr(displayInput, config);
 }
 
 function setupPassengerSelector() {
@@ -2729,31 +2760,26 @@ window.searchBuses = async function() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
+    // --- 1. Récupération des données ---
     const origin = document.getElementById("origin").value;
     const destination = document.getElementById("destination").value;
-    const travelDates = document.getElementById("travel-date").value;
     
-    let departureDate, returnDate;
-
-    // ==========================================================
-    // ✅ CORRECTION DE LA DÉTECTION DE LA PLAGE DE DATES
-    // ==========================================================
-    // Flatpickr utilise " to " en anglais et " au " en français.
-    const separator = (lang === 'en') ? " to " : " au ";
-    
-    if (travelDates.includes(separator)) {
-        [departureDate, returnDate] = travelDates.split(separator).map(date => date.trim());
-    } else {
-        // Sécurité : si le séparateur est incorrect, on considère une date unique
-        departureDate = travelDates;
-        returnDate = null;
-    }
-    // ==========================================================
+    // ✅ On lit les valeurs des INPUTS CACHÉS
+    const departureDate = document.getElementById("departure-date").value;
+    let returnDate = document.getElementById("return-date").value; // 'let' pour pouvoir le modifier
     
     const totalPassengers = appState.passengerCounts.adults + appState.passengerCounts.children;
     const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode") || "one-way";
     
-    // --- Validation (votre code est conservé) ---
+    // --- 2. Logique pour l'aller-retour même jour ---
+    if (tripType === "round-trip" && departureDate && !returnDate) {
+        // Si on est en A/R et que seule la date de départ est choisie,
+        // on considère que le retour est le même jour.
+        returnDate = departureDate; 
+        console.log("✈️ Aller-retour le même jour détecté. Date retour forcée à:", returnDate);
+    }
+    
+    // --- 3. Validation ---
     if (!origin || !destination) {
         Utils.showToast(translation.error_missing_origin_destination, 'error');
         return;
@@ -2771,11 +2797,21 @@ window.searchBuses = async function() {
         return;
     }
     
-    appState.currentSearch = { origin, destination, date: departureDate, returnDate, passengers: totalPassengers, tripType };
+    // --- 4. Sauvegarde de la recherche ---
+    appState.currentSearch = { 
+        origin, 
+        destination, 
+        date: departureDate, 
+        returnDate: tripType === "round-trip" ? returnDate : null, // Ne stocker la date retour que si c'est pertinent
+        passengers: totalPassengers, 
+        tripType 
+    };
     
+    // --- 5. Appel API (inchangé) ---
     try {
         Utils.showToast(translation.info_searching, 'info');
         
+        // On utilise la date de départ pour la recherche initiale de l'aller
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
         
         if (!response.ok) {
