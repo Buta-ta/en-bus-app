@@ -2524,7 +2524,9 @@ function setupTripTypeToggle() {
         });
     });
 }
-
+// ============================================
+// 📅 CALENDRIER (CORRIGÉ AVEC VOTRE ID)
+// ============================================
 function setupDatePickers() {
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
@@ -2533,30 +2535,31 @@ function setupDatePickers() {
     const lang = getLanguage();
     const placeholderText = translations[lang]?.search_form_dates_placeholder || "Sélectionnez vos dates";
 
-    const displayInput = document.getElementById('travel-date-display');
+    // ✅ On utilise VOTRE ID d'input
+    const displayInput = document.getElementById('travel-date');
     const departureValueInput = document.getElementById('departure-date-value');
     const returnValueInput = document.getElementById('return-date-value');
 
-    // Sécurité : si un des champs manque, on ne fait rien pour éviter de planter
     if (!displayInput || !departureValueInput || !returnValueInput) {
-        console.error("Erreur: Un des inputs de date est manquant.");
+        console.error("❌ ERREUR FATALE : Un des inputs de date est manquant.");
         return;
     }
 
     displayInput.placeholder = placeholderText;
+    displayInput.readOnly = true; // Empêcher le clavier mobile de s'ouvrir
 
     const isRoundTrip = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip";
     
-    const config = {
-        dateFormat: "Y-m-d", // Format pour les inputs cachés
+    appState.departurePicker = flatpickr(displayInput, {
+        dateFormat: "Y-m-d",
         minDate: "today",
         locale: lang,
-        mode: isRoundTrip ? "multiple" : "single",
-        
-        // C'est ici qu'on met à jour l'affichage
-        onChange: function(selectedDates) {
+        mode: isRoundTrip ? "range" : "single",
+        altInput: true, // Flatpickr va créer un champ visible, on le configure
+        altFormat: "d F", // Format d'affichage (ex: 15 Juil)
+
+        onClose: function(selectedDates) {
             if (selectedDates.length === 0) {
-                displayInput.value = "";
                 departureValueInput.value = "";
                 returnValueInput.value = "";
                 return;
@@ -2566,38 +2569,23 @@ function setupDatePickers() {
             
             const departureDate = selectedDates[0];
             const returnDate = selectedDates.length > 1 ? selectedDates[1] : null;
-
-            const formatter = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' });
             
-            // Stocker les vraies dates (format YYYY-MM-DD)
+            // Stockage dans les inputs cachés
             departureValueInput.value = departureDate.toISOString().split('T')[0];
             
-            let displayValue = formatter.format(departureDate);
-
             if (isRoundTrip) {
                 if (returnDate) {
                     returnValueInput.value = returnDate.toISOString().split('T')[0];
-                    if (departureDate.getTime() === returnDate.getTime()) {
-                        displayValue += ` (A/R)`;
-                    } else {
-                        displayValue += ` — ${formatter.format(returnDate)}`;
-                    }
                 } else {
-                    // Si une seule date est choisie en A/R, on met la même pour le retour
+                    // Si une seule date, retour = même jour
                     returnValueInput.value = departureValueInput.value;
-                    displayValue += ` (A/R)`;
                 }
-            } else {
-                returnValueInput.value = "";
             }
-            
-            displayInput.value = displayValue;
         }
-    };
-    
-    appState.departurePicker = flatpickr(displayInput, config);
-}
+    });
 
+    console.log(`✅ Calendrier initialisé sur #travel-date en mode "${isRoundTrip ? 'range' : 'single'}"`);
+}
 
 
 function setupPassengerSelector() {
@@ -2765,8 +2753,9 @@ window.searchBuses = async function() {
     const destination = document.getElementById("destination").value;
     
     // ✅ On lit les valeurs des NOUVEAUX inputs cachés
-    const departureDate = document.getElementById("departure-date-value").value;
-    let returnDate = document.getElementById("return-date-value").value;
+    // DANS searchBuses
+const departureDate = document.getElementById("departure-date-value").value;
+let returnDate = document.getElementById("return-date-value").value;
     
     const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
     
