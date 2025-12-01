@@ -166,47 +166,79 @@ async function connectToDb() {
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
 const emailTemplate = (content, headerTitle, lang = 'fr') => {
-    // 1. On récupère le bon bloc de traductions
     const translation = translations[lang] || translations.fr;
     
-    // 2. On retourne le même HTML, mais avec les textes remplacés par les clés de traduction
+    // Couleurs modernes
+    const primaryColor = "#73d700"; // Vert En-Bus
+    const darkColor = "#10101A";    // Bleu Nuit
+    const lightBg = "#F4F7F9";      // Gris fond
+
     return `
 <!DOCTYPE html>
 <html lang="${lang}">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <title>${headerTitle}</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #f4f7f9; font-family: 'Inter', Arial, sans-serif; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header { background-color: #0a0e27; padding: 30px; text-align: center; }
-        .logo { font-family: 'Audiowide', sans-serif; font-size: 32px; color: #73d700; margin: 0; text-decoration: none; }
-        .content { padding: 30px; color: #333; line-height: 1.6; }
-        .button { display: inline-block; background-color: #73d700; color: #ffffff !important; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; margin-top: 20px; }
-        .footer { background-color: #0a0e27; color: #a2a7c0; padding: 20px; text-align: center; font-size: 12px; }
-        .footer a { color: #73d700; text-decoration: none; }
+        /* Reset & Base */
+        body { margin: 0; padding: 0; background-color: ${lightBg}; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333; line-height: 1.6; }
+        .wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-top: 40px; margin-bottom: 40px; }
+        
+        /* Header */
+        .header { background-color: ${darkColor}; padding: 40px 30px; text-align: center; background-image: radial-gradient(circle at top, #1c1c2e 0%, ${darkColor} 100%); }
+        .logo { font-size: 28px; font-weight: 900; color: ${primaryColor}; letter-spacing: -1px; text-transform: uppercase; font-family: 'Arial Black', sans-serif; }
+        .header-title { color: #ffffff; font-size: 22px; margin-top: 15px; margin-bottom: 0; font-weight: 700; }
+        
+        /* Content */
+        .content { padding: 40px 30px; }
+        h2 { font-size: 20px; margin-top: 0; margin-bottom: 20px; color: ${darkColor}; }
+        p { margin-bottom: 20px; font-size: 16px; color: #555555; }
+        
+        /* Info Box (Nouveau style pour vos détails) */
+        .info-box { background-color: #f8f9fa; border-left: 4px solid ${primaryColor}; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .info-box strong { color: ${darkColor}; display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-box span { font-size: 16px; font-weight: 600; color: #333; display: block; margin-bottom: 12px; }
+        .info-box span:last-child { margin-bottom: 0; }
+
+        /* Code Box (Pour Agence) */
+        .code-box { background-color: #e3f2fd; border: 2px dashed #2196f3; color: #0d47a1; padding: 20px; text-align: center; border-radius: 12px; margin: 25px 0; }
+        .code-box-title { font-size: 12px; text-transform: uppercase; font-weight: 700; margin: 0 0 5px 0; opacity: 0.8; }
+        .code-box-code { font-size: 32px; font-weight: 900; margin: 0; font-family: monospace; letter-spacing: 2px; }
+
+        /* Buttons */
+        .button { display: inline-block; background-color: ${primaryColor}; color: #ffffff !important; padding: 14px 30px; border-radius: 50px; font-weight: 700; text-decoration: none; text-align: center; margin-top: 20px; box-shadow: 0 4px 15px rgba(115, 215, 0, 0.4); }
+        
+        /* Footer */
+        .footer { background-color: #f8f9fa; padding: 30px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eeeeee; }
+        .footer a { color: #999; text-decoration: none; font-weight: 600; }
+        
+        @media only screen and (max-width: 600px) { .wrapper { width: 100% !important; border-radius: 0; margin: 0; } }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="wrapper">
         <div class="header">
-            <a href="#" class="logo">En-Bus</a>
-            <h2 style="color: white; margin-top: 10px;">${headerTitle}</h2>
+            <div class="logo">EN-BUS</div>
+            <h1 class="header-title">${headerTitle}</h1>
         </div>
         <div class="content">
             ${content}
-            <p style="margin-top: 30px;">${translation.email_thanks}<br>${translation.email_team}</p>
+            <p style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                ${translation.email_thanks}<br>
+                <strong>${translation.email_team}</strong>
+            </p>
         </div>
         <div class="footer">
             <p>${translation.footer_copyright}</p>
-            <p><a href="#">${translation.nav_contact}</a> | <a href="#">${translation.nav_my_bookings}</a></p>
+            <p><a href="#">${translation.nav_contact}</a> • <a href="#">${translation.nav_my_bookings}</a></p>
         </div>
     </div>
 </body>
 </html>
-`;
+    `;
 };
+
 
 async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
     // Sécurité : ne pas planter si la clé API est manquante
@@ -249,66 +281,59 @@ async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
 }
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) {
-        console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
-        return;
-    }
+    if (!client?.email) return;
 
     const lang = reservation.lang || 'fr'; 
     const translation = translations[lang] || translations.fr;
-    const locale = lang === 'en' ? enUS : fr; // Choisir la locale pour date-fns
-    const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence
+    const locale = lang === 'en' ? enUS : fr;
+    const timeZone = 'Africa/Brazzaville';
 
     const subject = translation.email_pending_subject(reservation.bookingNumber);
     const headerTitle = translation.email_pending_title;
     
-    // ===============================================
-    // ✅ CORRECTION DU FUSEAU HORAIRE
-    // ===============================================
-    // 1. On prend la date UTC stockée en base de données
+    // Date formatée
     const deadlineUTC = new Date(reservation.paymentDeadline);
-    
-    // 2. On la convertit dans le fuseau horaire de l'Afrique Centrale
     const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
-    
-    // 3. On formate cette date pour l'affichage, en spécifiant la langue
-    // ✅ Version corrigée
     const deadline = format(zonedDeadline, "PPPP p", { locale: locale });
-    // 'PPPP' donne "mercredi 26 novembre 2025"
-    // ===============================================
     
     let paymentInstructions = '';
     if (reservation.paymentMethod === 'AGENCY') {
+        // Style Code Box
         paymentInstructions = `
-            <h3>${translation.email_pending_agency_cta}</h3>
             <div class="code-box">
                 <h4 class="code-box-title">${translation.email_pending_agency_code_label}</h4>
                 <p class="code-box-code">${reservation.agencyPaymentCode}</p>
             </div>
+            <p style="text-align: center; font-size: 14px;">${translation.email_pending_agency_cta}</p>
         `;
     } else {
+        // Style Info Box Mobile Money
         paymentInstructions = `
-            <h3>${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</h3>
+            <div class="info-box" style="border-left-color: #ffa726; background-color: #fff8e1;">
+                <h3 style="color: #ffa726; margin-top: 0; font-size: 18px;">📱 Paiement Mobile</h3>
+                <p style="margin-bottom: 0;">${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</p>
+            </div>
         `;
     }
 
     const htmlContent = `
-           
-
         <h2>${translation.email_greeting(client.name)}</h2>
         <p>${translation.email_pending_intro(reservation.route.from, reservation.route.to)}</p>
+        
         ${paymentInstructions}
-        <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
+        
+        <div style="background-color: #ffebee; border: 1px solid #ef5350; color: #c62828; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; font-weight: 700;">
+            ⚠️ ${translation.email_pending_deadline_warning(deadline)}
+        </div>
     `;
 
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
+
+
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) {
-        console.log(`(Email de confirmation non envoyé, adresse manquante)`);
-        return;
-    }
+    if (!client?.email) return;
 
     const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
@@ -317,39 +342,42 @@ function sendPaymentConfirmedEmail(reservation) {
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
     const headerTitle = translation.email_confirmed_title;
     
-    // --- Correction de la date et de l'heure ---
     const timeZone = 'Africa/Brazzaville';
     const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
     const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
-    const formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale }); // Utilise 'at' en anglais
+    const formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale });
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
         <p>${translation.email_confirmed_intro}</p>
+        
         <div class="info-box">
             <strong>${translation.email_confirmed_details_trip}</strong>
-            <span>${reservation.route.from} → ${reservation.route.to}</span>
-        </div>
-        <div class="info-box">
+            <span>${reservation.route.from} ➝ ${reservation.route.to}</span>
+            
             <strong>${translation.email_confirmed_details_date}</strong>
             <span>${formattedDateTime}</span>
+            
+            <strong>Référence</strong>
+            <span style="font-family: monospace; letter-spacing: 1px;">${reservation.bookingNumber}</span>
         </div>
+        
         <p>${translation.email_confirmed_cta}</p>
+        
         <div style="text-align: center;">
             <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
         </div>
-        <p>${translation.email_confirmed_outro}</p>
+        
+        <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_confirmed_outro}</p>
     `;
 
-    // ✅ On passe bien la langue à la fonction d'envoi principale
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
+
+
 function sendReportConfirmedEmail(oldReservation, newReservation) {
     const client = newReservation.passengers?.[0];
-    if (!client?.email) {
-        console.log(`(Email de report non envoyé, adresse manquante)`);
-        return;
-    }
+    if (!client?.email) return;
 
     const lang = newReservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
@@ -361,45 +389,41 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
     
     const oldDate = new Date(oldReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
     
-    // --- Correction de la date et de l'heure ---
     const newDepartureDateTimeUTC = new Date(`${newReservation.date}T${newReservation.route.departure}:00`);
     const newZonedDeparture = utcToZonedTime(newDepartureDateTimeUTC, timeZone);
     const newFormattedDateTime = format(newZonedDeparture, "PPPP 'à' p", { locale: locale });
-
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
         <p>${translation.email_report_intro}</p>
         
-        <div class="info-box" style="background-color: #ffebee; border-left-color: #e57373;">
-            <strong style="color: #c62828;">${translation.email_report_old_trip_label}</strong>
-            ${translation.email_report_old_trip_date(oldDate)} - Billet ${oldReservation.bookingNumber} <em>${translation.email_report_old_trip_invalid}</em>
+        <!-- Alerte Ancien Billet -->
+        <div style="background-color: #ffebee; border-left: 4px solid #ef5350; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong style="color: #c62828; font-size: 12px; text-transform: uppercase;">${translation.email_report_old_trip_label}</strong>
+            <div style="color: #b71c1c;">
+                ${translation.email_report_old_trip_date(oldDate)} • ${oldReservation.bookingNumber}
+                <br><em>${translation.email_report_old_trip_invalid}</em>
+            </div>
         </div>
 
-        <div class="booking-number">
-            <div class="booking-label">${translation.email_report_new_trip_label}</div>
-            <div class="booking-value">${newReservation.bookingNumber}</div>
+        <div class="info-box">
+            <strong>${translation.email_report_new_trip_label}</strong>
+            <span style="font-size: 20px; color: #73d700;">${newReservation.bookingNumber}</span>
+            
+            <strong>${translation.email_confirmed_details_trip}</strong>
+            <span>${newReservation.route.from} ➝ ${newReservation.route.to}</span>
+            
+            <strong>${translation.email_confirmed_details_date}</strong>
+            <span>${newFormattedDateTime}</span>
         </div>
-        
-        <div class="details">
-            <div class="detail-row">
-                <span class="detail-label">${translation.email_confirmed_details_trip}</span>
-                <span class="detail-value">${newReservation.route.from} → ${newReservation.route.to}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">${translation.email_confirmed_details_date}</span>
-                <span class="detail-value">${newFormattedDateTime}</span>
-            </div>
-        </div>
-        
-        <p>${translation.email_report_outro}</p>
         
         <div style="text-align: center;">
             <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
         </div>
+        
+        <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_report_outro}</p>
     `;
 
-    // ✅ On passe bien la langue à la fonction d'envoi principale
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 // --- Middleware & Utilitaires ---
