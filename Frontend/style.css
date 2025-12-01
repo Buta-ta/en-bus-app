@@ -5087,88 +5087,125 @@ body.pwa-installed .container {
 
 
 
-
 /* ============================================
-   🎟️ FIX MOBILE FINAL : PAGE CONFIRMATION
+   🎟️ FIX MOBILE FINAL : PAGE CONFIRMATION (ULTRA COMPACT)
    ============================================ */
 
 @media (max-width: 768px) {
 
-    /* 1. Conteneur principal : Zéro marge latérale */
-    .confirmation-container, 
+    /* 1. Largeur globale : on contraint tout */
     .confirmation-container-modern {
         width: 100% !important;
-        max-width: 100vw !important;
-        margin: 20px 0 !important; /* Marge haut/bas seulement */
-        padding: 0 8px !important; /* Petit padding interne */
+        padding: 0 8px !important; /* Très peu de marge externe */
+        box-sizing: border-box !important;
         overflow-x: hidden !important;
     }
 
-    /* 2. Carte principale */
     .confirmation-card-modern {
-        padding: 15px !important;
+        padding: 12px !important; /* Padding réduit */
         width: 100% !important;
-        box-sizing: border-box !important; /* Vital ! */
         margin: 0 !important;
+        border-radius: 12px !important;
     }
 
-    /* 3. Billet (Journey Card) */
+    /* 2. La Carte Trajet (Le carré) */
     .journey-card {
-        padding: 15px !important;
-        padding-top: 45px !important;
-        margin-top: 15px !important;
+        padding: 12px !important;
+        padding-top: 40px !important; /* Espace pour la date en haut */
         width: 100% !important;
         box-sizing: border-box !important;
+        /* Empêche le débordement */
+        max-width: 100% !important;
     }
 
-    /* 4. Trajet Vertical */
+    /* 3. Trajet Vertical (Sans rotation, méthode Flexbox propre) */
     .journey-route {
+        display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
+        gap: 0 !important; /* Le connecteur gère l'espace */
         width: 100% !important;
     }
 
-    /* Connecteur Vertical */
-    .route-connector {
-        transform: rotate(90deg); 
-        margin: 15px 0 !important;
-        height: 50px !important;
-        width: 50px !important; /* Carré pour bien centrer */
+    /* Points (Villes) */
+    .route-point {
+        width: 100% !important;
         display: flex !important;
+        flex-direction: column !important;
         align-items: center !important;
-        justify-content: center !important;
+        text-align: center !important;
+        z-index: 2; /* Au-dessus de la ligne */
     }
 
-    /* ✅ CORRECTION : REDRESSER LE BUS */
+    .point-city {
+        font-size: 1.2rem !important;
+        line-height: 1.2;
+    }
+
+    /* 4. Le Connecteur (Ligne + Bus + Durée) */
+    .route-connector {
+        /* On annule toute rotation précédente */
+        transform: none !important; 
+        width: 100% !important;
+        height: 60px !important; /* Hauteur fixe entre les villes */
+        position: relative !important;
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        margin: 5px 0 !important;
+    }
+
+    /* La ligne verticale */
+    .connector-line {
+        position: absolute !important;
+        top: 0;
+        bottom: 0;
+        left: 50%; /* Centré */
+        width: 2px !important;
+        height: 100% !important;
+        background: var(--color-accent-glow) !important;
+        transform: translateX(-0.5px); /* Centrage précis */
+        z-index: 1;
+    }
+    
+    /* On cache les flèches CSS de la ligne horizontale */
+    .connector-line::after {
+        display: none !important;
+    }
+
+    /* L'icône Bus (au milieu de la ligne) */
     .connector-icon {
-        transform: rotate(-90deg) !important; /* Annule la rotation du parent */
-        font-size: 20px !important;
+        position: relative !important;
+        z-index: 3; /* Au-dessus de la ligne */
+        background: var(--color-surface) !important; /* Cache la ligne derrière */
+        padding: 5px;
+        border-radius: 50%;
+        font-size: 18px !important;
+        
+        /* ✅ Bus droit sans rotation */
+        transform: none !important; 
+        border: 1px solid var(--color-accent-glow);
     }
 
-    /* Remettre le texte de durée droit */
+    /* La Durée (à droite du bus, sans collision) */
     .connector-duration {
-        transform: rotate(-90deg) translate(25px, 0) !important; /* Ajustement position */
+        position: absolute !important;
+        left: 60% !important; /* Décalé à droite du centre */
+        top: 50%;
+        transform: translateY(-50%) !important; /* Centré verticalement */
+        
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px !important;
         white-space: nowrap;
     }
 
-    /* 5. Points de départ/arrivée */
-    .route-point {
-        flex-direction: column !important;
-        text-align: center !important;
-        width: 100% !important;
-    }
-
-    .point-info {
-        align-items: center !important;
-    }
-
-    /* 6. Grille détails */
-    .details-grid-modern {
-        grid-template-columns: 1fr !important; /* 1 seule colonne pour être sûr */
-        gap: 8px !important;
+    /* 5. Flèche décorative (supprimée pour gagner de la place) */
+    .route-arrow {
+        display: none !important;
     }
 }
-
 
 
 
