@@ -413,6 +413,8 @@
                     <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
                     <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder"
                       placeholder="Sélectionnez vos dates" />
+                      <!-- ✅ AJOUTEZ CET INPUT CACHÉ -->
+<input type="hidden" id="return-date-hidden-input">
                   </div>
                 </div>
                 <div class="form-row">
@@ -1132,6 +1134,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+   <!-- ✅ AJOUTER LE PLUGIN -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/rangePlugin.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
 
   <!-- ✅ AJOUTER CETTE LIGNE AVANT translations.js ET app.js -->

@@ -2540,6 +2540,16 @@ function setupDatePickers() {
         minDate: "today",
         locale: lang,
         mode: document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip" ? "range" : "single",
+
+
+        // ✅ AJOUTS POUR PERMETTRE LE MÊME JOUR
+    allowInput: true, // Autorise la saisie manuelle (utile pour certains cas)
+    
+    // Cette option est clé : elle permet à la plage de se fermer sur le même jour
+    "plugins": [
+        new rangePlugin({ input: "#return-date-hidden-input" }) // Nécessite un input caché dans le HTML
+    ],
+
         
         // ===========================================
         // ✅ LE HACK QUI FORCE LE PLACEHOLDER
