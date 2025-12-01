@@ -165,47 +165,95 @@ async function connectToDb() {
 // ============================================
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
+
 const emailTemplate = (content, headerTitle, lang = 'fr') => {
-    // 1. On récupère le bon bloc de traductions
     const translation = translations[lang] || translations.fr;
     
-    // 2. On retourne le même HTML, mais avec les textes remplacés par les clés de traduction
+    // Couleurs de la marque
+    const primaryColor = "#73d700"; // Vert En-Bus
+    const darkColor = "#10101A";    // Bleu Nuit
+    const lightBg = "#F4F7F9";      // Gris très clair
+
     return `
 <!DOCTYPE html>
-<html lang="${lang}">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <title>${headerTitle}</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #f4f7f9; font-family: 'Inter', Arial, sans-serif; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header { background-color: #0a0e27; padding: 30px; text-align: center; }
-        .logo { font-family: 'Audiowide', sans-serif; font-size: 32px; color: #73d700; margin: 0; text-decoration: none; }
-        .content { padding: 30px; color: #333; line-height: 1.6; }
-        .button { display: inline-block; background-color: #73d700; color: #ffffff !important; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; margin-top: 20px; }
-        .footer { background-color: #0a0e27; color: #a2a7c0; padding: 20px; text-align: center; font-size: 12px; }
-        .footer a { color: #73d700; text-decoration: none; }
+        /* Reset & Base */
+        body { margin: 0; padding: 0; background-color: ${lightBg}; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #333333; line-height: 1.6; }
+        table { border-collapse: collapse; width: 100%; }
+        a { color: ${primaryColor}; text-decoration: none; font-weight: 600; }
+        
+        /* Container */
+        .wrapper { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-top: 40px; margin-bottom: 40px; }
+        
+        /* Header */
+        .header { background-color: ${darkColor}; padding: 40px 30px; text-align: center; background-image: radial-gradient(circle at top, #1c1c2e 0%, ${darkColor} 100%); }
+        .logo { font-size: 28px; font-weight: 900; color: ${primaryColor}; letter-spacing: -1px; text-transform: uppercase; font-family: 'Arial Black', sans-serif; }
+        .header-title { color: #ffffff; font-size: 24px; margin-top: 15px; margin-bottom: 0; font-weight: 700; letter-spacing: -0.5px; }
+        
+        /* Content */
+        .content { padding: 40px 30px; }
+        h2 { font-size: 20px; margin-top: 0; margin-bottom: 20px; color: ${darkColor}; }
+        p { margin-bottom: 20px; font-size: 16px; color: #555555; }
+        
+        /* Info Box (Cadre gris pour détails) */
+        .info-box { background-color: #f8f9fa; border-left: 4px solid ${primaryColor}; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #e0e0e0; padding-bottom: 10px; }
+        .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .info-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 0.5px; }
+        .info-value { font-size: 16px; font-weight: 600; color: ${darkColor}; text-align: right; }
+        
+        /* Code Box (Pour les codes de paiement) */
+        .code-box { background-color: #e3f2fd; border: 2px dashed #2196f3; color: #0d47a1; padding: 20px; text-align: center; border-radius: 12px; margin: 25px 0; }
+        .code-value { font-size: 32px; font-weight: 900; letter-spacing: 2px; display: block; margin-top: 5px; font-family: monospace; }
+        
+        /* Buttons */
+        .btn { display: inline-block; background-color: ${primaryColor}; color: #ffffff !important; padding: 14px 30px; border-radius: 50px; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 4px 15px rgba(115, 215, 0, 0.4); transition: all 0.3s; }
+        .btn-center { text-align: center; margin: 30px 0; }
+        
+        /* Footer */
+        .footer { background-color: #f8f9fa; padding: 30px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eeeeee; }
+        .social-icons { margin-bottom: 20px; font-size: 20px; }
+        .footer-link { margin: 0 10px; color: #999; }
+        
+        /* Mobile */
+        @media only screen and (max-width: 600px) {
+            .wrapper { margin: 0; border-radius: 0; width: 100% !important; }
+            .content { padding: 25px 20px; }
+            .header { padding: 30px 20px; }
+            .header-title { font-size: 20px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="wrapper">
+        <!-- En-tête -->
         <div class="header">
-            <a href="#" class="logo">En-Bus</a>
-            <h2 style="color: white; margin-top: 10px;">${headerTitle}</h2>
+            <div class="logo">EN-BUS</div>
+            <h1 class="header-title">${headerTitle}</h1>
         </div>
+        
+        <!-- Contenu Principal -->
         <div class="content">
             ${content}
-            <p style="margin-top: 30px;">${translation.email_thanks}<br>${translation.email_team}</p>
         </div>
+        
+        <!-- Pied de page -->
         <div class="footer">
-            <p>${translation.footer_copyright}</p>
-            <p><a href="#">${translation.nav_contact}</a> | <a href="#">${translation.nav_my_bookings}</a></p>
+            <p>${translation.email_thanks}<br>L'équipe En-Bus</p>
+            <p style="margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
+                © ${new Date().getFullYear()} En-Bus. Tous droits réservés.<br>
+                <a href="#" class="footer-link">Contact</a> • <a href="#" class="footer-link">CGV</a> • <a href="#" class="footer-link">Confidentialité</a>
+            </p>
         </div>
     </div>
 </body>
 </html>
-`;
+    `;
 };
 
 async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
