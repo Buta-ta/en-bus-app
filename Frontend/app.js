@@ -1641,7 +1641,6 @@ const ticketHTML = `
 const translation = translations[lang] || translations.fr;
 
 Utils.showToast(translation.toast_ticket_downloaded, 'success');
-            Utils.showToast('Billet téléchargé !', 'success');
 
             if (window.innerWidth > 768) {
                 const printWindow = window.open('', '_blank');
