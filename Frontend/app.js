@@ -3307,9 +3307,13 @@ function displayResults(results, isReturn = false) {
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
         
+              // DANS LA BOUCLE map de displayResults
+
         let tripDetailsHTML = '';
+
+        // 1. Gestion des ARRÊTS
         if (route.stops && route.stops.length > 0) {
-            tripDetailsHTML = `
+            tripDetailsHTML += `
                 <div class="trip-details-accordion">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
                         <span class="bus-card-trip-details"><span class="accordion-icon">▶</span>
@@ -3318,24 +3322,30 @@ function displayResults(results, isReturn = false) {
                         </span>
                     </div>
                     <div class="accordion-content">
-                        ${route.stops.map(stop => `<div class="accordion-content-item"><strong>${stop.city}</strong> - ${translation.details_arrival}: ${stop.arrivalTime}, ${translation.details_departure}: ${stop.departureTime} (${stop.duration})</div>`).join('')}
+                        ${route.stops.map(stop => `<div class="accordion-content-item">🛑 <strong>${stop.city}</strong> (${stop.duration})</div>`).join('')}
                     </div>
                 </div>`;
-        } else if (route.connections && route.connections.length > 0) {
-             tripDetailsHTML = `
-                <div class="trip-details-accordion">
+        }
+
+        // 2. Gestion des CORRESPONDANCES (Ajouté à la suite, PAS en 'else if')
+        if (route.connections && route.connections.length > 0) {
+             tripDetailsHTML += `
+                <div class="trip-details-accordion" style="margin-top: 4px;">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
-                         <span class="bus-card-trip-details"><span class="accordion-icon">▶</span>
+                         <span class="bus-card-trip-details" style="color: #00d9ff;"><span class="accordion-icon">▶</span>
                             <span>${translation.details_connections} </span>
                             <strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong>
                         </span>
                     </div>
                     <div class="accordion-content">
-                         ${route.connections.map(conn => `<div class="accordion-content-item">${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}
+                         ${route.connections.map(conn => `<div class="accordion-content-item">⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}
                     </div>
                 </div>`;
-        } else {
-            tripDetailsHTML = `<div class="bus-card-trip-details">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
+        }
+
+        // 3. Si aucun détail n'a été ajouté, c'est un trajet direct
+        if (tripDetailsHTML === '') {
+            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
         }
 
         return `
