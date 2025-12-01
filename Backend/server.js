@@ -345,7 +345,7 @@ function sendPaymentConfirmedEmail(reservation) {
     const timeZone = 'Africa/Brazzaville';
     const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
     const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
-    const formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale });
+    const formattedDateTime = format(zonedDeparture, "PPPP ''p", { locale: locale });
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
@@ -365,7 +365,7 @@ function sendPaymentConfirmedEmail(reservation) {
         <p>${translation.email_confirmed_cta}</p>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
+            <a href="${process.env.FRONTEND_URL || '#'}?page=reservations" class="button">${translation.email_confirmed_button}</a>
         </div>
         
         <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_confirmed_outro}</p>

@@ -1699,6 +1699,22 @@ const ticketHTML = `
     animateSearchPlaceholder();
     setupMobileFilterToggle(); 
 
+    // DANS initApp()
+
+// ... (après les autres initialisations)
+
+// Gestion de la redirection depuis les emails
+const urlParams = new URLSearchParams(window.location.search);
+const page = urlParams.get('page');
+
+if (page === 'reservations') {
+    showPage('reservations');
+    // Nettoyer l'URL pour éviter de rester bloqué sur cette page au refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+} else if (window.location.hash === '#reservations') {
+    showPage('reservations');
+}
+
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
     }
