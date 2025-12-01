@@ -2454,33 +2454,52 @@ app.patch(
   }
 );
 
-
-app.patch(
-  "/api/admin/settings/report",
-  authenticateToken,
-  [
-    /* ... validations ... */
-  ],
-  async (req, res) => {
-    try {
-      const updates = {};
-      if (req.body.secondReportFee !== undefined)
-        updates["value.secondReportFee"] = req.body.secondReportFee;
-      if (req.body.thirdReportFee !== undefined)
-        updates["value.thirdReportFee"] = req.body.thirdReportFee;
-      // ... etc
-      updates.updatedAt = new Date();
-      updates.updatedBy = req.user.username;
-      await systemSettingsCollection.updateOne(
-        { key: "reportSettings" },
-        { $set: updates }
-      );
-      res.json({ success: true, message: "Paramètres mis à jour." });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+// ============================================
+// ⚙️ ENREGISTRER LES PARAMÈTRES (ROBUSTE)
+// ============================================
+app.patch("/api/admin/settings/report", authenticateToken, [
+    body('secondReportFee').isInt(),
+    body('thirdReportFee').isInt(),
+    body('maxReportsAllowed').isInt(),
+    body('minHoursBeforeDeparture').isInt(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: "Données invalides." });
     }
-  }
-);
+
+    try {
+        const newSettingsValue = {
+            // On s'assure que les valeurs sont bien des nombres
+            secondReportFee: parseInt(req.body.secondReportFee),
+            thirdReportFee: parseInt(req.body.thirdReportFee),
+            maxReportsAllowed: parseInt(req.body.maxReportsAllowed),
+            minHoursBeforeDeparture: parseInt(req.body.minHoursBeforeDeparture),
+            // On peut ajouter la valeur par défaut pour firstReportFree
+            firstReportFree: true 
+        };
+
+        // Requête MongoDB simplifiée : on remplace tout l'objet 'value'
+        await systemSettingsCollection.updateOne(
+            { key: "reportSettings" },
+            { 
+                $set: { 
+                    value: newSettingsValue, // Remplace tout l'objet d'un coup
+                    updatedAt: new Date(),
+                    updatedBy: req.user.username 
+                } 
+            },
+            { upsert: true } // Crée le document s'il n'existe pas
+        );
+        
+        console.log("✅ Paramètres mis à jour par", req.user.username);
+        res.json({ success: true, message: "Paramètres mis à jour." });
+
+    } catch (error) {
+        console.error("Erreur sauvegarde settings:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 // ICI
 // ============================================
