@@ -4625,31 +4625,40 @@ async function displayReservations() {
 
 // Action pour télécharger la facture
 // Action pour télécharger la facture (version avec animation)
+// ============================================
+// 📄 TÉLÉCHARGER FACTURE (AVEC ANIMATION)
+// ============================================
 function downloadInvoice(bookingNumber) {
     const loadingModal = document.getElementById('pdf-loading-modal');
 
-    // 1. Afficher l'animation
-    if (loadingModal) loadingModal.classList.add('active');
+    // 1. Afficher la modale d'animation
+    if (loadingModal) {
+        loadingModal.classList.add('active');
+    } else {
+        // Fallback si la modale HTML n'existe pas
+        console.warn("Modale 'pdf-loading-modal' non trouvée.");
+    }
 
     // 2. Préparer l'URL
-    const lang = getLanguage();
-    const url = `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/invoice?lang=${lang}`;
+    const lang = (typeof getLanguage === 'function') ? getLanguage() : 'fr';
+    const baseUrl = (typeof API_CONFIG !== 'undefined') ? API_CONFIG.baseUrl : '';
+    const url = `${baseUrl}/api/reservations/${bookingNumber}/invoice?lang=${lang}`;
 
-    // 3. Ouvrir le PDF dans un nouvel onglet
+    // 3. Ouvrir l'URL dans un nouvel onglet
     const newWindow = window.open(url, '_blank');
 
-    // 4. Cacher l'animation après un court délai
-    // Cela laisse le temps au nouvel onglet de s'ouvrir sans que l'interface ne soit bloquée.
+    // 4. Cacher la modale après un délai pour laisser le temps à l'onglet de s'ouvrir
     setTimeout(() => {
-        if (loadingModal) loadingModal.classList.remove('active');
-        
-        // Si le popup a été bloqué par le navigateur, on prévient l'utilisateur
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            alert("Veuillez autoriser les pop-ups pour télécharger la facture.");
+        if (loadingModal) {
+            loadingModal.classList.remove('active');
         }
-    }, 1500); // 1.5 secondes
-}
 
+        // Vérifier si le pop-up a été bloqué par le navigateur
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            alert("Veuillez autoriser les pop-ups pour afficher la facture.");
+        }
+    }, 1800); // Délai de 1.8 secondes
+}
 // Ajoute un écouteur pour fermer les menus en cliquant n'importe où
 window.addEventListener('click', () => {
 

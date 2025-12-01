@@ -6705,42 +6705,49 @@ function openEditMemberModal(memberId, name, phone, role, status) {
     <!-- ============================================
          ⚙️ MODALE DES PARAMÈTRES (NOUVELLE)
          ============================================ -->
-    <div id="settings-modal" class="modal">
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h2 class="modal-title">Paramètres du système</h2>
-                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="report-settings-form">
-                    <h3 style="color: var(--primary); margin-bottom: 20px;">Configuration des Reports</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label" for="setting-second-fee">Frais 2ème report (FCFA)</label>
-                            <input type="number" id="setting-second-fee" class="form-control" min="0" step="500">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="setting-third-fee">Frais 3ème report (FCFA)</label>
-                            <input type="number" id="setting-third-fee" class="form-control" min="0" step="500">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="setting-max-reports">Max reports par réservation</label>
-                            <input type="number" id="setting-max-reports" class="form-control" min="1" max="5">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="setting-min-hours">Délai minimum avant départ
-                                (heures)</label>
-                            <input type="number" id="setting-min-hours" class="form-control" min="1">
-                        </div>
+   <!-- ============================================
+     ⚙️ MODALE DES PARAMÈTRES
+     ============================================ -->
+<div id="settings-modal" class="modal">
+    <div class="modal-dialog" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Paramètres du Système</h2>
+            <button class="modal-close" onclick="document.getElementById('settings-modal').classList.remove('active')">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- ✅ LE FORMULAIRE APPELLE BIEN saveSettings -->
+            <form id="settings-form" onsubmit="saveSettings(event)">
+                
+                <h4 style="color: var(--primary); margin-bottom: 20px;">Configuration des Reports</h4>
+                
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                        <label class="form-label">Frais 2ème report (FCFA)</label>
+                        <input type="number" id="setting-second-fee" class="form-control">
                     </div>
-                    <button type="submit" class="btn btn-primary mt-4">
-                        <span>💾</span> Enregistrer les paramètres
-                    </button>
-                </form>
-            </div>
+                    <div class="form-group">
+                        <label class="form-label">Frais 3ème report (FCFA)</label>
+                        <input type="number" id="setting-third-fee" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max reports par réservation</label>
+                        <input type="number" id="setting-max-reports" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Délai minimum avant départ (heures)</label>
+                        <input type="number" id="setting-min-hours" class="form-control">
+                    </div>
+                </div>
+                
+                <div style="text-align: right; margin-top: 2rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
+                    <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+                </div>
+
+            </form>
         </div>
     </div>
-
+</div>
 </body> <!-- Votre balise de fermeture </body> -->
 
 </html>
