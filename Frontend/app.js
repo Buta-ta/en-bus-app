@@ -4624,10 +4624,30 @@ async function displayReservations() {
 
 
 // Action pour télécharger la facture
+// Action pour télécharger la facture (version avec animation)
 function downloadInvoice(bookingNumber) {
+    const loadingModal = document.getElementById('pdf-loading-modal');
+
+    // 1. Afficher l'animation
+    if (loadingModal) loadingModal.classList.add('active');
+
+    // 2. Préparer l'URL
     const lang = getLanguage();
     const url = `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/invoice?lang=${lang}`;
-    window.open(url, '_blank');
+
+    // 3. Ouvrir le PDF dans un nouvel onglet
+    const newWindow = window.open(url, '_blank');
+
+    // 4. Cacher l'animation après un court délai
+    // Cela laisse le temps au nouvel onglet de s'ouvrir sans que l'interface ne soit bloquée.
+    setTimeout(() => {
+        if (loadingModal) loadingModal.classList.remove('active');
+        
+        // Si le popup a été bloqué par le navigateur, on prévient l'utilisateur
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            alert("Veuillez autoriser les pop-ups pour télécharger la facture.");
+        }
+    }, 1500); // 1.5 secondes
 }
 
 // Ajoute un écouteur pour fermer les menus en cliquant n'importe où
