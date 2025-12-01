@@ -4575,26 +4575,33 @@ async function displayReservations() {
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                let statusHTML = '';
-                if (isConfirmed) statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
-                else if (isPending) statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
-                else if (isReportPending) statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
-                else if (isReported) statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
-                 // C'EST ICI LA CORRECTION
-    else if (res.status === 'Annulé' || res.status === 'Expiré') {
-        // On utilise la fonction de traduction si elle existe
-        if (typeof translation.status_cancelled === 'function') {
-            statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
-        } else {
-            // Sinon, on met un texte par défaut
-            statusHTML = `<span style="color: #f44336;">${res.status === 'Annulé' ? 'Cancelled' : 'Expired'}</span>`;
-        }
-    } 
-    
-    else { // Fallback pour tout autre statut
-        statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
-    }
+                                let statusHTML = '';
 
+                if (isConfirmed) {
+                    statusHTML = `<span style="color: #73d700;">${translation.status_confirmed || 'Confirmed'}</span>`;
+                } else if (isPending) {
+                    statusHTML = `<span style="color: #ff9800;">${translation.status_pending || 'Pending'}</span>`;
+                } else if (isReportPending) {
+                    statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending || 'Reschedule Pending'}</span>`;
+                } else if (isReported) {
+                    statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported || 'Rescheduled'}</span>`;
+                } 
+                
+                // ✅ LE BLOC CORRIGÉ EST ICI
+                else if (isCancelled) { 
+                    if (typeof translation.status_cancelled === 'function') {
+                        statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(res.status)}</span>`;
+                    } else {
+                        // Fallback pour l'anglais
+                        const defaultText = res.status === 'Annulé' ? 'Cancelled' : 'Expired';
+                        statusHTML = `<span style="color: #f44336;">${defaultText}</span>`;
+                    }
+                } 
+                
+                // Fallback final
+                else {
+                    statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
+                }
 
 
                 let actionsButtons = '';
