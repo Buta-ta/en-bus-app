@@ -5153,3 +5153,88 @@ body.pwa-installed .container {
         margin-bottom: 4px !important;
     }
 }
+
+
+/* ============================================
+   🧳 CONTRÔLES BAGAGES (STEPPER MODERNE)
+   ============================================ */
+
+/* Conteneur du compteur */
+.passenger-counter {
+    display: flex;
+    align-items: center;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 50px; /* Forme de pilule */
+    padding: 4px;
+    gap: 0; /* Pas d'espace, géré par le padding */
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    width: fit-content;
+}
+
+/* Les Boutons (+ et -) */
+.counter-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; /* Cercle parfait */
+    border: none;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Effet au survol */
+.counter-btn:hover:not(:disabled) {
+    background: var(--color-accent-glow);
+    color: #000;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(115, 215, 0, 0.4);
+}
+
+/* Effet au clic */
+.counter-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+/* État désactivé (gris) */
+.counter-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Le chiffre au milieu */
+.passenger-counter span {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-text-primary);
+    font-family: var(--font-mono); /* Look technique */
+}
+
+/* 📱 Ajustement Mobile */
+@media (max-width: 768px) {
+    .passenger-counter {
+        padding: 3px;
+    }
+    
+    .counter-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+    }
+    
+    .passenger-counter span {
+        min-width: 28px;
+        font-size: 14px;
+    }
+}
