@@ -5063,3 +5063,93 @@ body.pwa-installed .container {
     from { transform: translateY(-10px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+
+/* ============================================
+   💺 FIX MOBILE : SÉLECTION SIÈGES (ZERO SCROLL)
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* 1. Conteneur principal du bus */
+    .modern-bus-container {
+        /* Force le bus à ne pas dépasser la largeur de l'écran moins les marges */
+        width: 100% !important;
+        max-width: 350px !important; 
+        margin: 0 auto !important; /* Centrage horizontal */
+        padding: 10px 5px !important; /* Réduction drastique du padding */
+        box-sizing: border-box !important;
+        
+        /* 🃏 LE JOKER : Si l'écran est minuscule (<360px), on réduit tout */
+        transform-origin: top center;
+    }
+
+    /* Pour les très petits écrans (iPhone SE, vieux Android) */
+    @media (max-width: 370px) {
+        .modern-bus-container {
+            transform: scale(0.9); /* Rétrécit à 90% */
+            margin-bottom: -40px !important; /* Compense l'espace vide créé par le scale */
+        }
+    }
+
+    /* 2. Grille des sièges (Layout) */
+    .seat-row {
+        /* On réduit l'espace entre les colonnes au strict minimum */
+        /* Format: Siège | Siège | Allée | Siège | Siège */
+        grid-template-columns: 1fr 1fr 20px 1fr 1fr !important; 
+        gap: 4px !important; /* Espace vertical/horizontal réduit */
+        margin-bottom: 6px !important;
+    }
+
+    /* 3. Les Sièges eux-mêmes */
+    .modern-seat {
+        height: 36px !important; /* Hauteur réduite (était ~44px) */
+        border-radius: 6px !important; /* Arrondis plus petits */
+        border-width: 1px !important; /* Bordure plus fine */
+    }
+
+    .modern-seat .seat-label {
+        font-size: 10px !important; /* Texte du numéro plus petit */
+        font-weight: 700 !important;
+    }
+
+    /* Croix "Occupé" */
+    .seat-cross {
+        font-size: 14px !important;
+    }
+
+    /* 4. Allée centrale */
+    .aisle-space {
+        width: 20px !important; /* Rétrécie */
+    }
+
+    /* 5. Zone Chauffeur & Porte (En haut) */
+    .bus-front-zone {
+        padding: 6px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .driver-section, .front-door-section {
+        padding: 4px 8px !important;
+        gap: 4px !important;
+    }
+
+    .driver-icon, .door-icon {
+        font-size: 16px !important;
+    }
+
+    .driver-label, .door-label {
+        font-size: 9px !important;
+        letter-spacing: 0 !important;
+    }
+
+    /* 6. Zone Arrière (5 sièges) */
+    .back-row-seats {
+        gap: 4px !important;
+    }
+    
+    .back-row-label {
+        font-size: 9px !important;
+        margin-bottom: 4px !important;
+    }
+}
