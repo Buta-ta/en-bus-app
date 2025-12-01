@@ -3173,7 +3173,13 @@ function setupMobileFilterToggle() {
     if (!filterContainer) return;
 
     // Vérifier si le bouton existe déjà pour ne pas le dupliquer
+
     if (document.getElementById('mobile-filter-toggle')) return;
+
+    // ✅ ON RÉCUPÈRE LA TRADUCTION
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    const btnText = translation.filter_toggle_button || "Filtrer & Trier";
 
     // 1. Création du bouton
     const toggleBtn = document.createElement('button');
