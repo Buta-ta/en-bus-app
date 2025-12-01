@@ -3349,8 +3349,33 @@
                 // La case est cochée si 'isPopular' est true
                 const isChecked = t.isPopular ? 'checked' : '';
 
+
+                    let detailsHTML = '';
+    
+    // 1. Arrêts
+    if (tmpl.stops && tmpl.stops.length > 0) {
+        const stopsList = tmpl.stops.map(s => s.city).join(' → ');
+        detailsHTML += `<div style="font-size: 0.8rem; color: #b0bac9; margin-top: 4px;">🛑 Arrêts : ${stopsList}</div>`;
+    }
+    
+    // 2. Correspondances (C'est ça qui manquait peut-être)
+    if (tmpl.connections && tmpl.connections.length > 0) {
+        const connList = tmpl.connections.map(c => `${c.at} (vers ${c.nextCompany})`).join(', ');
+        detailsHTML += `<div style="font-size: 0.8rem; color: #00d9ff; margin-top: 4px;">⇄ Corresp. : ${connList}</div>`;
+    }
+
+    // Si c'est un trajet direct
+    if (!detailsHTML) {
+        detailsHTML = `<div style="font-size: 0.8rem; color: #73d700; margin-top: 4px;">⚡ Direct</div>`;
+    }
+
                 return `
             <tr>
+                <td>
+                <strong style="font-size: 1rem;">${tmpl.from} → ${tmpl.to}</strong>
+                ${detailsHTML} <!-- ✅ Affichage des détails ici -->
+            </td>
+
                 <td><strong class="font-bold">${t.from} → ${t.to}</strong></td>
                 <td>${t.company}</td>
                 <td class="font-bold">${t.price} FCFA</td>
