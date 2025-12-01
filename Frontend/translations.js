@@ -885,9 +885,9 @@ const translations = {
     info_baggage_desc: "1 checked bag (20kg) + 1 carry-on bag",
     button_download_outbound: " Download Outbound Ticket",
     button_download_return: " Download Return Ticket",
-    button_track_outbound: "🛰️ Track Outbound Bus",
-    button_track_return: "🛰️ Track Return Bus",
-    button_new_booking_alt: "🏠 New Booking",
+    button_track_outbound: " Track Outbound Bus",
+    button_track_return: " Track Return Bus",
+    button_new_booking_alt: " New Booking",
     confirmation_help: "Need help? Contact us:",
     details_label_departure: "Departure",
     details_label_arrival: "Arrival",
@@ -912,6 +912,7 @@ const translations = {
     button_download_invoice_icon: "📄",
     
 
+    
 
     // DANS L'OBJET 'en'
 
