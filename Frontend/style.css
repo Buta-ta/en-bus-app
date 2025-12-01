@@ -5084,6 +5084,134 @@ body.pwa-installed .container {
         transform-origin: top center;
     }
 
+
+
+
+
+/* ============================================
+   🎟️ FIX MOBILE : PAGE CONFIRMATION (ZERO SCROLL)
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* 1. Conteneur principal */
+    .confirmation-container, 
+    .confirmation-container-modern {
+        width: 100% !important;
+        padding: 0 10px !important;
+        margin: 20px auto !important;
+        box-sizing: border-box !important;
+    }
+
+    .confirmation-card-modern {
+        padding: 15px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 2. Le Billet (Journey Card) */
+    .journey-card {
+        padding: 15px !important;
+        padding-top: 40px !important; /* Espace pour la date */
+        margin-top: 15px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 3. Transformation du trajet en vertical */
+    .journey-route {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 15px !important;
+    }
+
+    /* Points de départ/arrivée */
+    .route-point {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+        flex-direction: column !important; /* Icône au-dessus */
+        align-items: center !important;
+    }
+
+    .point-info {
+        align-items: center !important;
+    }
+
+    /* Connecteur (La ligne entre les deux) */
+    .route-connector {
+        transform: rotate(90deg); /* On met la ligne verticale */
+        margin: 10px 0 !important;
+        height: 40px !important; /* Plus court */
+    }
+
+    .connector-duration {
+        transform: rotate(-90deg); /* On remet le texte droit */
+        background: var(--color-surface);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px !important;
+    }
+
+    /* 4. Grille des détails (Passagers, Sièges...) */
+    .details-grid-modern {
+        grid-template-columns: 1fr 1fr !important; /* 2 colonnes max */
+        gap: 8px !important;
+    }
+
+    .detail-item-modern {
+        padding: 10px !important;
+    }
+
+    .detail-item-modern .detail-value {
+        font-size: 13px !important;
+        word-break: break-word !important; /* Coupe les textes longs */
+    }
+
+    /* 5. QR Code */
+    .qr-section-modern {
+        padding: 15px !important;
+    }
+
+    .qr-code-box img, 
+    .qr-code-box canvas {
+        max-width: 150px !important; /* QR plus petit */
+        height: auto !important;
+    }
+
+    /* 6. Boutons d'action */
+    .confirmation-actions-modern {
+        flex-direction: column !important; /* Boutons empilés */
+        gap: 10px !important;
+    }
+
+    .btn-modern {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 12px !important;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /* Pour les très petits écrans (iPhone SE, vieux Android) */
     @media (max-width: 370px) {
         .modern-bus-container {
@@ -5258,108 +5386,3 @@ body.pwa-installed .container {
 
 
 
-
-/* ============================================
-   🎟️ FIX MOBILE : PAGE CONFIRMATION (ZERO SCROLL)
-   ============================================ */
-
-@media (max-width: 768px) {
-
-    /* 1. Conteneur principal */
-    .confirmation-container, 
-    .confirmation-container-modern {
-        width: 100% !important;
-        padding: 0 10px !important;
-        margin: 20px auto !important;
-        box-sizing: border-box !important;
-    }
-
-    .confirmation-card-modern {
-        padding: 15px !important;
-        border-radius: 16px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-
-    /* 2. Le Billet (Journey Card) */
-    .journey-card {
-        padding: 15px !important;
-        padding-top: 40px !important; /* Espace pour la date */
-        margin-top: 15px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-
-    /* 3. Transformation du trajet en vertical */
-    .journey-route {
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 15px !important;
-    }
-
-    /* Points de départ/arrivée */
-    .route-point {
-        width: 100% !important;
-        justify-content: center !important;
-        text-align: center !important;
-        flex-direction: column !important; /* Icône au-dessus */
-        align-items: center !important;
-    }
-
-    .point-info {
-        align-items: center !important;
-    }
-
-    /* Connecteur (La ligne entre les deux) */
-    .route-connector {
-        transform: rotate(90deg); /* On met la ligne verticale */
-        margin: 10px 0 !important;
-        height: 40px !important; /* Plus court */
-    }
-
-    .connector-duration {
-        transform: rotate(-90deg); /* On remet le texte droit */
-        background: var(--color-surface);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 11px !important;
-    }
-
-    /* 4. Grille des détails (Passagers, Sièges...) */
-    .details-grid-modern {
-        grid-template-columns: 1fr 1fr !important; /* 2 colonnes max */
-        gap: 8px !important;
-    }
-
-    .detail-item-modern {
-        padding: 10px !important;
-    }
-
-    .detail-item-modern .detail-value {
-        font-size: 13px !important;
-        word-break: break-word !important; /* Coupe les textes longs */
-    }
-
-    /* 5. QR Code */
-    .qr-section-modern {
-        padding: 15px !important;
-    }
-
-    .qr-code-box img, 
-    .qr-code-box canvas {
-        max-width: 150px !important; /* QR plus petit */
-        height: auto !important;
-    }
-
-    /* 6. Boutons d'action */
-    .confirmation-actions-modern {
-        flex-direction: column !important; /* Boutons empilés */
-        gap: 10px !important;
-    }
-
-    .btn-modern {
-        width: 100% !important;
-        justify-content: center !important;
-        padding: 12px !important;
-    }
-}
