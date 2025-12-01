@@ -297,99 +297,100 @@ async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
 }
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) {
-        console.log(`(Email non envoyé à ${client?.name}, adresse manquante)`);
-        return;
-    }
+    if (!client?.email) return;
 
-    const lang = reservation.lang || 'fr'; 
+    const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
-    const locale = lang === 'en' ? enUS : fr; // Choisir la locale pour date-fns
-    const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence
-
     const subject = translation.email_pending_subject(reservation.bookingNumber);
-    const headerTitle = translation.email_pending_title;
+    const headerTitle = "Action Requise : Paiement";
+
+    let paymentBlock = '';
     
-    // ===============================================
-    // ✅ CORRECTION DU FUSEAU HORAIRE
-    // ===============================================
-    // 1. On prend la date UTC stockée en base de données
-    const deadlineUTC = new Date(reservation.paymentDeadline);
-    
-    // 2. On la convertit dans le fuseau horaire de l'Afrique Centrale
-    const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
-    
-    // 3. On formate cette date pour l'affichage, en spécifiant la langue
-    // ✅ Version corrigée
-    const deadline = format(zonedDeadline, "PPPP p", { locale: locale });
-    // 'PPPP' donne "mercredi 26 novembre 2025"
-    // ===============================================
-    
-    let paymentInstructions = '';
     if (reservation.paymentMethod === 'AGENCY') {
-        paymentInstructions = `
-            <h3>${translation.email_pending_agency_cta}</h3>
+        paymentBlock = `
             <div class="code-box">
-                <h4 class="code-box-title">${translation.email_pending_agency_code_label}</h4>
-                <p class="code-box-code">${reservation.agencyPaymentCode}</p>
+                <span style="font-size: 12px; text-transform: uppercase; font-weight: 700;">Code de paiement Agence</span>
+                <span class="code-value">${reservation.agencyPaymentCode}</span>
             </div>
+            <p style="text-align: center; font-size: 14px;">Présentez ce code à l'agence avant le départ pour valider votre billet.</p>
         `;
     } else {
-        paymentInstructions = `
-            <h3>${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</h3>
+        paymentBlock = `
+            <div class="info-box" style="border-left-color: #ffa726; background-color: #fff8e1;">
+                <h3 style="color: #ffa726; margin-top: 0;">📱 Paiement Mobile</h3>
+                <p style="margin-bottom: 10px;">Veuillez effectuer le paiement de <strong>${reservation.totalPrice}</strong> au numéro marchand.</p>
+                <p style="margin-bottom: 0;">Référence : <strong>${reservation.bookingNumber}</strong></p>
+            </div>
         `;
     }
 
     const htmlContent = `
-           
+        <h2>Bonjour ${client.name},</h2>
+        <p>Votre réservation est pré-enregistrée. Pour confirmer votre place, veuillez finaliser le paiement.</p>
+        
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Trajet</span>
+                <span class="info-value">${reservation.route.from} ➝ ${reservation.route.to}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date</span>
+                <span class="info-value">${new Date(reservation.date).toLocaleDateString(lang)}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Montant à régler</span>
+                <span class="info-value" style="color: #73d700;">${reservation.totalPrice}</span>
+            </div>
+        </div>
 
-        <h2>${translation.email_greeting(client.name)}</h2>
-        <p>${translation.email_pending_intro(reservation.route.from, reservation.route.to)}</p>
-        ${paymentInstructions}
-        <p style="color: #c62828; font-weight: bold;">${translation.email_pending_deadline_warning(deadline)}</p>
+        ${paymentBlock}
+
+        <div class="btn-center">
+            <a href="${process.env.FRONTEND_URL}" class="btn">Voir ma réservation</a>
+        </div>
     `;
 
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) {
-        console.log(`(Email de confirmation non envoyé, adresse manquante)`);
-        return;
-    }
+    if (!client?.email) return;
 
     const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
-    const locale = lang === 'en' ? enUS : fr;
-
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
-    const headerTitle = translation.email_confirmed_title;
-    
-    // --- Correction de la date et de l'heure ---
-    const timeZone = 'Africa/Brazzaville';
-    const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
-    const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
-    const formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale }); // Utilise 'at' en anglais
+    const headerTitle = "Confirmation de Réservation";
 
     const htmlContent = `
-        <h2>${translation.email_greeting(client.name)}</h2>
-        <p>${translation.email_confirmed_intro}</p>
+        <h2>Félicitations ${client.name} !</h2>
+        <p>Votre paiement a été reçu et votre place est confirmée. Préparez vos valises, le départ approche ! 🚌</p>
+        
         <div class="info-box">
-            <strong>${translation.email_confirmed_details_trip}</strong>
-            <span>${reservation.route.from} → ${reservation.route.to}</span>
+            <div class="info-row">
+                <span class="info-label">Référence</span>
+                <span class="info-value" style="font-family: monospace;">${reservation.bookingNumber}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Trajet</span>
+                <span class="info-value">${reservation.route.from} ➝ ${reservation.route.to}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Départ</span>
+                <span class="info-value">${new Date(reservation.date).toLocaleDateString(lang)} à ${reservation.route.departure}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Siège(s)</span>
+                <span class="info-value">${reservation.seats.join(', ')}</span>
+            </div>
         </div>
-        <div class="info-box">
-            <strong>${translation.email_confirmed_details_date}</strong>
-            <span>${formattedDateTime}</span>
+
+        <p>Vous pouvez télécharger votre billet électronique ci-dessous ou le présenter directement depuis votre téléphone.</p>
+
+        <div class="btn-center">
+            <a href="${process.env.FRONTEND_URL}" class="btn">Télécharger mon Billet</a>
         </div>
-        <p>${translation.email_confirmed_cta}</p>
-        <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
-        </div>
-        <p>${translation.email_confirmed_outro}</p>
     `;
 
-    // ✅ On passe bien la langue à la fonction d'envoi principale
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 function sendReportConfirmedEmail(oldReservation, newReservation) {
