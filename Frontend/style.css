@@ -5221,20 +5221,37 @@ body.pwa-installed .container {
     font-family: var(--font-mono); /* Look technique */
 }
 
-/* 📱 Ajustement Mobile */
+/* 📱 Ajustement Mobile pour les compteurs bagages */
 @media (max-width: 768px) {
+    
+    .baggage-row {
+        /* On permet au label de prendre moins de place pour laisser de l'air au compteur */
+        grid-template-columns: 1fr auto !important; 
+        gap: 10px !important;
+        padding: 8px !important;
+    }
+
     .passenger-counter {
-        padding: 3px;
+        padding: 2px; /* Très fin */
+        border-radius: 20px; /* Moins arrondi pour gagner de la place */
+        height: 32px; /* Hauteur totale contrainte */
     }
     
     .counter-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 16px;
+        width: 26px !important;  /* Bouton plus petit */
+        height: 26px !important;
+        font-size: 14px !important; /* Signe +/- plus petit */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important; /* Ombre plus légère */
     }
     
     .passenger-counter span {
-        min-width: 28px;
-        font-size: 14px;
+        min-width: 24px !important; /* Espace du chiffre réduit */
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Ajustement du label à gauche pour l'équilibre */
+    .baggage-label {
+        font-size: 12px !important;
     }
 }
