@@ -5272,12 +5272,13 @@ function openEditMemberModal(memberId, name, phone, role, status) {
         async function saveSettings(e) {
             e.preventDefault();
 
-            const updates = {
-                secondReportFee: parseInt(document.getElementById('setting-second-fee').value),
-                thirdReportFee: parseInt(document.getElementById('setting-third-fee').value),
-                maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value),
-                minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value)
-            };
+            // ✅ CORRECTION : On s'assure que c'est bien des nombres
+    const updates = {
+        secondReportFee: parseInt(document.getElementById('setting-second-fee').value) || 0,
+        thirdReportFee: parseInt(document.getElementById('setting-third-fee').value) || 0,
+        maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value) || 0,
+        minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value) || 0
+    };
 
             try {
                 const data = await apiCall('/admin/settings/report', 'PATCH', updates);
