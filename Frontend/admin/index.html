@@ -3320,69 +3320,67 @@
             renderTemplatesTable();
             populateRouteTemplateSelector();
         }
-        function renderTemplatesTable() {
-            const tbody = document.getElementById("templates-body");
-            if (!tbody) return;
+        
 
-            // 1. Mettre à jour les en-têtes du tableau
-            const thead = tbody.previousElementSibling; // On trouve le thead
-            if (thead) {
-                thead.innerHTML = `
+        function renderTemplatesTable() {
+    const tbody = document.getElementById("templates-body");
+    if (!tbody) return;
+
+    // 1. Mettre à jour les en-têtes du tableau (Optionnel si déjà dans le HTML)
+    const thead = tbody.previousElementSibling;
+    if (thead) {
+        thead.innerHTML = `
             <tr>
-                <th>Trajet</th>
+                <th>Trajet & Détails</th> <!-- Colonne élargie -->
                 <th>Compagnie</th>
                 <th>Prix</th>
                 <th>Distance</th>
                 <th>Horaires</th>
-                <th>Populaire</th> <!-- ✅ NOUVELLE COLONNE -->
+                <th>Populaire</th>
                 <th>Actions</th>
             </tr>
         `;
-            }
-
-            if (allTemplates.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center">...</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = allTemplates.map(t => {
-                // La case est cochée si 'isPopular' est true
-                const isChecked = t.isPopular ? 'checked' : '';
-
-
-                    let detailsHTML = '';
-    
-    // 1. Arrêts
-    if (tmpl.stops && tmpl.stops.length > 0) {
-        const stopsList = tmpl.stops.map(s => s.city).join(' → ');
-        detailsHTML += `<div style="font-size: 0.8rem; color: #b0bac9; margin-top: 4px;">🛑 Arrêts : ${stopsList}</div>`;
-    }
-    
-    // 2. Correspondances (C'est ça qui manquait peut-être)
-    if (tmpl.connections && tmpl.connections.length > 0) {
-        const connList = tmpl.connections.map(c => `${c.at} (vers ${c.nextCompany})`).join(', ');
-        detailsHTML += `<div style="font-size: 0.8rem; color: #00d9ff; margin-top: 4px;">⇄ Corresp. : ${connList}</div>`;
     }
 
-    // Si c'est un trajet direct
-    if (!detailsHTML) {
-        detailsHTML = `<div style="font-size: 0.8rem; color: #73d700; margin-top: 4px;">⚡ Direct</div>`;
+    if (!allTemplates || allTemplates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 20px;">Aucun modèle créé.</td></tr>`;
+        return;
     }
 
-                return `
+    tbody.innerHTML = allTemplates.map(t => { // On utilise 't' partout
+        const isChecked = t.isPopular ? 'checked' : '';
+
+        // --- Construction des détails (Arrêts & Correspondances) ---
+        let detailsHTML = '';
+        
+        // Arrêts
+        if (t.stops && t.stops.length > 0) {
+            const stopsList = t.stops.map(s => s.city).join(' → ');
+            detailsHTML += `<div style="font-size: 0.8rem; color: #b0bac9; margin-top: 4px;">🛑 Arrêts : ${stopsList}</div>`;
+        }
+        
+        // Correspondances
+        if (t.connections && t.connections.length > 0) {
+            const connList = t.connections.map(c => `${c.at} (vers ${c.nextCompany})`).join(', ');
+            detailsHTML += `<div style="font-size: 0.8rem; color: #00d9ff; margin-top: 4px;">⇄ Corresp. : ${connList}</div>`;
+        }
+
+        // Direct
+        if (!detailsHTML) {
+            detailsHTML = `<div style="font-size: 0.8rem; color: #73d700; margin-top: 4px;">⚡ Direct</div>`;
+        }
+
+        return `
             <tr>
                 <td>
-                <strong style="font-size: 1rem;">${tmpl.from} → ${tmpl.to}</strong>
-                ${detailsHTML} <!-- ✅ Affichage des détails ici -->
-            </td>
-
-                <td><strong class="font-bold">${t.from} → ${t.to}</strong></td>
+                    <strong style="font-size: 1rem;">${t.from} → ${t.to}</strong>
+                    ${detailsHTML}
+                </td>
                 <td>${t.company}</td>
                 <td class="font-bold">${t.price} FCFA</td>
-                <td><strong>${t.distance || 0} km</strong></td> <!-- ✅ AJOUTER ICI -->
+                <td><strong>${t.distance || 0} km</strong></td>
                 <td class="text-sm"><span>🕐 ${t.departure} → ${t.arrival}</span></td>
                 
-                <!-- ✅ NOUVELLE CELLULE AVEC L'INTERRUPTEUR -->
                 <td>
                     <label class="toggle-switch-popular">
                         <input type="checkbox" ${isChecked} onchange="togglePopularStatus('${t._id}')">
@@ -3391,15 +3389,13 @@
                 </td>
                 
                 <td class="actions-cell">
-                    <button class="btn btn-sm btn-ghost" onclick="showEditTemplateModal('${t._id}')">✏️ Modifier</button>
-                    <button class="btn btn-sm btn-danger" onclick="handleDeleteTemplate('${t._id}', '${t.from} → ${t.to}')">
-                        🗑️ Supprimer
-                    </button>
+                    <button class="btn btn-sm btn-ghost" onclick="showEditTemplateModal('${t._id}')">✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="handleDeleteTemplate('${t._id}', '${t.from} → ${t.to}')">🗑️</button>
                 </td>
             </tr>
         `;
-            }).join("");
-        }
+    }).join("");
+}
 
         // Dans Admin/index.html (section <script>)
         async function handleCreateTemplate(e) {
