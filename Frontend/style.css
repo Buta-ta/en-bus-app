@@ -5528,3 +5528,31 @@ body.pwa-installed .container {
     position: relative;
     min-height: 48px; /* Hauteur confortable */
 }
+
+
+/* ============================================
+   📅 FIX PLACEHOLDER FLATICKR MOBILE
+   ============================================ */
+
+/* Cible l'input visible créé par flatpickr */
+.flatpickr-input[placeholder] {
+    background-color: transparent !important; /* Force le fond à être transparent */
+    color: var(--color-text-primary) !important; /* Couleur du texte quand il y a une date */
+}
+
+/* Style du placeholder lui-même */
+.flatpickr-input[placeholder]::placeholder {
+    color: var(--color-text-secondary) !important; /* Couleur du texte "Sélectionnez vos dates" */
+    opacity: 1 !important; /* Force la visibilité */
+}
+
+/* Pour les navigateurs plus anciens */
+.flatpickr-input[placeholder]:-ms-input-placeholder {
+    color: var(--color-text-secondary) !important;
+}
+.flatpickr-input[placeholder]:-moz-placeholder {
+    color: var(--color-text-secondary) !important;
+}
+.flatpickr-input[placeholder]::-moz-placeholder {
+    color: var(--color-text-secondary) !important;
+}
