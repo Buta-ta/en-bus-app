@@ -3188,7 +3188,7 @@ function setupMobileFilterToggle() {
     toggleBtn.innerHTML = `
         <span style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:1.2em;">🌪️</span> 
-            Filtrer & Trier
+            ${btnText}
         </span>
         <span class="toggle-icon">▼</span>
     `;
