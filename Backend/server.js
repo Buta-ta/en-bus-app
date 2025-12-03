@@ -105,6 +105,7 @@ let reservationsCollection,
   routeTemplatesCollection,
   systemSettingsCollection,
   destinationsCollection;
+   crewCollection;
 
 
 
@@ -1367,7 +1368,7 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
 // Récupérer tous les membres du personnel
 app.get("/api/admin/crew", authenticateToken, async (req, res) => {
     try {
-        const crewMembers = await dbClient.db("en-bus-db").collection('crew')
+        const crewMembers = await crewCollection.find({}).sort({ createdAt: -1 }).toArray()
             .find({})
             .sort({ createdAt: -1 })
             .toArray();
@@ -3028,6 +3029,7 @@ const PORT = process.env.PORT || 3000;
     destinationsCollection = db.collection("destinations");
     systemSettingsCollection = db.collection("system_settings");
     positionsCollection = db.collection("positions");
+    crewCollection = db.collection("crew");
     
     console.log("✅ Collections MongoDB assignées aux variables globales.");
 
