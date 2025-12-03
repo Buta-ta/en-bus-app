@@ -1367,7 +1367,7 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
 app.get("/api/admin/crew", authenticateToken, async (req, res) => {
     try {
         // ✅ CODE CORRECT
-const crewMembers = await crewCollection.find({}).sort({ createdAt: -1 }).toArray();
+        const crewMembers = await crewCollection.find({}).sort({ createdAt: -1 }).toArray();
         // Calculer les stats générales
         const stats = {
             total: crewMembers.length,
@@ -1407,7 +1407,8 @@ app.post("/api/admin/crew", authenticateToken, [
         const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
         
         // Compter le nombre de membres avec ce poste pour générer le numéro
-        const count = await dbClient.db("en-bus-db").collection('crew').countDocuments({ role: role });
+        // ✅ LIGNE MODIFIÉE
+        const count = await crewCollection.countDocuments({ role: role });
         const matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
 
         const newMember = {
@@ -1422,7 +1423,8 @@ app.post("/api/admin/crew", authenticateToken, [
             updatedAt: new Date()
         };
 
-        const result = await dbClient.db("en-bus-db").collection('crew').insertOne(newMember);
+        // ✅ LIGNE MODIFIÉE
+        const result = await crewCollection.insertOne(newMember);
 
         console.log(`✅ Nouveau membre ajouté: ${matricule} - ${name}`);
 
@@ -1437,7 +1439,6 @@ app.post("/api/admin/crew", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
-
 // Modifier un membre du personnel
 app.patch("/api/admin/crew/:id", authenticateToken, [
     body('name').optional().notEmpty(),
@@ -1463,7 +1464,8 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
         
         updates.updatedAt = new Date();
 
-        const result = await dbClient.db("en-bus-db").collection('crew').updateOne(
+        // ✅ LIGNE MODIFIÉE
+        const result = await crewCollection.updateOne(
             { _id: new ObjectId(id) },
             { $set: updates }
         );
@@ -1495,7 +1497,8 @@ app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         }
 
         // On ne supprime pas vraiment, on désactive
-        const result = await dbClient.db("en-bus-db").collection('crew').updateOne(
+        // ✅ LIGNE MODIFIÉE
+        const result = await crewCollection.updateOne(
             { _id: new ObjectId(id) },
             { 
                 $set: { 
@@ -1534,7 +1537,8 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         }
 
         // 1. Récupérer le profil du membre
-        const member = await dbClient.db("en-bus-db").collection('crew').findOne({ _id: new ObjectId(id) });
+        // ✅ LIGNE MODIFIÉE
+        const member = await crewCollection.findOne({ _id: new ObjectId(id) });
         
         if (!member) {
             return res.status(404).json({ error: "Membre du personnel introuvable" });
@@ -1573,8 +1577,6 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
-
-
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
   try {
