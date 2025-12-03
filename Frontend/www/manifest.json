@@ -1,0 +1,110 @@
+{
+  "name": "En-Bus - Réservation de Bus",
+  "short_name": "En-Bus",
+  "description": "Réservez vos billets de bus en ligne facilement et rapidement à travers l'Afrique",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#73d700",
+  "background_color": "#10101A",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": [
+    "travel",
+    "transport",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "../icons/icon-48.webp",
+      "type": "image/png",
+      "sizes": "48x48",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-72.webp",
+      "type": "image/png",
+      "sizes": "72x72",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-96.webp",
+      "type": "image/png",
+      "sizes": "96x96",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-128.webp",
+      "type": "image/png",
+      "sizes": "128x128",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-192.webp",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-256.webp",
+      "type": "image/png",
+      "sizes": "256x256",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icons/icon-512.webp",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Rechercher un trajet",
+      "short_name": "Recherche",
+      "description": "Rechercher et réserver un billet de bus",
+      "url": "/index.html",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mes réservations",
+      "short_name": "Réservations",
+      "description": "Voir mes réservations",
+      "url": "/index.html#reservations",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Suivre mon bus",
+      "short_name": "Suivi GPS",
+      "description": "Suivre mon bus en temps réel",
+      "url": "/suivi.html",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/index.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

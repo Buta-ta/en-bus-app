@@ -8,7 +8,9 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { MongoClient, ObjectId } = require("mongodb");
+const { ObjectId } = require("mongodb"); 
+const { connectToDb, getDb } = require('./database'); 
+const { registerToken, sendPush } = require('./notifications'); // 
 const cron = require("node-cron");
 const { Resend } = require("resend");
 const rateLimit = require("express-rate-limit");
@@ -96,7 +98,7 @@ app.get("/api/admin/test-destinations", authenticateToken, async (req, res) => {
 
 // --- Configuration Services (Email, DB) ---
 const resend = new Resend(process.env.RESEND_API_KEY);
-const dbClient = new MongoClient(process.env.MONGODB_URI);
+
 let reservationsCollection,
   positionsCollection,
   tripsCollection,
@@ -2984,6 +2986,52 @@ io.on("connection", (socket) => {
   });
 });
 
+
+
+// --- ROUTES ADMIN NOTIFICATIONS ---
+
+// 1. Envoyer à TOUS les utilisateurs (ceux qui ont un token)
+app.post('/api/admin/notifications/send-to-all', authenticateToken, async (req, res) => {
+    const { title, body } = req.body;
+    try {
+        const tokens = await getDb().collection('reservations').distinct('fcmToken', { fcmToken: { $exists: true } });
+        const count = await sendPush(tokens, title, body);
+        res.json({ success: true, message: `${count} notifications envoyées.` });
+    } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
+});
+
+// 2. Envoyer aux passagers d'un VOYAGE spécifique
+app.post('/api/admin/notifications/send-to-trip/:tripId', authenticateToken, async (req, res) => {
+    const { title, body } = req.body;
+    try {
+        const tokens = await getDb().collection('reservations').distinct('fcmToken', { 
+            'route.id': req.params.tripId, 
+            fcmToken: { $exists: true } 
+        });
+        const count = await sendPush(tokens, title, body);
+        res.json({ success: true, message: `${count} notifications envoyées.` });
+    } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
+});
+
+// 3. Envoyer à une RÉSERVATION spécifique
+app.post('/api/admin/notifications/send-to-booking/:bookingNumber', authenticateToken, async (req, res) => {
+    const { title, body } = req.body;
+    try {
+        const reser = await getDb().collection('reservations').findOne({ bookingNumber: req.params.bookingNumber });
+        if (!reser?.fcmToken) return res.status(404).json({ error: "Pas de token pour ce client." });
+        
+        await sendPush([reser.fcmToken], title, body);
+        res.json({ success: true, message: "Notification envoyée." });
+    } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
+});
+
+// 4. Mise à jour de la route d'enregistrement (Client)
+app.post('/api/notifications/register', async (req, res) => {
+    const { token, bookingNumber, busId } = req.body;
+    await registerToken(token, bookingNumber, busId);
+    res.json({ success: true });
+});
+
 // ============================================
 // --- ROUTE POUR LA MISE À JOUR DE LA POSITION DU BUS ---
 // ============================================
@@ -3024,10 +3072,33 @@ app.post("/track/update", async (req, res) => {
 });
 
 // --- Démarrage ---
+// server.js - à la fin du fichier
+
+// --- Démarrage ---
 const PORT = process.env.PORT || 3000;
 (async () => {
-  await connectToDb();
-  server.listen(PORT, () =>
-    console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`)
-  );
+  try {
+    // 1. On se connecte à la base de données
+    await connectToDb();
+    console.log("✅ Connexion à la DB réussie depuis server.js.");
+
+    // 2. ✅ ON REMPLIT LES VARIABLES GLOBALES
+    const db = getDb();
+    reservationsCollection = db.collection("reservations");
+    tripsCollection = db.collection("trips");
+    routeTemplatesCollection = db.collection("route_templates");
+    destinationsCollection = db.collection("destinations");
+    systemSettingsCollection = db.collection("system_settings");
+    positionsCollection = db.collection("positions");
+    
+    console.log("✅ Collections MongoDB assignées aux variables globales.");
+
+    // 3. On démarre le serveur
+    server.listen(PORT, () =>
+      console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`)
+    );
+  } catch (error) {
+    console.error("❌ Échec critique du démarrage du serveur:", error);
+    process.exit(1);
+  }
 })();

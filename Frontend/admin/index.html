@@ -1861,6 +1861,13 @@
                             <span>Personnel</span>
                         </a>
                     </li>
+
+                    <li class="nav-item">
+    <a href="#" class="nav-link" data-tab="notifications">
+        <span class="nav-icon">📢</span>
+        <span>Notifications</span>
+    </a>
+</li>
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -2583,7 +2590,44 @@
         </div>
     </div>
 
+    <!-- ONGLET NOTIFICATIONS -->
+<div id="tab-notifications" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Notifications Push</h1>
+        <p class="page-subtitle">Envoyez des alertes en direct aux voyageurs.</p>
+    </div>
 
+    <div class="content-card" style="max-width: 600px;">
+        <form id="notif-form">
+            <div class="form-group">
+                <label class="form-label">Titre</label>
+                <input type="text" id="notif-title" class="form-control" placeholder="Ex: Bus en approche..." required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea id="notif-body" class="form-control" rows="3" placeholder="Votre message ici..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Cible</label>
+                <select id="notif-target" class="form-control">
+                    <option value="all">📢 Tout le monde</option>
+                    <option value="trip">🚌 Un Voyage spécifique</option>
+                    <option value="booking">🎫 Une Réservation précise</option>
+                </select>
+            </div>
+
+            <!-- Champ ID dynamique -->
+            <div id="notif-id-group" class="form-group" style="display:none;">
+                <label class="form-label" id="notif-id-label">ID Cible</label>
+                <input type="text" id="notif-target-id" class="form-control">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Envoyer 🚀</button>
+        </form>
+    </div>
+</div>
 
 
     </main>
@@ -2913,14 +2957,6 @@
             renderTable(filtered);
         }
         // DANS Admin/index.html (section <script>)
-
-        // Dans Admin/index.html - Remplacer la fonction renderTable existante
-
-        // Dans Admin/index.html - Modifier renderTable
-        // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
-        // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
-
-        // DANS Admin/index.html, REMPLACEZ la fonction renderTable par celle-ci
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
@@ -6331,7 +6367,39 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
 
 
+        // Gestion du formulaire de notification
+document.getElementById('notif-target').addEventListener('change', function() {
+    const group = document.getElementById('notif-id-group');
+    const label = document.getElementById('notif-id-label');
+    const val = this.value;
 
+    if (val === 'all') {
+        group.style.display = 'none';
+    } else {
+        group.style.display = 'block';
+        label.textContent = val === 'trip' ? "ID du Voyage (Trip ID)" : "Numéro de Réservation";
+    }
+});
+
+document.getElementById('notif-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('notif-title').value;
+    const body = document.getElementById('notif-body').value;
+    const target = document.getElementById('notif-target').value;
+    const id = document.getElementById('notif-target-id').value;
+
+    let endpoint = '/admin/notifications/send-to-all';
+    if (target === 'trip') endpoint = `/admin/notifications/send-to-trip/${id}`;
+    if (target === 'booking') endpoint = `/admin/notifications/send-to-booking/${id}`;
+
+    // On utilise ta fonction apiCall existante
+    const res = await apiCall(endpoint, 'POST', { title, body });
+    
+    if (res && res.success) {
+        showNotification(res.message, 'success');
+        e.target.reset();
+    }
+});
 
 
 

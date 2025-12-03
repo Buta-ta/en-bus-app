@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page_title">Suivi en Temps Réel - En-Bus</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="../style.css">
+
+    <meta name="theme-color" content="#73d700">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <style>
+        body, html { height: 100%; margin: 0; overflow: hidden; background-color: #10101A; }
+        #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
+        .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        
+        .info-panel { 
+            position: absolute; top: 20px; left: 20px; z-index: 1000; 
+            background-color: rgba(28, 28, 39, 0.85); backdrop-filter: blur(10px); 
+            padding: 20px; border-radius: 8px; border: 1px solid rgba(115, 215, 0, 0.2); 
+            color: #F0F5F9; font-family: 'Exo 2', sans-serif; max-width: 350px; 
+        }
+        .info-panel h1 { font-size: 20px; margin: 0 0 15px 0; color: #73d700; }
+        .info-panel p { margin: 8px 0; font-size: 14px; }
+        .info-panel a { color: #73d700; text-decoration: none; }
+        
+        #status-dot { 
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
+            background-color: #ff4136; margin-right: 8px; vertical-align: middle; 
+        }
+        #status-dot.connected { background-color: #2ecc40; box-shadow: 0 0 10px #2ecc40; }
+        
+        .bus-marker { font-size: 30px; text-align: center; line-height: 40px; }
+        
+        @media (max-width: 768px) {
+            .info-panel { top: 10px; left: 10px; right: 10px; max-width: none; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ✅ ID corrigé : "map" au lieu de "map-container" -->
+    <div id="map"></div>
+    
+    <div class="info-panel">
+        <h1>🛰️ Suivi du Bus</h1>
+        <p>
+            <strong>Statut :</strong> 
+            <span id="status-dot"></span>
+            <span id="status-text">Connexion...</span>
+        </p>
+        <p>
+            <strong>Bus ID :</strong> 
+            <span id="bus-id-display">Chargement...</span>
+        </p>
+        <p>
+            <strong>Dernière mise à jour :</strong> 
+            <span id="last-update">Jamais</span>
+        </p>
+        <hr style="border-color: rgba(115,215,0,0.3); margin: 15px 0;">
+        <p><a href="/index.html">&larr; Retour</a></p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="suivi-translations.js"></script>
+    
+    <script>
+        // ✅ Attendre que le DOM soit prêt
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Récupérer les paramètres URL
+            const params = new URLSearchParams(window.location.search);
+            const busId = params.get('bus');
+            const bookingNumber = params.get('booking');
+            
+            // 2. Éléments du DOM
+            const busIdDisplay = document.getElementById('bus-id-display');
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+            const lastUpdate = document.getElementById('last-update');
+            
+            if (!busId) {
+                if (busIdDisplay) busIdDisplay.textContent = "ID Manquant";
+                if (statusText) statusText.textContent = "Erreur";
+                return;
+            }
+            
+            if (busIdDisplay) busIdDisplay.textContent = busId;
+            
+            // 3. Initialiser la carte
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error("❌ Élément #map introuvable !");
+                return;
+            }
+            
+            const map = L.map('map').setView([2.8, 17.3], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // 4. Marqueur du bus (emoji)
+            const busIcon = L.divIcon({
+                className: 'bus-marker',
+                html: '<span style="font-size:30px;">🚌</span>',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+            });
+            const busMarker = L.marker([0, 0], { icon: busIcon }).addTo(map);
+            let firstUpdate = true;
+            
+            // 5. Connexion Socket.IO
+            const BACKEND_URL = "https://en-bus-app.onrender.com";
+            console.log(`🛰️ Connexion au backend : ${BACKEND_URL}`);
+            
+            const socket = io(BACKEND_URL, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000
+            });
+            
+            socket.on("connect", () => {
+                console.log("✅ Connecté au WebSocket !");
+                if (statusText) statusText.textContent = "Connecté";
+                if (statusDot) statusDot.classList.add('connected');
+                socket.emit("subscribeToBus", busId);
+            });
+            
+            socket.on("updatePosition", (data) => {
+                console.log("🛰️ Position reçue:", data);
+                const { lat, lon } = data;
+                const newLatLng = [lat, lon];
+                
+                busMarker.setLatLng(newLatLng);
+                
+                if (firstUpdate) {
+                    map.setView(newLatLng, 13);
+                    firstUpdate = false;
+                } else {
+                    map.panTo(newLatLng);
+                }
+                
+                if (statusText) statusText.textContent = "En mouvement";
+                if (lastUpdate) lastUpdate.textContent = new Date().toLocaleTimeString();
+            });
+            
+            socket.on("disconnect", () => {
+                console.warn("🔌 Déconnecté du WebSocket");
+                if (statusText) statusText.textContent = "Déconnecté";
+                if (statusDot) statusDot.classList.remove('connected');
+            });
+            
+            socket.on("connect_error", (error) => {
+                console.error("❌ Erreur Socket.IO:", error.message);
+                if (statusText) statusText.textContent = "Erreur connexion";
+            });
+            
+        });
+    </script>
+
+</body>
+</html>

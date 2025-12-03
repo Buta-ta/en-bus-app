@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi GPS - En-Bus</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#73d700">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--color-background);
+            padding: 20px;
+        }
+        .tracking-home {
+            max-width: 500px;
+            text-align: center;
+        }
+        .tracking-home h1 {
+            font-family: 'Audiowide', cursive;
+            color: var(--color-accent-glow);
+            margin-bottom: 20px;
+        }
+        .recent-buses {
+            margin-top: 40px;
+        }
+        .bus-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .bus-item:hover {
+            border-color: var(--color-accent-glow);
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body>
+    <div class="tracking-home">
+        <h1>🛰️ Suivi GPS En-Bus</h1>
+        <p>Entrez l'identifiant de votre bus pour le suivre en temps réel</p>
+        
+        <div class="form-group" style="margin-top: 30px;">
+            <input 
+                type="text" 
+                id="bus-id-input" 
+                class="form-control" 
+                placeholder="Ex: B1, P2, D1..."
+                style="text-align: center; font-size: 18px;"
+            >
+            <button 
+                class="btn btn-primary btn-large" 
+                onclick="trackBus()"
+                style="margin-top: 16px; width: 100%;"
+            >
+                🔍 Suivre ce bus
+            </button>
+        </div>
+        
+        <div class="recent-buses" id="recent-buses">
+            <h3 style="color: var(--color-text-secondary);">Récemment suivis</h3>
+        </div>
+        
+        <div style="margin-top: 40px;">
+            <a href="index.html" class="btn btn-secondary">← Retour à l'accueil</a>
+        </div>
+    </div>
+
+    <script>
+        // Charger les bus récemment suivis
+        const recentBuses = JSON.parse(localStorage.getItem('recent_tracked_buses') || '[]');
+        const recentContainer = document.getElementById('recent-buses');
+        
+        if (recentBuses.length > 0) {
+            recentBuses.slice(0, 3).forEach(busId => {
+                const item = document.createElement('div');
+                item.className = 'bus-item';
+                item.innerHTML = `
+                    <strong>Bus ${busId}</strong>
+                    <span style="float: right; color: var(--color-accent-glow);">→</span>
+                `;
+                item.onclick = () => window.location.href = `suivi.html?bus=${busId}`;
+                recentContainer.appendChild(item);
+            });
+        } else {
+            recentContainer.innerHTML += '<p style="color: var(--color-text-secondary); font-size: 14px;">Aucun bus suivi récemment</p>';
+        }
+        
+        // Suivre un bus
+        function trackBus() {
+            const busId = document.getElementById('bus-id-input').value.trim();
+            if (!busId) {
+                alert('Veuillez entrer un identifiant de bus');
+                return;
+            }
+            
+            // Sauvegarder dans l'historique
+            const recent = JSON.parse(localStorage.getItem('recent_tracked_buses') || '[]');
+            if (!recent.includes(busId)) {
+                recent.unshift(busId);
+                localStorage.setItem('recent_tracked_buses', JSON.stringify(recent.slice(0, 5)));
+            }
+            
+            window.location.href = `suivi.html?bus=${busId}`;
+        }
+        
+        // Permettre Enter pour valider
+        document.getElementById('bus-id-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') trackBus();
+        });
+        
+        // Charger le dernier bus suivi
+        const lastBus = localStorage.getItem('last_tracked_bus');
+        if (lastBus) {
+            document.getElementById('bus-id-input').value = lastBus;
+        }
+    </script>
+</body>
+</html>

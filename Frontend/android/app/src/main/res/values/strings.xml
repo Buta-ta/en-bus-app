@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">En-Bus</string>
+    <string name="title_activity_main">En-Bus</string>
+    <string name="package_name">com.enbus.app</string>
+    <string name="custom_url_scheme">com.enbus.app</string>
+</resources>

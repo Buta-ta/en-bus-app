@@ -1,7 +1,8 @@
-// Backend/notifications.js
+// notifications.js
 const admin = require('firebase-admin');
+const { getDb } = require('./database'); // On importe notre nouveau module
 
-// Initialiser Firebase Admin avec variables d'environnement
+// --- Config Firebase (Ta config existante) ---
 const serviceAccount = {
     type: "service_account",
     project_id: process.env.FIREBASE_PROJECT_ID,
@@ -15,77 +16,58 @@ const serviceAccount = {
     client_x509_cert_url: process.env.FIREBASE_CERT_URL
 };
 
-// Vérifier que les credentials sont présents
 if (serviceAccount.project_id && serviceAccount.private_key) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     console.log("✅ Firebase Admin initialisé");
 } else {
-    console.warn("⚠️ Firebase credentials manquants - Push notifications désactivées");
+    console.warn("⚠️ Firebase credentials manquants");
 }
 
-// Stockage des tokens
-const tokenStore = new Map();
-
-function registerToken(token, bookingNumber, busId) {
-    tokenStore.set(bookingNumber, { token, busId, createdAt: new Date() });
-    console.log(`✅ Token enregistré pour ${bookingNumber}`);
+// --- 1. Enregistrer le token dans MongoDB ---
+async function registerToken(token, bookingNumber, busId) {
+    try {
+        const db = getDb();
+        // On ajoute le token directement dans la réservation du client
+        await db.collection('reservations').updateOne(
+            { bookingNumber: bookingNumber },
+            { 
+                $set: { 
+                    fcmToken: token, 
+                    busId: busId || null,
+                    lastTokenUpdate: new Date()
+                } 
+            }
+        );
+        console.log(`💾 Token sauvegardé en DB pour ${bookingNumber}`);
+    } catch (error) {
+        console.error("Erreur sauvegarde token:", error);
+    }
 }
 
-async function sendToBooking(bookingNumber, title, body, data = {}) {
-    if (!admin.apps.length) {
-        console.log("⚠️ Firebase non initialisé");
-        return false;
-    }
+// --- 2. Fonction d'envoi générique ---
+async function sendPush(tokens, title, body, data = {}) {
+    if (!admin.apps.length) return 0;
+    
+    // Nettoyage des tokens (uniques et non nuls)
+    const uniqueTokens = [...new Set(tokens.filter(t => t))];
+    if (uniqueTokens.length === 0) return 0;
 
-    const record = tokenStore.get(bookingNumber);
-    if (!record) {
-        console.log(`⚠️ Pas de token pour ${bookingNumber}`);
-        return false;
-    }
+    const message = {
+        notification: { title, body },
+        data: data,
+        tokens: uniqueTokens,
+        android: { priority: 'high', notification: { sound: 'default' } },
+        apns: { payload: { aps: { sound: 'default' } } }
+    };
 
     try {
-        const message = {
-            token: record.token,
-            notification: { 
-                title, 
-                body 
-            },
-            data: { 
-                bookingNumber, 
-                ...data 
-            },
-            android: {
-                priority: 'high',
-                notification: {
-                    defaultSound: true,
-                    defaultVibrateTimings: true,
-                    visibility: 'PUBLIC',
-                    priority: 'high'
-                }
-            }
-        };
-
-        const response = await admin.messaging().send(message);
-        console.log(`📩 Notification envoyée: ${response}`);
-        return true;
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log(`🚀 ${response.successCount} notifs envoyées / ${response.failureCount} échecs.`);
+        return response.successCount;
     } catch (error) {
-        console.error(`❌ Erreur envoi:`, error.message);
-        return false;
+        console.error("❌ Erreur envoi Firebase:", error);
+        return 0;
     }
 }
 
-async function sendToBus(busId, title, body) {
-    let count = 0;
-    for (const [bookingNumber, record] of tokenStore) {
-        if (record.busId === busId) {
-            await sendToBooking(bookingNumber, title, body, { busId });
-            count++;
-        }
-    }
-    console.log(`📩 ${count} notifications envoyées au bus ${busId}`);
-    return count;
-}
-
-module.exports = { registerToken, sendToBooking, sendToBus };
+module.exports = { registerToken, sendPush };
