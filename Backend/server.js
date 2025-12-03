@@ -162,6 +162,13 @@ async function connectToDb() {
   }
 }
 
+
+
+
+
+
+
+
 // ============================================
 // 📧 GESTION DES EMAILS (RESEND)
 // ============================================
@@ -445,6 +452,46 @@ function generateBookingNumber() {
     .padStart(3, "0");
   return `EB-${timestamp.slice(-6)}${random}`;
 }
+
+
+
+
+
+// Dans votre fichier server.js ou app.js du Backend
+const { registerToken, sendToBooking, sendToBus } = require('./notifications');
+
+// Route pour enregistrer un token
+app.post('/api/notifications/register', (req, res) => {
+    const { token, bookingNumber, busId } = req.body;
+    
+    if (!token || !bookingNumber) {
+        return res.status(400).json({ error: 'token et bookingNumber requis' });
+    }
+    
+    registerToken(token, bookingNumber, busId);
+    res.json({ success: true });
+});
+
+// Route pour envoyer une notification (admin)
+app.post('/api/notifications/send', async (req, res) => {
+    const { bookingNumber, title, body } = req.body;
+    
+    const success = await sendToBooking(bookingNumber, title, body);
+    res.json({ success });
+});
+
+// Route pour notifier un bus en retard
+app.post('/api/notifications/bus-delay', async (req, res) => {
+    const { busId, delayMinutes } = req.body;
+    
+    const count = await sendToBus(
+        busId,
+        'Bus en retard',
+        `Votre bus a ${delayMinutes} minutes de retard`
+    );
+    res.json({ success: true, notified: count });
+});
+
 
 
 // ============================================
