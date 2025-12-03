@@ -1611,7 +1611,9 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
 
 // Fonction qui génère le template HTML de la facture
 function generateInvoiceHTML(reservation, lang = 'fr') {
+  
     // Mini-traductions pour la facture
+    
     const t = {
         fr: {
             title: "FACTURE",
@@ -1646,7 +1648,8 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
             status_paid: "PAID"
         }
     };
-    const texts = t[lang] || t.fr;
+
+    const texts = translations[lang] || translations.fr;
     const passenger = reservation.passengers[0];
 
     // Calcul des lignes (simplifié, à améliorer si besoin)
@@ -1694,7 +1697,7 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
                         </td>
                     </tr>
                     <tr class="heading"><td>${texts.description}</td><td>${texts.qty}</td><td>${texts.unit_price}</td><td style="text-align:right;">${texts.total}</td></tr>
-                    <tr class="item"><td>Billet(s) Adulte: ${reservation.route.from} → ${reservation.route.to}</td><td>${adultTickets}</td><td>${ticketPrice} FCFA</td><td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td></tr>
+                    <tr class="item"><td>${texts.pdf_adult_ticket_desc || 'Billet(s) Adulte:'} ${reservation.route.from} → ${reservation.route.to}</td><td>${adultTickets}</td><td>${ticketPrice} FCFA</td><td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td></tr>
                     <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.subtotal}</strong></td><td style="text-align:right;">${subtotal} FCFA</td></tr>
                     <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.vat} (0%)</strong></td><td style="text-align:right;">0 FCFA</td></tr>
                     <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.total_paid}</strong></td><td style="text-align:right;"><strong>${reservation.totalPrice}</strong></td></tr>

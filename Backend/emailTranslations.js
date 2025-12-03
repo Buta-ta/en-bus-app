@@ -31,6 +31,9 @@ const translations = {
     footer_copyright: "Tous droits réservés.",
     nav_contact: "Contact",
     nav_my_bookings: "Mes Réservations",
+    pdf_total_paid: "TOTAL PAYÉ",
+    pdf_travel_partner: "Votre partenaire de voyage"
+
     },
   en: {
 
@@ -73,6 +76,8 @@ const translations = {
     footer_copyright: "All rights reserved.",
     nav_contact: "Contact",
     nav_my_bookings: "My Bookings",
+    pdf_total_paid: "TOTAL PAID",
+    pdf_travel_partner: "Your travel partner"
 
 
     // ... (mettez les traductions anglaises ici)
