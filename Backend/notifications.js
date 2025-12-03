@@ -48,13 +48,21 @@ async function sendToBooking(bookingNumber, title, body, data = {}) {
     try {
         const message = {
             token: record.token,
-            notification: { title, body },
-            data: { bookingNumber, ...data },
+            notification: { 
+                title, 
+                body 
+            },
+            data: { 
+                bookingNumber, 
+                ...data 
+            },
             android: {
                 priority: 'high',
                 notification: {
-                    sound: 'default',
-                    channelId: 'reminders'
+                    defaultSound: true,
+                    defaultVibrateTimings: true,
+                    visibility: 'PUBLIC',
+                    priority: 'high'
                 }
             }
         };
