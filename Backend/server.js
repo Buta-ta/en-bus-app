@@ -400,11 +400,6 @@ function generateBookingNumber() {
 
 
 
-
-
-// Dans votre fichier server.js ou app.js du Backend
-const { registerToken, sendToBooking, sendToBus } = require('./notifications');
-
 // Route pour enregistrer un token
 app.post('/api/notifications/register', (req, res) => {
     const { token, bookingNumber, busId } = req.body;
