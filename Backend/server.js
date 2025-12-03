@@ -106,63 +106,6 @@ let reservationsCollection,
   systemSettingsCollection,
   destinationsCollection;
 
-async function connectToDb() {
-  try {
-    await dbClient.connect();
-    const database = dbClient.db("en-bus-db");
-    
-    // Initialisation de toutes les collections
-    reservationsCollection = database.collection("reservations");
-    positionsCollection = database.collection("positions");
-    tripsCollection = database.collection("trips");
-    routeTemplatesCollection = database.collection("route_templates");
-    systemSettingsCollection = database.collection("system_settings");
-    destinationsCollection = database.collection("destinations"); // Votre ajout est correct
-
-    // Création des index
-    await tripsCollection.createIndex({ date: 1, "route.from": 1, "route.to": 1 });
-    await destinationsCollection.createIndex({ name: 1 });
-    
-    // Initialisation des paramètres (votre code est correct)
-    const existingSettings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-    if (!existingSettings) {
-      await systemSettingsCollection.insertOne({
-        key: "reportSettings",
-        value: { /*...*/ },
-        createdAt: new Date(),
-        updatedBy: "system"
-      });
-      console.log("✅ Paramètres de report initialisés.");
-    }
-
-    // ====================================================
-    // ✅ BLOC MANQUANT : PEUPLEMENT INITIAL DES VILLES
-    // ====================================================
-    const destinationsCount = await destinationsCollection.countDocuments();
-    if (destinationsCount === 0) {
-        console.log("🏙️  La collection 'destinations' est vide. Remplissage avec les données initiales...");
-        const initialCities = [
-            { name: "Brazzaville", country: "Congo", coords: [-4.2634, 15.2429], isActive: true, createdAt: new Date() },
-            { name: "Pointe-Noire", country: "Congo", coords: [-4.7761, 11.8636], isActive: true, createdAt: new Date() },
-            { name: "Dolisie", country: "Congo", coords: [-4.2064, 12.6686], isActive: true, createdAt: new Date() },
-            { name: "Yaoundé", country: "Cameroun", coords: [3.8480, 11.5021], isActive: true, createdAt: new Date() },
-            { name: "Douala", country: "Cameroun", coords: [4.0511, 9.7679], isActive: true, createdAt: new Date() },
-            { name: "Libreville", country: "Gabon", coords: [0.4162, 9.4673], isActive: true, createdAt: new Date() },
-            { name: "Lagos", country: "Nigeria", coords: [6.5244, 3.3792], isActive: true, createdAt: new Date() },
-            { name: "Abidjan", country: "Côte d'Ivoire", coords: [5.3599, -4.0083], isActive: true, createdAt: new Date() }
-        ];
-        await destinationsCollection.insertMany(initialCities);
-        console.log(`✅ ${initialCities.length} destinations initiales ajoutées à la base de données.`);
-    }
-    // ====================================================
-
-    console.log("✅ Connecté à MongoDB.");
-
-  } catch (error) {
-    console.error("❌ Erreur connexion DB:", error.message);
-    process.exit(1);
-  }
-}
 
 
 
