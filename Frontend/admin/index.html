@@ -3760,108 +3760,17 @@
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
         
 async function handleCreateTrips(e) {
+    // Étape 1 : Empêcher l'action par défaut du navigateur
     e.preventDefault();
-
-    // 1. Récupération des valeurs du formulaire
-    const routeId = document.getElementById("route-template").value;
-    const dateValue = document.getElementById("trip-dates").value;
-    const seatCount = parseInt(document.getElementById("seat-count").value);
-    const busIdentifier = document.getElementById("bus-identifier").value.trim();
-    const highlightBadge = document.getElementById('highlight-badge').value.trim();
     
-    // ✅ RÉCUPÉRATION SÉCURISÉE DES VALEURS TRAJET DE NUIT
-    const nightRadio = document.querySelector('input[name="trip-type-day-night"]:checked');
-    const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
-    const offsetSelect = document.getElementById('arrival-day-offset');
-    // Si c'est un trajet de nuit, on prend la valeur du select (ou 1 par défaut)
-    // Sinon, c'est forcément 0
-    const arrivalDaysOffset = isNightTrip ? (parseInt(offsetSelect?.value) || 1) : 0;
-
-    console.log("🌙 Trajet de nuit ?", isNightTrip);
-    console.log("📅 Décalage arrivée (jours):", arrivalDaysOffset);
-
-    // 2. Validations
-    if (!routeId || !dateValue || !seatCount) {
-        showNotification("Modèle, dates et sièges sont requis.", "warning");
-        return;
-    }
-
-    // 3. Logique des dates
-    let startDate, endDate;
-    if (dateValue.includes(" au ")) {
-        [startDate, endDate] = dateValue.split(" au ");
-    } else {
-        startDate = endDate = dateValue;
-    }
-
-    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
-    const daysToSend = (startDate === endDate) 
-        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] 
-        : selectedDays;
-
-    if (daysToSend.length === 0) {
-        showNotification("Veuillez sélectionner au moins un jour.", "warning");
-        return;
-    }
-
-    // 4. RÉCUPÉRATION DES 4 MEMBRES D'ÉQUIPAGE
-    const driver1Select = document.getElementById('trip-driver1');
-    const driver2Select = document.getElementById('trip-driver2');
-    const controller1Select = document.getElementById('trip-controller1');
-    const controller2Select = document.getElementById('trip-controller2');
-
-    const driver1Id = driver1Select?.value || null;
-    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex]?.dataset?.name : null;
-
-    const driver2Id = driver2Select?.value || null;
-    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex]?.dataset?.name : null;
-
-    const controller1Id = controller1Select?.value || null;
-    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex]?.dataset?.name : null;
-
-    const controller2Id = controller2Select?.value || null;
-    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex]?.dataset?.name : null;
-
-    // 5. Construction de l'objet de données
-    const tripData = {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek: daysToSend,
-        seatCount,
-        busIdentifier: busIdentifier || null,
-        highlightBadge: highlightBadge || null,
-        driver1Id,
-        driver1Name,
-        driver2Id,
-        driver2Name,
-        controller1Id,
-        controller1Name,
-        controller2Id,
-        controller2Name,
-        
-        // ✅ VALEURS GARANTIES (jamais undefined ou NaN)
-        isNightTrip: isNightTrip === true,
-        arrivalDaysOffset: arrivalDaysOffset
-    };
-
-    console.log("📤 Envoi des données de création de voyage :", tripData);
-
-    // 6. Appel API
-    const data = await apiCall("/admin/trips", "POST", tripData);
-
-    if (data && data.success) {
-        showNotification(data.message || "Voyages programmés !", "success");
-        e.target.reset();
-        
-        // ✅ Réinitialiser l'affichage des options de nuit
-        const nightOptions = document.getElementById('night-trip-options');
-        if (nightOptions) {
-            nightOptions.style.display = 'none';
-        }
-        
-        loadAllTrips();
-    }
+    // Étape 2 : Mettre un log pour confirmer que cette fonction est bien appelée
+    console.log("✅ TEST: handleCreateTrips a été appelée et preventDefault() a été exécuté.");
+    
+    // Étape 3 : Afficher une notification pour un retour visuel
+    showNotification("Test de soumission... (Pas d'appel API)", "info");
+    
+    // Étape 4 : On ne fait rien d'autre pour isoler le problème.
+    return false; 
 }
   
         // Dans Admin/index.html (section <script>)
