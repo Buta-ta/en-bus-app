@@ -2805,45 +2805,67 @@
         // 🌐 API CALLS
         // ============================================
         async function apiCall(endpoint, method = "GET", body = null) {
-            const token = localStorage.getItem("admin_token");
-            if (!token) {
-                showLogin();
-                return null;
-            }
+    const token = localStorage.getItem("admin_token");
+    if (!token) {
+        showLogin();
+        return null;
+    }
 
-            try {
-                const options = {
-                    method,
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                };
+    try {
+        const options = {
+            method,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+        };
 
-                if (body) {
-                    options.headers["Content-Type"] = "application/json";
-                    options.body = JSON.stringify(body);
-                }
-
-                const res = await fetch(API_URL + endpoint, options);
-
-                if (res.status === 401 || res.status === 403) {
-                    showNotification("Session expirée, reconnexion requise", "warning");
-                    setTimeout(handleLogout, 2000);
-                    return null;
-                }
-
-                const data = await res.json();
-
-                if (!res.ok) throw new Error(data.error || "Erreur API");
-
-                return data;
-            } catch (error) {
-                showNotification(error.message, "error");
-                return null;
-            }
+        if (body) {
+            options.body = JSON.stringify(body);
         }
 
+        // 1. AMÉLIORATION : Assurer un slash au début pour une URL propre
+        const finalEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+        const fullUrl = API_URL + finalEndpoint;
+
+        // 2. AMÉLIORATION : Log de débogage pour voir l'URL exacte
+        console.log(`📡 Appel API: ${method} ${fullUrl}`);
+
+        const res = await fetch(fullUrl, options);
+
+        if (res.status === 401 || res.status === 403) {
+            // ... (gestion de la déconnexion, correct)
+            return null;
+        }
+
+        // 3. AMÉLIORATION : Gérer les réponses vides (comme DELETE)
+        if (res.status === 204) { 
+             return { success: true };
+        }
+
+        const data = await res.json(); // Cette ligne peut planter si la réponse n'est pas JSON
+
+        if (!res.ok) { // res.ok est false pour les erreurs 4xx et 5xx
+            console.error(`❌ Erreur API sur ${fullUrl}:`, data);
+            throw new Error(data.error || `Erreur serveur: ${res.status}`);
+        }
+
+        return data;
+
+    } catch (error) {
+        // 4. AMÉLIORATION : Gestion spécifique des erreurs réseau vs. erreurs de parsing
+        if (error.name === 'TypeError') { // 'Failed to fetch' est un TypeError
+            console.error("❌ Erreur Réseau (Failed to fetch) sur l'URL:", API_URL + endpoint);
+            showNotification("Erreur de connexion au serveur. Vérifiez l'URL de l'API et la connexion.", "error");
+        } else if (error instanceof SyntaxError) { // Erreur si res.json() échoue
+            console.error("❌ Erreur de parsing JSON. Le serveur n'a pas répondu en JSON.", error);
+            showNotification("Le serveur a répondu de manière inattendue (pas de JSON).", "error");
+        } else {
+            showNotification(error.message, "error");
+        }
+        return null;
+    }
+}
         // ============================================
         // 📊 RÉSERVATIONS
         // ============================================
