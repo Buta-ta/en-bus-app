@@ -3759,18 +3759,92 @@
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
         
-async function handleCreateTrips(e) {
-    // Étape 1 : Empêcher l'action par défaut du navigateur
+        async function handleCreateTrips(e) {
+    // 1. Empêche le rechargement de la page (on sait que ça fonctionne)
     e.preventDefault();
-    
-    // Étape 2 : Mettre un log pour confirmer que cette fonction est bien appelée
-    console.log("✅ TEST: handleCreateTrips a été appelée et preventDefault() a été exécuté.");
-    
-    // Étape 3 : Afficher une notification pour un retour visuel
-    showNotification("Test de soumission... (Pas d'appel API)", "info");
-    
-    // Étape 4 : On ne fait rien d'autre pour isoler le problème.
-    return false; 
+
+    // 2. Désactive le bouton pour éviter les clics multiples
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span>⏳</span> Programmation...';
+    }
+
+    try {
+        // --- Récupération des données du formulaire ---
+        const routeId = document.getElementById("route-template").value;
+        const dateValue = document.getElementById("trip-dates").value;
+        const seatCount = parseInt(document.getElementById("seat-count").value);
+        const busIdentifier = document.getElementById("bus-identifier").value.trim();
+        const highlightBadge = document.getElementById('highlight-badge').value.trim();
+        
+        // Logique pour le trajet de nuit (via la checkbox)
+        const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
+        const offsetSelect = document.getElementById('arrival-day-offset');
+        const arrivalDaysOffset = isNightTrip ? (parseInt(offsetSelect?.value) || 1) : 0;
+
+        // Logique pour les dates (début/fin)
+        let startDate, endDate;
+        if (dateValue.includes(" au ")) {
+            [startDate, endDate] = dateValue.split(" au ");
+        } else {
+            startDate = endDate = dateValue;
+        }
+
+        // Logique pour les jours de la semaine
+        const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+        if (selectedDays.length === 0 && startDate !== endDate) {
+            throw new Error("Veuillez sélectionner au moins un jour pour une programmation sur plusieurs jours.");
+        }
+
+        // Logique pour l'équipage
+        const driver1Select = document.getElementById('trip-driver1');
+        const driver1Id = driver1Select?.value || null;
+        const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex]?.dataset?.name : null;
+        // ... (idem pour les autres membres de l'équipage)
+
+        // --- Construction de l'objet de données ---
+        const tripData = {
+            routeId,
+            startDate,
+            endDate,
+            daysOfWeek: selectedDays, // On envoie les jours sélectionnés
+            seatCount,
+            busIdentifier: busIdentifier || null,
+            highlightBadge: highlightBadge || null,
+            driver1Id,
+            driver1Name,
+            // ... (autres membres de l'équipage)
+            isNightTrip,
+            arrivalDaysOffset
+        };
+
+        // --- Appel API ---
+        const data = await apiCall("/admin/trips", "POST", tripData);
+
+        if (data && data.success) {
+            showNotification(data.message || "Voyages programmés !", "success");
+            e.target.reset(); // Réinitialise le formulaire
+            toggleNightTripOptions(); // Cache les options de nuit
+            loadAllTrips(); // Rafraîchit la table des voyages
+        } else {
+            // Si apiCall renvoie une erreur (gérée en interne), elle sera affichée.
+            // On peut ajouter un throw pour que ça aille dans le catch.
+            throw new Error(data?.error || "La création a échoué.");
+        }
+
+    } catch (error) {
+        // En cas d'erreur DANS CE BLOC (ex: validation des jours), on l'affiche
+        console.error("Erreur dans handleCreateTrips:", error);
+        showNotification(error.message, "error");
+
+    } finally {
+        // 4. Réactive le bouton, que la création ait réussi ou échoué
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span>➕</span> Programmer les voyages';
+        }
+    }
 }
   
         // Dans Admin/index.html (section <script>)
