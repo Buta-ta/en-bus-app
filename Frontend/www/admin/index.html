@@ -2098,6 +2098,31 @@
                             </div>
 
 
+                            <!-- ✅ NOUVEAU CHAMP : VOYAGE DE NUIT -->
+<div class="form-group">
+    <label class="form-label">Type de voyage</label>
+    <div style="display: flex; align-items: center; gap: 1rem; height: 100%;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="radio" name="trip-type-day-night" value="day" checked> ☀️ Jour
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="radio" name="trip-type-day-night" value="night"> 🌙 Nuit
+        </label>
+    </div>
+</div>
+
+<!-- ✅ NOUVEAU CHAMP : DÉCALAGE DE JOUR -->
+<div class="form-group">
+    <label for="arrival-day-offset" class="form-label">Arrivée</label>
+    <select id="arrival-day-offset" class="form-control">
+        <option value="0">Le même jour</option>
+        <option value="1">Le lendemain (J+1)</option>
+        <option value="2">Le surlendemain (J+2)</option>
+    </select>
+</div>
+
+
+
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
                         <button type="submit" class="btn btn-primary mt-4">
