@@ -2877,60 +2877,94 @@ function setupTripTypeToggle() {
 // ============================================
 // 📅 CALENDRIER (CORRIGÉ AVEC VOTRE ID)
 // ============================================
+// DANS app.js
 function setupDatePickers() {
+    // Détruit l'ancienne instance du calendrier pour éviter les bugs
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
     }
 
+    // Récupère la langue pour la traduction du calendrier et du placeholder
     const lang = getLanguage();
     const placeholderText = translations[lang]?.search_form_dates_placeholder || "Sélectionnez vos dates";
 
-    // ✅ On utilise VOTRE ID d'input
+    // Cible les éléments HTML nécessaires
     const displayInput = document.getElementById('travel-date');
     const departureValueInput = document.getElementById('departure-date-value');
     const returnValueInput = document.getElementById('return-date-value');
 
+    // Sécurité : si un élément est manquant, on arrête pour éviter une erreur
     if (!displayInput || !departureValueInput || !returnValueInput) {
         console.error("❌ ERREUR FATALE : Un des inputs de date est manquant.");
         return;
     }
 
+    // Configure le champ visible par l'utilisateur
     displayInput.placeholder = placeholderText;
-    displayInput.readOnly = true; // Empêcher le clavier mobile de s'ouvrir
+    displayInput.readOnly = true; // Empêche le clavier mobile de s'ouvrir
 
+    // Détermine si on est en mode "Aller-retour" ou "Aller simple"
     const isRoundTrip = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip";
     
+    // Initialise le calendrier Flatpickr
     appState.departurePicker = flatpickr(displayInput, {
-        dateFormat: "Y-m-d",
-        minDate: "today",
-        locale: lang,
-        mode: isRoundTrip ? "range" : "single",
-        altInput: true, // Flatpickr va créer un champ visible, on le configure
-        altFormat: "d F", // Format d'affichage (ex: 15 Juil)
+        dateFormat: "Y-m-d",        // Format interne
+        minDate: "today",           // N'autorise pas les dates passées
+        locale: lang,               // Utilise la langue FR ou EN
+        mode: isRoundTrip ? "range" : "single", // Mode simple ou plage
+        altInput: true,             // Affiche la date dans un format lisible
+        altFormat: "d F",           // Format lisible (ex: 04 Décembre)
 
+        // C'est ici que la magie opère. Cette fonction s'exécute quand l'utilisateur ferme le calendrier.
         onClose: function(selectedDates) {
+            
+            // Si l'utilisateur n'a rien sélectionné, on vide les champs et on arrête
             if (selectedDates.length === 0) {
                 departureValueInput.value = "";
                 returnValueInput.value = "";
                 return;
             }
 
+            // S'assure que les dates sont dans le bon ordre (départ avant retour)
             selectedDates.sort((a, b) => a - b);
             
+            // ================================================
+            // ✅ DÉBUT DE LA CORRECTION : FORMATAGE SANS FUSEAU HORAIRE
+            // ================================================
+
+            // Petite fonction pour convertir un objet Date en chaîne "YYYY-MM-DD"
+            // Elle utilise getFullYear, getMonth, getDate qui ignorent le fuseau horaire.
+            const formatDateToString = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() est 0-indexé (0=Janvier)
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // On prend la première date sélectionnée comme date de départ
             const departureDate = selectedDates[0];
-            const returnDate = selectedDates.length > 1 ? selectedDates[1] : null;
+            const departureDateString = formatDateToString(departureDate);
             
-            // Stockage dans les inputs cachés
-            departureValueInput.value = departureDate.toISOString().split('T')[0];
+            // On met la chaîne correcte dans le champ de valeur caché
+            departureValueInput.value = departureDateString;
             
+            // Si on est en mode aller-retour
             if (isRoundTrip) {
+                // On prend la deuxième date comme date de retour (s'il y en a une)
+                const returnDate = selectedDates.length > 1 ? selectedDates[1] : null;
                 if (returnDate) {
-                    returnValueInput.value = returnDate.toISOString().split('T')[0];
+                    returnValueInput.value = formatDateToString(returnDate);
                 } else {
-                    // Si une seule date, retour = même jour
-                    returnValueInput.value = departureValueInput.value;
+                    // Si une seule date est cliquée, on considère que le retour est le même jour
+                    returnValueInput.value = departureDateString;
                 }
+            } else {
+                 // Si on est en aller-simple, on s'assure que le champ de retour est vide
+                 returnValueInput.value = "";
             }
+            // ================================================
+            // ✅ FIN DE LA CORRECTION
+            // ================================================
         }
     });
 
