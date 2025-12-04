@@ -491,6 +491,8 @@ app.get("/api/route-templates", async (req, res) => {
 
 
 
+// DANS server.js
+
 app.get("/api/search", async (req, res) => {
   let { from, to, date } = req.query;
   if (!from || !to || !date)
@@ -501,36 +503,48 @@ app.get("/api/search", async (req, res) => {
       .find({
         "route.from": { $regex: `^${from.trim()}`, $options: "i" },
         "route.to": { $regex: `^${to.trim()}`, $options: "i" },
-        date: date, // ✅ On cherche par date de DÉPART
+        date: date,
       })
       .toArray();
 
-    // ✅ AJOUT : Filtrer les trajets passés (pour aujourd'hui)
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    // ==============================================================
+    // ✅ CORRECTION DU FILTRE TEMPOREL (Gestion des fuseaux horaires)
+    // ==============================================================
+    const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence
+    const nowInBrazzaville = utcToZonedTime(new Date(), timeZone);
+    const todayStrInBrazzaville = format(nowInBrazzaville, 'yyyy-MM-dd', { timeZone });
     
     const filteredTrips = trips.filter(trip => {
-      // Si le voyage n'est pas aujourd'hui, on le garde
-      if (trip.date !== todayStr) return true;
-      
-      // Si c'est aujourd'hui, on vérifie que l'heure de départ n'est pas passée
-      if (trip.route?.departure) {
-        const [hours, minutes] = trip.route.departure.split(':').map(Number);
-        const departureTime = new Date(now);
-        departureTime.setHours(hours, minutes, 0, 0);
-        return departureTime > now;
+      // Si le voyage n'est pas "aujourd'hui" (selon le fuseau de Brazzaville), on le garde toujours.
+      if (trip.date !== todayStrInBrazzaville) {
+        return true;
       }
-      return true;
+      
+      // Si c'est aujourd'hui, on compare les heures DANS le bon fuseau horaire.
+      if (trip.route?.departure) {
+        // On crée la date/heure de départ du bus en l'interprétant comme étant à l'heure de Brazzaville.
+        // Puis on la convertit en objet Date UTC pour une comparaison fiable.
+        const departureDateTimeInUtc = zonedTimeToUtc(`${trip.date}T${trip.route.departure}:00`, timeZone);
+        
+        // On compare l'heure de départ (en UTC) avec l'heure actuelle du serveur (en UTC).
+        return departureDateTimeInUtc > new Date();
+      }
+      
+      // Par sécurité, si le trajet n'a pas d'heure de départ, on l'affiche.
+      return true; 
     });
 
-    // Fonction utilitaire pour calculer la durée
+    // ==============================================================
+    // FIN DE LA CORRECTION
+    // ==============================================================
+
+    // La suite de la fonction reste inchangée
     const calculateDuration = (start, end) => {
         if (!start || !end) return "N/A";
         const [h1, m1] = start.split(':').map(Number);
         const [h2, m2] = end.split(':').map(Number);
         let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
         
-        // Gestion des trajets de nuit (arrivée le lendemain)
         if (diffMinutes < 0) diffMinutes += 1440; 
 
         const hours = Math.floor(diffMinutes / 60);
@@ -556,7 +570,6 @@ app.get("/api/search", async (req, res) => {
       arrivalLocation: trip.route.arrivalLocation || null,
       trackerId: trip.busIdentifier || trip.route.trackerId || null,
       availableSeats: trip.seats.filter((s) => s.status === "available").length,
-      // ✅ CHAMPS TRAJET DE NUIT
       isNightTrip: trip.isNightTrip || false,
       arrivalDaysOffset: trip.arrivalDaysOffset || 0,
       totalSeats: trip.seats.length,
