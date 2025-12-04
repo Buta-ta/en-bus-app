@@ -1861,6 +1861,15 @@
                             <span>Personnel</span>
                         </a>
                     </li>
+
+
+                    <li class="nav-item">
+    <a href="#" class="nav-link" data-tab="notifications">
+        <span class="nav-icon">🔔</span>
+        <span>Notifications</span>
+    </a>
+</li>
+
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -2610,7 +2619,86 @@
 
 
 
+        <!-- DANS admin/index.html, dans <main class="main-content"> -->
 
+<!-- ============================================
+     🔔 ONGLET: NOTIFICATIONS (VERSION STYLÉE)
+     ============================================ -->
+<div id="tab-notifications" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Notifications Push</h1>
+        <p class="page-subtitle">Envoyez des messages ciblés à vos utilisateurs directement sur leur téléphone.</p>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns: 2fr 1fr; align-items: flex-start;">
+        
+        <!-- Colonne de gauche : Formulaire de composition -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">✍️ Composer un message</h2>
+            </div>
+            <form id="notification-form">
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+                    
+                    <div class="form-group">
+                        <label for="notification-target-type" class="form-label">🎯 Cible</label>
+                        <select id="notification-target-type" class="form-control">
+                            <option value="all">Tous les utilisateurs</option>
+                            <option value="trip">Passagers d'un voyage</option>
+                            <option value="booking">Une réservation spécifique</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="target-id-group" style="display: none;">
+                        <label for="notification-target-id" class="form-label">🔍 Identifiant Cible</label>
+                        <input type="text" id="notification-target-id" class="form-control" placeholder="ID du Voyage / N° de Réservation">
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label for="notification-title" class="form-label">Titre de la notification</label>
+                        <input type="text" id="notification-title" class="form-control" placeholder="Ex: Information importante" required>
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label for="notification-body" class="form-label">Contenu du message</label>
+                        <textarea id="notification-body" class="form-control" rows="5" placeholder="Votre message pour les utilisateurs..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-4" style="width: 100%;">
+                    <span>🚀</span> Envoyer la Notification
+                </button>
+            </form>
+        </div>
+
+        <!-- Colonne de droite : Aperçu de la notification -->
+        <div class="content-card" style="position: sticky; top: 2rem;">
+            <div class="card-header">
+                <h2 class="card-title">📱 Aperçu</h2>
+            </div>
+            <div class="notification-preview">
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="phone-status-bar">
+                            <span id="phone-time">10:30</span>
+                            <span>📶 🔋</span>
+                        </div>
+                        <div class="notification-card-preview">
+                            <div class="notification-header">
+                                <span class="app-icon">🚌</span>
+                                <span class="app-name">En-Bus</span>
+                                <span class="notification-time">maintenant</span>
+                            </div>
+                            <div class="notification-content-preview">
+                                <p id="preview-title" class="preview-title">Titre de la notification</p>
+                                <p id="preview-body" class="preview-body">Le contenu de votre message apparaîtra ici au fur et à mesure de votre saisie.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     </main>
     </div>
     <!-- TAB: Paramètres -->
@@ -6721,6 +6809,116 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.loadDestinations();
             }
         }, 1000);
+
+
+
+
+
+
+
+
+        // DANS admin/index.html, dans <script>
+
+/**
+ * Gère la soumission du formulaire de notification.
+ * La logique d'envoi reste la même.
+ */
+async function handleSendNotification(event) {
+    event.preventDefault();
+
+    const targetType = document.getElementById('notification-target-type').value;
+    const targetId = document.getElementById('notification-target-id').value.trim();
+    const title = document.getElementById('notification-title').value.trim();
+    const body = document.getElementById('notification-body').value.trim();
+
+    if (!title || !body) {
+        showNotification("Le titre et le message sont requis.", "warning");
+        return;
+    }
+
+    let endpoint = '';
+    const requestBody = { title, body };
+
+    switch (targetType) {
+        case 'all':
+            endpoint = '/admin/notifications/send-to-all';
+            break;
+        case 'trip':
+            if (!targetId) {
+                showNotification("L'ID du voyage est requis.", "warning");
+                return;
+            }
+            endpoint = `/admin/notifications/send-to-trip/${targetId}`;
+            break;
+        case 'booking':
+            if (!targetId) {
+                showNotification("Le numéro de réservation est requis.", "warning");
+                return;
+            }
+            endpoint = `/admin/notifications/send-to-booking/${targetId}`;
+            break;
+        default:
+            showNotification("Type de cible invalide.", "error");
+            return;
+    }
+    
+    showNotification("Envoi des notifications en cours...", "info");
+    const data = await apiCall(endpoint, 'POST', requestBody);
+
+    if (data && data.success) {
+        showNotification(data.message || "Notifications envoyées avec succès !", 'success');
+        
+        // Réinitialiser le formulaire et l'aperçu
+        document.getElementById('notification-form').reset();
+        document.getElementById('target-id-group').style.display = 'none';
+        updateNotificationPreview(); // Remet l'aperçu à zéro
+    }
+}
+
+/**
+ * Met à jour l'aperçu de la notification en temps réel.
+ */
+function updateNotificationPreview() {
+    const titleInput = document.getElementById('notification-title');
+    const bodyInput = document.getElementById('notification-body');
+    
+    const previewTitle = document.getElementById('preview-title');
+    const previewBody = document.getElementById('preview-body');
+
+    // Met à jour le titre, avec un texte par défaut s'il est vide
+    previewTitle.textContent = titleInput.value.trim() || 'Titre de la notification';
+    
+    // Met à jour le corps, avec un texte par défaut s'il est vide
+    previewBody.textContent = bodyInput.value.trim() || 'Le contenu de votre message apparaîtra ici...';
+}
+
+/**
+ * Attache les écouteurs d'événements au formulaire et à l'aperçu.
+ */
+function setupNotificationFormListeners() {
+    const form = document.getElementById('notification-form');
+    if (!form) return;
+
+    // Soumission du formulaire
+    form.addEventListener('submit', handleSendNotification);
+
+    // Affichage/Masquage du champ d'ID cible
+    document.getElementById('notification-target-type').addEventListener('change', (e) => {
+        const targetIdGroup = document.getElementById('target-id-group');
+        const targetIdInput = document.getElementById('notification-target-id');
+
+        if (e.target.value === 'all') {
+            targetIdGroup.style.display = 'none';
+        } else {
+            targetIdGroup.style.display = 'block';
+            targetIdInput.placeholder = (e.target.value === 'trip') ? "ID du voyage (ex: 60f8...)" : "N° de réservation (ex: EB-...)";
+        }
+    });
+
+    // Mise à jour de l'aperçu en temps réel
+    document.getElementById('notification-title').addEventListener('input', updateNotificationPreview);
+    document.getElementById('notification-body').addEventListener('input', updateNotificationPreview);
+}
 
     </script>
 

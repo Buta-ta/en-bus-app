@@ -5572,3 +5572,90 @@ body.pwa-installed .container {
     animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* DANS admin/index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLES POUR L'APERÇU DES NOTIFICATIONS
+   ============================================ */
+.phone-frame {
+    background: #000;
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 2px #555;
+    border: 2px solid #333;
+}
+
+.phone-screen {
+    background: var(--dark-bg);
+    border-radius: 28px;
+    height: 500px;
+    padding: 15px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.phone-status-bar {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 0 10px;
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+}
+
+.notification-card-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 10px;
+    animation: slideInDown 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.app-icon {
+    font-size: 1rem;
+}
+
+.app-name {
+    font-weight: 600;
+}
+
+.notification-time {
+    margin-left: auto;
+}
+
+.preview-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.preview-body {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
