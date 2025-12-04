@@ -1956,14 +1956,12 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 
 
 // server.js
-// DANS server.js
-// Remplacez l'ancienne fonction app.post("/api/admin/trips", ...) par celle-ci
 
 app.post(
   "/api/admin/trips",
   authenticateToken,
   [
-    // Vos validations existantes
+    // ... tes validations existantes ...
     body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
     body("startDate").isISO8601().withMessage("La date de début est invalide."),
     body("endDate").isISO8601().withMessage("La date de fin est invalide."),
@@ -1971,6 +1969,8 @@ app.post(
     body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
     body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
     body('highlightBadge').optional({ checkFalsy: true }).isString().trim(),
+    
+    // ✅ NOUVELLES VALIDATIONS AJOUTÉES
     body("isNightTrip").isBoolean().withMessage("Le statut de voyage de nuit doit être un booléen."),
     body("arrivalDaysOffset").isInt({ min: 0, max: 5 }).withMessage("Le décalage de jour d'arrivée est invalide.")
   ],
@@ -1981,10 +1981,11 @@ app.post(
     }
     
     try {
+      // ✅ RÉCUPÉRATION DES NOUVELLES DONNÉES
       const {
         routeId,
-        startDate, // ex: "2025-12-04"
-        endDate,   // ex: "2025-12-06"
+        startDate,
+        endDate,
         daysOfWeek,
         seatCount,
         busIdentifier,
@@ -1997,8 +1998,8 @@ app.post(
         controller1Name,
         controller2Id,
         controller2Name,
-        isNightTrip,
-        arrivalDaysOffset
+        isNightTrip,         // <-- Nouveau
+        arrivalDaysOffset    // <-- Nouveau
       } = req.body;
 
       if (!ObjectId.isValid(routeId)) {
@@ -2011,8 +2012,10 @@ app.post(
       if (!routeTemplate) {
         return res.status(404).json({ error: "Modèle de trajet non trouvé." });
       }
-      
-      const newTrips = [];
+
+      let newTrips = [];
+      let currentDate = new Date(startDate);
+      const lastDate = new Date(endDate);
       const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       
       const drivers = [];
@@ -2023,19 +2026,8 @@ app.post(
       if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
       if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
 
-      // ========================================================
-      // ✅ DÉBUT DE LA CORRECTION POUR LES FUSEAUX HORAIRES
-      // ========================================================
-      
-      // On crée des objets Date en forçant l'interprétation en UTC
-      // pour éviter les décalages de fuseau horaire du serveur.
-      let loopDate = new Date(`${startDate}T00:00:00.000Z`);
-      const lastDate = new Date(`${endDate}T00:00:00.000Z`);
-
-      while (loopDate <= lastDate) {
-        // On récupère le jour de la semaine en UTC pour être cohérent
-        const dayIndex = loopDate.getUTCDay();
-        const dayName = dayMap[dayIndex];
+      while (currentDate <= lastDate) {
+        const dayName = dayMap[currentDate.getUTCDay()];
         
         if (daysOfWeek.includes(dayName)) {
           const seats = Array.from({ length: seatCount }, (_, i) => ({
@@ -2043,12 +2035,8 @@ app.post(
             status: "available",
           }));
 
-          // On génère la chaîne de date "YYYY-MM-DD" à partir de l'objet Date UTC.
-          // C'est la garantie d'avoir la bonne date, peu importe où le serveur se trouve.
-          const dateString = loopDate.toISOString().split("T")[0];
-
           newTrips.push({
-            date: dateString, // <--- La date sera toujours correcte
+            date: currentDate.toISOString().split("T")[0],
             route: routeTemplate,
             seats: seats,
             busIdentifier: busIdentifier || null,
@@ -2058,17 +2046,14 @@ app.post(
                 controllers: controllers.length > 0 ? controllers : null
             },
             createdAt: new Date(),
+
+            // ✅ AJOUT DES NOUVEAUX CHAMPS DANS LE DOCUMENT
             isNightTrip: isNightTrip || false,
             arrivalDaysOffset: parseInt(arrivalDaysOffset) || 0
           });
         }
-        
-        // On avance d'un jour en UTC pour la prochaine itération
-        loopDate.setUTCDate(loopDate.getUTCDate() + 1);
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
-      // ========================================================
-      // ✅ FIN DE LA CORRECTION
-      // ========================================================
 
       if (newTrips.length > 0) {
         await tripsCollection.insertMany(newTrips);

@@ -2570,7 +2570,7 @@ function setupDatePickers() {
         locale: lang,
         mode: isRoundTrip ? "range" : "single",
         altInput: true,
-        altFormat: "d F Y", // ✅ Ajout de l'année pour plus de clarté
+        altFormat: "d F Y",
 
         onClose: function(selectedDates) {
             if (selectedDates.length === 0) {
@@ -2581,7 +2581,6 @@ function setupDatePickers() {
 
             selectedDates.sort((a, b) => a - b);
             
-            // ✅ CORRECTION : Formatage manuel sans décalage de fuseau horaire
             const formatDateLocal = (date) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -2598,18 +2597,22 @@ function setupDatePickers() {
             if (isRoundTrip) {
                 const returnDate = selectedDates.length > 1 ? selectedDates[1] : departureDate;
                 returnValueInput.value = formatDateLocal(returnDate);
+                
+                // ✅ CORRIGÉ : Log avec les bonnes variables
+                console.log("📅 ADMIN - startDate:", departureValueInput.value);
+                console.log("📅 ADMIN - endDate:", returnValueInput.value);
             } else {
                 returnValueInput.value = "";
+                // ✅ CORRIGÉ : Log pour aller simple
+                console.log("📅 ADMIN - startDate:", departureValueInput.value);
+                console.log("📅 ADMIN - endDate: (aller simple, pas de retour)");
             }
         }
     });
 
     console.log(`✅ Calendrier initialisé en mode "${isRoundTrip ? 'range' : 'single'}"`);
-    // Après avoir récupéré les dates
-console.log("📅 ADMIN - startDate:", startDate);
-console.log("📅 ADMIN - endDate:", endDate);
+    // ✅ Supprimé les console.log avec startDate/endDate qui n'existaient pas ici
 }
-
 
 function setupPassengerSelector() {
     const input = document.getElementById("passenger-input");
