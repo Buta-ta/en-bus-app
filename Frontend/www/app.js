@@ -2024,7 +2024,6 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // INITIALISATION DE L'APPLICATION
 // ============================================
 // app.js
-
 function initApp() {
     try {
         // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
@@ -2042,9 +2041,29 @@ function initApp() {
 
         // --- Configuration native ---
         if (window.Capacitor?.isNativePlatform()) {
+            
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            
             const { StatusBar, Style } = Capacitor.Plugins;
-            StatusBar.setStyle({ style: Style.Dark });
-            console.log("✅ Style de la barre de statut appliqué (Dark).");
+
+            // On vérifie que le plugin StatusBar EXISTE avant de l'utiliser.
+            // S'il n'est pas installé, cette condition sera fausse et le code ne plantera pas.
+            if (StatusBar) {
+                try {
+                    StatusBar.setStyle({ style: Style.Dark });
+                    console.log("✅ Style de la barre de statut appliqué (Dark).");
+                } catch (e) {
+                    console.warn("⚠️ Erreur lors de l'application du style de la barre de statut:", e);
+                }
+            } else {
+                console.warn("⚠️ Plugin @capacitor/status-bar non trouvé. Le style de la barre de statut ne sera pas modifié.");
+            }
+
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
         }
 
         // --- Correction pour la superposition de la recherche ---
@@ -3945,9 +3964,14 @@ window.selectBus = async function(busId) {
     }
 };
 // ✅ NOUVELLE FONCTION : Recherche des trajets retour
+// DANS app.js (remplacez l'ancienne fonction par celle-ci)
+
 async function searchReturnTrips() {
     try {
-        Utils.showToast('Recherche des trajets retour...', 'info');
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+
+        Utils.showToast(translation.toast_select_return_bus, 'info');
         
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(appState.currentSearch.destination)}&to=${encodeURIComponent(appState.currentSearch.origin)}&date=${appState.currentSearch.returnDate}`
@@ -3960,16 +3984,37 @@ async function searchReturnTrips() {
         const data = await response.json();
         
         if (data.count === 0) {
-            Utils.showToast("Aucun trajet retour disponible pour cette date", 'warning');
-            // Proposer de revenir à la recherche
-            if (confirm("Aucun trajet retour trouvé. Voulez-vous modifier votre recherche ?")) {
+            // ===============================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ===============================================
+
+            // Affiche un toast traduit
+            Utils.showToast(translation.info_no_return_trips_found, 'warning');
+
+            // Utilise la modale personnalisée et stylisée
+            const confirmed = await showCustomConfirm({
+                title: translation.confirm_no_return_title,
+                message: translation.confirm_no_return_desc,
+                icon: '😢',
+                confirmText: translation.button_modify_search,
+                cancelText: translation.button_cancel, // Clé déjà existante
+                confirmClass: 'btn-primary' // Pour avoir un bouton vert/bleu
+            });
+
+            if (confirmed) {
                 showPage("home");
             }
+            // Si l'utilisateur clique sur "Annuler", la modale se ferme et rien ne se passe.
+
+            // ===============================================
+            // ✅ FIN DE LA CORRECTION
+            // ===============================================
         } else {
             appState.currentResults = data.results;
             displayResults(data.results, true); // true = mode retour
             showPage("results");
-            Utils.showToast(`${data.count} trajet(s) retour trouvé(s)`, 'success');
+            // Utilisons une clé de traduction pour ce toast aussi
+            Utils.showToast(translation.success_trips_found(data.count), 'success');
         }
         
     } catch (error) {
@@ -4994,7 +5039,7 @@ async function displayReservations() {
     }
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-    // ✅ C'EST ICI QUE J'INTÈGRE L'ANIMATION
+    
     if (history.length === 0) {
         listContainer.innerHTML = `
             <div class="empty-state-container">
@@ -5005,25 +5050,49 @@ async function displayReservations() {
                     </div>
                     <div class="road"></div>
                 </div>
-                
-                <h3 class="empty-title">${translation.my_bookings_none_title || "C'est calme par ici..."}</h3>
-                <p class="empty-desc">${translation.my_bookings_none_desc || "Vous n'avez aucun voyage prévu pour le moment. Et si on changeait ça ?"}</p>
-                
+                <h3 class="empty-title">${translation.my_bookings_none_title}</h3>
+                <p class="empty-desc">${translation.my_bookings_none_desc}</p>
                 <button class="btn btn-primary btn-pulse" onclick="showPage('home')">
-                    ${translation.button_new_booking || "Réserver un billet"} ➜
+                    ${translation.button_new_booking} ➜
                 </button>
             </div>`;
         return;
     }
 
-
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
+        
         if (!data.success || !Array.isArray(data.reservations)) {
             throw new Error("Réponse API invalide pour les réservations.");
         }
 
+        if (data.reservations.length === 0) {
+            // ==============================================================
+            // ✅ DÉBUT DE LA MODIFICATION POUR LA TRADUCTION
+            // ==============================================================
+            listContainer.innerHTML = `
+                <div class="empty-state-container">
+                    <div class="not-found-animation">
+                        <div class="magnifying-glass"></div>
+                        <div class="ticket-icon">🎟️</div>
+                        <div class="question-mark">?</div>
+                    </div>
+                    
+                    <h3 class="empty-title">${translation.not_found_title}</h3>
+                    <p class="empty-desc">
+                        ${translation.not_found_desc}
+                    </p>
+                    
+                    <button class="btn btn-primary" onclick="showPage('home')">
+                        ${translation.button_plan_new_trip}
+                    </button>
+                </div>`;
+            // ==============================================================
+            // ✅ FIN DE LA MODIFICATION
+            // ==============================================================
+            return;
+        }
 
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
@@ -5047,53 +5116,38 @@ async function displayReservations() {
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                                let statusHTML = '';
-
+                let statusHTML = '';
                 if (isConfirmed) {
-                    statusHTML = `<span style="color: #73d700;">${translation.status_confirmed || 'Confirmed'}</span>`;
+                    statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
                 } else if (isPending) {
-                    statusHTML = `<span style="color: #ff9800;">${translation.status_pending || 'Pending'}</span>`;
+                    statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
                 } else if (isReportPending) {
-                    statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending || 'Reschedule Pending'}</span>`;
+                    statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
                 } else if (isReported) {
-                    statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported || 'Rescheduled'}</span>`;
-                } 
-                
-               // ✅ LOGIQUE DE TRADUCTION CORRIGÉE
-                else if (isCancelled) {
+                    statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
+                } else if (isCancelled) {
                     const lang = getLanguage();
-                    let statusText = res.status; // Par défaut, "Annulé" ou "Expiré"
-
-                    // Si on est en anglais, on traduit manuellement les termes du backend
+                    let statusText = res.status;
                     if (lang === 'en') {
                         if (res.status === 'Annulé') statusText = 'Cancelled';
                         if (res.status === 'Expiré') statusText = 'Expired';
                     }
-                    
-                    // On utilise la fonction de traduction avec le texte déjà traduit
                     if (typeof translation.status_cancelled === 'function') {
                         statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(statusText)}</span>`;
                     } else {
-                        // Fallback si la fonction n'existe pas
                         statusHTML = `<span style="color: #f44336;">${statusText}</span>`;
                     }
-                } 
-                
-                // Fallback final
-                else {
+                } else {
                     statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
                 }
-
 
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
                 if (isConfirmed) {
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
-                        if (trackerIdentifier) {
-        // On remplace le <a> par un <button> qui appelle la fonction JS
-        actionsButtons += ` <button class="btn btn-secondary" onclick="openTrackerPage('${trackerIdentifier}', '${res.bookingNumber}')">${translation.button_track || 'Suivre'}</button>`;
-    }
-
+                    if (trackerIdentifier) {
+                        actionsButtons += ` <button class="btn btn-secondary" onclick="openTrackerPage('${trackerIdentifier}', '${res.bookingNumber}')">${translation.button_track}</button>`;
+                    }
                     const reportCount = res.reportCount || 0;
                     if (!res.returnRoute && reportCount < 2) {
                         actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
@@ -5111,7 +5165,7 @@ async function displayReservations() {
 
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
-                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
+                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title}">🗑️</button>`;
                 }
                 
                 const formattedDate = Utils.formatDate(res.date, lang);
@@ -5119,7 +5173,6 @@ async function displayReservations() {
                     ? translation.date_at_time(formattedDate, res.route.departure)
                     : `${formattedDate} à ${res.route.departure}`;
 
-                // --- Génération de la ligne de statut ---
                 let liveStatusHTML = '';
                 if (res.liveStatus && res.status === 'Confirmé') {
                     const statusClass = res.liveStatus.status.toLowerCase().replace(/_/g, '-');

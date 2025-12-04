@@ -371,6 +371,12 @@ const translations = {
     error_search_missing_destination: "Veuillez sélectionner une ville d'arrivée.",
     error_search_missing_date: "Veuillez sélectionner une date de voyage.",
 
+    // --- Traductions pour la confirmation d'absence de retour ---
+    info_no_return_trips_found: "Aucun trajet retour disponible pour cette date",
+    confirm_no_return_title: "Aucun retour trouvé",
+    confirm_no_return_desc: "Aucun voyage retour n'a été trouvé pour la date sélectionnée. Voulez-vous essayer avec une autre date ?",
+    button_modify_search: "Modifier la recherche",
+
 
 
     // --- Page de Confirmation ---
@@ -549,6 +555,10 @@ const translations = {
     confirm_cancel_title: "Annuler la réservation ?",
     confirm_cancel_desc: (num) => `Voulez-vous vraiment annuler ${num} ?`,
     button_confirm: "Confirmer",
+      // --- Animation "Aucun billet trouvé" (Backend) ---
+    not_found_title: "Aucun billet actif trouvé",
+    not_found_desc: "Il semble que les billets enregistrés sur cet appareil ne soient plus valides ou ont été supprimés.",
+    button_plan_new_trip: "Planifier un nouveau voyage",
     },
 
 
@@ -1095,6 +1105,14 @@ const translations = {
     confirm_cancel_title: "Cancel booking?",
     confirm_cancel_desc: (num) => `Do you really want to cancel ${num}?`,
     button_confirm: "Confirm",
+       // --- Translations for the no-return-found confirmation ---
+    info_no_return_trips_found: "No return trips available for this date",
+    confirm_no_return_title: "No Return Trips Found",
+    confirm_no_return_desc: "No return trips were found for the selected date. Would you like to try another date?",
+    button_modify_search: "Modify Search",
+    not_found_title: "No Active Tickets Found",
+    not_found_desc: "It seems the tickets saved on this device are no longer valid or have been deleted.",
+    button_plan_new_trip: "Plan a New Trip",
      
   }
 }

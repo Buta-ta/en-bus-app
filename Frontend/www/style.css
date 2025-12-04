@@ -5592,3 +5592,69 @@ body.pwa-installed .container {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 ANIMATION POUR "AUCUN BILLET TROUVÉ" (BACKEND)
+   ============================================ */
+.not-found-animation {
+    width: 150px;
+    height: 150px;
+    position: relative;
+    margin: 2rem auto;
+    animation: not-found-bobbing 3s ease-in-out infinite;
+}
+
+@keyframes not-found-bobbing {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.magnifying-glass {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border: 10px solid var(--color-accent);
+    border-radius: 50%;
+    top: 10px;
+    left: 10px;
+}
+
+.magnifying-glass::after {
+    content: '';
+    position: absolute;
+    width: 15px;
+    height: 50px;
+    background: var(--color-accent);
+    transform: rotate(45deg);
+    bottom: -40px;
+    right: -20px;
+    border-radius: 10px;
+}
+
+.ticket-icon {
+    font-size: 50px;
+    position: absolute;
+    top: 60px;
+    left: 80px;
+    color: var(--color-text-secondary);
+    opacity: 0.5;
+    transform: rotate(-20deg);
+}
+
+.question-mark {
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--color-accent);
+    position: absolute;
+    top: 30px;
+    left: 40px;
+    animation: blink-question 2s infinite;
+}
+
+@keyframes blink-question {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.9); }
+}
