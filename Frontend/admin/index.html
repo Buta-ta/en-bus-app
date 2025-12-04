@@ -2097,6 +2097,31 @@
                                 </select>
                             </div>
 
+                            <!-- ✅ OPTION TRAJET DE NUIT (SIMPLIFIÉ) -->
+<div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.3);">
+    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+        <input type="checkbox" id="is-night-trip" onchange="toggleNightTripOptions()" style="width: 20px; height: 20px;">
+        <span style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">
+            🌙 C'est un trajet de NUIT (arrivée le lendemain ou plus tard)
+        </span>
+    </label>
+</div>
+
+<!-- Options affichées seulement pour les trajets de nuit -->
+<div id="night-trip-options" style="display: none; margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.3);">
+    <label for="arrival-day-offset" class="form-label">
+        📅 L'arrivée se fait combien de jours après le départ ?
+    </label>
+    <select id="arrival-day-offset" class="form-control" style="max-width: 250px;">
+        <option value="1" selected>+1 jour (lendemain)</option>
+        <option value="2">+2 jours</option>
+        <option value="3">+3 jours</option>
+    </select>
+    <small style="color: #ff9800; display: block; margin-top: 8px;">
+        ⚠️ Exemple : Départ le 15 à 22h → Arrivée le 16 à 06h = +1 jour
+    </small>
+</div>
+
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
@@ -3724,8 +3749,7 @@ async function handleCreateTrips(e) {
     
     // ✅ RÉCUPÉRATION SÉCURISÉE DES VALEURS TRAJET DE NUIT
     const nightRadio = document.querySelector('input[name="trip-type-day-night"]:checked');
-    const isNightTrip = nightRadio ? (nightRadio.value === 'night') : false;
-    
+    const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
     const offsetSelect = document.getElementById('arrival-day-offset');
     // Si c'est un trajet de nuit, on prend la valeur du select (ou 1 par défaut)
     // Sinon, c'est forcément 0
@@ -6370,8 +6394,9 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
 
         // Fonction pour afficher/masquer les options de trajet de nuit
+// Fonction pour afficher/masquer les options de trajet de nuit
 function toggleNightTripOptions() {
-    const isNightTrip = document.querySelector('input[name="trip-type-day-night"]:checked')?.value === 'night';
+    const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
     const nightOptions = document.getElementById('night-trip-options');
     
     if (nightOptions) {
