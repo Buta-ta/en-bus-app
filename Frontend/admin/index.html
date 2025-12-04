@@ -5446,121 +5446,83 @@ function openEditMemberModal(memberId, name, phone, role, status) {
             }
         }
 
-        function setupEventListeners() {
-            // --- Login & Logout (INCHANGÉ) ---
-            document.getElementById("login-form").addEventListener("submit", handleLogin);
-            document.getElementById("logout-btn").addEventListener("click", handleLogout);
+       // DANS admin/index.html, dans <script>
 
-            // --- Gestion de la navigation par onglets (INCHANGÉ) ---
-            document.querySelectorAll(".nav-link").forEach((link) => {
-                link.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const tabName = link.getAttribute("data-tab");
-                    switchTab(tabName);
-                });
-            });
+function setupEventListeners() {
+    // --- Login & Logout (INCHANGÉ) ---
+    document.getElementById("login-form").addEventListener("submit", handleLogin);
+    document.getElementById("logout-btn").addEventListener("click", handleLogout);
 
-            // --- Filtres (INCHANGÉ) ---
-            document.getElementById("search-input").addEventListener("input", applyFilters);
-            document.querySelectorAll(".filter-pill").forEach((pill) => {
-                pill.addEventListener("click", () => {
-                    document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-                    pill.classList.add("active");
-                    applyFilters();
-                });
-            });
-
-            // --- Forms (INCHANGÉ) ---
-            document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
-            document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
-
-            // --- Modal (INCHANGÉ) ---
-            window.addEventListener("click", (e) => {
-                if (e.target === document.getElementById("details-modal")) {
-                    closeModal();
-                }
-            });
-
-            // --- Délégation d'événements pour le tableau des voyages (INCHANGÉ) ---
-            const tripsTbody = document.getElementById('trips-body');
-            if (tripsTbody) {
-                tripsTbody.addEventListener('click', (event) => {
-                    const button = event.target.closest('button[data-action]');
-                    if (!button) return;
-                    const action = button.dataset.action;
-                    const tripId = button.dataset.tripId;
-                    switch (action) {
-                        case 'delete': deleteTrip(tripId); break;
-                        case 'manage-seats': manageSeats(tripId); break;
-                        case 'edit-trip': showEditTripModal(tripId); break;
-                        case 'reset-seats': resetTripSeats(tripId); break;
-                    }
-                });
+    // --- Gestion de la navigation par onglets (INCHANGÉ) ---
+    document.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", (e) => {
+            e.preventDefault();
+            const tabName = link.getAttribute("data-tab");
+            if (tabName) { // Sécurité pour les liens qui n'ont pas de data-tab
+                switchTab(tabName);
             }
-
-            // Écouteur pour le formulaire des paramètres de report (INCHANGÉ)
-            const settingsForm = document.getElementById("report-settings-form");
-            if (settingsForm) {
-                settingsForm.addEventListener("submit", saveSettings);
-            }
-
-            // ===================================
-            // ✅ AJOUT DE L'ÉCOUTEUR MANQUANT
-            // ===================================
-            const destForm = document.getElementById("destination-creation-form");
-            if (destForm) {
-                destForm.addEventListener("submit", handleCreateDestination);
-            }
-            // ===================================
-        }
-        document.addEventListener("DOMContentLoaded", async () => {
-            // 1. Vérification du token et affichage initial (votre code est correct)
-            if (await verifyToken()) {
-                showDashboard();
-                loadAdminData(); // Charge les réservations par défaut
-                startInactivityDetection();
-            } else {
-                localStorage.removeItem("admin_token");
-                showLogin();
-            }
-
-            // 2. Initialisation des écouteurs d'événements (votre code est correct)
-            setupEventListeners();
-            buildDaysSelector();
-
-            // 3. Initialisation des calendriers Flatpickr
-
-            // Calendrier pour la création de voyages (votre code est correct)
-            flatpickr("#trip-dates", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "fr",
-                minDate: "today",
-            });
-
-            // ===================================
-            // ✅ AJOUT POUR LE NOUVEAU FILTRE
-            // ===================================
-            // Calendrier pour filtrer les voyages programmés
-            const tripFilterDateInput = document.getElementById('trip-filter-date');
-            if (tripFilterDateInput) {
-                flatpickr(tripFilterDateInput, {
-                    dateFormat: "Y-m-d",
-                    locale: "fr",
-                    allowInput: true, // Permet de vider le champ
-                    onChange: function (selectedDates, dateStr, instance) {
-                        // On recharge la liste des voyages quand la date change
-                        if (typeof loadAllTrips === 'function') {
-                            loadAllTrips();
-                        }
-                    }
-                });
-            }
-
-
-
-            // ===================================
         });
+    });
+
+    // --- Filtres (INCHANGÉ) ---
+    document.getElementById("search-input").addEventListener("input", applyFilters);
+    document.querySelectorAll(".filter-pill").forEach((pill) => {
+        pill.addEventListener("click", () => {
+            document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+            pill.classList.add("active");
+            applyFilters();
+        });
+    });
+
+    // --- Forms (INCHANGÉ) ---
+    document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
+    document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
+
+    // --- Modal (INCHANGÉ) ---
+    window.addEventListener("click", (e) => {
+        if (e.target === document.getElementById("details-modal")) {
+            closeModal();
+        }
+    });
+
+    // --- Délégation d'événements pour le tableau des voyages (INCHANGÉ) ---
+    const tripsTbody = document.getElementById('trips-body');
+    if (tripsTbody) {
+        tripsTbody.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const tripId = button.dataset.tripId;
+            switch (action) {
+                case 'delete': deleteTrip(tripId); break;
+                case 'manage-seats': manageSeats(tripId); break;
+                case 'edit-trip': showEditTripModal(tripId); break;
+                case 'reset-seats': resetTripSeats(tripId); break;
+            }
+        });
+    }
+
+    // Écouteur pour le formulaire des paramètres de report (INCHANGÉ)
+    const settingsForm = document.getElementById("report-settings-form");
+    if (settingsForm) {
+        settingsForm.addEventListener("submit", saveSettings);
+    }
+
+    // Écouteur pour le formulaire de création de destination
+    const destForm = document.getElementById("destination-creation-form");
+    if (destForm) {
+        destForm.addEventListener("submit", handleCreateDestination);
+    }
+    
+    // ========================================================
+    // ✅ LA CORRECTION EST ICI
+    // ========================================================
+    // On appelle la fonction qui rend le formulaire de notification interactif.
+    if (typeof setupNotificationFormListeners === 'function') {
+        setupNotificationFormListeners();
+    }
+    // ========================================================
+}
 
 
 
