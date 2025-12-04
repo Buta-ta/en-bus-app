@@ -1861,13 +1861,6 @@
                             <span>Personnel</span>
                         </a>
                     </li>
-
-                    <li class="nav-item">
-    <a href="#" class="nav-link" data-tab="notifications">
-        <span class="nav-icon">📢</span>
-        <span>Notifications</span>
-    </a>
-</li>
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -2103,9 +2096,45 @@
                                     <option value="">-- Aucun contrôleur --</option>
                                 </select>
                             </div>
-
- 
-
+                            <!-- ✅ SECTION TRAJET DE NUIT -->
+<div class="form-group form-group-full" style="margin-top: 20px; padding: 20px; background: rgba(115, 215, 0, 0.05); border: 1px solid rgba(115, 215, 0, 0.2); border-radius: 12px;">
+    <label class="form-label" style="font-size: 1.1em; margin-bottom: 15px; display: block;">
+        🌙 Type de trajet (Jour / Nuit)
+    </label>
+    
+    <div style="display: flex; gap: 30px; margin-bottom: 15px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 15px; border: 1px solid #333; border-radius: 8px; transition: all 0.2s;">
+            <input type="radio" name="trip-type-day-night" value="day" checked 
+                   onchange="toggleNightTripOptions()"
+                   style="width: 18px; height: 18px;"> 
+            <span>☀️ Trajet de jour</span>
+            <small style="color: #888;">(arrivée le même jour)</small>
+        </label>
+        
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 15px; border: 1px solid #333; border-radius: 8px; transition: all 0.2s;">
+            <input type="radio" name="trip-type-day-night" value="night"
+                   onchange="toggleNightTripOptions()"
+                   style="width: 18px; height: 18px;"> 
+            <span>🌙 Trajet de nuit</span>
+            <small style="color: #888;">(arrivée le lendemain ou après)</small>
+        </label>
+    </div>
+    
+    <!-- Options affichées seulement pour les trajets de nuit -->
+    <div id="night-trip-options" style="display: none; margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
+        <label for="arrival-day-offset" class="form-label">
+            📅 L'arrivée se fait combien de jours après le départ ?
+        </label>
+        <select id="arrival-day-offset" class="form-control" style="max-width: 250px;">
+            <option value="1" selected>+1 jour (lendemain)</option>
+            <option value="2">+2 jours</option>
+            <option value="3">+3 jours</option>
+        </select>
+        <small style="color: #ff9800; display: block; margin-top: 8px;">
+            ⚠️ Exemple : Départ le 15 à 22h → Arrivée le 16 à 06h = +1 jour
+        </small>
+    </div>
+</div>
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
@@ -2592,44 +2621,7 @@
         </div>
     </div>
 
-    <!-- ONGLET NOTIFICATIONS -->
-<div id="tab-notifications" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title">Notifications Push</h1>
-        <p class="page-subtitle">Envoyez des alertes en direct aux voyageurs.</p>
-    </div>
 
-    <div class="content-card" style="max-width: 600px;">
-        <form id="notif-form">
-            <div class="form-group">
-                <label class="form-label">Titre</label>
-                <input type="text" id="notif-title" class="form-control" placeholder="Ex: Bus en approche..." required>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Message</label>
-                <textarea id="notif-body" class="form-control" rows="3" placeholder="Votre message ici..." required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Cible</label>
-                <select id="notif-target" class="form-control">
-                    <option value="all">📢 Tout le monde</option>
-                    <option value="trip">🚌 Un Voyage spécifique</option>
-                    <option value="booking">🎫 Une Réservation précise</option>
-                </select>
-            </div>
-
-            <!-- Champ ID dynamique -->
-            <div id="notif-id-group" class="form-group" style="display:none;">
-                <label class="form-label" id="notif-id-label">ID Cible</label>
-                <input type="text" id="notif-target-id" class="form-control">
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Envoyer 🚀</button>
-        </form>
-    </div>
-</div>
 
 
     </main>
@@ -2959,6 +2951,14 @@
             renderTable(filtered);
         }
         // DANS Admin/index.html (section <script>)
+
+        // Dans Admin/index.html - Remplacer la fonction renderTable existante
+
+        // Dans Admin/index.html - Modifier renderTable
+        // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
+        // DANS Admin/index.html, REMPLACEZ votre fonction renderTable par celle-ci
+
+        // DANS Admin/index.html, REMPLACEZ la fonction renderTable par celle-ci
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
@@ -3749,78 +3749,114 @@
         }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
-        async function handleCreateTrips(e) {
-            e.preventDefault();
+        
+async function handleCreateTrips(e) {
+    e.preventDefault();
 
-            // 1. Récupération des valeurs du formulaire
-            const routeId = document.getElementById("route-template").value;
-            const dateValue = document.getElementById("trip-dates").value;
-            const seatCount = parseInt(document.getElementById("seat-count").value);
-            const busIdentifier = document.getElementById("bus-identifier").value.trim();
-            const highlightBadge = document.getElementById('highlight-badge').value.trim();
+    // 1. Récupération des valeurs du formulaire
+    const routeId = document.getElementById("route-template").value;
+    const dateValue = document.getElementById("trip-dates").value;
+    const seatCount = parseInt(document.getElementById("seat-count").value);
+    const busIdentifier = document.getElementById("bus-identifier").value.trim();
+    const highlightBadge = document.getElementById('highlight-badge').value.trim();
+    
+    // ✅ RÉCUPÉRATION SÉCURISÉE DES VALEURS TRAJET DE NUIT
+    const nightRadio = document.querySelector('input[name="trip-type-day-night"]:checked');
+    const isNightTrip = nightRadio ? (nightRadio.value === 'night') : false;
+    
+    const offsetSelect = document.getElementById('arrival-day-offset');
+    // Si c'est un trajet de nuit, on prend la valeur du select (ou 1 par défaut)
+    // Sinon, c'est forcément 0
+    const arrivalDaysOffset = isNightTrip ? (parseInt(offsetSelect?.value) || 1) : 0;
 
-            // 2. Validations
-            if (!routeId || !dateValue || !seatCount) {
-                showNotification("Modèle, dates et sièges sont requis.", "warning");
-                return;
-            }
+    console.log("🌙 Trajet de nuit ?", isNightTrip);
+    console.log("📅 Décalage arrivée (jours):", arrivalDaysOffset);
 
-            // 3. Logique des dates
-            let startDate, endDate;
-            if (dateValue.includes(" au ")) {
-                [startDate, endDate] = dateValue.split(" au ");
-            } else {
-                startDate = endDate = dateValue;
-            }
+    // 2. Validations
+    if (!routeId || !dateValue || !seatCount) {
+        showNotification("Modèle, dates et sièges sont requis.", "warning");
+        return;
+    }
 
-            const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
-            const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
+    // 3. Logique des dates
+    let startDate, endDate;
+    if (dateValue.includes(" au ")) {
+        [startDate, endDate] = dateValue.split(" au ");
+    } else {
+        startDate = endDate = dateValue;
+    }
 
-            if (daysToSend.length === 0) {
-                showNotification("Veuillez sélectionner au moins un jour.", "warning");
-                return;
-            }
+    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+    const daysToSend = (startDate === endDate) 
+        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] 
+        : selectedDays;
 
-            // ✅ 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
-            const driver1Select = document.getElementById('trip-driver1');
-            const driver2Select = document.getElementById('trip-driver2');
-            const controller1Select = document.getElementById('trip-controller1');
-            const controller2Select = document.getElementById('trip-controller2');
+    if (daysToSend.length === 0) {
+        showNotification("Veuillez sélectionner au moins un jour.", "warning");
+        return;
+    }
 
-            const driver1Id = driver1Select?.value || null;
-            const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
+    // 4. RÉCUPÉRATION DES 4 MEMBRES D'ÉQUIPAGE
+    const driver1Select = document.getElementById('trip-driver1');
+    const driver2Select = document.getElementById('trip-driver2');
+    const controller1Select = document.getElementById('trip-controller1');
+    const controller2Select = document.getElementById('trip-controller2');
 
-            const driver2Id = driver2Select?.value || null;
-            const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
+    const driver1Id = driver1Select?.value || null;
+    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex]?.dataset?.name : null;
 
-            const controller1Id = controller1Select?.value || null;
-            const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
+    const driver2Id = driver2Select?.value || null;
+    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex]?.dataset?.name : null;
 
-            const controller2Id = controller2Select?.value || null;
-            const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
+    const controller1Id = controller1Select?.value || null;
+    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex]?.dataset?.name : null;
 
-            // 5. Construction de l'objet de données
-            const tripData = {
-                routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
-                busIdentifier: busIdentifier || null,
-                highlightBadge: highlightBadge || null,
-                driver1Id, driver1Name,
-                driver2Id, driver2Name,
-                controller1Id, controller1Name,
-                controller2Id, controller2Name
-            };
+    const controller2Id = controller2Select?.value || null;
+    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex]?.dataset?.name : null;
 
-            console.log("📤 Envoi des données de création de voyage :", tripData);
+    // 5. Construction de l'objet de données
+    const tripData = {
+        routeId,
+        startDate,
+        endDate,
+        daysOfWeek: daysToSend,
+        seatCount,
+        busIdentifier: busIdentifier || null,
+        highlightBadge: highlightBadge || null,
+        driver1Id,
+        driver1Name,
+        driver2Id,
+        driver2Name,
+        controller1Id,
+        controller1Name,
+        controller2Id,
+        controller2Name,
+        
+        // ✅ VALEURS GARANTIES (jamais undefined ou NaN)
+        isNightTrip: isNightTrip === true,
+        arrivalDaysOffset: arrivalDaysOffset
+    };
 
-            // 6. Appel API
-            const data = await apiCall("/admin/trips", "POST", tripData);
+    console.log("📤 Envoi des données de création de voyage :", tripData);
 
-            if (data && data.success) {
-                showNotification(data.message || "Voyages programmés !", "success");
-                e.target.reset();
-                loadAllTrips();
-            }
-        }  // Dans Admin/index.html (section <script>)
+    // 6. Appel API
+    const data = await apiCall("/admin/trips", "POST", tripData);
+
+    if (data && data.success) {
+        showNotification(data.message || "Voyages programmés !", "success");
+        e.target.reset();
+        
+        // ✅ Réinitialiser l'affichage des options de nuit
+        const nightOptions = document.getElementById('night-trip-options');
+        if (nightOptions) {
+            nightOptions.style.display = 'none';
+        }
+        
+        loadAllTrips();
+    }
+}
+  
+        // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
@@ -6369,41 +6405,22 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
 
 
-        // Gestion du formulaire de notification
-document.getElementById('notif-target').addEventListener('change', function() {
-    const group = document.getElementById('notif-id-group');
-    const label = document.getElementById('notif-id-label');
-    const val = this.value;
 
-    if (val === 'all') {
-        group.style.display = 'none';
-    } else {
-        group.style.display = 'block';
-        label.textContent = val === 'trip' ? "ID du Voyage (Trip ID)" : "Numéro de Réservation";
-    }
-});
 
-document.getElementById('notif-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const title = document.getElementById('notif-title').value;
-    const body = document.getElementById('notif-body').value;
-    const target = document.getElementById('notif-target').value;
-    const id = document.getElementById('notif-target-id').value;
-
-    let endpoint = '/admin/notifications/send-to-all';
-    if (target === 'trip') endpoint = `/admin/notifications/send-to-trip/${id}`;
-    if (target === 'booking') endpoint = `/admin/notifications/send-to-booking/${id}`;
-
-    // On utilise ta fonction apiCall existante
-    const res = await apiCall(endpoint, 'POST', { title, body });
+        // Fonction pour afficher/masquer les options de trajet de nuit
+function toggleNightTripOptions() {
+    const isNightTrip = document.querySelector('input[name="trip-type-day-night"]:checked')?.value === 'night';
+    const nightOptions = document.getElementById('night-trip-options');
     
-    if (res && res.success) {
-        showNotification(res.message, 'success');
-        e.target.reset();
+    if (nightOptions) {
+        nightOptions.style.display = isNightTrip ? 'block' : 'none';
     }
+}
+
+// Initialiser au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    toggleNightTripOptions();
 });
-
-
 
 
         // ============================================
