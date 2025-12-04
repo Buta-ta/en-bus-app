@@ -3711,83 +3711,89 @@
         }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
+        
         async function handleCreateTrips(e) {
-            e.preventDefault();
+    e.preventDefault();
 
-            // 1. Récupération des valeurs du formulaire
-            const routeId = document.getElementById("route-template").value;
-            const dateValue = document.getElementById("trip-dates").value;
-            const seatCount = parseInt(document.getElementById("seat-count").value);
-            const busIdentifier = document.getElementById("bus-identifier").value.trim();
-            const highlightBadge = document.getElementById('highlight-badge').value.trim();
-             // ✅ RÉCUPÉRER LES NOUVELLES VALEURS
+    // 1. Récupération des valeurs du formulaire
+    const routeId = document.getElementById("route-template").value;
+    const dateValue = document.getElementById("trip-dates").value;
+    const seatCount = parseInt(document.getElementById("seat-count").value);
+    const busIdentifier = document.getElementById("bus-identifier").value.trim();
+    const highlightBadge = document.getElementById('highlight-badge').value.trim();
+    
+    // ✅ RÉCUPÉRER LES NOUVELLES VALEURS
     const isNightTrip = document.querySelector('input[name="trip-type-day-night"]:checked').value === 'night';
     const arrivalDaysOffset = parseInt(document.getElementById('arrival-day-offset').value);
 
-            // 2. Validations
-            if (!routeId || !dateValue || !seatCount) {
-                showNotification("Modèle, dates et sièges sont requis.", "warning");
-                return;
-            }
+    // 2. Validations
+    if (!routeId || !dateValue || !seatCount) {
+        showNotification("Modèle, dates et sièges sont requis.", "warning");
+        return;
+    }
 
-            // 3. Logique des dates
-            let startDate, endDate;
-            if (dateValue.includes(" au ")) {
-                [startDate, endDate] = dateValue.split(" au ");
-            } else {
-                startDate = endDate = dateValue;
-            }
+    // 3. Logique des dates
+    let startDate, endDate;
+    if (dateValue.includes(" au ")) {
+        [startDate, endDate] = dateValue.split(" au ");
+    } else {
+        startDate = endDate = dateValue;
+    }
 
-            const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
-            const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
+    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+    const daysToSend = (startDate === endDate) ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] : selectedDays;
 
-            if (daysToSend.length === 0) {
-                showNotification("Veuillez sélectionner au moins un jour.", "warning");
-                return;
-            }
+    if (daysToSend.length === 0) {
+        showNotification("Veuillez sélectionner au moins un jour.", "warning");
+        return;
+    }
 
-            // ✅ 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
-            const driver1Select = document.getElementById('trip-driver1');
-            const driver2Select = document.getElementById('trip-driver2');
-            const controller1Select = document.getElementById('trip-controller1');
-            const controller2Select = document.getElementById('trip-controller2');
+    // 4. RÉCUPÉRATION CORRIGÉE DES 4 MEMBRES D'ÉQUIPAGE
+    const driver1Select = document.getElementById('trip-driver1');
+    const driver2Select = document.getElementById('trip-driver2');
+    const controller1Select = document.getElementById('trip-controller1');
+    const controller2Select = document.getElementById('trip-controller2');
 
-            const driver1Id = driver1Select?.value || null;
-            const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
+    const driver1Id = driver1Select?.value || null;
+    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex].dataset.name : null;
 
-            const driver2Id = driver2Select?.value || null;
-            const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
+    const driver2Id = driver2Select?.value || null;
+    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex].dataset.name : null;
 
-            const controller1Id = controller1Select?.value || null;
-            const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
+    const controller1Id = controller1Select?.value || null;
+    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex].dataset.name : null;
 
-            const controller2Id = controller2Select?.value || null;
-            const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
+    const controller2Id = controller2Select?.value || null;
+    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex].dataset.name : null;
 
-            // 5. Construction de l'objet de données
-            const tripData = {
-                routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
-                busIdentifier: busIdentifier || null,
-                highlightBadge: highlightBadge || null,
-                driver1Id, driver1Name,
-                driver2Id, driver2Name,
-                controller1Id, controller1Name,
-                controller2Id, controller2Name,
-                 isNightTrip: isNightTrip,
+    // 5. Construction de l'objet de données
+    const tripData = {
+        routeId, startDate, endDate, daysOfWeek: daysToSend, seatCount,
+        busIdentifier: busIdentifier || null,
+        highlightBadge: highlightBadge || null,
+        driver1Id, driver1Name,
+        driver2Id, driver2Name,
+        controller1Id, controller1Name,
+        controller2Id, controller2Name,
+        
+        // ✅ CORRECTION DE LA SYNTAXE ICI
+        isNightTrip: isNightTrip,
         arrivalDaysOffset: arrivalDaysOffset
-            };
+    };
 
-            console.log("📤 Envoi des données de création de voyage :", tripData);
+    console.log("📤 Envoi des données de création de voyage :", tripData);
 
-            // 6. Appel API
-            const data = await apiCall("/admin/trips", "POST", tripData);
+    // 6. Appel API
+    const data = await apiCall("/admin/trips", "POST", tripData);
 
-            if (data && data.success) {
-                showNotification(data.message || "Voyages programmés !", "success");
-                e.target.reset();
-                loadAllTrips();
-            }
-        }  // Dans Admin/index.html (section <script>)
+    if (data && data.success) {
+        showNotification(data.message || "Voyages programmés !", "success");
+        e.target.reset();
+        loadAllTrips();
+    }
+}
+  
+        // Dans Admin/index.html (section <script>)
         function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
