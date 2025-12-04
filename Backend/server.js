@@ -1613,7 +1613,6 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
 function generateInvoiceHTML(reservation, lang = 'fr') {
   
     // Mini-traductions pour la facture
-    
     const t = {
         fr: {
             title: "FACTURE",
@@ -1629,7 +1628,8 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
             vat: "TVA",
             total_paid: "TOTAL PAYÉ",
             payment_method: "Payé via",
-            status_paid: "PAYÉE"
+            status_paid: "PAYÉE",
+            adult_ticket_desc: "Billet(s) Adulte"  // ✅ Ajouté
         },
         en: {
             title: "INVOICE",
@@ -1645,14 +1645,15 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
             vat: "VAT",
             total_paid: "TOTAL PAID",
             payment_method: "Paid via",
-            status_paid: "PAID"
+            status_paid: "PAID",
+            adult_ticket_desc: "Adult Ticket(s)"  // ✅ Ajouté
         }
     };
-
-    const texts = translations[lang] || translations.fr;
+     
+    // ✅ CORRECTION ICI : Utilise 't' pas 'translations'
+    const texts = t[lang] || t.fr;
+    
     const passenger = reservation.passengers[0];
-
-    // Calcul des lignes (simplifié, à améliorer si besoin)
     const adultTickets = reservation.passengers.length;
     const ticketPrice = reservation.route.price;
     const subtotal = reservation.totalPriceNumeric;
@@ -1696,11 +1697,30 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
                             </table>
                         </td>
                     </tr>
-                    <tr class="heading"><td>${texts.description}</td><td>${texts.qty}</td><td>${texts.unit_price}</td><td style="text-align:right;">${texts.total}</td></tr>
-                    <tr class="item"><td>${texts.pdf_adult_ticket_desc || 'Billet(s) Adulte:'} ${reservation.route.from} → ${reservation.route.to}</td><td>${adultTickets}</td><td>${ticketPrice} FCFA</td><td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td></tr>
-                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.subtotal}</strong></td><td style="text-align:right;">${subtotal} FCFA</td></tr>
-                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.vat} (0%)</strong></td><td style="text-align:right;">0 FCFA</td></tr>
-                    <tr class="total"><td colspan="3" style="text-align:right;"><strong>${texts.total_paid}</strong></td><td style="text-align:right;"><strong>${reservation.totalPrice}</strong></td></tr>
+                    <tr class="heading">
+                        <td>${texts.description}</td>
+                        <td>${texts.qty}</td>
+                        <td>${texts.unit_price}</td>
+                        <td style="text-align:right;">${texts.total}</td>
+                    </tr>
+                    <tr class="item">
+                        <td>${texts.adult_ticket_desc}: ${reservation.route.from} → ${reservation.route.to}</td>
+                        <td>${adultTickets}</td>
+                        <td>${ticketPrice} FCFA</td>
+                        <td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td>
+                    </tr>
+                    <tr class="total">
+                        <td colspan="3" style="text-align:right;"><strong>${texts.subtotal}</strong></td>
+                        <td style="text-align:right;">${subtotal} FCFA</td>
+                    </tr>
+                    <tr class="total">
+                        <td colspan="3" style="text-align:right;"><strong>${texts.vat} (0%)</strong></td>
+                        <td style="text-align:right;">0 FCFA</td>
+                    </tr>
+                    <tr class="total">
+                        <td colspan="3" style="text-align:right;"><strong>${texts.total_paid}</strong></td>
+                        <td style="text-align:right;"><strong>${reservation.totalPrice}</strong></td>
+                    </tr>
                 </table>
                 <div style="text-align:center; margin-top: 40px;">
                     <p><strong>${texts.payment_method}:</strong> ${reservation.paymentMethod}</p>
