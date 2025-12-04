@@ -3404,8 +3404,9 @@ async function showDetailedSearch(prefillData = {}) {
 // 🔍 FILTRAGE ET TRI DES RÉSULTATS
 // ============================================
 
-function applyFiltersAndSort() {
-    let filteredResults = [...appState.currentResults];
+function applyFiltersAndSort(results = appState.currentResults) { // ✅ Paramètre ajouté
+    // ✅ Utilise les résultats passés en paramètre (ou ceux de l'état global par défaut)
+    let filteredResults = [...results];
     
     // ✅ Filtre par compagnie
     if (activeFilters.company !== 'all') {
@@ -3450,9 +3451,7 @@ function applyFiltersAndSort() {
         );
     }
 
-
-    // ✅ AJOUTER CE BLOC DE FILTRAGE
-    // Filtre par lieu de départ
+    // ✅ Filtre par lieu de départ
     if (activeFilters.departureLocation !== 'all') {
         filteredResults = filteredResults.filter(route => 
             route.departureLocation === activeFilters.departureLocation
@@ -3638,31 +3637,34 @@ window.resetFilters = function() {
 
 // DANS app.js (remplacez votre fonction displayResults)
 function displayResults(results, isReturn = false) {
-
-     // On récupère les traductions AU TOUT DÉBUT pour qu'elles soient disponibles pour toute la fonction
+    // --- 0. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    // --- 1. Récupération des éléments DOM et des traductions ---
+    
+    // --- 1. Récupération des éléments DOM ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
     
-   
+    // --- 2. Sauvegarder les résultats bruts dans l'état global ---
+    if (!isReturn) {
+        appState.currentResults = results; // ✅ Stocke les résultats pour les filtres
+    }
     
-    // --- 2. Application des filtres et du tri ---
-    const displayedResults = applyFiltersAndSort();
+    // --- 3. Application des filtres et du tri ---
+    const displayedResults = applyFiltersAndSort(results); // ✅ Passe les résultats en paramètre
     
-    // --- 3. Mise à jour du résumé de la recherche ---
+    // --- 4. Mise à jour du résumé de la recherche ---
     let summaryText = isReturn
         ? translation.results_summary_return(displayedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
         : translation.results_summary_outbound(displayedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
     if (summary) summary.innerHTML = summaryText;
 
-    // --- 4. Mise à jour du filtre par lieu de départ ---
+    // --- 5. Mise à jour du filtre par lieu de départ ---
     if (locationFilterSection && locationSelect) {
-        const uniqueLocations = [...new Set(allRouteTemplates.map(t => t.departureLocation).filter(Boolean))];
+        const uniqueLocations = [...new Set(results.map(t => t.departureLocation).filter(Boolean))];
         
         if (uniqueLocations.length > 1) {
             const currentFilterValue = activeFilters.departureLocation;
@@ -3677,7 +3679,7 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 5. Logique pour les badges "Moins cher" et "Plus rapide" ---
+    // --- 6. Logique pour les badges "Moins cher" et "Plus rapide" ---
     let cheapestId = null, fastestId = null;
     if (displayedResults.length > 1) {
         const minPrice = Math.min(...displayedResults.map(r => r.price));
@@ -3697,31 +3699,63 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 6. Affichage du message si aucun résultat ---
+    // --- 7. Affichage du message si aucun résultat ---
     if (displayedResults.length === 0) {
-        resultsList.innerHTML = `
-            <div class="no-results" style="text-align: center; padding: 48px;">
-                <h3>${translation.results_no_results_title}</h3>
-                <p>${translation.results_no_results_desc}</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
-                    ${translation.filter_reset_button}
-                </button>
-            </div>`;
+        const totalBeforeFilters = results?.length || 0;
+        
+        if (totalBeforeFilters > 0) {
+            // Des résultats existent mais sont filtrés
+            resultsList.innerHTML = `
+                <div class="no-results" style="text-align: center; padding: 48px;">
+                    <h3>🔍 Aucun trajet ne correspond à vos filtres</h3>
+                    <p style="color: var(--color-text-secondary); margin: 16px 0;">
+                        ${totalBeforeFilters} trajet(s) disponible(s) avant filtrage
+                    </p>
+                    <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
+                        ${translation.filter_reset_button}
+                    </button>
+                </div>`;
+        } else {
+            // Vraiment aucun résultat
+            resultsList.innerHTML = `
+                <div class="no-results" style="text-align: center; padding: 48px;">
+                    <h3>${translation.results_no_results_title}</h3>
+                    <p>${translation.results_no_results_desc}</p>
+                </div>`;
+        }
         return;
     }
 
-    // --- 7. Génération des cartes de résultats ---
+    // --- 8. Génération des cartes de résultats ---
     resultsList.innerHTML = displayedResults.map(route => {
         let badgeHTML = '';
-        if (route.highlightBadge) badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        else if (route.id === cheapestId) badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
-        else if (route.id === fastestId) badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
-
-        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
-        const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
         
-              // DANS LA BOUCLE map de displayResults
+        // ✅ PRIORITÉ 1 : Badge trajet de nuit
+        if (route.isNightTrip) {
+            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🌙 Trajet de Nuit</div>`;
+        }
+        // PRIORITÉ 2 : Badge personnalisé
+        else if (route.highlightBadge) {
+            badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
+        }
+        // PRIORITÉ 3 : Moins cher
+        else if (route.id === cheapestId) {
+            badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
+        }
+        // PRIORITÉ 4 : Plus rapide
+        else if (route.id === fastestId) {
+            badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
+        }
 
+        const amenitiesHTML = route.amenities.map(amenity => 
+            `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`
+        ).join("");
+        
+        const departureLocationHTML = route.departureLocation 
+            ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` 
+            : '';
+        
+        // ✅ GESTION DES DÉTAILS DE TRAJET (Arrêts/Correspondances)
         let tripDetailsHTML = '';
 
         // 1. Gestion des ARRÊTS
@@ -3729,7 +3763,8 @@ function displayResults(results, isReturn = false) {
             tripDetailsHTML += `
                 <div class="trip-details-accordion">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
-                        <span class="bus-card-trip-details"><span class="accordion-icon">▶</span>
+                        <span class="bus-card-trip-details">
+                            <span class="accordion-icon">▶</span>
                             <span>${translation.details_stops_planned} </span>
                             <strong class="bus-card-stops">${translation.details_stops_count(route.stops.length)}</strong>
                         </span>
@@ -3740,33 +3775,54 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // 2. Gestion des CORRESPONDANCES (Ajouté à la suite, PAS en 'else if')
+        // 2. Gestion des CORRESPONDANCES
         if (route.connections && route.connections.length > 0) {
-             tripDetailsHTML += `
+            tripDetailsHTML += `
                 <div class="trip-details-accordion" style="margin-top: 4px;">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
-                         <span class="bus-card-trip-details" style="color: #00d9ff;"><span class="accordion-icon">▶</span>
+                        <span class="bus-card-trip-details" style="color: #00d9ff;">
+                            <span class="accordion-icon">▶</span>
                             <span>${translation.details_connections} </span>
                             <strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong>
                         </span>
                     </div>
                     <div class="accordion-content">
-                         ${route.connections.map(conn => `<div class="accordion-content-item">⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}
+                        ${route.connections.map(conn => 
+                            `<div class="accordion-content-item">
+                                ⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br>
+                                <small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small>
+                            </div>`
+                        ).join('')}
                     </div>
                 </div>`;
         }
 
-        // 3. Si aucun détail n'a été ajouté, c'est un trajet direct
+        // 3. Si aucun détail, c'est un trajet direct
         if (tripDetailsHTML === '') {
-            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
+            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">
+                ${Utils.getAmenityIcon('direct')}
+                <span>${translation.details_direct_trip}</span>
+            </div>`;
         }
+
+        // ✅ AFFICHAGE DE L'HEURE AVEC INDICATEUR DE NUIT
+        const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
+            ? `${route.arrival} <small style="display:block;color:#ffa726;font-size:0.75em;margin-top:2px;">+${route.arrivalDaysOffset}j</small>`
+            : route.arrival;
 
         return `
             <div class="bus-card">
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
-                        <div class="bus-card-time"><span>${route.departure}</span><div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div><span>${route.arrival}</span></div>
+                        <div class="bus-card-time">
+                            <span>${route.departure}</span>
+                            <div class="bus-card-duration">
+                                <span>→</span><br>
+                                ${route.duration || 'N/A'}
+                            </div>
+                            <span>${arrivalDisplay}</span>
+                        </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
                         ${tripDetailsHTML}
@@ -3784,7 +3840,7 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 
-    // --- 8. Mise à jour de la légende (traduite) ---
+    // --- 9. Mise à jour de la légende ---
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
         legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 
