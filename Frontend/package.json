@@ -17,6 +17,7 @@
     "@capacitor/core": "^7.4.4"
   },
   "dependencies": {
+    "@capacitor-firebase/analytics": "^7.4.0",
     "@capacitor/app": "^7.1.0",
     "@capacitor/browser": "^7.0.2",
     "@capacitor/filesystem": "^7.1.5",

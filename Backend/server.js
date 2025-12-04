@@ -540,6 +540,9 @@ app.get("/api/search", async (req, res) => {
       arrivalLocation: trip.route.arrivalLocation || null,
       trackerId: trip.busIdentifier || trip.route.trackerId || null,
       availableSeats: trip.seats.filter((s) => s.status === "available").length,
+      // ✅ AJOUT DES NOUVEAUX CHAMPS DANS LA RÉPONSE API
+      isNightTrip: trip.isNightTrip || false,
+      arrivalDaysOffset: trip.arrivalDaysOffset || 0,
       totalSeats: trip.seats.length,
       date: trip.date,
       busIdentifier: trip.busIdentifier,
@@ -1935,17 +1938,24 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 });
 
 
+// server.js
+
 app.post(
   "/api/admin/trips",
   authenticateToken,
   [
+    // ... tes validations existantes ...
     body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
     body("startDate").isISO8601().withMessage("La date de début est invalide."),
     body("endDate").isISO8601().withMessage("La date de fin est invalide."),
     body("daysOfWeek").isArray({ min: 1 }).withMessage("Au moins un jour de la semaine doit être sélectionné."),
     body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
     body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
-    body('highlightBadge').optional({ checkFalsy: true }).isString().trim()
+    body('highlightBadge').optional({ checkFalsy: true }).isString().trim(),
+    
+    // ✅ NOUVELLES VALIDATIONS AJOUTÉES
+    body("isNightTrip").isBoolean().withMessage("Le statut de voyage de nuit doit être un booléen."),
+    body("arrivalDaysOffset").isInt({ min: 0, max: 5 }).withMessage("Le décalage de jour d'arrivée est invalide.")
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -1954,6 +1964,7 @@ app.post(
     }
     
     try {
+      // ✅ RÉCUPÉRATION DES NOUVELLES DONNÉES
       const {
         routeId,
         startDate,
@@ -1969,7 +1980,9 @@ app.post(
         controller1Id,
         controller1Name,
         controller2Id,
-        controller2Name
+        controller2Name,
+        isNightTrip,         // <-- Nouveau
+        arrivalDaysOffset    // <-- Nouveau
       } = req.body;
 
       if (!ObjectId.isValid(routeId)) {
@@ -1988,7 +2001,6 @@ app.post(
       const lastDate = new Date(endDate);
       const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       
-      // ✅ CONSTRUCTION DE L'ÉQUIPAGE (AVANT LA BOUCLE)
       const drivers = [];
       if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
       if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
@@ -1997,7 +2009,6 @@ app.post(
       if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
       if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
 
-      // ✅ BOUCLE DE CRÉATION DES VOYAGES
       while (currentDate <= lastDate) {
         const dayName = dayMap[currentDate.getUTCDay()];
         
@@ -2018,6 +2029,10 @@ app.post(
                 controllers: controllers.length > 0 ? controllers : null
             },
             createdAt: new Date(),
+
+            // ✅ AJOUT DES NOUVEAUX CHAMPS DANS LE DOCUMENT
+            isNightTrip: isNightTrip || false,
+            arrivalDaysOffset: parseInt(arrivalDaysOffset) || 0
           });
         }
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);

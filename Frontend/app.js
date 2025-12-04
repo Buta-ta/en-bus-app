@@ -179,6 +179,8 @@ formatPrice(price) {
         month: 'long',
         day: 'numeric'
     });
+
+    
 },
 
 
@@ -192,6 +194,7 @@ formatPrice(price) {
             minute: "2-digit"
         });
     },
+
 
 
 
@@ -324,6 +327,18 @@ formatPrice(price) {
             baggage: baggagePrice
         };
     },
+
+    // ✅ AJOUTE LA NOUVELLE FONCTION ICI, AVEC UNE VIRGULE AVANT
+    getArrivalDateTime: function(departureDate, arrivalTime, offsetDays = 0) {
+        // On crée un objet Date basé sur la date de départ et l'heure d'arrivée
+        const arrivalDateTime = new Date(`${departureDate}T${arrivalTime}:00`);
+
+        // On ajoute le nombre de jours de décalage
+        if (offsetDays > 0) {
+            arrivalDateTime.setDate(arrivalDateTime.getDate() + offsetDays);
+        }
+        return arrivalDateTime;
+    } ,// <-- N'oublie pas la virgule si tu ajoutes une autre fonction après, sinon pas de virgule si c'est la dernière.
 
 
 
@@ -3273,17 +3288,14 @@ window.resetFilters = function() {
 // DANS app.js (remplacez votre fonction displayResults)
 function displayResults(results, isReturn = false) {
 
-     // On récupère les traductions AU TOUT DÉBUT pour qu'elles soient disponibles pour toute la fonction
+    // --- 1. Récupération des traductions et éléments DOM ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    // --- 1. Récupération des éléments DOM et des traductions ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
-    
-   
     
     // --- 2. Application des filtres et du tri ---
     const displayedResults = applyFiltersAndSort();
@@ -3347,18 +3359,24 @@ function displayResults(results, isReturn = false) {
     // --- 7. Génération des cartes de résultats ---
     resultsList.innerHTML = displayedResults.map(route => {
         let badgeHTML = '';
-        if (route.highlightBadge) badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        else if (route.id === cheapestId) badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
-        else if (route.id === fastestId) badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
+
+        // ✅ Logique des badges mise à jour avec priorité au voyage de nuit
+        if (route.isNightTrip) {
+            badgeHTML = `<div class="highlight-badge night-trip">${translation.badge_night_trip || '🌙 Voyage de Nuit'}</div>`;
+        } else if (route.highlightBadge) {
+            badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
+        } else if (route.id === cheapestId) {
+            badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
+        } else if (route.id === fastestId) {
+            badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
+        }
 
         const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
         const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
         
-              // DANS LA BOUCLE map de displayResults
-
         let tripDetailsHTML = '';
 
-        // 1. Gestion des ARRÊTS
+        // Gestion des ARRÊTS
         if (route.stops && route.stops.length > 0) {
             tripDetailsHTML += `
                 <div class="trip-details-accordion">
@@ -3374,7 +3392,7 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // 2. Gestion des CORRESPONDANCES (Ajouté à la suite, PAS en 'else if')
+        // Gestion des CORRESPONDANCES
         if (route.connections && route.connections.length > 0) {
              tripDetailsHTML += `
                 <div class="trip-details-accordion" style="margin-top: 4px;">
@@ -3390,9 +3408,21 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // 3. Si aucun détail n'a été ajouté, c'est un trajet direct
+        // Trajet direct
         if (tripDetailsHTML === '') {
             tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
+        }
+
+        // ✅ Calcul de l'heure et de la date d'arrivée
+        const departureTime = route.departure;
+        const searchDate = isReturn ? appState.currentSearch.returnDate : appState.currentSearch.date;
+        const arrivalDateTime = Utils.getArrivalDateTime(searchDate, route.arrival, route.arrivalDaysOffset);
+        const arrivalTime = arrivalDateTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        let arrivalDateBadge = '';
+        if (route.arrivalDaysOffset > 0) {
+            const badgeText = `J+${route.arrivalDaysOffset}`;
+            arrivalDateBadge = `<span class="arrival-day-badge">${badgeText}</span>`;
         }
 
         return `
@@ -3400,7 +3430,11 @@ function displayResults(results, isReturn = false) {
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
-                        <div class="bus-card-time"><span>${route.departure}</span><div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div><span>${route.arrival}</span></div>
+                        <div class="bus-card-time">
+                            <span>${departureTime}</span>
+                            <div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div>
+                            <span>${arrivalTime} ${arrivalDateBadge}</span>
+                        </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
                         ${tripDetailsHTML}
@@ -3418,7 +3452,7 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 
-    // --- 8. Mise à jour de la légende (traduite) ---
+    // --- 8. Mise à jour de la légende ---
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
         legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 
@@ -3426,7 +3460,6 @@ function displayResults(results, isReturn = false) {
         ).join('');
     }
 }
-
 // DANS app.js (à ajouter avec vos autres fonctions)
 
 /**

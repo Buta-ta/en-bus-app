@@ -111,6 +111,7 @@ const translations = {
     filter_departure_location: "Lieu de départ",
     filter_all_locations: "Tous les lieux",
     filter_toggle_button: "🌪️ Filtrer & Trier",
+    filter_time_night: "Nuit (21h-5h)",
 
 
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
@@ -362,6 +363,13 @@ const translations = {
     info_no_trips_found: "Aucun trajet disponible pour cet itinéraire à cette date",
     success_trips_found: (count) => `${count} trajet(s) trouvé(s)`,
     error_search_failed: "Erreur lors de la recherche",
+    error_no_booking_to_download: "Aucune réservation à télécharger.",
+    error_no_return_ticket: "Il n'y a pas de billet retour pour cette réservation.",
+    error_search_all_fields: "Veuillez remplir l'origine, la destination et la date.",
+        // On peut même être plus spécifique pour chaque erreur
+    error_search_missing_origin: "Veuillez sélectionner une ville de départ.",
+    error_search_missing_destination: "Veuillez sélectionner une ville d'arrivée.",
+    error_search_missing_date: "Veuillez sélectionner une date de voyage.",
 
 
 
@@ -379,7 +387,7 @@ const translations = {
     qr_code_title: "🎫 Billet électronique",
     qr_code_instruction: "Présentez ce code à l'embarquement",
     info_arrive_early_title: "Arrivez à l'avance",
-    info_arrive_early_desc: "Présentez-vous <strong>30 minutes avant le départ</strong> avec une pièce d'identité valide",
+    info_arrive_early_desc: "Présentez-vous 30 minutes avant le départ avec une pièce d'identité valide",
     info_baggage_title: "Bagages inclus",
     info_baggage_desc: "1 bagage en soute (20kg) + 1 bagage à main",
     button_download_outbound: " Télécharger Billet Aller",
@@ -401,8 +409,8 @@ const translations = {
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
-    details_connections_title: " Correspondances",
-    details_connection_info: (city, wait) => `Changement à ${city} (Attente: ${wait})`,
+    details_connections_title: "🔄 Correspondances",
+    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
     details_stops_planned: " Arrêts Prévus",
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
@@ -411,6 +419,8 @@ const translations = {
     toast_ticket_downloaded: "Billet téléchargé !",
     button_download_invoice: "Télécharger la Facture",
     button_download_invoice_icon: "📄",
+    toast_generating_ticket: "Génération de votre billet en cours...",
+    error_generating_ticket: "Erreur lors de la génération du billet.",
 
 
           // DANS L'OBJET 'fr'
@@ -475,6 +485,9 @@ const translations = {
       about_cta_title: "Prêt à voyager ?",
       about_cta_subtitle: "Trouvez votre prochain trajet dès maintenant.",
       about_cta_button: "Rechercher un billet",
+      pdf_total_paid: "TOTAL PAYÉ",
+      pdf_travel_partner: "Votre partenaire de voyage", 
+      pdf_adult_ticket_desc: "Billet(s) Adulte:",
 
 
          // --- Page Contact (Nouvelles clés) ---
@@ -507,7 +520,42 @@ const translations = {
     toast_sending_message: "Envoi en cours...",
     toast_message_sent_success: "Message envoyé avec succès !",
     loading_ticket: "Chargement de votre billet...",
+    ticket_footer_instruction: "Présentez-vous 30 minutes avant le départ avec une pièce d'identité valide ou un passeport pour un voyage international",
+    pdf_footer_tagline: "Votre partenaire de voyage",
+    local_notif_ticket_download_title: "Billet téléchargé",
+    local_notif_ticket_download_body: (filename) => `Le fichier ${filename} a été enregistré dans vos documents.`,
+
+
+
+
+
+        // --- Clés manquantes identifiées ---
+    pdf_total_paid: "TOTAL PAYÉ",
+    pdf_footer_tagline: "Votre partenaire de voyage",
+    local_notif_ticket_download_title: "Billet téléchargé",
+    local_notif_ticket_download_body: (fileName) => `${fileName} enregistré`,
+    toast_ticket_downloaded_native: "Billet PDF enregistré !",
+    toast_generating_ticket: "Génération du billet...",
+    error_generating_ticket: "Erreur génération billet",
+    error_no_booking_to_download: "Aucune réservation à télécharger.",
+    error_no_return_ticket: "Pas de billet retour pour cette réservation.",
+    error_search_missing_origin: "Veuillez sélectionner une ville de départ.",
+    error_search_missing_destination: "Veuillez sélectionner une ville d'arrivée.",
+    error_search_missing_date: "Veuillez sélectionner une date de voyage.",
+    confirmation_title_pending: "Finalisez votre paiement",
+    confirmation_subtitle_pending: "Réservation en attente",
+    error_critical: "Erreur critique. Veuillez recommencer.",
+    payment_agency_unavailable_tooltip: "Paiement en agence indisponible (trop proche du départ)",
+    confirm_cancel_title: "Annuler la réservation ?",
+    confirm_cancel_desc: (num) => `Voulez-vous vraiment annuler ${num} ?`,
+    button_confirm: "Confirmer",
     },
+
+
+
+
+
+
   // ===================================
   // LANGUE ANGLAISE (EN)
   // ===================================
@@ -620,6 +668,8 @@ const translations = {
     filter_departure_location: "Departure point",
     filter_all_locations: "All departure locations",
     filter_toggle_button: " Filter & Sort",
+    filter_time_night: "Night (9pm-5am)",
+
 
     
 
@@ -865,6 +915,13 @@ const translations = {
     info_no_trips_found: "No trips available for this route on this date",
     success_trips_found: (count) => `${count} trip(s) found`,
     error_search_failed: "Error during search",
+    error_no_booking_to_download: "No booking to download.",
+    error_no_return_ticket: "There is no return ticket for this booking.",
+     error_search_all_fields: "Please fill in origin, destination, and date.",
+        // Version spécifique
+    error_search_missing_origin: "Please select an origin city.",
+    error_search_missing_destination: "Please select a destination city.",
+    error_search_missing_date: "Please select a travel date.",
 
 
 
@@ -882,7 +939,7 @@ const translations = {
     qr_code_title: "🎫 E-Ticket",
     qr_code_instruction: "Present this code upon boarding",
     info_arrive_early_title: "Arrive Early",
-    info_arrive_early_desc: "Please arrive <strong>30 minutes before departure</strong> with a valid ID",
+    info_arrive_early_desc: "Please arrive 30 minutes before departure with a valid ID",
     info_baggage_title: "Baggage Included",
     info_baggage_desc: "1 checked bag (20kg) + 1 carry-on bag",
     button_download_outbound: " Download Outbound Ticket",
@@ -904,15 +961,17 @@ const translations = {
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
     details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
-    details_connections_title: " Connections",
-    details_connection_info: (city, wait) => `Change at ${city} (Wait: ${wait})`,
+    details_connections_title: "🔄 Connections",
+    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
     details_stops_planned: " Scheduled Stops",
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
     toast_ticket_downloaded: "Ticket downloaded!",
     button_download_invoice: "Download Invoice",
     button_download_invoice_icon: "📄",
-    
+    toast_generating_ticket: "Generating your ticket...",
+    error_generating_ticket: "Error while generating ticket.",
+    ticket_footer_instruction: "Please arrive 30 minutes before departure with a valid ID or Passeport for international travel.",
 
 
 
@@ -1006,6 +1065,36 @@ const translations = {
     toast_sending_message: "Sending message...",
     toast_message_sent_success: "Message sent successfully!",
     loading_ticket: "Loading your ticket...",
+    pdf_footer_tagline: "Your travel partner",
+    local_notif_ticket_download_title: "Ticket Downloaded",
+    local_notif_ticket_download_body: (filename) => `The file ${filename} has been saved to your documents.`, 
+    pdf_total_paid: "TOTAL PAID",
+    pdf_travel_partner: "Your travel partner",
+    pdf_adult_ticket_desc: "Adult Ticket(s):" ,
+
+
+
+
+        // --- Missing keys ---
+    pdf_total_paid: "TOTAL PAID",
+    pdf_footer_tagline: "Your travel partner",
+    local_notif_ticket_download_title: "Ticket downloaded",
+    local_notif_ticket_download_body: (fileName) => `${fileName} saved`,
+    toast_ticket_downloaded_native: "Ticket PDF saved!",
+    toast_generating_ticket: "Generating ticket...",
+    error_generating_ticket: "Error generating ticket",
+    error_no_booking_to_download: "No booking to download.",
+    error_no_return_ticket: "No return ticket for this booking.",
+    error_search_missing_origin: "Please select a departure city.",
+    error_search_missing_destination: "Please select an arrival city.",
+    error_search_missing_date: "Please select a travel date.",
+    confirmation_title_pending: "Complete your payment",
+    confirmation_subtitle_pending: "Booking pending payment",
+    error_critical: "Critical error. Please start over.",
+    payment_agency_unavailable_tooltip: "Agency payment unavailable (too close to departure)",
+    confirm_cancel_title: "Cancel booking?",
+    confirm_cancel_desc: (num) => `Do you really want to cancel ${num}?`,
+    button_confirm: "Confirm",
      
   }
 }

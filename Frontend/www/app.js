@@ -43,6 +43,8 @@ const CONFIG = {
 // ============================================
 // DONNÉES DE L'APPLICATION
 // ============================================
+
+
 // ============================================
 // 🔔 PUSH + LOCAL NOTIFICATIONS
 // ============================================
@@ -161,23 +163,52 @@ async function scheduleReminderNotifications(reservation) {
     }
 }
 
-// Envoyer token au backend
+// app.js
+
 async function registerTokenWithBooking(bookingNumber, busId) {
+    console.log(`--- [PUSH] Tentative d'enregistrement du token pour la réservation ${bookingNumber} ---`);
+    
     const token = localStorage.getItem('fcm_token');
-    if (!token) return;
+    
+    if (!token) {
+        console.warn(`   -> ⚠️ Token non trouvé dans localStorage. Enregistrement annulé.`);
+        return;
+    }
+    
+    // Assure-toi que APP_CONFIG est bien défini par ton fichier config.js
+    const apiUrl = `${APP_CONFIG.API_URL}/api/notifications/register`;
+    console.log(`   -> Token trouvé. Envoi vers l'URL : ${apiUrl}`);
 
     try {
-        await fetch(`${API_CONFIG.baseUrl}/api/notifications/register`, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ token, bookingNumber, busId })
         });
-        console.log("✅ Token enregistré");
-    } catch (error) {
-        console.error("❌ Erreur token:", error);
-    }
-}
+        
+        // On vérifie la réponse du serveur
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                console.log(`   -> ✅ Succès ! Le serveur a bien enregistré le token.`);
+            } else {
+                console.error(`   -> ❌ Erreur côté serveur :`, result.error || "Réponse non détaillée.");
+            }
+        } else {
+            // Si la réponse n'est pas "ok" (ex: erreur 404, 500)
+            console.error(`   -> ❌ Échec de l'appel API. Statut: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`   -> Réponse du serveur : ${errorText}`);
+        }
 
+    } catch (error) {
+        // Erreur réseau (pas de connexion, etc.)
+        console.error("   -> ❌ ERREUR RÉSEAU lors de l'enregistrement du token:", error);
+    }
+    console.log(`--- [PUSH] Fin du processus d'enregistrement. ---`);
+}
 // Initialiser au démarrage
 document.addEventListener('DOMContentLoaded', initNotifications);
 
@@ -246,6 +277,8 @@ const agencies = [
     }
 ];
 
+
+let placeholderAnimationStarted = false;
 // ============================================
 // 📦 ÉTAT GLOBAL DE L'APPLICATION
 // ============================================
@@ -255,6 +288,9 @@ let frontendCountdownInterval = null;
 // --- Données dynamiques ---
 let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
 let allReservations = []; // Pour la page "Mes réservations"
+
+
+
 
 // --- État principal de l'application ---
 let appState = {
@@ -634,41 +670,62 @@ function getLanguage() {
     return localStorage.getItem('enbus_language') || navigator.language.split('-')[0] || 'fr';
 }
 
+// app.js
+// app.js
+
+// Assure-toi que ces variables sont bien déclarées au début de ton fichier app.js
+let hasInitialSetupRun = false;
+
+
 function applyLanguage(lang = getLanguage()) {
-    if (typeof translations === 'undefined') return;
+    if (typeof translations === 'undefined') {
+        console.warn("Traductions non prêtes, l'affichage sera mis à jour plus tard.");
+        return;
+    }
 
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
-    // ===================================
-    // ✅ TRADUCTION DU TITRE DE LA PAGE
-    // ===================================
-    if (translation.page_title) {
-        document.title = translation.page_title;
-    }
-
-    // Cette boucle va trouver et traduire "Sièges :" et "Prix :"
+    // --- 1. Traduction de tous les éléments statiques ---
+    if (translation.page_title) document.title = translation.page_title;
+    
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translation[key]) {
-            el.innerHTML = translation[key];
-        }
+        if (translation[key]) el.innerHTML = translation[key];
     });
 
-    // ===========================================
-    // ✅ TRADUCTION DES PLACEHOLDERS SPÉCIFIQUES
-    // ===========================================
     const smartSearchInput = document.getElementById('smart-search-input');
     if (smartSearchInput && translation.smart_search_placeholder) {
         smartSearchInput.placeholder = translation.smart_search_placeholder;
     }
-    // On rafraîchit les composants dynamiques
-    updateDynamicTexts(lang); // Met à jour le "1 Adulte..."
-    populatePopularDestinations(); // Met à jour "À partir de..."
-    setupDatePickers(); // Met à jour le placeholder du calendrier
-}
     
+    // --- 2. Lancement des fonctions de configuration (UNE SEULE FOIS) ---
+    // Ces fonctions créent des éléments ou attachent des écouteurs. On ne veut pas les dupliquer.
+    if (!hasInitialSetupRun) {
+        console.log("🚀 Exécution de la configuration initiale de l'interface...");
+        
+        populateCitySelects();
+        setupTripTypeToggle();
+        setupPassengerSelector();
+        setupAmenitiesFilters();
+        animateCountersOnScroll();
+        
+        hasInitialSetupRun = true; // On met le drapeau à vrai pour ne pas ré-exécuter
+    }
+
+    // --- 3. Fonctions de mise à jour (appelées à chaque changement de langue) ---
+    // Celles-ci rafraîchissent le texte des éléments dynamiques.
+    updateDynamicTexts(lang);
+    populatePopularDestinations(); // Met à jour le texte "À partir de..."
+    setupDatePickers(); // Met à jour le placeholder et la langue du calendrier
+
+    // --- 4. Lancement de l'animation du placeholder (UNE SEULE FOIS) ---
+    if (!placeholderAnimationStarted && typeof animateSearchPlaceholder === 'function') {
+        animateSearchPlaceholder();
+        placeholderAnimationStarted = true;
+    }
+}
     // ====================================================
     // ✅ LA MODIFICATION EST ICI
     // ====================================================
@@ -1302,25 +1359,34 @@ window.cancelReservation = async function(bookingNumber) {
 // TÉLÉCHARGEMENT DE BILLET PDF
 // ============================================
 // Dans app.js
+
+// Dans app.js
+
 window.downloadTicket = async function(isReturn = false) {
+    // ✅ On récupère l'objet de traduction au tout début
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const reservation = appState.currentReservation;
     
     if (!reservation) {
-        Utils.showToast("Aucune réservation à télécharger.", "error");
+        // ✅ On utilise la traduction pour le message d'erreur
+        Utils.showToast(translation.error_no_booking_to_download || "Aucune réservation à télécharger.", "error");
         return;
     }
 
     if (isReturn && !reservation.returnRoute) {
-        Utils.showToast("Il n'y a pas de billet retour pour cette réservation.", "warning");
+        // ✅ On utilise la traduction pour le message d'avertissement
+        Utils.showToast(translation.error_no_return_ticket || "Il n'y a pas de billet retour pour cette réservation.", "warning");
         return;
     }
     
-    Utils.showToast(`Génération du billet ${isReturn ? 'RETOUR' : 'ALLER'} en cours...`, 'info');
-
+    // Le reste de ta fonction est déjà correct
+    Utils.showToast(translation.toast_generating_ticket || 'Génération du billet en cours...', 'info');
     
-    // Appelle la fonction qui génère le HTML et lance le téléchargement
     await generateTicketPDF(reservation, isReturn);
 };
+
 
 // 💳 AFFICHAGE DES INSTRUCTIONS DE PAIEMENT
 // ============================================
@@ -1712,7 +1778,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('TOTAL PAYE', qrX + 25, qrY + 88, { align: 'center' });
+        // ✅ LIGNE CORRIGÉE AVEC LA BONNE CLÉ
+        pdf.text((translation.pdf_total_paid || 'TOTAL PAYÉ').toUpperCase(), qrX + 25, qrY + 88, { align: 'center' });
 
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(9);
@@ -1901,7 +1968,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
 
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(8);
-        pdf.text('EN-BUS - Votre partenaire de voyage', pageWidth / 2, 280, { align: 'center' });
+        pdf.text(`EN-BUS - ${translation.pdf_footer_tagline || 'Votre partenaire de voyage'}`, pageWidth / 2, 280, { align: 'center' });
 
         // ========================================
         // SAUVEGARDE
@@ -1921,12 +1988,14 @@ async function generateTicketPDF(reservation, isReturn = false) {
 
             if (LocalNotifications) {
                 try {
-                    const permResult = await LocalNotifications.requestPermissions();
+                   const permResult = await LocalNotifications.requestPermissions();
                     if (permResult.display === 'granted') {
                         await LocalNotifications.schedule({
                             notifications: [{
-                                title: 'Billet telecharge',
-                                body: fileName + ' enregistre',
+                                // ✅ LIGNES MODIFIÉES
+                                title: translation.local_notif_ticket_download_title || 'Billet téléchargé',
+                                body: translation.local_notif_ticket_download_body ? translation.local_notif_ticket_download_body(fileName) : `${fileName} enregistré`,
+                                // --------------------
                                 id: Math.floor(Math.random() * 100000),
                                 schedule: { at: new Date(Date.now() + 1000) },
                                 sound: 'default'
@@ -1954,72 +2023,51 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // ============================================
 // INITIALISATION DE L'APPLICATION
 // ============================================
- function initApp() {
+// app.js
+
+function initApp() {
     try {
+        // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
         setupMobileMenu();
-        populateCitySelects();
-        setupDatePickers();
-        setupTripTypeToggle();
-        setupPassengerSelector();
-        populatePopularDestinations();
-        setupPaymentMethodToggle();
         addToastStyles();
         addSwapButtonStyles();
         setupSwapButton();
-        setupAmenitiesFilters(); 
         addAboutPageStyles();
-         animateCountersOnScroll();
-         addContactPageStyles(); 
-         setupContactPage();
-         addRoutingMachineStyles();
-         // ✅ AJOUTER CET APPEL
+        addContactPageStyles();
+        setupContactPage();
+        addRoutingMachineStyles();
         initInteractiveMap();
-        applyLanguage();// ✅ AJOUTER CETTE LIGNE
+        setupSmartSearch();
+        setupMobileFilterToggle();
+
+        // --- Configuration native ---
+        if (window.Capacitor?.isNativePlatform()) {
+            const { StatusBar, Style } = Capacitor.Plugins;
+            StatusBar.setStyle({ style: Style.Dark });
+            console.log("✅ Style de la barre de statut appliqué (Dark).");
+        }
+
+        // --- Correction pour la superposition de la recherche ---
+        const resultsContainer = document.getElementById('smart-search-results');
+        if (resultsContainer) {
+            document.body.appendChild(resultsContainer);
+        }
+
+        // --- Chargement des données de fond ---
         loadAllRouteTemplates(); 
 
-        // ============================================
-// 🚀 CONFIGURATION NATIVE (CAPACITOR)
-// ============================================
-if (window.Capacitor?.isNativePlatform()) {
-    const { StatusBar, Style } = Capacitor.Plugins;
+        // ✅ APPEL UNIQUE qui va orchestrer tout le reste
+        applyLanguage();
 
-    // On dit juste au système d'afficher les icônes en blanc.
-    // Le fond restera celui par défaut du système (souvent noir ou semi-transparent).
-    StatusBar.setStyle({ style: Style.Dark }); // ✅ ON GARDE UNIQUEMENT CETTE LIGNE
-
-    console.log("✅ Style de la barre de statut appliqué (Dark).");
-}
-
-         // ===========================================
-    // ✅ CORRECTION POUR LA SUPERPOSITION
-    // ===========================================
-    // On déplace le conteneur des résultats à la fin du body
-    // pour qu'il ne soit plus "emprisonné" par un parent.
-    const resultsContainer = document.getElementById('smart-search-results');
-    if (resultsContainer) {
-        document.body.appendChild(resultsContainer);
-    }
-        setupSmartSearch();
-
-        // ✅ AJOUTER CET APPEL
-    animateSearchPlaceholder();
-    setupMobileFilterToggle(); 
-
-    // DANS initApp()
-
-// ... (après les autres initialisations)
-
-// Gestion de la redirection depuis les emails
-const urlParams = new URLSearchParams(window.location.search);
-const page = urlParams.get('page');
-
-if (page === 'reservations') {
-    showPage('reservations');
-    // Nettoyer l'URL pour éviter de rester bloqué sur cette page au refresh
-    window.history.replaceState({}, document.title, window.location.pathname);
-} else if (window.location.hash === '#reservations') {
-    showPage('reservations');
-}
+        // --- Gestion de la redirection (reste ici) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        if (page === 'reservations') {
+            showPage('reservations');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (window.location.hash === '#reservations') {
+            showPage('reservations');
+        }
 
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
@@ -2297,7 +2345,7 @@ async function handleFormspreeSubmit(event) {
                 const errorMessage = responseData.errors.map(error => error.message).join(', ');
                 throw new Error(errorMessage);
             } else {
-                throw new Error('Une erreur est survenue lors de l\'envoi.');
+                throw new Error(translation.error_generic || 'An error occurred.');
             }
         }
     } catch (error) {
@@ -3048,11 +3096,14 @@ function setupAmenitiesFilters() {
 // ============================================
 // 🚌 RECHERCHE (AVEC DÉBOGAGE)
 // ============================================
+// Dans app.js
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
     
     try {
+        // ✅ On récupère les traductions tout au début
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
 
@@ -3061,19 +3112,31 @@ window.searchBuses = async function() {
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
         
-        console.log(`2️⃣ Données saisies: De ${origin} à ${destination}, le ${departureDate}`);
-
         const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
         if (tripType === "round-trip" && departureDate && !returnDate) {
             returnDate = departureDate;
         }
 
-        // Validation
-        if (!origin || !destination || !departureDate) {
-            Utils.showToast("Veuillez remplir l'origine, la destination et la date.", 'error');
-            console.error("❌ Validation échouée : champs manquants.");
+        // =============================================================
+        // ✅ BLOC DE VALIDATION AMÉLIORÉ ET TRADUIT
+        // =============================================================
+        if (!origin) {
+            Utils.showToast(translation.error_search_missing_origin || "Veuillez sélectionner une ville de départ.", 'error');
             return;
         }
+        if (!destination) {
+            Utils.showToast(translation.error_search_missing_destination || "Veuillez sélectionner une ville d'arrivée.", 'error');
+            return;
+        }
+        if (!departureDate) {
+            Utils.showToast(translation.error_search_missing_date || "Veuillez sélectionner une date de voyage.", 'error');
+            return;
+        }
+        if (origin === destination) {
+            Utils.showToast(translation.error_same_origin_destination || "Le départ et l'arrivée doivent être différents.", 'error');
+            return;
+        }
+        // =============================================================
         
         appState.currentSearch = { 
             origin, destination, date: departureDate, returnDate, 
@@ -3081,10 +3144,11 @@ window.searchBuses = async function() {
             tripType 
         };
 
+        // Le reste de la fonction est déjà bon car il utilise `translation.info_searching`
         Utils.showToast(translation.info_searching, 'info');
         console.log("3️⃣ Envoi de la requête API...");
         
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
+        const response = await fetch(`${APP_CONFIG.API_URL}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
         console.log("4️⃣ Réponse reçue du serveur :", response.status);
 
         if (!response.ok) {
@@ -3106,13 +3170,13 @@ window.searchBuses = async function() {
             displayResults(data.results);
         }
         
-        // C'est ici que la magie doit opérer
         console.log("6️⃣ Affichage de la page 'results'...");
         showPage("results");
 
     } catch (error) {
         console.error('❌ Erreur critique dans searchBuses:', error);
-        Utils.showToast(error.message || "Une erreur est survenue.", 'error');
+        // On utilise la clé générique 'error_generic' pour les erreurs inattendues
+        Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
 function setupSmartSearch() {
@@ -4531,10 +4595,10 @@ function displayBookingSummary() {
         } else {
             agencyOption.style.opacity = '0.5';
             agencyOption.querySelector('input').disabled = true;
-            agencyOption.title = "Paiement en agence non disponible (trop proche du départ)";
+            agencyOption.title = translation.payment_agency_unavailable_tooltip || "Agency payment not available (too close to departure)";
         }
     }
-    
+    setupPaymentMethodToggle();
     console.log("✅ Récapitulatif affiché et mis à jour.");
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking

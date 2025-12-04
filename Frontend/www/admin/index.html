@@ -3720,6 +3720,9 @@
             const seatCount = parseInt(document.getElementById("seat-count").value);
             const busIdentifier = document.getElementById("bus-identifier").value.trim();
             const highlightBadge = document.getElementById('highlight-badge').value.trim();
+             // ✅ RÉCUPÉRER LES NOUVELLES VALEURS
+    const isNightTrip = document.querySelector('input[name="trip-type-day-night"]:checked').value === 'night';
+    const arrivalDaysOffset = parseInt(document.getElementById('arrival-day-offset').value);
 
             // 2. Validations
             if (!routeId || !dateValue || !seatCount) {
@@ -3769,7 +3772,9 @@
                 driver1Id, driver1Name,
                 driver2Id, driver2Name,
                 controller1Id, controller1Name,
-                controller2Id, controller2Name
+                controller2Id, controller2Name,
+                 isNightTrip: isNightTrip,
+        arrivalDaysOffset: arrivalDaysOffset
             };
 
             console.log("📤 Envoi des données de création de voyage :", tripData);
