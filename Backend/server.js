@@ -261,7 +261,8 @@ function sendPendingPaymentEmail(reservation) {
         // Style Info Box Mobile Money
         paymentInstructions = `
             <div class="info-box" style="border-left-color: #ffa726; background-color: #fff8e1;">
-                <h3 style="color: #ffa726; margin-top: 0; font-size: 18px;">📱 Paiement Mobile</h3>
+                 <!-- ===================== CORRECTION ICI ===================== -->
+                <h3 style="color: #ffa726; margin-top: 0; font-size: 18px;">${translation.email_mobile_payment_title}</h3>
                 <p style="margin-bottom: 0;">${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</p>
             </div>
         `;
@@ -309,7 +310,9 @@ function sendPaymentConfirmedEmail(reservation) {
             <strong>${translation.email_confirmed_details_date}</strong>
             <span>${formattedDateTime}</span>
             
-            <strong>Référence</strong>
+            <!-- ===================== CORRECTION ICI ===================== -->
+            <strong>${translation.email_booking_reference}</strong>
+            <!-- ========================================================== -->
             <span style="font-family: monospace; letter-spacing: 1px;">${reservation.bookingNumber}</span>
         </div>
         
@@ -370,7 +373,11 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
         </div>
         
         <div style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || '#'}" class="button">${translation.email_confirmed_button}</a>
+            <div style="text-align: center;">
+            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
+                ${translation.email_confirmed_button}
+            </a>
+        </div>
         </div>
         
         <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_report_outro}</p>
