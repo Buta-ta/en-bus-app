@@ -2096,45 +2096,7 @@
                                     <option value="">-- Aucun contrôleur --</option>
                                 </select>
                             </div>
-                            <!-- ✅ SECTION TRAJET DE NUIT -->
-<div class="form-group form-group-full" style="margin-top: 20px; padding: 20px; background: rgba(115, 215, 0, 0.05); border: 1px solid rgba(115, 215, 0, 0.2); border-radius: 12px;">
-    <label class="form-label" style="font-size: 1.1em; margin-bottom: 15px; display: block;">
-        🌙 Type de trajet (Jour / Nuit)
-    </label>
-    
-    <div style="display: flex; gap: 30px; margin-bottom: 15px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 15px; border: 1px solid #333; border-radius: 8px; transition: all 0.2s;">
-            <input type="radio" name="trip-type-day-night" value="day" checked 
-                   onchange="toggleNightTripOptions()"
-                   style="width: 18px; height: 18px;"> 
-            <span>☀️ Trajet de jour</span>
-            <small style="color: #888;">(arrivée le même jour)</small>
-        </label>
-        
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 15px; border: 1px solid #333; border-radius: 8px; transition: all 0.2s;">
-            <input type="radio" name="trip-type-day-night" value="night"
-                   onchange="toggleNightTripOptions()"
-                   style="width: 18px; height: 18px;"> 
-            <span>🌙 Trajet de nuit</span>
-            <small style="color: #888;">(arrivée le lendemain ou après)</small>
-        </label>
-    </div>
-    
-    <!-- Options affichées seulement pour les trajets de nuit -->
-    <div id="night-trip-options" style="display: none; margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
-        <label for="arrival-day-offset" class="form-label">
-            📅 L'arrivée se fait combien de jours après le départ ?
-        </label>
-        <select id="arrival-day-offset" class="form-control" style="max-width: 250px;">
-            <option value="1" selected>+1 jour (lendemain)</option>
-            <option value="2">+2 jours</option>
-            <option value="3">+3 jours</option>
-        </select>
-        <small style="color: #ff9800; display: block; margin-top: 8px;">
-            ⚠️ Exemple : Départ le 15 à 22h → Arrivée le 16 à 06h = +1 jour
-        </small>
-    </div>
-</div>
+
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 

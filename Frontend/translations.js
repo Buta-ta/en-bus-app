@@ -1116,25 +1116,6 @@ const translations = {
     confirm_cancel_title: "Cancel booking?",
     confirm_cancel_desc: (num) => `Do you really want to cancel ${num}?`,
     button_confirm: "Confirm",
-
-
-     // --- Night trip badge ---
-    badge_night_trip: "🌙 Night Trip",
-
-    // --- Search filter ---
-    filter_time_night: "Night (9pm - 5am)",
-
-    // --- Display for arrival D+1 ---
-    arrival_day_offset_badge: (days) => `D+${days}`,
-
-    // --- Admin Panel: Trip creation form ---
-    admin_form_trip_type: "Trip Type",
-    admin_form_day_trip: "☀️ Day",
-    admin_form_night_trip: "🌙 Night",
-    admin_form_arrival: "Arrival",
-    admin_form_arrival_same_day: "Same day",
-    admin_form_arrival_next_day: "Next day (D+1)",
-    admin_form_arrival_day_after: "Day after (D+2)",
      
   }
 }
