@@ -495,17 +495,35 @@ app.get("/api/search", async (req, res) => {
   let { from, to, date } = req.query;
   if (!from || !to || !date)
     return res.status(400).json({ error: "Paramètres manquants" });
+  
   try {
     const trips = await tripsCollection
       .find({
         "route.from": { $regex: `^${from.trim()}`, $options: "i" },
         "route.to": { $regex: `^${to.trim()}`, $options: "i" },
-        date: date,
+        date: date, // ✅ On cherche par date de DÉPART
       })
       .toArray();
 
+    // ✅ AJOUT : Filtrer les trajets passés (pour aujourd'hui)
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    const filteredTrips = trips.filter(trip => {
+      // Si le voyage n'est pas aujourd'hui, on le garde
+      if (trip.date !== todayStr) return true;
+      
+      // Si c'est aujourd'hui, on vérifie que l'heure de départ n'est pas passée
+      if (trip.route?.departure) {
+        const [hours, minutes] = trip.route.departure.split(':').map(Number);
+        const departureTime = new Date(now);
+        departureTime.setHours(hours, minutes, 0, 0);
+        return departureTime > now;
+      }
+      return true;
+    });
 
-       // Fonction utilitaire pour calculer la durée
+    // Fonction utilitaire pour calculer la durée
     const calculateDuration = (start, end) => {
         if (!start || !end) return "N/A";
         const [h1, m1] = start.split(':').map(Number);
@@ -518,17 +536,15 @@ app.get("/api/search", async (req, res) => {
         const hours = Math.floor(diffMinutes / 60);
         const minutes = diffMinutes % 60;
         
-        // Formatage : "8h" ou "8h 30"
         return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
     };
 
-    const results = trips.map((trip) => ({
+    const results = filteredTrips.map((trip) => ({
       id: trip._id.toString(),
       from: trip.route.from,
       to: trip.route.to,
       company: trip.route.company,
       price: trip.route.price,
-      // ✅ CORRECTION ICI : On calcule si non défini
       duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
       departure: trip.route.departure,
       arrival: trip.route.arrival,
@@ -540,7 +556,7 @@ app.get("/api/search", async (req, res) => {
       arrivalLocation: trip.route.arrivalLocation || null,
       trackerId: trip.busIdentifier || trip.route.trackerId || null,
       availableSeats: trip.seats.filter((s) => s.status === "available").length,
-      // ✅ AJOUT DES NOUVEAUX CHAMPS DANS LA RÉPONSE API
+      // ✅ CHAMPS TRAJET DE NUIT
       isNightTrip: trip.isNightTrip || false,
       arrivalDaysOffset: trip.arrivalDaysOffset || 0,
       totalSeats: trip.seats.length,
@@ -549,6 +565,7 @@ app.get("/api/search", async (req, res) => {
       baggageOptions: trip.route.baggageOptions,
       highlightBadge: trip.highlightBadge || null,
     }));
+    
     res.json({ success: true, count: results.length, results });
   } catch (error) {
     console.error("❌ Erreur recherche:", error);
