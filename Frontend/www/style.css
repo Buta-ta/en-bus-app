@@ -5658,3 +5658,67 @@ body.pwa-installed .container {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.3; transform: scale(0.9); }
 }
+
+
+/* DANS le <style> de votre index.html (pour l'application cliente) */
+
+/* ======================================================== */
+/* ✅ CSS CORRIGÉ POUR L'ALIGNEMENT HORIZONTAL               */
+/* ======================================================== */
+.arrival-time-wrapper {
+    /* Utilise Flexbox pour aligner l'heure et le +1j */
+    display: flex;
+    align-items: baseline; /* Aligne sur la ligne de base du texte */
+    justify-content: center; /* Centre le contenu horizontalement */
+    gap: 4px; /* Petit espace entre l'heure et le +1j */
+}
+
+.arrival-time-wrapper span {
+    /* Le style de l'heure reste le même */
+}
+
+.arrival-time-wrapper small {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #ffa726;
+    /* On ajuste légèrement la position verticale pour un alignement parfait */
+    transform: translateY(-1px); 
+}
+/* ======================================================== */
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLES POUR LES ICÔNES DES RÉSEAUX SOCIAUX
+   ============================================ */
+.footer-section .social-icons {
+    display: flex;
+    gap: 1rem; /* Espace entre les icônes */
+    margin-top: 1rem;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--color-surface-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 50%; /* Pour des icônes rondes */
+    color: var(--color-text-secondary);
+    transition: all 0.3s ease;
+}
+
+.social-icons a:hover {
+    background-color: var(--color-accent); /* Utilise la couleur accent de votre thème */
+    color: var(--color-background);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.social-icons a svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor; /* L'icône prend la couleur du lien */
+}

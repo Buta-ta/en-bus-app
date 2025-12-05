@@ -5659,3 +5659,40 @@ body.pwa-installed .container {
     line-height: 1.5;
     margin: 0;
 }
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLES POUR LES ICÔNES DES RÉSEAUX SOCIAUX
+   ============================================ */
+.footer-section .social-icons {
+    display: flex;
+    gap: 1rem; /* Espace entre les icônes */
+    margin-top: 1rem;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--color-surface-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 50%; /* Pour des icônes rondes */
+    color: var(--color-text-secondary);
+    transition: all 0.3s ease;
+}
+
+.social-icons a:hover {
+    background-color: var(--color-accent); /* Utilise la couleur accent de votre thème */
+    color: var(--color-background);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+}
+
+.social-icons a svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor; /* L'icône prend la couleur du lien */
+}
