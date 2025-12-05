@@ -2745,6 +2745,39 @@
         let allTemplates = [];
         let inactivityTimer;
 
+
+         // ============================================
+    // 🏛️ DÉFINITION DES RÔLES ET PERMISSIONS
+    // ============================================
+    // ✅ C'EST L'ENDROIT PARFAIT POUR CETTE CONSTANTE
+    const ALL_PERMISSIONS = {
+        view_reservations: "Voir les réservations",
+        manage_reports: "Gérer les reports",
+        manage_trips: "Gérer la programmation",
+        manage_settings: "Accéder aux paramètres",
+        manage_crew: "Gérer le personnel",
+        view_analytics: "Voir les statistiques",
+        manage_notifications: "Envoyer des notifications"
+    };
+
+
+    // DANS admin/index.html, dans <script>
+
+function populatePermissionsCheckboxes(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let html = '';
+    for (const [key, label] of Object.entries(ALL_PERMISSIONS)) {
+        html += `
+            <label style="display: flex; align-items: center; gap: 8px; background: var(--dark-elevated); padding: 10px; border-radius: 8px; border: 1px solid var(--dark-border); cursor: pointer;">
+                <input type="checkbox" name="permission" value="${key}">
+                <span style="color: var(--text-secondary);">${label}</span>
+            </label>
+        `;
+    }
+    container.innerHTML = html;
+}
         // ============================================
         // 🔐 AUTHENTIFICATION
         // ============================================
@@ -4786,12 +4819,15 @@ function openEditMemberModal(memberId, name, phone, role, status) {
         /**
          * Ouvre la modale d'ajout d'un membre
          */
-        function openAddCrewModal() {
-            const modalTitle = document.getElementById('modal-title');
-            const modalBody = document.getElementById('modal-body');
+// DANS admin/index.html, REMPLACEZ la fonction openAddCrewModal
 
-            modalTitle.textContent = "Ajouter un membre du personnel";
-            modalBody.innerHTML = `
+function openAddCrewModal() {
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = "Ajouter un membre du personnel";
+    
+    modalBody.innerHTML = `
         <form id="add-crew-form">
             <div class="form-grid">
                 <div class="form-group">
@@ -4803,25 +4839,53 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                     <label for="crew-role" class="form-label">Poste *</label>
                     <select id="crew-role" class="form-control" required>
                         <option value="">-- Choisir --</option>
+                        <option value="Agent de réservation">🎟️ Agent de réservation</option>
+                        <option value="Manager">💼 Manager</option>
+                        <option value="Super Admin">👑 Super Admin</option>
                         <option value="Chauffeur">🚗 Chauffeur</option>
                         <option value="Contrôleur">🎫 Contrôleur</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="crew-phone" class="form-label">Téléphone *</label>
-                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567" required>
+                    <label for="crew-phone" class="form-label">Téléphone</label> <!-- Rendue optionnelle -->
+                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567">
                 </div>
 
                 <div class="form-group">
                     <label for="crew-status" class="form-label">Statut *</label>
                     <select id="crew-status" class="form-control" required>
-                        <option value="Actif">✅ Actif</option>
+                        <option value="Actif">✅ Actif (peut se connecter)</option>
+                        <option value="Inactif">❌ Inactif (compte bloqué)</option>
                         <option value="En congé">🏖️ En congé</option>
-                        <option value="Inactif">❌ Inactif</option>
                     </select>
                 </div>
             </div>
+
+            <!-- ======================================================== -->
+            <!-- ✅ AJOUT DES CHAMPS DE LOGIN ET PERMISSIONS               -->
+            <!-- ======================================================== -->
+            <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Accès au Dashboard</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nom d'utilisateur (login) *</label>
+                    <input type="text" id="crew-username" class="form-control" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mot de passe (min. 6 caractères) *</label>
+                    <input type="password" id="crew-password" class="form-control" required autocomplete="new-password">
+                </div>
+            </div>
+
+            <div class="form-group form-group-full" style="margin-top: 1rem;">
+                <label class="form-label">Permissions de l'utilisateur</label>
+                <div id="permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <!-- Les cases à cocher seront injectées ici par JavaScript -->
+                </div>
+            </div>
+            <!-- ======================================================== -->
 
             <div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(115, 215, 0, 0.1); border-radius: 8px;">
                 <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
@@ -4836,38 +4900,73 @@ function openEditMemberModal(memberId, name, phone, role, status) {
         </form>
     `;
 
-            document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
-            document.getElementById('details-modal').classList.add('active');
-        }
-
+    // On appelle la fonction pour remplir les cases à cocher
+    populatePermissionsCheckboxes('permissions-container');
+    
+    // On attache l'écouteur de soumission au formulaire
+    document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
+    
+    // On affiche la modale
+    document.getElementById('details-modal').classList.add('active');
+}
         /**
          * Gère l'ajout d'un membre
          */
-        async function handleAddCrew(e) {
-            e.preventDefault();
+       // DANS admin/index.html, REMPLACEZ la fonction handleAddCrew
 
-            const newMember = {
-                name: document.getElementById('crew-name').value.trim(),
-                role: document.getElementById('crew-role').value,
-                phone: document.getElementById('crew-phone').value.trim(),
-                status: document.getElementById('crew-status').value
-            };
+async function handleAddCrew(e) {
+    e.preventDefault();
 
-            try {
-                const data = await apiCall('/admin/crew', 'POST', newMember);
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR
+    // ========================================================
 
-                if (data && data.success) {
-                    showNotification(data.message, 'success');
-                    closeModal();
-                    loadAllCrew(); // Recharger la liste
-                }
+    // Récupérer les permissions cochées dans le conteneur
+    const permissions = Array.from(document.querySelectorAll('#permissions-container input[name="permission"]:checked'))
+                             .map(checkbox => checkbox.value);
 
-            } catch (error) {
-                console.error('❌ Erreur ajout membre:', error);
-                showNotification('Erreur lors de l\'ajout', 'error');
-            }
+    // On récupère toutes les valeurs du formulaire, y compris les nouvelles
+    const newMember = {
+        name: document.getElementById('crew-name').value.trim(),
+        role: document.getElementById('crew-role').value,
+        phone: document.getElementById('crew-phone').value.trim(),
+        status: document.getElementById('crew-status').value,
+        username: document.getElementById('crew-username').value.trim(),
+        password: document.getElementById('crew-password').value, // On ne trim() pas le mot de passe
+        permissions: permissions
+    };
+    
+    // Ajout de validations côté client pour une meilleure expérience
+    if (!newMember.name || !newMember.role || !newMember.username || !newMember.password) {
+        showNotification("Veuillez remplir tous les champs obligatoires (*).", "warning");
+        return;
+    }
+
+    if (newMember.password.length < 6) {
+        showNotification("Le mot de passe doit contenir au moins 6 caractères.", "warning");
+        return;
+    }
+
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
+
+    try {
+        // L'appel API reste le même, mais on envoie maintenant l'objet 'newMember' enrichi
+        const data = await apiCall('/admin/crew', 'POST', newMember);
+
+        if (data && data.success) {
+            showNotification(data.message || "Utilisateur créé avec succès !", 'success');
+            closeModal();
+            loadAllCrew(); // Recharger la liste
         }
+        // Note: la fonction apiCall gère déjà l'affichage des erreurs du serveur
 
+    } catch (error) {
+        console.error('❌ Erreur ajout membre:', error);
+        showNotification('Erreur lors de l\'ajout', 'error');
+    }
+}
         /**
          * Ouvre la modale de modification
          */
