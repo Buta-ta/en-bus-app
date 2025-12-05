@@ -5722,3 +5722,22 @@ body.pwa-installed .container {
     height: 20px;
     fill: currentColor; /* L'icône prend la couleur du lien */
 }
+
+
+/* ============================================
+   ✅ CORRECTION CIBLÉE POUR MOBILE (768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+    /*
+      On cible la section du footer qui contient
+      les icônes des réseaux sociaux.
+    */
+    #footer-social-links {
+        /*
+          Cette seule ligne suffit à centrer les icônes
+          à l'intérieur de leur conteneur flex.
+        */
+        justify-content: center;
+    }
+}

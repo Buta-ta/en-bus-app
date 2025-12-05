@@ -562,6 +562,8 @@ const translations = {
     not_found_title: "Aucun billet actif trouvé",
     not_found_desc: "Il semble que les billets enregistrés sur cet appareil ne soient plus valides ou ont été supprimés.",
     button_plan_new_trip: "Planifier un nouveau voyage",
+    footer_follow_us: "Suivez-nous",
+    footer_phone_label: "Tél",
     },
 
 
@@ -1124,6 +1126,9 @@ const translations = {
     not_found_title: "No Active Tickets Found",
     not_found_desc: "It seems the tickets saved on this device are no longer valid or have been deleted.",
     button_plan_new_trip: "Plan a New Trip",
+    footer_follow_us: "Follow Us",
+    footer_phone_label: "Phone",
+
      
   }
 }
