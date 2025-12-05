@@ -1235,29 +1235,62 @@ app.post(
 // ============================================
 // === ROUTES ADMIN (PROTÉGÉES) ===
 // ============================================
+// DANS server.js
+
 app.post(
   "/api/admin/login",
   loginLimiter,
   [body("username").notEmpty(), body("password").notEmpty()],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty())
+    if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+    
     const { username, password } = req.body;
-    if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD_HASH)
-      return res.status(500).json({ error: "Erreur de configuration." });
-    const isMatch = await bcrypt.compare(
-      password,
-      process.env.ADMIN_PASSWORD_HASH
-    );
-    if (username !== process.env.ADMIN_USERNAME || !isMatch)
-      return res.status(401).json({ error: "Identifiants incorrects" });
-    const token = jwt.sign(
-      { username, role: "admin" },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
-    res.json({ success: true, token });
+
+    try {
+        // Étape 1 : Chercher l'utilisateur par son nom d'utilisateur dans la collection 'crew'
+        const user = await crewCollection.findOne({ username: username });
+
+        // Étape 2 : Vérifier si l'utilisateur existe ET si son compte est 'Actif'
+        if (!user || user.status !== 'Actif') {
+            // Message d'erreur générique pour la sécurité
+            return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+        }
+
+        // Étape 3 : Comparer le mot de passe fourni avec le mot de passe hashé en base de données
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            // Message d'erreur générique
+            return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+        }
+
+        // Étape 4 : Si tout est bon, créer le "payload" du token
+        const tokenPayload = {
+            userId: user._id,
+            username: user.username,
+            role: user.role,
+            permissions: user.permissions || [] // Crucial : on inclut les permissions !
+        };
+        
+        // Étape 5 : Signer le token avec le payload et la clé secrète
+        const token = jwt.sign(
+            tokenPayload,
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+        );
+        
+        console.log(`✅ Connexion réussie pour l'utilisateur: ${user.username}`);
+        
+        // Étape 6 : Envoyer le token au client
+        res.json({ success: true, token });
+
+    } catch (error) {
+        console.error("❌ Erreur de login:", error);
+        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
+    }
   }
 );
 
@@ -1429,11 +1462,15 @@ app.get("/api/admin/crew", authenticateToken, async (req, res) => {
 });
 
 // Ajouter un nouveau membre du personnel
+// DANS server.js
+
 app.post("/api/admin/crew", authenticateToken, [
+    // On enlève les anciennes validations trop strictes et on en met de nouvelles
     body('name').notEmpty().withMessage('Le nom est requis'),
-    body('role').isIn(['Chauffeur', 'Contrôleur']).withMessage('Poste invalide'),
-    body('phone').notEmpty().withMessage('Le téléphone est requis'),
-    body('status').isIn(['Actif', 'En congé', 'Inactif']).withMessage('Statut invalide')
+    body('role').notEmpty().withMessage('Le rôle est requis'),
+    body('username').notEmpty().withMessage('Le nom d\'utilisateur est requis'),
+    body('password').isLength({ min: 6 }).withMessage('Le mot de passe doit faire au moins 6 caractères'),
+    body('permissions').isArray()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1441,42 +1478,66 @@ app.post("/api/admin/crew", authenticateToken, [
     }
 
     try {
-        const { name, role, phone, status } = req.body;
+        const { name, role, username, password, permissions, phone, status } = req.body;
 
-        // Générer le matricule automatiquement
-        const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
+        const existingUser = await crewCollection.findOne({ username: username });
+        if (existingUser) {
+            return res.status(409).json({ error: "Ce nom d'utilisateur est déjà utilisé." });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // ========================================================
+        // ✅ DÉBUT DE LA LOGIQUE DE MATRICULE MISE À JOUR
+        // ========================================================
         
-        // Compter le nombre de membres avec ce poste pour générer le numéro
-        // ✅ LIGNE MODIFIÉE
-        const count = await crewCollection.countDocuments({ role: role });
-        const matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        let matricule = null; // Par défaut, pas de matricule pour les rôles admin
+
+        // On ne génère un matricule que pour les rôles opérationnels
+        if (role === 'Chauffeur' || role === 'Contrôleur') {
+            const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
+            const count = await crewCollection.countDocuments({ role: role });
+            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        } else {
+            // Pour les autres rôles (Agent, Manager...), on peut créer un préfixe "ADM"
+            const prefix = "ADM";
+            // On compte tous les utilisateurs qui ne sont ni chauffeur ni contrôleur
+            const count = await crewCollection.countDocuments({ role: { $nin: ['Chauffeur', 'Contrôleur'] } });
+            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        }
+
+        // ========================================================
+        // ✅ FIN DE LA LOGIQUE DE MATRICULE
+        // ========================================================
 
         const newMember = {
-            matricule: matricule,
-            name: name,
-            role: role,
-            phone: phone,
-            status: status,
+            matricule: matricule, // Le matricule est maintenant généré dynamiquement
+            name,
+            role,
+            username,
+            password: hashedPassword,
+            permissions,
+            phone: phone || null,
+            status: status || 'Actif',
             totalKm: 0,
             totalTrips: 0,
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
-        // ✅ LIGNE MODIFIÉE
-        const result = await crewCollection.insertOne(newMember);
-
-        console.log(`✅ Nouveau membre ajouté: ${matricule} - ${name}`);
-
+        await crewCollection.insertOne(newMember);
+        
+        console.log(`✅ Nouvel utilisateur/membre créé: ${username} (${role}) avec matricule ${matricule}`);
+        
         res.status(201).json({
             success: true,
-            message: `${role} ajouté avec succès`,
-            member: { ...newMember, _id: result.insertedId }
+            message: "Utilisateur créé avec succès."
         });
 
     } catch (error) {
-        console.error("❌ Erreur ajout personnel:", error);
-        res.status(500).json({ error: "Erreur serveur" });
+        console.error("❌ Erreur création utilisateur:", error);
+        res.status(500).json({ error: "Erreur serveur lors de la création de l'utilisateur." });
     }
 });
 // Modifier un membre du personnel
