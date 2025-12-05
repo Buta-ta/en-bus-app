@@ -1796,6 +1796,34 @@
                 </button>
             </form>
         </div>
+
+
+        <!-- ======================================================== -->
+<!-- ✅ NOUVEAU FORMULAIRE POUR LA CRÉATION DU PREMIER ADMIN   -->
+<!-- ======================================================== -->
+<div class="login-card" id="setup-card" style="display: none;">
+    <div class="login-header">
+        <div class="login-logo">🚀</div>
+        <h1 class="login-title">Première Configuration</h1>
+        <p class="login-subtitle">Créez le compte Super Administrateur</p>
+    </div>
+
+    <form id="setup-form">
+        <div class="form-group">
+            <label class="form-label">Nom complet</label>
+            <input type="text" id="setup-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Nom d'utilisateur</label>
+            <input type="text" id="setup-username" class="form-control" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Mot de passe (min. 6 caractères)</label>
+            <input type="password" id="setup-password" class="form-control" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary">Créer le compte Admin</button>
+    </form>
+</div>
     </div>
 
     <!-- ============================================
@@ -2870,9 +2898,14 @@ function populatePermissionsCheckboxes(containerId) {
 
 
         function showLogin() {
-            document.getElementById("login-screen").style.display = "flex";
-            document.getElementById("dashboard").classList.remove("active");
-        }
+    const loginScreen = document.getElementById("login-screen");
+    const loginCard = document.getElementById("login-card");
+    const dashboard = document.getElementById("dashboard");
+    
+    if(loginScreen) loginScreen.style.display = "flex";
+    if(loginCard) loginCard.style.display = "block"; // On s'assure que la carte de login est visible
+    if(dashboard) dashboard.classList.remove("active");
+}
 
         // DANS admin/index.html, REMPLACEZ la fonction showDashboard
 
@@ -3402,31 +3435,110 @@ function showDashboard() {
         // ============================================
         // 🔄 FORCER LE CHARGEMENT AU DÉMARRAGE
         // ============================================
-        document.addEventListener("DOMContentLoaded", async () => {
-            console.log("🚀 Chargement de la page admin...");
+      // DANS admin/index.html, dans <script>
+// REMPLACEZ votre écouteur d'événement DOMContentLoaded par celui-ci
 
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("🚀 Chargement de la page admin...");
+    
+    // On cache les deux formulaires par défaut pour éviter un clignotement
+    const loginCard = document.getElementById("login-card");
+    const setupCard = document.getElementById("setup-card");
+    if (loginCard) loginCard.style.display = 'none';
+    if (setupCard) setupCard.style.display = 'none';
+
+    try {
+        // Étape 1 : Appeler la nouvelle route pour vérifier si une configuration est nécessaire
+        const response = await fetch(API_URL + "/admin/needs-setup");
+        if (!response.ok) {
+            throw new Error("Le serveur ne répond pas à la vérification de statut.");
+        }
+        const statusData = await response.json();
+
+        // Étape 2 : Si une configuration est nécessaire (aucun admin n'existe)
+        if (statusData.setupNeeded) {
+            console.log("🔧 Configuration initiale requise. Affichage du formulaire de création du premier admin.");
+            if (setupCard) {
+                setupCard.style.display = 'block';
+                // On attache l'événement UNIQUEMENT au formulaire de setup
+                const setupForm = document.getElementById("setup-form");
+                if (setupForm) {
+                    setupForm.addEventListener('submit', handleFirstAdminCreation);
+                }
+            }
+        } else {
+            // Étape 3 : Si le système est déjà configuré, on suit la logique de login normale
+            console.log("✅ Système déjà configuré. Vérification du token de session.");
             if (await verifyToken()) {
-                console.log("✅ Token valide, chargement des données...");
+                console.log("✅ Token valide, affichage du dashboard...");
                 showDashboard();
-                await loadAdminData(); // ✅ FORCER LE CHARGEMENT
+                loadAdminData();
                 startInactivityDetection();
             } else {
-                console.log("❌ Token invalide, affichage du login");
+                console.log("❌ Pas de token valide, affichage du formulaire de login.");
                 localStorage.removeItem("admin_token");
-                showLogin();
+                showLogin(); // showLogin devrait afficher login-card
             }
+        }
+    } catch (error) {
+        console.error("Erreur critique au démarrage:", error);
+        // En cas d'erreur réseau ou autre, on affiche le login par défaut comme solution de repli
+        showLogin();
+    }
 
-            setupEventListeners();
-            buildDaysSelector();
+    // Ces fonctions initialisent les écouteurs pour les éléments qui sont toujours présents sur la page
+    setupEventListeners();
+    buildDaysSelector();
+    flatpickr("#trip-dates", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        locale: "fr",
+        minDate: "today",
+    });
+});
 
-            flatpickr("#trip-dates", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "fr",
-                minDate: "today",
-            });
-        });
+// Assurez-vous que votre fonction showLogin affiche bien la bonne carte
+
 // DANS admin/index.html, dans <script>
+
+
+async function handleFirstAdminCreation(e) {
+    e.preventDefault();
+
+    const newAdmin = {
+        name: document.getElementById('setup-name').value.trim(),
+        username: document.getElementById('setup-username').value.trim(),
+        password: document.getElementById('setup-password').value,
+        role: 'Super Admin',
+        // On lui donne TOUTES les permissions
+        permissions: Object.keys(ALL_PERMISSIONS) 
+    };
+
+    if (!newAdmin.name || !newAdmin.username || newAdmin.password.length < 6) {
+        showNotification("Veuillez remplir tous les champs correctement.", "warning");
+        return;
+    }
+
+    try {
+        // On appelle la route de création (qui est maintenant accessible sans token)
+        const res = await fetch(API_URL + "/admin/crew", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newAdmin)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            showNotification("Compte Super Admin créé ! Veuillez vous connecter.", "success");
+            // On rafraîchit la page pour passer au formulaire de login
+            window.location.reload(); 
+        } else {
+            showNotification(data.error || "Erreur lors de la création", "error");
+        }
+    } catch (error) {
+        showNotification("Erreur réseau.", "error");
+    }
+}
 
 function showDetails(reservationId) {
     const r = allReservations.find((res) => res._id === reservationId);
