@@ -1232,6 +1232,29 @@ app.post(
   }
 );
 
+
+// DANS server.js
+
+// NOUVELLE ROUTE : Vérifier si une configuration initiale est nécessaire
+app.get("/api/admin/needs-setup", async (req, res) => {
+    try {
+        // On compte le nombre d'utilisateurs qui ont la permission 'manage_settings' (un bon indicateur d'un admin)
+        const adminCount = await crewCollection.countDocuments({ 
+            permissions: 'manage_settings' 
+        });
+
+        // S'il n'y a aucun admin, une configuration est nécessaire
+        if (adminCount === 0) {
+            res.json({ success: true, setupNeeded: true });
+        } else {
+            res.json({ success: true, setupNeeded: false });
+        }
+    } catch (error) {
+        console.error("Erreur vérification setup:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 // ============================================
 // === ROUTES ADMIN (PROTÉGÉES) ===
 // ============================================
@@ -1461,10 +1484,28 @@ app.get("/api/admin/crew", authenticateToken, async (req, res) => {
     }
 });
 
+
+// Middleware personnalisé pour la création du premier admin
+const allowFirstAdminCreation = async (req, res, next) => {
+    try {
+        const adminCount = await crewCollection.countDocuments({ permissions: 'manage_settings' });
+        if (adminCount === 0) {
+            // S'il n'y a pas d'admin, on autorise la requête sans token
+            return next();
+        } else {
+            // Sinon, on applique la vérification de token normale
+            return authenticateToken(req, res, next);
+        }
+    } catch (error) {
+        return res.status(500).json({ error: "Erreur serveur" });
+    }
+};
+
+
 // Ajouter un nouveau membre du personnel
 // DANS server.js
 
-app.post("/api/admin/crew", authenticateToken, [
+app.post("/api/admin/crew", allowFirstAdminCreation, [
     // On enlève les anciennes validations trop strictes et on en met de nouvelles
     body('name').notEmpty().withMessage('Le nom est requis'),
     body('role').notEmpty().withMessage('Le rôle est requis'),
