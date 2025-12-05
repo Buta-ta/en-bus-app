@@ -2878,6 +2878,8 @@ function populatePermissionsCheckboxes(containerId) {
 
 // DANS admin/index.html
 
+// DANS admin/index.html, REMPLACEZ la fonction showDashboard par cette version finale
+
 function showDashboard() {
     // Affiche le conteneur principal du dashboard
     document.getElementById("login-screen").style.display = "none";
@@ -2886,6 +2888,7 @@ function showDashboard() {
     const token = localStorage.getItem("admin_token");
     const userData = decodeJwt(token);
 
+    // Si on ne peut pas lire les données du token, on ne fait rien par sécurité
     if (!userData || !userData.permissions) {
         console.warn("Impossible de lire les permissions du token. Tous les onglets sont masqués par sécurité.");
         document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
@@ -2897,6 +2900,7 @@ function showDashboard() {
     const userPermissions = userData.permissions;
     console.log("Permissions de l'utilisateur connecté :", userPermissions);
 
+    // On définit quel onglet est contrôlé par quelle permission
     const tabPermissions = {
         'reservations': 'view_reservations',
         'report-requests': 'manage_reports',
@@ -2908,30 +2912,23 @@ function showDashboard() {
         'notifications': 'manage_notifications'
     };
 
+    // On parcourt chaque lien du menu
     document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
         const tabName = link.getAttribute('data-tab');
         
         if (tabName) {
             const requiredPermission = tabPermissions[tabName];
             
-            // ========================================================
-            // ✅ DÉBUT DE LA MODIFICATION TEMPORAIRE
-            // ========================================================
-
-            // On affiche l'onglet si l'utilisateur a la permission,
-            // OU si c'est l'onglet 'crew' ET que l'utilisateur est un agent qui peut voir les réservations.
-            if (userPermissions.includes(requiredPermission) || (tabName === 'crew' && userPermissions.includes('view_reservations'))) {
+            // Logique stricte : on affiche l'onglet UNIQUEMENT si l'utilisateur a la permission requise.
+            if (userPermissions.includes(requiredPermission)) {
                 link.parentElement.style.display = 'block';
             } else {
                 link.parentElement.style.display = 'none';
             }
-            
-            // ========================================================
-            // ✅ FIN DE LA MODIFICATION TEMPORAIRE
-            // ========================================================
         }
     });
 
+    // Cas spécial pour le lien "Paramètres"
     const settingsLink = document.querySelector('.nav-link[onclick*="openSettingsModal"]');
     if (settingsLink) {
         if (userPermissions.includes('manage_settings')) {
@@ -2941,7 +2938,6 @@ function showDashboard() {
         }
     }
 }
-
         // ============================================
         // ⏱️ INACTIVITÉ
         // ============================================
