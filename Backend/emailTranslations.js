@@ -32,7 +32,11 @@ const translations = {
     nav_contact: "Contact",
     nav_my_bookings: "Mes Réservations",
     pdf_total_paid: "TOTAL PAYÉ",
-    pdf_travel_partner: "Votre partenaire de voyage"
+    pdf_travel_partner: "Votre partenaire de voyage",
+    email_mobile_payment_title: "📱 Paiement Mobile",
+    email_booking_reference: "Référence",
+    email_confirmed_button: "Accéder à mes réservations",
+
 
     },
   en: {
@@ -77,7 +81,13 @@ const translations = {
     nav_contact: "Contact",
     nav_my_bookings: "My Bookings",
     pdf_total_paid: "TOTAL PAID",
-    pdf_travel_partner: "Your travel partner"
+    pdf_travel_partner: "Your travel partner",
+
+    email_mobile_payment_title: "📱 Mobile Payment",
+    email_booking_reference: "Reference",
+    // ------------------
+    
+    email_confirmed_button: "Go to My Bookings",
 
 
     // ... (mettez les traductions anglaises ici)
