@@ -2247,53 +2247,59 @@ body('coords').optional({ checkFalsy: true }).isString()
 
 
 
+// DANS server.js
+
 app.post("/api/admin/report-requests/:bookingNumber/approve",
   authenticateToken,
   [
-    body('transactionProof').optional().isString().trim() 
+    body('transactionProof').optional().isString().trim()
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    
+
     try {
       const { bookingNumber } = req.params;
       let { transactionProof } = req.body;
-      
-      console.log(`✅ Validation de la demande de report pour ${bookingNumber}`);
-      
+      const adminUsername = req.user.username; // On récupère le nom de l'admin dès le début
+
+      console.log(`✅ Validation de la demande de report pour ${bookingNumber} par ${adminUsername}`);
+
       const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
       if (!reservation || !reservation.reportRequest) {
         return res.status(404).json({ error: "Demande de report introuvable ou déjà traitée." });
       }
-      
+
       const request = reservation.reportRequest;
 
-      if (request.paymentMethod === 'AGENCY') {
-          transactionProof = `AGENCE-PAY-${Date.now()}`;
-          console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
-      } 
-      else if (!transactionProof && request.paymentMethod !== 'AGENCY') {
-          return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
+      // --- Logique de validation de la preuve de paiement ---
+      if (request.cost.totalCost > 0) { // On ne vérifie la preuve que si un paiement était requis
+        if (request.paymentMethod === 'AGENCY') {
+            transactionProof = transactionProof || `AGENCE-PAY-${Date.now()}`;
+            console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
+        } else if (!transactionProof || transactionProof.trim() === '') {
+            return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
+        }
       }
 
       const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
       if (!newTrip) {
         return res.status(404).json({ error: "Le voyage cible n'existe plus." });
       }
-      
+
       const requiredSeatsCount = reservation.passengers.length;
       const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
       if (availableSeats.length < requiredSeatsCount) {
-        return res.status(409).json({ error: `Pas assez de sièges.` });
+        return res.status(409).json({ error: `Pas assez de sièges disponibles.` });
       }
-      
+
+      // Libérer les anciens sièges et occuper les nouveaux
       await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
       await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
-      
-      // La création de la nouvelle réservation
+
+      // Création de la nouvelle réservation
       const newBookingNumber = generateBookingNumber();
       const newPrice = newTrip.route.price * requiredSeatsCount;
       const newReservation = {
@@ -2318,17 +2324,18 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
             reportedAt: new Date(),
             totalCost: request.cost.totalCost,
             initiatedBy: "client",
-            approvedBy: req.user.username,
-            transactionProof
+            approvedBy: adminUsername, // On utilise la variable définie plus haut
+            transactionProof: transactionProof || null
           }
         ],
         createdAt: new Date()
       };
       
+      // Nettoyage de l'objet pour la nouvelle réservation
       delete newReservation.reportedAt;
       delete newReservation.replacementReservation;
       delete newReservation.reportRequest;
-      delete newReservation.replacementBookingNumber; // On nettoie l'ancien au cas où
+      delete newReservation.replacementBookingNumber;
 
       await reservationsCollection.insertOne(newReservation);
       
@@ -2340,16 +2347,16 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
             status: "Reporté", 
             reportedAt: new Date(), 
             replacementReservation: newReservation._id.toString(), 
-            replacementBookingNumber: newReservation.bookingNumber, // ✅ On ajoute le numéro du nouveau billet
+            replacementBookingNumber: newReservation.bookingNumber,
             'reportRequest.status': 'Approuvé', 
             'reportRequest.approvedAt': new Date(), 
-            'reportRequest.approvedBy': req.user.username, 
-            'reportRequest.transactionProof': transactionProof 
+            'reportRequest.approvedBy': adminUsername, // On utilise la variable
+            'reportRequest.transactionProof': transactionProof || null
           }
         }
       );
       
-      console.log(`✅✅ Report validé par admin. Ancien: ${bookingNumber}, Nouveau: ${newBookingNumber}`);
+      console.log(`✅✅ Report validé par ${adminUsername}. Ancien: ${bookingNumber}, Nouveau: ${newBookingNumber}`);
       
       sendReportConfirmedEmail(reservation, newReservation);
 
@@ -2883,6 +2890,8 @@ app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) =>
 // --- F. La route générique 'action' à la toute fin ---
 // --- F. La route générique 'action' à la toute fin ---
 
+// DANS server.js
+
 app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, res) => {
     const { id, action } = req.params;
     if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de réservation invalide." });
@@ -2898,9 +2907,17 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             const { transactionProof } = req.body;
             if (!transactionProof || transactionProof.trim() === '') return res.status(400).json({ error: "Une preuve de transaction est requise." });
 
+            // Votre code est déjà correct ici, on le conserve.
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
-                { $set: { status: "Confirmé", confirmedAt: new Date(), "paymentDetails.transactionProof": transactionProof.trim(), "paymentDetails.confirmedByAdmin": req.user.username } }
+                { 
+                    $set: { 
+                        status: "Confirmé", 
+                        confirmedAt: new Date(), 
+                        "paymentDetails.transactionProof": transactionProof.trim(),
+                        "paymentDetails.confirmedByAdmin": req.user.username 
+                    } 
+                }
             );
             
             const updatedReservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
@@ -2928,10 +2945,20 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                 );
             }
 
+            // ========================================================
+            // ✅ MISE À JOUR ICI
+            // ========================================================
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
-                { $set: { status: "Annulé", cancelledAt: new Date(), cancelledBy: "admin" } }
+                { 
+                    $set: { 
+                        status: "Annulé", 
+                        cancelledAt: new Date(), 
+                        cancelledBy: req.user.username // On remplace "admin" par le nom de l'utilisateur
+                    } 
+                }
             );
+            // ========================================================
             
             // TODO: Envoyer un email d'annulation au client
             
