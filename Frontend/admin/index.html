@@ -3204,76 +3204,84 @@ function showDashboard() {
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
-        function renderTable(reservations) {
-            const tbody = document.getElementById('reservations-body');
-            if (!tbody) {
-                console.error("❌ Élément 'reservations-body' introuvable !");
-                return;
-            }
+      // DANS admin/index.html
 
-            if (!reservations || reservations.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
-                return;
-            }
+function renderTable(reservations) {
+    const tbody = document.getElementById('reservations-body');
+    if (!tbody) {
+        console.error("❌ Élément 'reservations-body' introuvable !");
+        return;
+    }
 
-            tbody.innerHTML = reservations.map(r => {
-                const p = r.passengers?.[0] || {};
-                const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
-                const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+    if (!reservations || reservations.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
+        return;
+    }
 
-                // ==========================================================
-                // ✅ CORRECTION DE LA LOGIQUE D'AFFICHAGE DE LA PREUVE
-                // ==========================================================
-                const proof =
-                    r.paymentDetails?.transactionProof ||       // 1. Preuve validée par l'admin
-                    r.paymentDetails?.clientTransactionId ||  // 2. Preuve soumise par le client
-                    r.agencyPaymentCode ||                    // 3. Code de paiement agence
-                    'N/A';                                    // 4. Si rien n'est trouvé
-                // ==========================================================
+    tbody.innerHTML = reservations.map(r => {
+        const p = r.passengers?.[0] || {};
+        const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning', 'Reporté': 'gray' };
+        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
 
-                const method = r.paymentMethod || 'N/A';
+        const proof = r.paymentDetails?.transactionProof || r.paymentDetails?.clientTransactionId || r.agencyPaymentCode || 'N/A';
+        const method = r.paymentMethod || 'N/A';
 
-                let countdownHTML = '';
-                if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-                    countdownHTML = `
+        let countdownHTML = '';
+        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+            countdownHTML = `
                 <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
                     <span class="countdown-icon">⏱️</span>
                     <span class="countdown-time">Calcul...</span>
-                </div>
-            `;
-                }
+                </div>`;
+        }
 
-                // --- 3. Gestion de l'affichage Aller-Retour (NOUVEAU) ---
-                const isRoundTrip = r.returnRoute ? true : false;
-                const tripTypeBadge = isRoundTrip
-                    ? `<span class="badge" style="background: rgba(0, 217, 255, 0.15); color: #00d9ff; font-size: 0.65rem; border: 1px solid rgba(0, 217, 255, 0.3); margin-top: 4px;">Aller-Retour</span>`
-                    : `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: #b0bac9; font-size: 0.65rem; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 4px;">Aller Simple</span>`;
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR : Traçabilité de l'admin
+        // ========================================================
+        
+        let statusHTML = `<span class="badge ${badgeClass}">${r.status}</span>`;
+        
+        // Si la réservation est confirmée, on affiche qui l'a confirmée
+        if (r.status === 'Confirmé' && r.paymentDetails?.confirmedByAdmin) {
+            statusHTML += `
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: left;">
+                    Validé par: <strong style="color: var(--primary);">${r.paymentDetails.confirmedByAdmin}</strong>
+                </div>`;
+        }
+        // Si la réservation est annulée, on affiche qui l'a annulée
+        else if (r.status === 'Annulé' && r.cancelledBy) {
+            statusHTML += `
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: left;">
+                    Annulé par: <strong style="color: var(--status-cancelled);">${r.cancelledBy}</strong>
+                </div>`;
+        }
 
-                const outboundInfo = `
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
+
+        const isRoundTrip = r.returnRoute ? true : false;
+        
+        const outboundInfo = `
             <div style="margin-bottom: 6px;">
                 <strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br>
                 <small class="text-muted">🕐 ${r.route.departure}</small>
-            </div>
-        `;
+            </div>`;
 
-                const returnInfo = isRoundTrip ? `
+        const returnInfo = isRoundTrip ? `
             <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);">
                 <strong style="color: #ffa726;">↩ Retour :</strong> ${r.returnRoute.from} → ${r.returnRoute.to}<br>
                 <small class="text-muted">📅 ${new Date(r.returnDate).toLocaleDateString('fr-FR')} à ${r.returnRoute.departure}</small>
-            </div>
-        ` : '';
+            </div>` : '';
 
-                return `
+        return `
             <tr>
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>
                     ${new Date(r.date).toLocaleDateString('fr-FR')}<br>
                     <strong class="text-xs" style="color: var(--accent);">Bus: ${r.busIdentifier || 'N/A'}</strong>
                 </td>
-                
-                <td>${outboundInfo}
-                    ${returnInfo}
-</td>
+                <td>${outboundInfo}${returnInfo}</td>
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
@@ -3286,21 +3294,21 @@ function showDashboard() {
                     </div>
                 </td>
                 <td>
-                    <span class="badge ${badgeClass}">${r.status}</span>
+                    ${statusHTML}
                     ${countdownHTML} 
                 </td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
                     ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
                     <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')">💺</button>
-                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
+                    ${!['Annulé', 'Expiré', 'Reporté'].includes(r.status) ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
                 </td>
             </tr>
         `;
-            }).join('');
+    }).join('');
 
-            startCountdownUpdates();
-        }
+    startCountdownUpdates();
+}
         // Dans Admin/index.html - Ajouter après renderTable()
 
         // ============================================
@@ -6530,93 +6538,89 @@ function setupEventListeners() {
         // ============================================
         // 📋 RENDU DU TABLEAU DES REPORTS (CORRIGÉ)
         // ============================================
-        function renderReportRequestsTable(pending, processed) {
-            const tbody = document.getElementById('report-requests-body');
-            if (!tbody) return;
+       function renderReportRequestsTable(pending, processed) {
+    const tbody = document.getElementById('report-requests-body');
+    if (!tbody) return;
 
-            if (pending.length === 0 && processed.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center">Aucun report trouvé.</td></tr>`;
-                return;
-            }
+    if (pending.length === 0 && processed.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center">Aucun report trouvé.</td></tr>`;
+        return;
+    }
 
-            let htmlContent = '';
+    let htmlContent = '';
 
-            const createRowHTML = (req) => {
-                const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
-                // Sécurité si reportRequest est manquant (cas rares)
-                const reportReq = req.reportRequest || {};
-                const targetTrip = reportReq.targetTrip || {};
+    const createRowHTML = (req) => {
+        const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
+        const reportReq = req.reportRequest || {};
+        const targetTrip = reportReq.targetTrip || {};
 
-                let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
+        let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
 
-                // --- CAS 1 : EN ATTENTE ---
-                if (req.status === 'En attente de report') {
-                    statusBadge = '<span class="badge badge-warning">En attente</span>';
-
-                    // Trajets
-                    fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
-                    toHTML = `${targetTrip.route?.from || '?'} → ${targetTrip.route?.to || '?'}<br><small>📅 ${targetTrip.date ? new Date(targetTrip.date).toLocaleDateString('fr-FR') : '?'}</small>`;
-
-                    // Paiement
-                    const cost = reportReq.cost?.totalCost || 0;
-                    if (cost > 0) {
-                        const method = reportReq.paymentMethod || 'N/A';
-                        const proof = method === 'AGENCY' ? (reportReq.agencyPaymentCode || 'Code Agence') : (reportReq.transactionId || 'Non reçu');
-                        const proofClass = !reportReq.transactionId && method !== 'AGENCY' ? 'text-danger' : 'text-success';
-
-                        paymentHTML = `
+        // --- CAS 1 : EN ATTENTE --- (INCHANGÉ)
+        if (req.status === 'En attente de report') {
+            statusBadge = '<span class="badge badge-warning">En attente</span>';
+            fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
+            toHTML = `${targetTrip.route?.from || '?'} → ${targetTrip.route?.to || '?'}<br><small>📅 ${targetTrip.date ? new Date(targetTrip.date).toLocaleDateString('fr-FR') : '?'}</small>`;
+            const cost = reportReq.cost?.totalCost || 0;
+            if (cost > 0) {
+                const method = reportReq.paymentMethod || 'N/A';
+                const proof = method === 'AGENCY' ? (reportReq.agencyPaymentCode || 'Code Agence') : (reportReq.transactionId || 'Non reçu');
+                const proofClass = !reportReq.transactionId && method !== 'AGENCY' ? 'text-danger' : 'text-success';
+                paymentHTML = `
                     <div style="font-size: 0.85rem;">
                         <strong style="color: #ffa726;">À PAYER: ${formatPrice(cost)} FCFA</strong><br>
                         <span class="badge badge-gray" style="font-size: 0.7em;">${method}</span>
                         <div class="${proofClass}" style="margin-top: 4px; font-weight: bold; font-family: monospace;">${proof}</div>
-                    </div>
-                `;
-                    } else {
-                        paymentHTML = `<span class="badge badge-success">Gratuit</span>`;
-                    }
-
-                    requestedDate = reportReq.requestedAt ? new Date(reportReq.requestedAt).toLocaleString('fr-FR') : 'N/A';
-
-                    // ✅ BOUTONS D'ACTION (Toujours visibles pour ce statut)
-                    // On passe une chaîne vide si pas de preuve, l'admin pourra valider manuellement
-                    const proofArg = (reportReq.paymentMethod === 'AGENCY') ? 'AGENCY_CODE' : (reportReq.transactionId || '');
-
-                    actionsHTML = `
+                    </div>`;
+            } else {
+                paymentHTML = `<span class="badge badge-success">Gratuit</span>`;
+            }
+            requestedDate = reportReq.requestedAt ? new Date(reportReq.requestedAt).toLocaleString('fr-FR') : 'N/A';
+            const proofArg = (reportReq.paymentMethod === 'AGENCY') ? 'AGENCY_CODE' : (reportReq.transactionId || '');
+            actionsHTML = `
                 <div class="actions-cell">
                     <button class="btn btn-sm btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${proofArg}')" title="Valider le report">✅ Valider</button>
                     <button class="btn btn-sm btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')" title="Refuser">❌</button>
-                </div>
-            `;
-                }
+                </div>`;
+        }
+        
+        // --- CAS 2 : DÉJÀ REPORTÉ (Obsolète) ---
+        else if (req.status === 'Reporté') {
+            statusBadge = '<span class="badge badge-gray">Reporté</span>';
 
-                // --- CAS 2 : DÉJÀ REPORTÉ (Obsolète) ---
-                else if (req.status === 'Reporté') {
-                    statusBadge = '<span class="badge badge-gray">Reporté</span>';
-                    fromHTML = `<span style="text-decoration: line-through;">${req.route.from} → ${req.route.to}</span>`;
-                    toHTML = `<small>Remplacé par <strong style="color: white;">${req.replacementBookingNumber || '...'}</strong></small>`;
-                    paymentHTML = `-`;
-                    requestedDate = req.reportedAt ? new Date(req.reportedAt).toLocaleDateString('fr-FR') : '-';
-                    actionsHTML = `<span>👁️</span>`;
-                }
+            // ========================================================
+            // ✅ DÉBUT DE LA MISE À JOUR
+            // ========================================================
+            // On affiche qui a approuvé le report sur l'ancien billet
+            if (req.reportRequest?.approvedBy) {
+                statusBadge += `
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        Approuvé par: <strong style="color: var(--primary);">${req.reportRequest.approvedBy}</strong>
+                    </div>`;
+            }
+            // ========================================================
+            // ✅ FIN DE LA MISE À JOUR
+            // ========================================================
+            
+            fromHTML = `<span style="text-decoration: line-through;">${req.route.from} → ${req.route.to}</span>`;
+            toHTML = `<small>Remplacé par <strong style="color: white; cursor: pointer;" onclick="viewReportDetails('${req.replacementBookingNumber}')">${req.replacementBookingNumber || '...'}</strong></small>`;
+            paymentHTML = `-`;
+            requestedDate = req.reportedAt ? new Date(req.reportedAt).toLocaleDateString('fr-FR') : '-';
+            actionsHTML = `<span title="Report traité">✓</span>`;
+        }
 
-                // --- CAS 3 : NOUVEAU BILLET (Validé) ---
-                else if (req.originalReservation) {
-                    statusBadge = '<span class="badge badge-success">Nouveau Billet</span>';
-                    // Récupérer l'historique du dernier report
-                    const history = req.reportHistory && req.reportHistory.length > 0 ? req.reportHistory[req.reportHistory.length - 1] : {};
+        // --- CAS 3 : NOUVEAU BILLET (Validé) --- (INCHANGÉ, la logique était déjà dans le cas 2)
+        else if (req.originalReservation) {
+            statusBadge = '<span class="badge badge-success">Nouveau Billet</span>';
+            const history = req.reportHistory && req.reportHistory.length > 0 ? req.reportHistory[req.reportHistory.length - 1] : {};
+            fromHTML = `<small class="text-muted">Ancien: ${new Date(history.from?.date).toLocaleDateString('fr-FR') || '?'}</small>`;
+            toHTML = `${req.route.from} → ${req.route.to}<br><strong style="color: #73d700;">📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</strong>`;
+            paymentHTML = history.totalCost > 0 ? `<strong>${formatPrice(history.totalCost)} FCFA</strong><br><span class="text-success">Payé</span>` : `<span class="badge badge-gray">Gratuit</span>`;
+            requestedDate = new Date(req.createdAt).toLocaleDateString('fr-FR');
+            actionsHTML = `<span>-</span>`;
+        }
 
-                    fromHTML = `<small class="text-muted">Ancien: ${new Date(history.from?.date).toLocaleDateString('fr-FR') || '?'}</small>`;
-                    toHTML = `${req.route.from} → ${req.route.to}<br><strong style="color: #73d700;">📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</strong>`;
-
-                    paymentHTML = history.totalCost > 0
-                        ? `<strong>${formatPrice(history.totalCost)} FCFA</strong><br><span class="text-success">Payé</span>`
-                        : `<span class="badge badge-gray">Gratuit</span>`;
-
-                    requestedDate = new Date(req.createdAt).toLocaleDateString('fr-FR');
-                    actionsHTML = `<span>✓</span>`;
-                }
-
-                return `
+        return `
             <tr style="${req.status === 'Reporté' ? 'opacity: 0.6; background: rgba(0,0,0,0.2);' : ''}">
                 <td><strong class="font-mono">${req.bookingNumber}</strong><br>${statusBadge}</td>
                 <td>${passenger.name}<br><small class="text-muted">${req.customerPhone || passenger.phone}</small></td>
@@ -6625,20 +6629,35 @@ function setupEventListeners() {
                 <td>${paymentHTML}</td>
                 <td class="text-xs">${requestedDate}</td>
                 <td>${actionsHTML}</td>
-            </tr>
-        `;
-            };
+            </tr>`;
+    };
 
-            if (pending.length > 0) htmlContent += pending.map(createRowHTML).join('');
+    if (pending.length > 0) {
+        htmlContent += pending.map(createRowHTML).join('');
+    }
 
-            if (processed.length > 0) {
-                htmlContent += `<tr><td colspan="7" style="background: rgba(255, 255, 255, 0.05); text-align: center; font-weight: bold; padding: 8px; letter-spacing: 1px;">HISTORIQUE</td></tr>`;
-                htmlContent += processed.map(createRowHTML).join('');
-            }
+    if (processed.length > 0) {
+        htmlContent += `<tr><td colspan="7" style="background: rgba(255, 255, 255, 0.05); text-align: center; font-weight: bold; padding: 8px; letter-spacing: 1px;">HISTORIQUE</td></tr>`;
+        htmlContent += processed.map(createRowHTML).join('');
+    }
 
-            tbody.innerHTML = htmlContent;
+    tbody.innerHTML = htmlContent;
+}
+
+// Nouvelle fonction pour voir les détails du nouveau billet depuis l'ancien
+function viewReportDetails(bookingNumber) {
+    // On simule un clic sur l'onglet des réservations
+    switchTab('reservations');
+
+    // On met le numéro du nouveau billet dans la barre de recherche et on filtre
+    setTimeout(() => {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.value = bookingNumber;
+            applyFilters();
         }
-
+    }, 100); // Petit délai pour laisser le temps à l'onglet de se charger
+}
         // ============================================
         // ✅ VALIDATION REPORT (CORRIGÉE)
         // ============================================
