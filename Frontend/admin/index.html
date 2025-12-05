@@ -3315,39 +3315,40 @@
                 minDate: "today",
             });
         });
+// DANS admin/index.html, dans <script>
 
-        function showDetails(reservationId) {
-            const r = allReservations.find((res) => res._id === reservationId);
-            if (!r) {
-                showNotification(
-                    "Erreur : Impossible de trouver les détails de cette réservation.",
-                    "error"
-                );
-                return;
-            }
+function showDetails(reservationId) {
+    const r = allReservations.find((res) => res._id === reservationId);
+    if (!r) {
+        showNotification(
+            "Erreur : Impossible de trouver les détails de cette réservation.",
+            "error"
+        );
+        return;
+    }
 
-            document.getElementById(
-                "modal-title"
-            ).textContent = `Détails - ${r.bookingNumber}`;
+    document.getElementById(
+        "modal-title"
+    ).textContent = `Détails - ${r.bookingNumber}`;
 
-            // ✅ SECTION PAIEMENT EN AGENCE SI APPLICABLE
-            let paymentInfoHTML = "";
-            if (
-                r.status === "En attente de paiement" &&
-                r.paymentDeadline &&
-                r.agency
-            ) {
-                const deadline = new Date(r.paymentDeadline);
-                const now = new Date();
-                const timeLeft = deadline - now;
+    // SECTION PAIEMENT EN AGENCE SI APPLICABLE (INCHANGÉE)
+    let paymentInfoHTML = "";
+    if (
+        r.status === "En attente de paiement" &&
+        r.paymentDeadline &&
+        r.agency
+    ) {
+        const deadline = new Date(r.paymentDeadline);
+        const now = new Date();
+        const timeLeft = deadline - now;
 
-                if (timeLeft > 0) {
-                    const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
-                    const minutesLeft = Math.floor(
-                        (timeLeft % (1000 * 60 * 60)) / (1000 * 60)
-                    );
+        if (timeLeft > 0) {
+            const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutesLeft = Math.floor(
+                (timeLeft % (1000 * 60 * 60)) / (1000 * 60)
+            );
 
-                    paymentInfoHTML = `
+            paymentInfoHTML = `
                 <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe7a1 100%); border-left: 5px solid #ff9800; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                     <h4 style="margin: 0 0 15px 0; color: #e65100; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 24px;">⏰</span>
@@ -3363,8 +3364,7 @@
                         </div>
                     </div>
                     <div style="background: white; padding: 15px; border-radius: 6px;">
-                        <div style="font-weight: 700; margin-bottom: 8px;">📍 ${r.agency.name
-                        }</div>
+                        <div style="font-weight: 700; margin-bottom: 8px;">📍 ${r.agency.name}</div>
                         <div style="font-size: 13px; color: #666; line-height: 1.6;">
                             ${r.agency.address}<br>
                             📞 ${r.agency.phone}<br>
@@ -3373,8 +3373,8 @@
                     </div>
                 </div>
             `;
-                } else {
-                    paymentInfoHTML = `
+        } else {
+            paymentInfoHTML = `
                 <div style="background: #ffebee; border-left: 5px solid #ef5350; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                     <h4 style="margin: 0; color: #c62828; font-weight: 700; display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 24px;">❌</span>
@@ -3382,29 +3382,57 @@
                     </h4>
                 </div>
             `;
-                }
-            }
+        }
+    }
 
-            document.getElementById("modal-body").innerHTML = `
+    document.getElementById("modal-body").innerHTML = `
         ${paymentInfoHTML}
         
         <h4 style="font-weight: 700; margin-bottom: 15px; color: var(--primary);">👥 Passagers</h4>
         <ul style="list-style-type: none; padding: 0; margin-bottom: 20px;">
-            ${r.passengers
-                    .map(
-                        (p) => `
-                <li style="padding: 12px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${p.name}</strong><br>
-                        <span style="font-size: 13px; color: var(--text-muted);">${p.phone}</span>
-                    </div>
-                    <span style="background: var(--dark-elevated); padding: 4px 12px; border-radius: 6px; font-weight: 700;">
-                        💺 ${p.seat}
-                    </span>
-                </li>
-            `
-                    )
-                    .join("")}
+            ${r.passengers.map((p) => {
+                // ========================================================
+                // ✅ DÉBUT DE LA MISE À JOUR
+                // ========================================================
+                
+                let baggageInfo = '';
+                // On vérifie si des bagages supplémentaires ont été ajoutés pour ce passager
+                if (p.baggage && (p.baggage.standard > 0 || p.baggage.oversized > 0)) {
+                    const standardBags = p.baggage.standard > 0 ? `<li>🧳 Standard: <strong>${p.baggage.standard}</strong></li>` : '';
+                    const oversizedBags = p.baggage.oversized > 0 ? `<li>🎒 Hors format: <strong>${p.baggage.oversized}</strong></li>` : '';
+                    
+                    // On crée le bloc HTML uniquement si nécessaire
+                    baggageInfo = `
+                        <div style="margin-top: 8px; padding-left: 15px; border-left: 2px solid var(--dark-border);">
+                            <strong style="color: var(--primary); font-size: 0.8rem;">BAGAGES SUPPLÉMENTAIRES :</strong>
+                            <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">
+                                ${standardBags}
+                                ${oversizedBags}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                // On retourne le HTML complet pour la ligne du passager
+                return `
+                    <li style="padding: 12px; border-bottom: 1px solid var(--dark-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${p.name}</strong><br>
+                                <span style="font-size: 13px; color: var(--text-muted);">${p.phone}</span>
+                            </div>
+                            <span style="background: var(--dark-elevated); padding: 4px 12px; border-radius: 6px; font-weight: 700;">
+                                💺 ${p.seat}
+                            </span>
+                        </div>
+                        ${baggageInfo}
+                    </li>
+                `;
+                
+                // ========================================================
+                // ✅ FIN DE LA MISE À JOUR
+                // ========================================================
+            }).join("")}
         </ul>
         
         <hr style="margin: 20px 0; border-color: var(--dark-border);">
@@ -3417,15 +3445,13 @@
             </div>
             <div style="display: flex; justify-content: space-between;">
                 <span>Total :</span>
-                <strong style="color: var(--primary); font-size: 18px;">${r.totalPrice
-                }</strong>
+                <strong style="color: var(--primary); font-size: 18px;">${r.totalPrice}</strong>
             </div>
         </div>
     `;
 
-            document.getElementById("details-modal").classList.add("active");
-        }
-
+    document.getElementById("details-modal").classList.add("active");
+}
         // DANS Admin/index.html, REMPLACEZ la fonction closeModal
 
         // Nouvelle fonction "maîtresse" pour tout fermer

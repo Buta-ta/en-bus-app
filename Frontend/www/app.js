@@ -100,7 +100,8 @@ async function initNotifications() {
                         body: notification.body || '',
                         schedule: { at: new Date(Date.now() + 1000) },
                         channelId: 'reminders',
-                        extra: notification.data
+                        extra: notification.data,
+                        smallIcon: 'ic_notification' 
                     }]
                 });
                 console.log("🔔 Notification affichée dans status bar");
@@ -140,7 +141,8 @@ async function scheduleReminderNotifications(reservation) {
             title: "Rappel voyage demain",
             body: `${reservation.route.from} vers ${reservation.route.to} a ${reservation.route.departure}`,
             schedule: { at: j1 },
-            channelId: 'reminders'
+            channelId: 'reminders',
+            smallIcon: 'ic_notification' 
         });
     }
 
@@ -153,7 +155,8 @@ async function scheduleReminderNotifications(reservation) {
             title: "Depart dans 2 heures",
             body: `Presentez-vous a la gare`,
             schedule: { at: h2 },
-            channelId: 'reminders'
+            channelId: 'reminders',
+            smallIcon: 'ic_notification' 
         });
     }
 
@@ -1986,21 +1989,27 @@ async function generateTicketPDF(reservation, isReturn = false) {
 
             console.log('PDF sauvegarde :', result.uri);
 
-            if (LocalNotifications) {
+                        if (LocalNotifications) {
                 try {
                    const permResult = await LocalNotifications.requestPermissions();
                     if (permResult.display === 'granted') {
+                        // ========================================================
+                        // ✅ DÉBUT DE LA CORRECTION
+                        // ========================================================
                         await LocalNotifications.schedule({
                             notifications: [{
-                                // ✅ LIGNES MODIFIÉES
                                 title: translation.local_notif_ticket_download_title || 'Billet téléchargé',
                                 body: translation.local_notif_ticket_download_body ? translation.local_notif_ticket_download_body(fileName) : `${fileName} enregistré`,
-                                // --------------------
                                 id: Math.floor(Math.random() * 100000),
                                 schedule: { at: new Date(Date.now() + 1000) },
-                                sound: 'default'
+                                sound: 'default',
+                                // ON AJOUTE CETTE LIGNE POUR L'ICÔNE :
+                                smallIcon: 'ic_notification' // Utilise l'icône de notification par défaut de Capacitor
                             }]
                         });
+                        // ========================================================
+                        // ✅ FIN DE LA CORRECTION
+                        // ========================================================
                     }
                 } catch (e) {
                     console.warn('Notification echouee:', e);
@@ -2020,6 +2029,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
         Utils.showToast(translation?.error_generating_ticket || 'Erreur generation billet', 'error');
     }
 }
+
 // ============================================
 // INITIALISATION DE L'APPLICATION
 // ============================================
@@ -3061,6 +3071,8 @@ function setupPassengerSelector() {
     updateDisplay();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
+// DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
+
 function setupPaymentMethodToggle() {
     const radios = document.querySelectorAll('input[name="payment"]');
     const mtnDetails = document.getElementById("mtn-details");
@@ -3069,43 +3081,55 @@ function setupPaymentMethodToggle() {
     
     if (!radios.length) return;
     
-    // --- 1. Traduire le texte initial pour l'option agence ---
+    // --- Traduire le texte initial pour l'option agence ---
     const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+    const translation = (translations && translations[lang]) ? translations[lang] : {};
     const agencySubtitle = document.getElementById('agency-payment-subtitle');
     if (agencySubtitle && typeof translation.payment_agency_desc === 'function') {
         agencySubtitle.textContent = translation.payment_agency_desc(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
     }
     
-    // --- 2. Gérer les changements de sélection ---
-    radios.forEach(radio => {
-        radio.addEventListener("change", () => {
-            // Cacher tous les détails
-            if (mtnDetails) mtnDetails.style.display = "none";
-            if (airtelDetails) airtelDetails.style.display = "none";
-            if (agencyDetails) agencyDetails.style.display = "none";
-            
-            // Afficher le bon détail
-            if (radio.checked) {
-                if (radio.value === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
-                else if (radio.value === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
-                else if (radio.value === "agency" && agencyDetails) agencyDetails.style.display = "flex";
-            }
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : Refactorisation de la logique
+    // ========================================================
 
-            // ===================================
-            // ✅ LOGIQUE DU DÉCOMPTEUR CORRIGÉE
-            // ===================================
-            // Si on sélectionne "Agence", on démarre le décompteur.
-            if (radio.value === 'agency' && radio.checked) {
-                startAgencyCountdown();
-            } 
-            // Si on sélectionne une autre option, on arrête le décompteur.
-            else {
-                stopAgencyCountdown();
-            }
-            // ===================================
-        });
+    // Fonction interne pour gérer la logique d'affichage
+    const updateDisplay = () => {
+        const selectedRadio = document.querySelector('input[name="payment"]:checked');
+        if (!selectedRadio) return; // Sécurité si rien n'est coché
+
+        const selectedValue = selectedRadio.value;
+
+        // Cacher tous les détails
+        if (mtnDetails) mtnDetails.style.display = "none";
+        if (airtelDetails) airtelDetails.style.display = "none";
+        if (agencyDetails) agencyDetails.style.display = "none";
+        
+        // Afficher le bon détail
+        if (selectedValue === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
+        else if (selectedValue === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
+        else if (selectedValue === "agency" && agencyDetails) agencyDetails.style.display = "flex";
+
+        // Gérer le décompteur de l'agence
+        if (selectedValue === 'agency') {
+            startAgencyCountdown();
+        } else {
+            stopAgencyCountdown();
+        }
+    };
+
+    // --- Attacher les écouteurs d'événements ---
+    radios.forEach(radio => {
+        radio.addEventListener("change", updateDisplay);
     });
+
+    // --- Appel initial pour afficher le bon état au chargement ---
+    // C'est cette ligne qui résout le bug.
+    updateDisplay();
+
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
 }
 
 // ============================================

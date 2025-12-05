@@ -8,10 +8,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- ✅ AJOUTE CES 3 LIGNES POUR LES NOTIFICATIONS -->
+        <!-- ============================================ -->
+        <!-- ✅ DÉBUT DE LA CORRECTION                     -->
+        <!-- ============================================ -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_notification" />
+            android:resource="@drawable/ic_notification" /> <!-- On utilise @drawable au lieu de @mipmap -->
+        <!-- ============================================ -->
+        <!-- ✅ FIN DE LA CORRECTION                       -->
+        <!-- ============================================ -->
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
@@ -20,7 +25,6 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="reminders" />
-        <!-- FIN DES AJOUTS -->
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
@@ -46,6 +50,8 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- La permission WRITE_EXTERNAL_STORAGE est obsolète sur les versions récentes d'Android,
+         mais on peut la laisser pour la compatibilité. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
 </manifest>

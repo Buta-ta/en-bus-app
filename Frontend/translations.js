@@ -111,6 +111,7 @@ const translations = {
     filter_departure_location: "Lieu de départ",
     filter_all_locations: "Tous les lieux",
     filter_toggle_button: "🌪️ Filtrer & Trier",
+    filter_time_night: "Nuit (21h-5h)",
 
 
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
@@ -370,6 +371,12 @@ const translations = {
     error_search_missing_destination: "Veuillez sélectionner une ville d'arrivée.",
     error_search_missing_date: "Veuillez sélectionner une date de voyage.",
 
+    // --- Traductions pour la confirmation d'absence de retour ---
+    info_no_return_trips_found: "Aucun trajet retour disponible pour cette date",
+    confirm_no_return_title: "Aucun retour trouvé",
+    confirm_no_return_desc: "Aucun voyage retour n'a été trouvé pour la date sélectionnée. Voulez-vous essayer avec une autre date ?",
+    button_modify_search: "Modifier la recherche",
+
 
 
     // --- Page de Confirmation ---
@@ -408,7 +415,7 @@ const translations = {
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
-    details_connections_title: " Correspondances",
+    details_connections_title: "🔄 Correspondances",
     details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
     details_stops_planned: " Arrêts Prévus",
@@ -456,9 +463,12 @@ const translations = {
       email_report_old_trip_invalid: "(n'est plus valide)",
       email_report_new_trip_label: "Votre NOUVEAU billet :",
       email_report_outro: "Veuillez utiliser ce nouveau billet pour votre voyage.",
+      email_mobile_payment_title: "📱 Paiement Mobile",
+      email_booking_reference: "Référence",
+      email_confirmed_button: "Accéder à mes réservations",
 
 
-      info_loading_popular: "Chargement des meilleures offres...",
+      nfo_loading_popular: "Chargement des meilleures offres...",
 
 // DANS L'OBJET 'en'
 // ... (ajoutez les traductions anglaises correspondantes)
@@ -548,30 +558,10 @@ const translations = {
     confirm_cancel_title: "Annuler la réservation ?",
     confirm_cancel_desc: (num) => `Voulez-vous vraiment annuler ${num} ?`,
     button_confirm: "Confirmer",
-
-
-
-
-    // --- Badge pour les voyages de nuit ---
-    badge_night_trip: "🌙 Voyage de Nuit",
-
-    // --- Filtre de recherche ---
-    filter_time_night: "Nuit (21h - 05h)",
-
-    // --- Affichage de l'arrivée J+1 ---
-    // (Cette traduction n'est pas directement utilisée, 
-    // mais c'est bien de l'avoir pour référence si besoin)
-    arrival_day_offset_badge: (days) => `J+${days}`,
-
-    // --- Panel Admin : Formulaire de programmation ---
-    // (Même si c'est pour l'admin, si un jour tu traduis ton panel, ce sera prêt)
-    admin_form_trip_type: "Type de voyage",
-    admin_form_day_trip: "☀️ Jour",
-    admin_form_night_trip: "🌙 Nuit",
-    admin_form_arrival: "Arrivée",
-    admin_form_arrival_same_day: "Le même jour",
-    admin_form_arrival_next_day: "Le lendemain (J+1)",
-    admin_form_arrival_day_after: "Le surlendemain (J+2)",
+      // --- Animation "Aucun billet trouvé" (Backend) ---
+    not_found_title: "Aucun billet actif trouvé",
+    not_found_desc: "Il semble que les billets enregistrés sur cet appareil ne soient plus valides ou ont été supprimés.",
+    button_plan_new_trip: "Planifier un nouveau voyage",
     },
 
 
@@ -691,6 +681,8 @@ const translations = {
     filter_departure_location: "Departure point",
     filter_all_locations: "All departure locations",
     filter_toggle_button: " Filter & Sort",
+    filter_time_night: "Night (9pm-5am)",
+
 
     
 
@@ -982,7 +974,7 @@ const translations = {
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
     details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
-    details_connections_title: " Connections",
+    details_connections_title: "🔄 Connections",
     details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
     details_stops_planned: " Scheduled Stops",
@@ -1031,6 +1023,14 @@ const translations = {
     email_report_old_trip_invalid: "(is no longer valid)",
     email_report_new_trip_label: "Your NEW Ticket:",
     email_report_outro: "Please use this new ticket for your travel.",
+    // ✅ KEYS ADDED
+    email_mobile_payment_title: "📱 Mobile Payment",
+    email_booking_reference: "Reference",
+    // ------------------
+    
+    email_confirmed_button: "Go to My Bookings",
+    // ✅ CLÉS AJOUTÉES
+    
 
     info_loading_popular: "Loading best deals...",
 
@@ -1116,6 +1116,14 @@ const translations = {
     confirm_cancel_title: "Cancel booking?",
     confirm_cancel_desc: (num) => `Do you really want to cancel ${num}?`,
     button_confirm: "Confirm",
+       // --- Translations for the no-return-found confirmation ---
+    info_no_return_trips_found: "No return trips available for this date",
+    confirm_no_return_title: "No Return Trips Found",
+    confirm_no_return_desc: "No return trips were found for the selected date. Would you like to try another date?",
+    button_modify_search: "Modify Search",
+    not_found_title: "No Active Tickets Found",
+    not_found_desc: "It seems the tickets saved on this device are no longer valid or have been deleted.",
+    button_plan_new_trip: "Plan a New Trip",
      
   }
 }

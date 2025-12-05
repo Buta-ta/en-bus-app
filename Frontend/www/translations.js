@@ -463,9 +463,12 @@ const translations = {
       email_report_old_trip_invalid: "(n'est plus valide)",
       email_report_new_trip_label: "Votre NOUVEAU billet :",
       email_report_outro: "Veuillez utiliser ce nouveau billet pour votre voyage.",
+      email_mobile_payment_title: "📱 Paiement Mobile",
+      email_booking_reference: "Référence",
+      email_confirmed_button: "Accéder à mes réservations",
 
 
-      info_loading_popular: "Chargement des meilleures offres...",
+      nfo_loading_popular: "Chargement des meilleures offres...",
 
 // DANS L'OBJET 'en'
 // ... (ajoutez les traductions anglaises correspondantes)
@@ -1020,6 +1023,14 @@ const translations = {
     email_report_old_trip_invalid: "(is no longer valid)",
     email_report_new_trip_label: "Your NEW Ticket:",
     email_report_outro: "Please use this new ticket for your travel.",
+    // ✅ KEYS ADDED
+    email_mobile_payment_title: "📱 Mobile Payment",
+    email_booking_reference: "Reference",
+    // ------------------
+    
+    email_confirmed_button: "Go to My Bookings",
+    // ✅ CLÉS AJOUTÉES
+    
 
     info_loading_popular: "Loading best deals...",
 
