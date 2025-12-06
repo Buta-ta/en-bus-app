@@ -1,57 +1,254 @@
 
 
 
-// Dans app.js - Version améliorée avec numéro de réservation
 // ============================================
 // CONFIGURATION ET CONSTANTES
 // ============================================
-console.log("--- ✅✅✅ NOUVELLE VERSION DE APP.JS CHARGÉE - " + new Date().toLocaleTimeString() + " ✅✅✅ ---");
+
 // ✅ Configuration API Backend
 // ============================================
 // CONFIGURATION ET CONSTANTES
 // ============================================
 
-// app.js
 
+// app.js
+const API_CONFIG = {
+    baseUrl: 'https://en-bus-app.onrender.com'
+};
 // Fichier : Frontend/app.js
 
-// Détecte si on est en local (sur votre PC) ou en production (sur Vercel)
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-const API_CONFIG = {
-    baseUrl: isLocal
-        ? 'http://localhost:3000'
-        : 'https://en-bus-app.onrender.com' // ✅ METTEZ L'URL DE VOTRE BACKEND RENDER
-};
-
-console.log('API URL configurée :', API_CONFIG.baseUrl);
 
 console.log('API URL:', API_CONFIG.baseUrl);
 
+// DANS app.js, remplacez l'objet CONFIG par ceci
+
 const CONFIG = {
-    CHILD_TICKET_PRICE: 5000,
+    // --- Valeurs qui restent fixes pour l'instant ---
     MAX_BAGGAGE_PER_PERSON: 5,
     SEAT_TOTAL: 61,
     OCCUPANCY_RATE: { min: 0.3, max: 0.5 },
     STORAGE_KEY: 'enbus_reservations',
     
-    // ✅ NOUVEAUX DÉLAIS DE PAIEMENT
-    MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30, // 30 minutes pour MTN/Airtel
+    MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30,
     AGENCY_PAYMENT_DEADLINE_HOURS: 10, 
-    // ✅ CORRECTION : AJOUTER CETTE LIGNE
-    AGENCY_PAYMENT_MIN_HOURS: 12,               // Délai minimum avant départ pour autoriser le paiement en agence (ex: 12h)         // 10 heures pour agence
+    AGENCY_PAYMENT_MIN_HOURS: 12,
     
-    // ✅ NUMÉROS MARCHANDS
     MTN_MERCHANT_NUMBER: '+242 06 150 79 47',
     AIRTEL_MERCHANT_NUMBER: '+242 05 150 79 47',
     
     SCANNER_FPS: 10,
-    SCANNER_QRBOX: 250
+    SCANNER_QRBOX: 250,
+
+    // --- Valeurs par défaut pour les règles dynamiques ---
+    // Celles-ci seront utilisées si l'appel à l'API échoue.
+    DEFAULT_CHILD_MAX_AGE: 6,
+    DEFAULT_CHILD_DISCOUNT_PERCENTAGE: 50,
+};
+
+// ========================================================
+// ✅ NOUVEL OBJET POUR LES RÈGLES DYNAMIQUES
+// ========================================================
+// Cet objet sera rempli par les données venant du serveur.
+let appRules = {
+    ticketing: {
+        childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
+        childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
+    }
+    // Plus tard, on pourra y ajouter d'autres règles :
+    // report: { ... },
+    // fees: { ... }
 };
 // ============================================
 // DONNÉES DE L'APPLICATION
 // ============================================
 
+
+// ============================================
+// 🔔 PUSH + LOCAL NOTIFICATIONS
+// ============================================
+async function initNotifications() {
+    if (!window.Capacitor?.isNativePlatform()) {
+        console.log("🌐 Mode Web - Notifications désactivées");
+        return;
+    }
+
+    const { PushNotifications, LocalNotifications } = Capacitor.Plugins;
+
+    try {
+        // LOCAL NOTIFICATIONS
+        await LocalNotifications.requestPermissions();
+        await LocalNotifications.createChannel({
+            id: 'reminders',
+            name: 'Rappels de voyage',
+            importance: 5,
+            sound: 'notification_sound.mp3'
+        }).catch(() => {});
+
+        // PUSH NOTIFICATIONS
+        let perm = await PushNotifications.checkPermissions();
+        if (perm.receive !== 'granted') {
+            perm = await PushNotifications.requestPermissions();
+        }
+
+        if (perm.receive === 'granted') {
+            await PushNotifications.register();
+            console.log("✅ Push Notifications activées");
+        }
+
+        // Token FCM
+        PushNotifications.addListener('registration', (token) => {
+            console.log("🔑 Token FCM:", token.value);
+            localStorage.setItem('fcm_token', token.value);
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+            console.error("❌ Erreur Push:", error);
+        });
+
+        // ✅ Réception push - Afficher dans status bar même si app ouverte
+        PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+            console.log("📩 Push reçue:", notification);
+            
+            // Créer une local notification pour afficher dans la status bar
+            try {
+                await LocalNotifications.schedule({
+                    notifications: [{
+                        id: Math.floor(Math.random() * 100000),
+                        title: notification.title || 'EN-BUS',
+                        body: notification.body || '',
+                        schedule: { at: new Date(Date.now() + 1000) },
+                        channelId: 'reminders',
+                        extra: notification.data,
+                        smallIcon: 'ic_notification',
+                        
+                        // ===============================================
+                        // ✅ CORRECTION AJOUTÉE ICI
+                        // ===============================================
+                        // On spécifie explicitement le son à jouer, en plus du canal.
+                        // Cela garantit que la notification sera sonore.
+                        sound: 'notification_sound.mp3'
+                    }]
+                });
+                console.log("🔔 Notification affichée dans status bar");
+            } catch (e) {
+                console.warn("⚠️ Erreur affichage notif:", e);
+            }
+        });
+
+        // Clic sur notification
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+            console.log("👆 Push cliquée:", action);
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur notifications:", error);
+    }
+}
+
+// Programmer rappels automatiques
+async function scheduleReminderNotifications(reservation) {
+    if (!window.Capacitor?.isNativePlatform()) return;
+
+    const { LocalNotifications } = Capacitor.Plugins;
+    const travelDate = new Date(reservation.date);
+    const [hours, minutes] = reservation.route.departure.split(':').map(Number);
+    travelDate.setHours(hours, minutes, 0, 0);
+
+    const notifications = [];
+
+    // Rappel J-1 à 20h
+    const j1 = new Date(travelDate);
+    j1.setDate(j1.getDate() - 1);
+    j1.setHours(20, 0, 0, 0);
+    if (j1 > new Date()) {
+        notifications.push({
+            id: Math.floor(Math.random() * 100000),
+            title: "Rappel voyage demain",
+            body: `${reservation.route.from} vers ${reservation.route.to} a ${reservation.route.departure}`,
+            schedule: { at: j1 },
+            channelId: 'reminders',
+            smallIcon: 'ic_notification',
+            
+            // ===============================================
+            // ✅ CORRECTION AJOUTÉE ICI
+            // ===============================================
+            sound: 'notification_sound.mp3'
+        });
+    }
+
+    // Rappel 2h avant
+    const h2 = new Date(travelDate);
+    h2.setHours(h2.getHours() - 2);
+    if (h2 > new Date()) {
+        notifications.push({
+            id: Math.floor(Math.random() * 100000),
+            title: "Depart dans 2 heures",
+            body: `Presentez-vous a la gare`,
+            schedule: { at: h2 },
+            channelId: 'reminders',
+            smallIcon: 'ic_notification',
+
+            // ===============================================
+            // ✅ CORRECTION AJOUTÉE ICI
+            // ===============================================
+            sound: 'notification_sound.mp3'
+        });
+    }
+
+    if (notifications.length > 0) {
+        await LocalNotifications.schedule({ notifications });
+        console.log(`📅 ${notifications.length} rappels programmés`);
+    }
+}
+
+// app.js
+
+async function registerTokenWithBooking(bookingNumber, busId) {
+    console.log(`--- [PUSH] Tentative d'enregistrement du token pour la réservation ${bookingNumber} ---`);
+    
+    const token = localStorage.getItem('fcm_token');
+    
+    if (!token) {
+        console.warn(`   -> ⚠️ Token non trouvé dans localStorage. Enregistrement annulé.`);
+        return;
+    }
+    
+    // Assure-toi que APP_CONFIG est bien défini par ton fichier config.js
+    const apiUrl = `${APP_CONFIG.API_URL}/api/notifications/register`;
+    console.log(`   -> Token trouvé. Envoi vers l'URL : ${apiUrl}`);
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token, bookingNumber, busId })
+        });
+        
+        // On vérifie la réponse du serveur
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                console.log(`   -> ✅ Succès ! Le serveur a bien enregistré le token.`);
+            } else {
+                console.error(`   -> ❌ Erreur côté serveur :`, result.error || "Réponse non détaillée.");
+            }
+        } else {
+            // Si la réponse n'est pas "ok" (ex: erreur 404, 500)
+            console.error(`   -> ❌ Échec de l'appel API. Statut: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`   -> Réponse du serveur : ${errorText}`);
+        }
+
+    } catch (error) {
+        // Erreur réseau (pas de connexion, etc.)
+        console.error("   -> ❌ ERREUR RÉSEAU lors de l'enregistrement du token:", error);
+    }
+    console.log(`--- [PUSH] Fin du processus d'enregistrement. ---`);
+}
+// Initialiser au démarrage
+document.addEventListener('DOMContentLoaded', initNotifications);
 
 // ============================================
 // DONNÉES DE L'APPLICATION
@@ -118,6 +315,8 @@ const agencies = [
     }
 ];
 
+
+let placeholderAnimationStarted = false;
 // ============================================
 // 📦 ÉTAT GLOBAL DE L'APPLICATION
 // ============================================
@@ -127,6 +326,9 @@ let frontendCountdownInterval = null;
 // --- Données dynamiques ---
 let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
 let allReservations = []; // Pour la page "Mes réservations"
+
+
+
 
 // --- État principal de l'application ---
 let appState = {
@@ -143,7 +345,11 @@ let appState = {
     passengerCounts: { adults: 1, children: 0 },
     baggageCounts: {},
     currentResults: [],
-    currentReservation: null
+    displayedResults: [],
+   
+    currentReservation: null,
+      // ✅ NOUVELLE PROPRIÉTÉ
+   
 };
 
 // --- État des filtres de la page de résultats ---
@@ -183,8 +389,6 @@ formatPrice(price) {
         month: 'long',
         day: 'numeric'
     });
-
-    
 },
 
 
@@ -198,7 +402,6 @@ formatPrice(price) {
             minute: "2-digit"
         });
     },
-
 
 
 
@@ -332,18 +535,6 @@ formatPrice(price) {
         };
     },
 
-    // ✅ AJOUTE LA NOUVELLE FONCTION ICI, AVEC UNE VIRGULE AVANT
-    getArrivalDateTime: function(departureDate, arrivalTime, offsetDays = 0) {
-        // On crée un objet Date basé sur la date de départ et l'heure d'arrivée
-        const arrivalDateTime = new Date(`${departureDate}T${arrivalTime}:00`);
-
-        // On ajoute le nombre de jours de décalage
-        if (offsetDays > 0) {
-            arrivalDateTime.setDate(arrivalDateTime.getDate() + offsetDays);
-        }
-        return arrivalDateTime;
-    } ,// <-- N'oublie pas la virgule si tu ajoutes une autre fonction après, sinon pas de virgule si c'est la dernière.
-
 
 
 
@@ -392,24 +583,22 @@ decodeQRCodeData(qrString) {
     try {
         const parts = qrString.split('|');
         
-        // Vérifier si le format est correct (5 parties)
         if (parts.length === 6) {
             return {
                 valid: true,
-                version: "4.0", // Nouvelle version
+                version: "4.0",
                 bookingNumber: parts[0],
                 travelDate: parts[1],
                 mainPassengerName: parts[2],
                 totalPassengers: parseInt(parts[3]),
                 travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
-                busIdentifier: parts[5] // ✅ Numéro de bus
+                busIdentifier: parts[5]
             };
         }
         
-        // Tentative de décoder l'ancien format JSON par sécurité
         const data = JSON.parse(qrString);
         if (data.v === "2.0") {
-            // ... (logique pour l'ancien format)
+            // logique pour l'ancien format
         }
         
         throw new Error('Format de QR Code inconnu ou invalide.');
@@ -422,46 +611,64 @@ decodeQRCodeData(qrString) {
     }
 },
 
-// ✅ 3. FONCTION DE GÉNÉRATION DE L'IMAGE (INCHANGÉE MAIS GARDÉE POUR LA COHÉRENCE)
-async generateQRCodeBase64(text, size = 200) {
+// ✅ 3. FONCTION DE GÉNÉRATION DE L'IMAGE (CORRIGÉE)
+async generateQRCodeBase64(text, size = 300) {
     return new Promise((resolve, reject) => {
         try {
             const tempDiv = document.createElement('div');
-            tempDiv.style.display = 'none';
+            tempDiv.style.cssText = 'position:fixed; left:-9999px; top:-9999px; background:#FFFFFF; padding:10px;';
             document.body.appendChild(tempDiv);
+            
+            if (typeof QRCode === 'undefined') {
+                document.body.removeChild(tempDiv);
+                reject(new Error('QRCode not loaded'));
+                return;
+            }
             
             new QRCode(tempDiv, {
                 text: text,
                 width: size,
                 height: size,
                 colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
+                colorLight: "#FFFFFF",
+                correctLevel: QRCode.CorrectLevel.H
             });
             
             setTimeout(() => {
-                const canvas = tempDiv.querySelector('canvas');
-                if (canvas) {
-                    const base64 = canvas.toDataURL('image/png');
+                try {
+                    const canvas = tempDiv.querySelector('canvas');
+                    const img = tempDiv.querySelector('img');
+                    
+                    let base64 = null;
+                    
+                    if (canvas) {
+                        base64 = canvas.toDataURL('image/png');
+                    } else if (img && img.src) {
+                        base64 = img.src;
+                    }
+                    
                     document.body.removeChild(tempDiv);
-                    resolve(base64);
-                } else {
+                    
+                    if (base64) {
+                        resolve(base64);
+                    } else {
+                        reject(new Error('QR Code non genere'));
+                    }
+                } catch (err) {
                     document.body.removeChild(tempDiv);
-                    reject(new Error('Le canvas du QR Code n\'a pas pu être généré.'));
+                    reject(err);
                 }
-            }, 100);
+            }, 300);
             
         } catch (error) {
             reject(error);
         }
     });
 }
-}
 
-
+};  // ← ✅ ACCOLADE FERMANTE DE Utils ICI
 
 // Fichier: app.js
-
 function getLiveStatusIcon(status) {
     switch (status) {
         case 'ON_TIME': return '🟢';
@@ -471,7 +678,6 @@ function getLiveStatusIcon(status) {
         default: return 'ℹ️';
     }
 }
-
 function getLiveStatusText(liveStatus, translation) {
     if (!liveStatus || !liveStatus.status) return '';
     
@@ -506,41 +712,62 @@ function getLanguage() {
     return localStorage.getItem('enbus_language') || navigator.language.split('-')[0] || 'fr';
 }
 
+// app.js
+// app.js
+
+// Assure-toi que ces variables sont bien déclarées au début de ton fichier app.js
+let hasInitialSetupRun = false;
+
+
 function applyLanguage(lang = getLanguage()) {
-    if (typeof translations === 'undefined') return;
+    if (typeof translations === 'undefined') {
+        console.warn("Traductions non prêtes, l'affichage sera mis à jour plus tard.");
+        return;
+    }
 
     localStorage.setItem('enbus_language', lang);
     document.documentElement.lang = lang;
     const translation = translations[lang] || translations.fr;
 
-    // ===================================
-    // ✅ TRADUCTION DU TITRE DE LA PAGE
-    // ===================================
-    if (translation.page_title) {
-        document.title = translation.page_title;
-    }
-
-    // Cette boucle va trouver et traduire "Sièges :" et "Prix :"
+    // --- 1. Traduction de tous les éléments statiques ---
+    if (translation.page_title) document.title = translation.page_title;
+    
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translation[key]) {
-            el.innerHTML = translation[key];
-        }
+        if (translation[key]) el.innerHTML = translation[key];
     });
 
-    // ===========================================
-    // ✅ TRADUCTION DES PLACEHOLDERS SPÉCIFIQUES
-    // ===========================================
     const smartSearchInput = document.getElementById('smart-search-input');
     if (smartSearchInput && translation.smart_search_placeholder) {
         smartSearchInput.placeholder = translation.smart_search_placeholder;
     }
-    // On rafraîchit les composants dynamiques
-    updateDynamicTexts(lang); // Met à jour le "1 Adulte..."
-    populatePopularDestinations(); // Met à jour "À partir de..."
-    setupDatePickers(); // Met à jour le placeholder du calendrier
-}
     
+    // --- 2. Lancement des fonctions de configuration (UNE SEULE FOIS) ---
+    // Ces fonctions créent des éléments ou attachent des écouteurs. On ne veut pas les dupliquer.
+    if (!hasInitialSetupRun) {
+        console.log("🚀 Exécution de la configuration initiale de l'interface...");
+        
+        populateCitySelects();
+        setupTripTypeToggle();
+        setupPassengerSelector();
+        setupAmenitiesFilters();
+        animateCountersOnScroll();
+        
+        hasInitialSetupRun = true; // On met le drapeau à vrai pour ne pas ré-exécuter
+    }
+
+    // --- 3. Fonctions de mise à jour (appelées à chaque changement de langue) ---
+    // Celles-ci rafraîchissent le texte des éléments dynamiques.
+    updateDynamicTexts(lang);
+    populatePopularDestinations(); // Met à jour le texte "À partir de..."
+    setupDatePickers(); // Met à jour le placeholder et la langue du calendrier
+
+    // --- 4. Lancement de l'animation du placeholder (UNE SEULE FOIS) ---
+    if (!placeholderAnimationStarted && typeof animateSearchPlaceholder === 'function') {
+        animateSearchPlaceholder();
+        placeholderAnimationStarted = true;
+    }
+}
     // ====================================================
     // ✅ LA MODIFICATION EST ICI
     // ====================================================
@@ -585,9 +812,11 @@ function updateDynamicTexts(lang) {
     }
     
     const childrenLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_children"]');
-    if (childrenLabel && translation.search_form_children) {
-        childrenLabel.innerHTML = translation.search_form_children;
-    }
+if (childrenLabel && translation.search_form_children) {
+    // Remplacer l'ancienne version par celle-ci
+    const maxAge = appRules.ticketing.childMaxAge;
+    childrenLabel.innerHTML = `Enfants <small>(0-${maxAge} ans)</small>`;
+}
 
     // --- 3. (Futur) Traduction d'autres textes dynamiques ---
     // ...
@@ -607,13 +836,14 @@ window.changeLanguage = function(lang) {
 /**
  * Met à jour l'interface du sélecteur de passagers (chiffres et textes traduits).
  */
+// DANS app.js
+
 function updatePassengerSelectorUI() {
     const adultsCount = document.getElementById("adults-count");
     const childrenCount = document.getElementById("children-count");
     const summary = document.getElementById("passenger-summary");
     const dropdown = document.getElementById("passenger-dropdown");
     
-    // Sécurité pour éviter les erreurs si les éléments n'existent pas
     if (!adultsCount || !childrenCount || !summary || !dropdown) {
         return;
     }
@@ -621,30 +851,34 @@ function updatePassengerSelectorUI() {
     const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
     const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
     
-    // Mettre à jour les compteurs numériques
     adultsCount.textContent = appState.passengerCounts.adults;
     childrenCount.textContent = appState.passengerCounts.children;
     
-    // Gérer l'état des boutons de décrémentation
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
     
-    // --- Traduction des textes ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
-    // 1. Traduire le résumé principal (ex: "1 Adulte, 2 Enfants")
+    const rules = appRules.ticketing; // On récupère les règles
+
+    // --- Traduction du résumé principal ---
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
     
-    // 2. Traduire les labels dans le dropdown
+    // --- Traduction des labels dans le dropdown ---
     if (adultsLabel && translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
-    if (childrenLabel && translation.search_form_children) {
-        childrenLabel.innerHTML = translation.search_form_children;
+    
+    // ========================================================
+    // ✅ MISE À JOUR ICI
+    // ========================================================
+    if (childrenLabel && typeof translation.search_form_children_dynamic === 'function') {
+        // On utilise la nouvelle clé de traduction dynamique
+        childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
     }
+    // ========================================================
 }
 
 
@@ -1174,25 +1408,34 @@ window.cancelReservation = async function(bookingNumber) {
 // TÉLÉCHARGEMENT DE BILLET PDF
 // ============================================
 // Dans app.js
+
+// Dans app.js
+
 window.downloadTicket = async function(isReturn = false) {
+    // ✅ On récupère l'objet de traduction au tout début
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     const reservation = appState.currentReservation;
     
     if (!reservation) {
-        Utils.showToast("Aucune réservation à télécharger.", "error");
+        // ✅ On utilise la traduction pour le message d'erreur
+        Utils.showToast(translation.error_no_booking_to_download || "Aucune réservation à télécharger.", "error");
         return;
     }
 
     if (isReturn && !reservation.returnRoute) {
-        Utils.showToast("Il n'y a pas de billet retour pour cette réservation.", "warning");
+        // ✅ On utilise la traduction pour le message d'avertissement
+        Utils.showToast(translation.error_no_return_ticket || "Il n'y a pas de billet retour pour cette réservation.", "warning");
         return;
     }
     
-    Utils.showToast(`Génération du billet ${isReturn ? 'RETOUR' : 'ALLER'} en cours...`, 'info');
-
+    // Le reste de ta fonction est déjà correct
+    Utils.showToast(translation.toast_generating_ticket || 'Génération du billet en cours...', 'info');
     
-    // Appelle la fonction qui génère le HTML et lance le téléchargement
     await generateTicketPDF(reservation, isReturn);
 };
+
 
 // 💳 AFFICHAGE DES INSTRUCTIONS DE PAIEMENT
 // ============================================
@@ -1451,294 +1694,459 @@ window.checkPaymentStatus = async function(bookingNumber) {
 // Dans app.js
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction generateTicketPDF par celle-ci
-
 async function generateTicketPDF(reservation, isReturn = false) {
     try {
-        // ===================================
-        // ✅ CORRECTION : ON DÉCLARE 'lang' ET 'translation'
-        // ===================================
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
-        // ===================================
-        const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
-        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 150);
         
-        // --- 1. SÉLECTION DES BONNES DONNÉES (ALLER OU RETOUR) ---
+        const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
+        const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 300);
+        
         const route = isReturn ? reservation.returnRoute : reservation.route;
         const date = isReturn ? reservation.returnDate : reservation.date;
 
-
-         // ✅ CALCUL DE SECOURS POUR LA DURÉE
-        // Si route.duration est vide ou "N/A", on le recalcule avec les heures
         let displayDuration = route.duration;
         if (!displayDuration || displayDuration === 'N/A') {
             const [h1, m1] = route.departure.split(':').map(Number);
             const [h2, m2] = route.arrival.split(':').map(Number);
             let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-            if (diff < 0) diff += 1440; // Gestion nuit
+            if (diff < 0) diff += 1440;
             const h = Math.floor(diff / 60);
             const m = diff % 60;
             displayDuration = `${h}h ${m > 0 ? String(m).padStart(2, '0') : ''}`;
         }
 
-
         const seats = isReturn ? reservation.returnSeats : reservation.seats;
-        
-            const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
+        const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
+        const ticketType = isReturn ? translation.confirmation_ticket_return : translation.confirmation_ticket_outbound;
 
-        const ticketType = isReturn 
-    ? translation.confirmation_ticket_return 
-    : translation.confirmation_ticket_outbound;
+        const fileName = isReturn 
+            ? `Billet_Retour_${reservation.bookingNumber}.pdf` 
+            : `Billet_Aller_${reservation.bookingNumber}.pdf`;
 
-        // --- 2. CONSTRUCTION DES SECTIONS DYNAMIQUES ---
-        let agencyInfoHTML = '';
-        if (reservation.status === 'En attente de paiement' && reservation.agency) {
-            agencyInfoHTML = `
-                <div class="payment-warning">
-                    <div class="warning-icon">⚠️</div>
-                    <div class="warning-text">
-                        <strong>PAIEMENT REQUIS À L'AGENCE</strong>
-                        <span>Ce billet ne sera valide qu'après paiement avant le :<br><strong>${new Date(reservation.paymentDeadline).toLocaleString('fr-FR')}</strong></span>
-                    </div>
-                </div>
-            `;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pageWidth = 210;
+        const margin = 15;
+        let y = margin;
+
+        // ========================================
+        // HEADER
+        // ========================================
+        pdf.setFillColor(115, 215, 0);
+        pdf.rect(0, 0, pageWidth, 30, 'F');
+
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(24);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('EN-BUS', margin, 20);
+
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(ticketType.toUpperCase(), pageWidth - margin, 20, { align: 'right' });
+
+        y = 40;
+
+        // ========================================
+        // SECTION ROUTE
+        // ========================================
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(margin, y, 120, 40, 3, 3, 'F');
+
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(route.from, margin + 5, y + 15);
+
+        pdf.setFillColor(30, 30, 30);
+        pdf.roundedRect(margin + 5, y + 20, 28, 10, 2, 2, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(11);
+        pdf.text(route.departure, margin + 19, y + 27, { align: 'center' });
+
+        pdf.setTextColor(115, 215, 0);
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('>>>>', margin + 60, y + 22, { align: 'center' });
+
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(route.to, margin + 115, y + 15, { align: 'right' });
+
+        pdf.setFillColor(30, 30, 30);
+        pdf.roundedRect(margin + 87, y + 20, 28, 10, 2, 2, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(11);
+        pdf.text(route.arrival, margin + 101, y + 27, { align: 'center' });
+
+        // ========================================
+        // QR CODE
+        // ========================================
+        const qrX = 145;
+        const qrY = y;
+
+        pdf.setFillColor(30, 30, 50);
+        pdf.roundedRect(qrX, qrY, 50, 105, 3, 3, 'F');
+
+        if (qrCodeBase64) {
+            pdf.setFillColor(255, 255, 255);
+    pdf.rect(qrX + 2, qrY + 2, 46, 46, 'F');
+    
+    // QR sans compression
+    pdf.addImage(qrCodeBase64, 'PNG', qrX + 3, qrY + 3, 44, 44, undefined, 'NONE');
+
         }
-            // --- Génération dynamique des arrêts (TRADUIT) ---
-    let stopsHTML = '';
-    if (route.stops && route.stops.length > 0) {
-        stopsHTML = `
-            <div class="passengers-section">
-                <div class="passengers-title">${translation.details_stops_planned}</div>
-                <div class="passenger-list">
-                    ${route.stops.map(stop => `
-                        <div class="item">
-                            <span class="passenger-name">${stop.city}</span>
-                            <span style="color: #555; font-size: 12px;">
-                                ${translation.details_stop_info(stop.duration, stop.arrivalTime)}
-                            </span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
 
-    // --- Génération dynamique des correspondances (TRADUIT) ---
-    let connectionsHTML = '';
-    if (route.connections && route.connections.length > 0) {
-        connectionsHTML = `
-            <div class="passengers-section">
-                <div class="passengers-title" style="border-color: #ef5350;">${translation.details_connections_title}</div>
-                <div class="passenger-list">
-                    ${route.connections.map(conn => `
-                        <div class="item">
-                            <div>
-                                <span class="passenger-name">${translation.details_connection_info(conn.at, conn.waitTime)}</span>
-                                <small style="display: block; color: #555; font-size: 12px;">
-                                    ${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}
-                                </small>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
+        pdf.setTextColor(140, 140, 140);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('RESERVATION', qrX + 25, qrY + 52, { align: 'center' });
 
+        pdf.setTextColor(115, 215, 0);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(reservation.bookingNumber, qrX + 25, qrY + 60, { align: 'center' });
 
-        // --- 3. TEMPLATE HTML COMPLET ---
-        // DANS la fonction generateTicketPDF, après avoir défini les variables
+        pdf.setTextColor(140, 140, 140);
+        pdf.setFontSize(7);
+        pdf.text('PASSAGER', qrX + 25, qrY + 70, { align: 'center' });
 
-const ticketHTML = `
-    <!DOCTYPE html>
-    <html lang="${lang}">
-    <head>
-        <meta charset="UTF-8">
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
-        <style>
-            :root { --primary-color: #73d700; --dark-color: #10101A; --text-color: #1a1a1a; --text-light: #555; --bg-light: #f4f7f9; }
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-color); display: flex; justify-content: center; padding: 20px; }
-            .ticket-container { width: 850px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; }
-            .ticket-main { flex: 3; padding: 30px; }
-            .ticket-stub { flex: 1; background-color: var(--dark-color); color: white; padding: 30px; border-radius: 0 16px 16px 0; border-left: 2px dashed #ccc; display: flex; flex-direction: column; align-items: center; text-align: center; }
-            .ticket-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px; }
-            .logo { font-family: 'Audiowide', sans-serif; font-size: 28px; font-weight: 900; color: var(--primary-color); }
-            .booking-status { font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #2e7d32; }
-            .route-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; } /* Correction: align-items: center */
-            .route-point { flex: 1; }
-            .route-point .city { font-size: 24px; font-weight: 700; }
-            .route-point .location-detail { font-size: 13px; font-weight: 600; color: var(--text-light); margin-top: 4px; }
-            .route-point .time { font-size: 20px; font-weight: 500; color: var(--text-light); margin-top: 8px; }
-            .route-arrow { font-size: 24px; color: var(--primary-color); padding: 0 20px; }
-            .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px; margin-bottom: 25px; }
-            .detail-item .detail-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-            .detail-item .detail-value { font-size: 15px; font-weight: 600; }
-            .passengers-section { margin-bottom: 25px; }
-            .passengers-title { font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; margin-bottom: 10px; display: inline-block; }
-            .passenger-list .item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
-            .ticket-footer { text-align: center; font-size: 11px; color: #999; margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px; }
-            .stub-qr-code { background: white; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-            .stub-qr-code img { display: block; }
-            .stub-label { font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 5px; }
-            .stub-value { font-size: 14px; font-weight: 700; margin-bottom: 15px; word-break: break-all; }
-            .stub-value.booking-no { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary-color); }
-        </style>
-    </head>
-    <body>
-        <div class="ticket-container">
-            <div class="ticket-main">
-                <div class="ticket-header">
-                    <div class="logo">EN-BUS</div>
-                    <div class="booking-status">${ticketType}</div>
-                </div>
-                ${agencyInfoHTML}
-                <div class="route-info">
-                    <div class="route-point">
-                        <div class="city">${route.from}</div>
-                        <div class="location-detail">${route.departureLocation || ''}</div>
-                        <div class="time">${route.departure}</div>
-                    </div>
-                    <div class="route-arrow">➔</div>
-                    <div class="route-point" style="text-align: right;">
-                        <div class="city">${route.to}</div>
-                        <div class="location-detail">${route.arrivalLocation || ''}</div>
-                        <div class="time">${route.arrival}</div>
-                    </div>
-                </div>
-                <div class="details-grid">
-                    <div class="detail-item"><div class="detail-label">${translation.details_label_date}</div><div class="detail-value">${Utils.formatDate(date, lang)}</div></div>
-                    <div class="detail-item"><div class="detail-label">${translation.details_label_duration}</div><div class="detail-value">${displayDuration}</div>
-                    <div class="detail-item"><div class="detail-label">${translation.details_label_company}</div><div class="detail-value">${route.company}</div></div>
-                    <div class="detail-item"><div class="detail-label">${translation.details_label_bus_no}</div><div class="detail-value">${busIdentifier}</div></div>
-                </div>
-                <div class="passengers-section">
-                    <div class="passengers-title">${translation.details_label_passengers}</div>
-                    <div class="passenger-list">
-                        ${reservation.passengers.map((p, i) => `
-                            <div class="item">
-                                <span class="passenger-name">${p.name}</span>
-                                <span class="seat-number">${translation.details_label_seat} ${seats[i]}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                ${stopsHTML}
-                ${connectionsHTML}
-                <div class="ticket-footer">
-                    ${translation.ticket_footer_instruction}
-                </div>
-            </div>
-            <div class="ticket-stub">
-                <div class="stub-qr-code"><img src="${qrCodeBase64}" alt="QR Code"></div>
-                <div class="stub-label">${translation.stub_label_booking}</div>
-                <div class="stub-value booking-no">${reservation.bookingNumber}</div>
-                <div class="stub-label">${translation.stub_label_passenger}</div>
-                <div class="stub-value">${reservation.passengers[0].name}</div>
-                <div class="stub-label">${translation.stub_label_total_paid}</div>
-                <div class="stub-value">${Utils.formatPrice(reservation.totalPriceNumeric || 0)} FCFA</div>
-            </div>
-        </div>
-    </body>
-    </html>
-`;
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        let pName = reservation.passengers[0].name;
+        if (pName.length > 16) pName = pName.substring(0, 15) + '...';
+        pdf.text(pName, qrX + 25, qrY + 78, { align: 'center' });
 
-        // --- 4. LOGIQUE DE TÉLÉCHARGEMENT ET D'IMPRESSION ---
-        try {
-            const blob = new Blob([ticketHTML], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement('a');
-            const fileName = isReturn ? `Billet_Retour_${reservation.bookingNumber}.html` : `Billet_Aller_${reservation.bookingNumber}.html`;
-            downloadLink.href = url;
-            downloadLink.download = fileName;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-            setTimeout(() => URL.revokeObjectURL(url), 100);
+        pdf.setTextColor(140, 140, 140);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'bold');
+        // ✅ LIGNE CORRIGÉE AVEC LA BONNE CLÉ
+        pdf.text((translation.pdf_total_paid || 'TOTAL PAYÉ').toUpperCase(), qrX + 25, qrY + 88, { align: 'center' });
 
-            const lang = getLanguage(); 
-const translation = translations[lang] || translations.fr;
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(Utils.formatPrice(reservation.totalPriceNumeric || 0) + ' FCFA', qrX + 25, qrY + 96, { align: 'center' });
 
-Utils.showToast(translation.toast_ticket_downloaded, 'success');
+        y += 50;
 
-            if (window.innerWidth > 768) {
-                const printWindow = window.open('', '_blank');
-                if (printWindow) {
-                    printWindow.document.write(ticketHTML);
-                    printWindow.document.close();
-                    // printWindow.print(); // Décommenter pour lancer l'impression automatiquement
+        // ========================================
+        // DETAILS - Ligne 1 (Date + Duree)
+        // ========================================
+        const boxWidth = 58;
+        const boxHeight = 22;
+        const gap = 4;
+
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(margin, y, boxWidth, boxHeight, 2, 2, 'F');
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text((translation.details_label_date || 'DATE').toUpperCase(), margin + boxWidth / 2, y + 8, { align: 'center' });
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(Utils.formatDate(date, lang), margin + boxWidth / 2, y + 17, { align: 'center' });
+
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(margin + boxWidth + gap, y, boxWidth, boxHeight, 2, 2, 'F');
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text((translation.details_label_duration || 'DUREE').toUpperCase(), margin + boxWidth + gap + boxWidth / 2, y + 8, { align: 'center' });
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(displayDuration, margin + boxWidth + gap + boxWidth / 2, y + 17, { align: 'center' });
+
+        y += boxHeight + gap;
+
+        // ========================================
+        // DETAILS - Ligne 2 (Compagnie + Bus) - CASES PLUS LARGES
+        // ========================================
+        const largeBoxWidth = 70;
+
+        // Compagnie - case plus large
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(margin, y, largeBoxWidth, boxHeight, 2, 2, 'F');
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text((translation.details_label_company || 'COMPAGNIE').toUpperCase(), margin + largeBoxWidth / 2, y + 8, { align: 'center' });
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        // Nom complet de la compagnie sans troncature
+        pdf.text(route.company || 'N/A', margin + largeBoxWidth / 2, y + 17, { align: 'center' });
+
+        // Bus N - case plus petite
+        const smallBoxWidth = 46;
+        pdf.setFillColor(245, 245, 245);
+        pdf.roundedRect(margin + largeBoxWidth + gap, y, smallBoxWidth, boxHeight, 2, 2, 'F');
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text((translation.details_label_bus_no || 'BUS').toUpperCase(), margin + largeBoxWidth + gap + smallBoxWidth / 2, y + 8, { align: 'center' });
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(busIdentifier, margin + largeBoxWidth + gap + smallBoxWidth / 2, y + 17, { align: 'center' });
+
+        y += boxHeight + 10;
+
+        // ========================================
+        // PASSAGERS
+        // ========================================
+        pdf.setTextColor(30, 30, 30);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text((translation.details_label_passengers || 'PASSAGERS').toUpperCase(), margin, y);
+
+        pdf.setFillColor(115, 215, 0);
+        pdf.rect(margin, y + 2, 35, 1.5, 'F');
+
+        y += 10;
+
+        pdf.setFillColor(250, 250, 250);
+        const paxHeight = reservation.passengers.length * 10 + 6;
+        pdf.roundedRect(margin, y, 120, paxHeight, 2, 2, 'F');
+
+        y += 5;
+
+        reservation.passengers.forEach((p, i) => {
+            pdf.setTextColor(30, 30, 30);
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(p.name, margin + 5, y + 2);
+
+            pdf.setTextColor(80, 80, 80);
+            pdf.setFontSize(9);
+            pdf.text((translation.details_label_seat || 'Siege') + ' ' + seats[i], margin + 115, y + 2, { align: 'right' });
+
+            y += 10;
+        });
+
+        y += 8;
+
+        // ========================================
+        // ARRETS (sans icone)
+        // ========================================
+        if (route.stops && route.stops.length > 0) {
+            pdf.setTextColor(30, 30, 30);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text((translation.details_stops_planned || 'ARRETS PREVUS').toUpperCase(), margin, y);
+
+            pdf.setFillColor(115, 215, 0);
+            pdf.rect(margin, y + 2, 30, 1.5, 'F');
+
+            y += 10;
+
+            route.stops.forEach(stop => {
+                pdf.setTextColor(30, 30, 30);
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(stop.city, margin + 5, y);
+
+                if (translation.details_stop_info) {
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.setFontSize(8);
+                    pdf.text(translation.details_stop_info(stop.duration, stop.arrivalTime), margin + 115, y, { align: 'right' });
+                }
+
+                y += 8;
+            });
+
+            y += 5;
+        }
+
+        // ========================================
+        // CORRESPONDANCES (sans icone)
+        // ========================================
+        if (route.connections && route.connections.length > 0) {
+            pdf.setTextColor(200, 60, 60);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text((translation.details_connections_title || 'CORRESPONDANCES').toUpperCase(), margin, y);
+
+            pdf.setFillColor(200, 60, 60);
+            pdf.rect(margin, y + 2, 35, 1.5, 'F');
+
+            y += 10;
+
+            route.connections.forEach(conn => {
+                pdf.setTextColor(30, 30, 30);
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+
+                if (translation.details_connection_info) {
+                    pdf.text(translation.details_connection_info(conn.at, conn.waitTime), margin + 5, y);
+                }
+
+                y += 6;
+
+                if (translation.details_next_bus_info) {
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.setFontSize(8);
+                    pdf.text(translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture), margin + 8, y);
+                }
+
+                y += 10;
+            });
+        }
+
+        // ========================================
+        // FOOTER
+        // ========================================
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, 265, pageWidth - margin, 265);
+
+        pdf.setTextColor(80, 80, 80);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        const footerMsg = translation.ticket_footer_instruction || 'Presentez-vous 30 min avant le depart avec une piece d identite';
+        pdf.text('IMPORTANT : ' + footerMsg, pageWidth / 2, 272, { align: 'center' });
+
+        pdf.setTextColor(140, 140, 140);
+        pdf.setFontSize(8);
+        pdf.text(`EN-BUS - ${translation.pdf_footer_tagline || 'Votre partenaire de voyage'}`, pageWidth / 2, 280, { align: 'center' });
+
+        // ========================================
+        // SAUVEGARDE
+        // ========================================
+        if (window.Capacitor?.isNativePlatform()) {
+            const { Filesystem, LocalNotifications } = Capacitor.Plugins;
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+            const result = await Filesystem.writeFile({
+                path: fileName,
+                data: pdfBase64,
+                directory: 'DOCUMENTS',
+                recursive: true
+            });
+
+            console.log('PDF sauvegarde :', result.uri);
+
+                        if (LocalNotifications) {
+                try {
+                   const permResult = await LocalNotifications.requestPermissions();
+                    if (permResult.display === 'granted') {
+                        // ========================================================
+                        // ✅ DÉBUT DE LA CORRECTION
+                        // ========================================================
+                        await LocalNotifications.schedule({
+                            notifications: [{
+                                title: translation.local_notif_ticket_download_title || 'Billet téléchargé',
+                                body: translation.local_notif_ticket_download_body ? translation.local_notif_ticket_download_body(fileName) : `${fileName} enregistré`,
+                                id: Math.floor(Math.random() * 100000),
+                                schedule: { at: new Date(Date.now() + 1000) },
+                                sound: 'default',
+                                // ON AJOUTE CETTE LIGNE POUR L'ICÔNE :
+                                smallIcon: 'ic_notification' // Utilise l'icône de notification par défaut de Capacitor
+                            }]
+                        });
+                        // ========================================================
+                        // ✅ FIN DE LA CORRECTION
+                        // ========================================================
+                    }
+                } catch (e) {
+                    console.warn('Notification echouee:', e);
                 }
             }
 
-
-        } catch (downloadError) {
-            console.error("Erreur de téléchargement du billet:", downloadError);
-            Utils.showToast('Le téléchargement a échoué. Veuillez autoriser les popups.', 'error');
+            Utils.showToast(translation.toast_ticket_downloaded_native || 'Billet PDF enregistre !', 'success');
+        } else {
+            pdf.save(fileName);
+            Utils.showToast(translation.toast_ticket_downloaded || 'Billet PDF telecharge !', 'success');
         }
 
     } catch (error) {
-        console.error('Erreur lors de la génération du billet:', error);
-        Utils.showToast('Erreur critique lors de la génération du billet.', 'error');
+        console.error('Erreur generation billet:', error);
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        Utils.showToast(translation?.error_generating_ticket || 'Erreur generation billet', 'error');
     }
 }
+
 // ============================================
 // INITIALISATION DE L'APPLICATION
 // ============================================
- function initApp() {
+// app.js
+function initApp() {
     try {
+        // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
         setupMobileMenu();
-        populateCitySelects();
-        setupDatePickers();
-        setupTripTypeToggle();
-        setupPassengerSelector();
-        populatePopularDestinations();
-        setupPaymentMethodToggle();
         addToastStyles();
         addSwapButtonStyles();
         setupSwapButton();
-        setupAmenitiesFilters(); 
         addAboutPageStyles();
-         animateCountersOnScroll();
-         addContactPageStyles(); 
-         setupContactPage();
-         addRoutingMachineStyles();
-         // ✅ AJOUTER CET APPEL
+        addContactPageStyles();
+        setupContactPage();
+        addRoutingMachineStyles();
         initInteractiveMap();
-        applyLanguage();// ✅ AJOUTER CETTE LIGNE
-        loadAllRouteTemplates();
-         // ✅ AJOUTEZ CET APPEL
-        setupSocialLinks(); 
-
-         // ===========================================
-    // ✅ CORRECTION POUR LA SUPERPOSITION
-    // ===========================================
-    // On déplace le conteneur des résultats à la fin du body
-    // pour qu'il ne soit plus "emprisonné" par un parent.
-    const resultsContainer = document.getElementById('smart-search-results');
-    if (resultsContainer) {
-        document.body.appendChild(resultsContainer);
-    }
         setupSmartSearch();
+        setupMobileFilterToggle();
+                // ✅ AJOUTEZ CET APPEL
+        setupSocialLinks();
+        loadTicketingRules();
 
-        // ✅ AJOUTER CET APPEL
-    animateSearchPlaceholder();
-    setupMobileFilterToggle(); 
 
-    // DANS initApp()
+        // --- Configuration native ---
+        if (window.Capacitor?.isNativePlatform()) {
+            
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            
+            const { StatusBar, Style } = Capacitor.Plugins;
 
-// ... (après les autres initialisations)
+            // On vérifie que le plugin StatusBar EXISTE avant de l'utiliser.
+            // S'il n'est pas installé, cette condition sera fausse et le code ne plantera pas.
+            if (StatusBar) {
+                try {
+                    StatusBar.setStyle({ style: Style.Dark });
+                    console.log("✅ Style de la barre de statut appliqué (Dark).");
+                } catch (e) {
+                    console.warn("⚠️ Erreur lors de l'application du style de la barre de statut:", e);
+                }
+            } else {
+                console.warn("⚠️ Plugin @capacitor/status-bar non trouvé. Le style de la barre de statut ne sera pas modifié.");
+            }
 
-// Gestion de la redirection depuis les emails
-const urlParams = new URLSearchParams(window.location.search);
-const page = urlParams.get('page');
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
+        }
 
-if (page === 'reservations') {
-    showPage('reservations');
-    // Nettoyer l'URL pour éviter de rester bloqué sur cette page au refresh
-    window.history.replaceState({}, document.title, window.location.pathname);
-} else if (window.location.hash === '#reservations') {
-    showPage('reservations');
-}
+        // --- Correction pour la superposition de la recherche ---
+        const resultsContainer = document.getElementById('smart-search-results');
+        if (resultsContainer) {
+            document.body.appendChild(resultsContainer);
+        }
+
+        // --- Chargement des données de fond ---
+        loadAllRouteTemplates(); 
+
+        // ✅ APPEL UNIQUE qui va orchestrer tout le reste
+        applyLanguage();
+
+        // --- Gestion de la redirection (reste ici) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        if (page === 'reservations') {
+            showPage('reservations');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (window.location.hash === '#reservations') {
+            showPage('reservations');
+        }
 
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
@@ -2016,7 +2424,7 @@ async function handleFormspreeSubmit(event) {
                 const errorMessage = responseData.errors.map(error => error.message).join(', ');
                 throw new Error(errorMessage);
             } else {
-                throw new Error('Une erreur est survenue lors de l\'envoi.');
+                throw new Error(translation.error_generic || 'An error occurred.');
             }
         }
     } catch (error) {
@@ -2548,77 +2956,100 @@ function setupTripTypeToggle() {
 // ============================================
 // 📅 CALENDRIER (CORRIGÉ AVEC VOTRE ID)
 // ============================================
+// DANS app.js
 function setupDatePickers() {
+    // Détruit l'ancienne instance du calendrier pour éviter les bugs
     if (appState.departurePicker) {
         appState.departurePicker.destroy();
     }
 
+    // Récupère la langue pour la traduction du calendrier et du placeholder
     const lang = getLanguage();
     const placeholderText = translations[lang]?.search_form_dates_placeholder || "Sélectionnez vos dates";
 
+    // Cible les éléments HTML nécessaires
     const displayInput = document.getElementById('travel-date');
     const departureValueInput = document.getElementById('departure-date-value');
     const returnValueInput = document.getElementById('return-date-value');
 
+    // Sécurité : si un élément est manquant, on arrête pour éviter une erreur
     if (!displayInput || !departureValueInput || !returnValueInput) {
         console.error("❌ ERREUR FATALE : Un des inputs de date est manquant.");
         return;
     }
 
+    // Configure le champ visible par l'utilisateur
     displayInput.placeholder = placeholderText;
-    displayInput.readOnly = true;
+    displayInput.readOnly = true; // Empêche le clavier mobile de s'ouvrir
 
+    // Détermine si on est en mode "Aller-retour" ou "Aller simple"
     const isRoundTrip = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip";
     
+    // Initialise le calendrier Flatpickr
     appState.departurePicker = flatpickr(displayInput, {
-        dateFormat: "Y-m-d",
-        minDate: "today",
-        locale: lang,
-        mode: isRoundTrip ? "range" : "single",
-        altInput: true,
-        altFormat: "d F Y",
+        dateFormat: "Y-m-d",        // Format interne
+        minDate: "today",           // N'autorise pas les dates passées
+        locale: lang,               // Utilise la langue FR ou EN
+        mode: isRoundTrip ? "range" : "single", // Mode simple ou plage
+        altInput: true,             // Affiche la date dans un format lisible
+        altFormat: "d F",           // Format lisible (ex: 04 Décembre)
 
+        // C'est ici que la magie opère. Cette fonction s'exécute quand l'utilisateur ferme le calendrier.
         onClose: function(selectedDates) {
+            
+            // Si l'utilisateur n'a rien sélectionné, on vide les champs et on arrête
             if (selectedDates.length === 0) {
                 departureValueInput.value = "";
                 returnValueInput.value = "";
                 return;
             }
 
+            // S'assure que les dates sont dans le bon ordre (départ avant retour)
             selectedDates.sort((a, b) => a - b);
             
-            const formatDateLocal = (date) => {
+            // ================================================
+            // ✅ DÉBUT DE LA CORRECTION : FORMATAGE SANS FUSEAU HORAIRE
+            // ================================================
+
+            // Petite fonction pour convertir un objet Date en chaîne "YYYY-MM-DD"
+            // Elle utilise getFullYear, getMonth, getDate qui ignorent le fuseau horaire.
+            const formatDateToString = (date) => {
                 const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() est 0-indexé (0=Janvier)
                 const day = String(date.getDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             };
 
+            // On prend la première date sélectionnée comme date de départ
             const departureDate = selectedDates[0];
-            departureValueInput.value = formatDateLocal(departureDate);
+            const departureDateString = formatDateToString(departureDate);
             
-            console.log("📅 Date sélectionnée:", departureDate);
-            console.log("📅 Date formatée (envoyée à l'API):", departureValueInput.value);
+            // On met la chaîne correcte dans le champ de valeur caché
+            departureValueInput.value = departureDateString;
             
+            // Si on est en mode aller-retour
             if (isRoundTrip) {
-                const returnDate = selectedDates.length > 1 ? selectedDates[1] : departureDate;
-                returnValueInput.value = formatDateLocal(returnDate);
-                
-                // ✅ CORRIGÉ : Log avec les bonnes variables
-                console.log("📅 ADMIN - startDate:", departureValueInput.value);
-                console.log("📅 ADMIN - endDate:", returnValueInput.value);
+                // On prend la deuxième date comme date de retour (s'il y en a une)
+                const returnDate = selectedDates.length > 1 ? selectedDates[1] : null;
+                if (returnDate) {
+                    returnValueInput.value = formatDateToString(returnDate);
+                } else {
+                    // Si une seule date est cliquée, on considère que le retour est le même jour
+                    returnValueInput.value = departureDateString;
+                }
             } else {
-                returnValueInput.value = "";
-                // ✅ CORRIGÉ : Log pour aller simple
-                console.log("📅 ADMIN - startDate:", departureValueInput.value);
-                console.log("📅 ADMIN - endDate: (aller simple, pas de retour)");
+                 // Si on est en aller-simple, on s'assure que le champ de retour est vide
+                 returnValueInput.value = "";
             }
+            // ================================================
+            // ✅ FIN DE LA CORRECTION
+            // ================================================
         }
     });
 
-    console.log(`✅ Calendrier initialisé en mode "${isRoundTrip ? 'range' : 'single'}"`);
-    // ✅ Supprimé les console.log avec startDate/endDate qui n'existaient pas ici
+    console.log(`✅ Calendrier initialisé sur #travel-date en mode "${isRoundTrip ? 'range' : 'single'}"`);
 }
+
 
 function setupPassengerSelector() {
     const input = document.getElementById("passenger-input");
@@ -2690,6 +3121,8 @@ function setupPassengerSelector() {
     updateDisplay();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
+// DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
+
 function setupPaymentMethodToggle() {
     const radios = document.querySelectorAll('input[name="payment"]');
     const mtnDetails = document.getElementById("mtn-details");
@@ -2698,43 +3131,55 @@ function setupPaymentMethodToggle() {
     
     if (!radios.length) return;
     
-    // --- 1. Traduire le texte initial pour l'option agence ---
+    // --- Traduire le texte initial pour l'option agence ---
     const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+    const translation = (translations && translations[lang]) ? translations[lang] : {};
     const agencySubtitle = document.getElementById('agency-payment-subtitle');
     if (agencySubtitle && typeof translation.payment_agency_desc === 'function') {
         agencySubtitle.textContent = translation.payment_agency_desc(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
     }
     
-    // --- 2. Gérer les changements de sélection ---
-    radios.forEach(radio => {
-        radio.addEventListener("change", () => {
-            // Cacher tous les détails
-            if (mtnDetails) mtnDetails.style.display = "none";
-            if (airtelDetails) airtelDetails.style.display = "none";
-            if (agencyDetails) agencyDetails.style.display = "none";
-            
-            // Afficher le bon détail
-            if (radio.checked) {
-                if (radio.value === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
-                else if (radio.value === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
-                else if (radio.value === "agency" && agencyDetails) agencyDetails.style.display = "flex";
-            }
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : Refactorisation de la logique
+    // ========================================================
 
-            // ===================================
-            // ✅ LOGIQUE DU DÉCOMPTEUR CORRIGÉE
-            // ===================================
-            // Si on sélectionne "Agence", on démarre le décompteur.
-            if (radio.value === 'agency' && radio.checked) {
-                startAgencyCountdown();
-            } 
-            // Si on sélectionne une autre option, on arrête le décompteur.
-            else {
-                stopAgencyCountdown();
-            }
-            // ===================================
-        });
+    // Fonction interne pour gérer la logique d'affichage
+    const updateDisplay = () => {
+        const selectedRadio = document.querySelector('input[name="payment"]:checked');
+        if (!selectedRadio) return; // Sécurité si rien n'est coché
+
+        const selectedValue = selectedRadio.value;
+
+        // Cacher tous les détails
+        if (mtnDetails) mtnDetails.style.display = "none";
+        if (airtelDetails) airtelDetails.style.display = "none";
+        if (agencyDetails) agencyDetails.style.display = "none";
+        
+        // Afficher le bon détail
+        if (selectedValue === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
+        else if (selectedValue === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
+        else if (selectedValue === "agency" && agencyDetails) agencyDetails.style.display = "flex";
+
+        // Gérer le décompteur de l'agence
+        if (selectedValue === 'agency') {
+            startAgencyCountdown();
+        } else {
+            stopAgencyCountdown();
+        }
+    };
+
+    // --- Attacher les écouteurs d'événements ---
+    radios.forEach(radio => {
+        radio.addEventListener("change", updateDisplay);
     });
+
+    // --- Appel initial pour afficher le bon état au chargement ---
+    // C'est cette ligne qui résout le bug.
+    updateDisplay();
+
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
 }
 
 // ============================================
@@ -2778,6 +3223,10 @@ function setupAmenitiesFilters() {
 // ============================================
 // 🚌 RECHERCHE (AVEC DÉBOGAGE)
 // ============================================
+// Dans app.js
+
+// DANS app.js
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
@@ -2791,17 +3240,25 @@ window.searchBuses = async function() {
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
         
-        console.log(`2️⃣ Données saisies: De ${origin} à ${destination}, le ${departureDate}`);
-
         const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
         if (tripType === "round-trip" && departureDate && !returnDate) {
             returnDate = departureDate;
         }
 
-        // Validation
-        if (!origin || !destination || !departureDate) {
-            Utils.showToast("Veuillez remplir l'origine, la destination et la date.", 'error');
-            console.error("❌ Validation échouée : champs manquants.");
+        if (!origin) {
+            Utils.showToast(translation.error_search_missing_origin, 'error');
+            return;
+        }
+        if (!destination) {
+            Utils.showToast(translation.error_search_missing_destination, 'error');
+            return;
+        }
+        if (!departureDate) {
+            Utils.showToast(translation.error_search_missing_date, 'error');
+            return;
+        }
+        if (origin === destination) {
+            Utils.showToast(translation.error_same_origin_destination, 'error');
             return;
         }
         
@@ -2823,26 +3280,43 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
+        
         console.log("5️⃣ Données JSON parsées:", data);
         
-        if (data.count === 0) {
-            console.log("   -> Aucun résultat trouvé.");
-            Utils.showToast(translation.info_no_trips_found, 'info');
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR
+        // ========================================================
+        if (data.success && data.results) {
+            // On stocke la liste complète et non modifiée des résultats de l'API.
+            // C'est notre "source de vérité" pour les filtres.
+            appState.currentResults = data.results;
+
+            if (data.results.length === 0) {
+                console.log("   -> Aucun résultat trouvé.");
+                Utils.showToast(translation.info_no_trips_found, 'info');
+            } else {
+                console.log(`   -> ${data.results.length} résultats bruts reçus.`);
+            }
+            
+            // On appelle displayResults, qui se chargera d'appliquer les filtres et d'afficher.
+            displayResults(appState.currentResults);
+
+        } else {
+            // En cas d'échec partiel de l'API
             appState.currentResults = [];
             displayResults([]);
-        } else {
-            console.log(`   -> ${data.count} résultats trouvés.`);
-            appState.currentResults = data.results;
-            displayResults(data.results);
+            throw new Error(data.error || "Le serveur a renvoyé des données invalides.");
         }
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
         
-        // C'est ici que la magie doit opérer
         console.log("6️⃣ Affichage de la page 'results'...");
         showPage("results");
 
     } catch (error) {
         console.error('❌ Erreur critique dans searchBuses:', error);
-        Utils.showToast(error.message || "Une erreur est survenue.", 'error');
+        Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
 function setupSmartSearch() {
@@ -3070,8 +3544,9 @@ async function showDetailedSearch(prefillData = {}) {
 // 🔍 FILTRAGE ET TRI DES RÉSULTATS
 // ============================================
 
-function applyFiltersAndSort() {
-    let filteredResults = [...appState.currentResults];
+function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
+    // ✅ Utilise les résultats passés en paramètre (ou ceux de l'état global par défaut)
+    let filteredResults = [...results];
     
     // ✅ Filtre par compagnie
     if (activeFilters.company !== 'all') {
@@ -3116,9 +3591,7 @@ function applyFiltersAndSort() {
         );
     }
 
-
-    // ✅ AJOUTER CE BLOC DE FILTRAGE
-    // Filtre par lieu de départ
+    // ✅ Filtre par lieu de départ
     if (activeFilters.departureLocation !== 'all') {
         filteredResults = filteredResults.filter(route => 
             route.departureLocation === activeFilters.departureLocation
@@ -3149,9 +3622,11 @@ function applyFiltersAndSort() {
 
 // DANS app.js, REMPLACEZ la fonction updateFilter
 
+// DANS app.js (remplacez votre fonction updateFilter)
+
 window.updateFilter = function(filterType, value) {
+    // La première partie de la fonction qui met à jour l'objet 'activeFilters' est correcte et reste inchangée.
     switch (filterType) {
-        // ✅ CORRECTION : Ajout de 'departureLocation' à la liste
         case 'company':
         case 'tripType':
         case 'departureTime':
@@ -3162,14 +3637,20 @@ window.updateFilter = function(filterType, value) {
         
         case 'priceMin':
             activeFilters.priceRange.min = parseInt(value) || 0;
-            document.getElementById('price-min-display').textContent = 
-                Utils.formatPrice(activeFilters.priceRange.min);
+            // On s'assure que l'élément existe avant de le modifier
+            const priceMinDisplay = document.getElementById('price-min-display');
+            if (priceMinDisplay) {
+                priceMinDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.min);
+            }
             break;
         
         case 'priceMax':
             activeFilters.priceRange.max = parseInt(value) || 100000;
-            document.getElementById('price-max-display').textContent = 
-                Utils.formatPrice(activeFilters.priceRange.max);
+            // On s'assure que l'élément existe avant de le modifier
+            const priceMaxDisplay = document.getElementById('price-max-display');
+            if (priceMaxDisplay) {
+                priceMaxDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.max);
+            }
             break;
         
         case 'amenity':
@@ -3182,14 +3663,25 @@ window.updateFilter = function(filterType, value) {
             break;
     }
     
-    // Réappliquer les filtres et rafraîchir l'affichage
-    const filtered = applyFiltersAndSort();
-    displayResults(filtered, appState.isSelectingReturn);
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE
+    // ========================================================
+
+    // On rafraîchit l'affichage en appelant displayResults.
+    // On lui passe TOUJOURS la liste complète et non filtrée des résultats de la recherche initiale.
+    displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // Message si aucun résultat
-    if (filtered.length === 0) {
-        Utils.showToast('Aucun trajet ne correspond à vos critères', 'info');
+    // On vérifie le nombre de résultats APRÈS que displayResults ait fait son travail de filtrage.
+    // 'appState.displayedResults' contient maintenant la liste réellement affichée.
+    if (appState.displayedResults.length === 0) {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        Utils.showToast(translation.info_no_trips_match_filters, 'info');
     }
+    
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
 };
 
 
@@ -3248,8 +3740,10 @@ function setupMobileFilterToggle() {
 
 
 
+// DANS app.js (remplacez votre fonction resetFilters)
+
 window.resetFilters = function() {
-    // 1. Réinitialiser l'objet des filtres actifs
+    // 1. Réinitialiser l'objet des filtres actifs (votre code est parfait)
     activeFilters = {
         company: 'all',
         tripType: 'all',
@@ -3260,14 +3754,25 @@ window.resetFilters = function() {
         departureLocation: 'all'
     };
 
+    // ========================================================
+    // ✅ MISE À JOUR : Ajout de vérifications de sécurité
+    // ========================================================
+
     // 2. Réinitialiser les champs de formulaire dans l'interface utilisateur
     const locationSelect = document.getElementById('filter-departure-location');
     if (locationSelect) locationSelect.value = 'all';
-    
-    document.getElementById('filter-company').value = 'all';
-    document.getElementById('filter-trip-type').value = 'all';
-    document.getElementById('filter-time').value = 'all';
-    document.getElementById('sort-by').value = 'departure';
+
+    const companySelect = document.getElementById('filter-company');
+    if (companySelect) companySelect.value = 'all';
+
+    const tripTypeSelect = document.getElementById('filter-trip-type');
+    if (tripTypeSelect) tripTypeSelect.value = 'all';
+
+    const timeSelect = document.getElementById('filter-time');
+    if (timeSelect) timeSelect.value = 'all';
+
+    const sortBySelect = document.getElementById('sort-by');
+    if (sortBySelect) sortBySelect.value = 'departure';
     
     const priceMinInput = document.getElementById('price-min');
     if (priceMinInput) priceMinInput.value = 0;
@@ -3285,16 +3790,17 @@ window.resetFilters = function() {
         cb.checked = false;
     });
     
-    // 3. Rafraîchir l'affichage des résultats
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
+
+    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale (votre code est parfait)
     displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // ===================================
-    // ✅ TRADUCTION DU MESSAGE DE SUCCÈS
-    // ===================================
+    // 4. Afficher le toast de succès (votre code est parfait)
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     Utils.showToast(translation.success_filters_reset, 'success');
-    // ===================================
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
@@ -3303,29 +3809,35 @@ window.resetFilters = function() {
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
 // DANS app.js (remplacez votre fonction displayResults)
-function displayResults(results, isReturn = false) {
+// DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
-    // --- 1. Récupération des traductions et éléments DOM ---
+function displayResults(results, isReturn = false) {
+    // --- 0. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+    
+    // --- 1. Récupération des éléments DOM ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
+
+    // --- 2. Application des filtres sur la liste brute fournie en entrée ---
+    const filteredAndSortedResults = applyFiltersAndSort(results);
+
+    // --- 3. Mise à jour de l'état des résultats qui sont réellement affichés ---
+    appState.displayedResults = filteredAndSortedResults;
     
-    // --- 2. Application des filtres et du tri ---
-    const displayedResults = applyFiltersAndSort();
-    
-    // --- 3. Mise à jour du résumé de la recherche ---
+    // --- 4. Mise à jour du résumé avec le nombre de résultats APRÈS filtrage ---
     let summaryText = isReturn
-        ? translation.results_summary_return(displayedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
-        : translation.results_summary_outbound(displayedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
+        ? translation.results_summary_return(filteredAndSortedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
+        : translation.results_summary_outbound(filteredAndSortedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
     if (summary) summary.innerHTML = summaryText;
 
-    // --- 4. Mise à jour du filtre par lieu de départ ---
+    // --- 5. Mise à jour du filtre par lieu de départ ---
     if (locationFilterSection && locationSelect) {
-        const uniqueLocations = [...new Set(allRouteTemplates.map(t => t.departureLocation).filter(Boolean))];
+        const uniqueLocations = [...new Set(results.map(t => t.departureLocation).filter(Boolean))];
         
         if (uniqueLocations.length > 1) {
             const currentFilterValue = activeFilters.departureLocation;
@@ -3340,14 +3852,14 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 5. Logique pour les badges "Moins cher" et "Plus rapide" ---
+    // --- 6. Logique pour les badges "Moins cher" et "Plus rapide" (basée sur la liste filtrée) ---
     let cheapestId = null, fastestId = null;
-    if (displayedResults.length > 1) {
-        const minPrice = Math.min(...displayedResults.map(r => r.price));
-        const cheapestRoute = displayedResults.find(r => r.price === minPrice);
+    if (filteredAndSortedResults.length > 1) {
+        const minPrice = Math.min(...filteredAndSortedResults.map(r => r.price));
+        const cheapestRoute = filteredAndSortedResults.find(r => r.price === minPrice);
         if (cheapestRoute) cheapestId = cheapestRoute.id;
 
-        const directTrips = displayedResults.filter(r => r.tripType === 'direct');
+        const directTrips = filteredAndSortedResults.filter(r => r.tripType === 'direct');
         if (directTrips.length > 0) {
             let minDuration = Infinity;
             directTrips.forEach(route => {
@@ -3360,45 +3872,70 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 6. Affichage du message si aucun résultat ---
-    if (displayedResults.length === 0) {
-        resultsList.innerHTML = `
-            <div class="no-results" style="text-align: center; padding: 48px;">
-                <h3>${translation.results_no_results_title}</h3>
-                <p>${translation.results_no_results_desc}</p>
-                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
-                    ${translation.filter_reset_button}
-                </button>
-            </div>`;
+    // --- 7. Affichage du message si aucun résultat après filtrage ---
+    if (filteredAndSortedResults.length === 0) {
+        const totalBeforeFilters = results?.length || 0;
+        
+         if (totalBeforeFilters > 0) {
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            resultsList.innerHTML = `
+                <div class="no-results" style="text-align: center; padding: 48px;">
+                    <h3>${translation.results_no_results_title}</h3>
+                    <p style="color: var(--color-text-secondary); margin: 16px 0;">
+                        ${translation.info_trips_available_before_filter(totalBeforeFilters)}
+                    </p>
+                    <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
+                        ${translation.filter_reset_button}
+                    </button>
+                </div>`;
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
+        } else {
+            resultsList.innerHTML = `
+                <div class="no-results" style="text-align: center; padding: 48px;">
+                    <h3>${translation.info_no_trips_found}</h3>
+                    <p>${translation.results_no_results_desc}</p>
+                </div>`;
+        }
         return;
     }
 
-    // --- 7. Génération des cartes de résultats ---
-    resultsList.innerHTML = displayedResults.map(route => {
+    // --- 8. Génération des cartes de résultats à partir de la liste filtrée ---
+    resultsList.innerHTML = filteredAndSortedResults.map(route => {
         let badgeHTML = '';
-
-        // ✅ Logique des badges mise à jour avec priorité au voyage de nuit
+        
         if (route.isNightTrip) {
-            badgeHTML = `<div class="highlight-badge night-trip">${translation.badge_night_trip || '🌙 Voyage de Nuit'}</div>`;
-        } else if (route.highlightBadge) {
+            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🌙 Trajet de Nuit</div>`;
+        }
+        else if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        } else if (route.id === cheapestId) {
+        }
+        else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
-        } else if (route.id === fastestId) {
+        }
+        else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
 
-        const amenitiesHTML = route.amenities.map(amenity => `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`).join("");
-        const departureLocationHTML = route.departureLocation ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` : '';
+        const amenitiesHTML = route.amenities.map(amenity => 
+            `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`
+        ).join("");
+        
+        const departureLocationHTML = route.departureLocation 
+            ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` 
+            : '';
         
         let tripDetailsHTML = '';
 
-        // Gestion des ARRÊTS
         if (route.stops && route.stops.length > 0) {
             tripDetailsHTML += `
                 <div class="trip-details-accordion">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
-                        <span class="bus-card-trip-details"><span class="accordion-icon">▶</span>
+                        <span class="bus-card-trip-details">
+                            <span class="accordion-icon">▶</span>
                             <span>${translation.details_stops_planned} </span>
                             <strong class="bus-card-stops">${translation.details_stops_count(route.stops.length)}</strong>
                         </span>
@@ -3409,48 +3946,50 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // Gestion des CORRESPONDANCES
         if (route.connections && route.connections.length > 0) {
-             tripDetailsHTML += `
+            tripDetailsHTML += `
                 <div class="trip-details-accordion" style="margin-top: 4px;">
                     <div class="accordion-header" onclick="toggleTripDetails(this)">
-                         <span class="bus-card-trip-details" style="color: #00d9ff;"><span class="accordion-icon">▶</span>
+                        <span class="bus-card-trip-details" style="color: #00d9ff;">
+                            <span class="accordion-icon">▶</span>
                             <span>${translation.details_connections} </span>
                             <strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong>
                         </span>
                     </div>
                     <div class="accordion-content">
-                         ${route.connections.map(conn => `<div class="accordion-content-item">⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}
+                        ${route.connections.map(conn => 
+                            `<div class="accordion-content-item">
+                                ⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br>
+                                <small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small>
+                            </div>`
+                        ).join('')}
                     </div>
                 </div>`;
         }
 
-        // Trajet direct
         if (tripDetailsHTML === '') {
-            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
+            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">
+                ${Utils.getAmenityIcon('direct')}
+                <span>${translation.details_direct_trip}</span>
+            </div>`;
         }
-
-        // ✅ Calcul de l'heure et de la date d'arrivée
-        const departureTime = route.departure;
-        const searchDate = isReturn ? appState.currentSearch.returnDate : appState.currentSearch.date;
-        const arrivalDateTime = Utils.getArrivalDateTime(searchDate, route.arrival, route.arrivalDaysOffset);
-        const arrivalTime = arrivalDateTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-        let arrivalDateBadge = '';
-        if (route.arrivalDaysOffset > 0) {
-            const badgeText = `J+${route.arrivalDaysOffset}`;
-            arrivalDateBadge = `<span class="arrival-day-badge">${badgeText}</span>`;
-        }
-
+        
+        const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
+            ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
+            : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
+            
         return `
             <div class="bus-card">
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
                         <div class="bus-card-time">
-                            <span>${departureTime}</span>
-                            <div class="bus-card-duration"><span>→</span><br>${route.duration || 'N/A'}</div>
-                            <span>${arrivalTime} ${arrivalDateBadge}</span>
+                            <span>${route.departure}</span>
+                            <div class="bus-card-duration">
+                                <span>→</span><br>
+                                ${route.duration || 'N/A'}
+                            </div>
+                            ${arrivalDisplay}
                         </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
@@ -3469,7 +4008,7 @@ function displayResults(results, isReturn = false) {
         `;
     }).join("");
 
-    // --- 8. Mise à jour de la légende ---
+    // --- 9. Mise à jour de la légende ---
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
         legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 
@@ -3477,6 +4016,7 @@ function displayResults(results, isReturn = false) {
         ).join('');
     }
 }
+
 // DANS app.js (à ajouter avec vos autres fonctions)
 
 /**
@@ -3539,9 +4079,14 @@ window.selectBus = async function(busId) {
     }
 };
 // ✅ NOUVELLE FONCTION : Recherche des trajets retour
+// DANS app.js (remplacez l'ancienne fonction par celle-ci)
+
 async function searchReturnTrips() {
     try {
-        Utils.showToast('Recherche des trajets retour...', 'info');
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+
+        Utils.showToast(translation.toast_select_return_bus, 'info');
         
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(appState.currentSearch.destination)}&to=${encodeURIComponent(appState.currentSearch.origin)}&date=${appState.currentSearch.returnDate}`
@@ -3554,16 +4099,37 @@ async function searchReturnTrips() {
         const data = await response.json();
         
         if (data.count === 0) {
-            Utils.showToast("Aucun trajet retour disponible pour cette date", 'warning');
-            // Proposer de revenir à la recherche
-            if (confirm("Aucun trajet retour trouvé. Voulez-vous modifier votre recherche ?")) {
+            // ===============================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ===============================================
+
+            // Affiche un toast traduit
+            Utils.showToast(translation.info_no_return_trips_found, 'warning');
+
+            // Utilise la modale personnalisée et stylisée
+            const confirmed = await showCustomConfirm({
+                title: translation.confirm_no_return_title,
+                message: translation.confirm_no_return_desc,
+                icon: '😢',
+                confirmText: translation.button_modify_search,
+                cancelText: translation.button_cancel, // Clé déjà existante
+                confirmClass: 'btn-primary' // Pour avoir un bouton vert/bleu
+            });
+
+            if (confirmed) {
                 showPage("home");
             }
+            // Si l'utilisateur clique sur "Annuler", la modale se ferme et rien ne se passe.
+
+            // ===============================================
+            // ✅ FIN DE LA CORRECTION
+            // ===============================================
         } else {
             appState.currentResults = data.results;
             displayResults(data.results, true); // true = mode retour
             showPage("results");
-            Utils.showToast(`${data.count} trajet(s) retour trouvé(s)`, 'success');
+            // Utilisons une clé de traduction pour ce toast aussi
+            Utils.showToast(translation.success_trips_found(data.count), 'success');
         }
         
     } catch (error) {
@@ -3819,17 +4385,16 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
         </div>
     `;
 }
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
 function updateSeatSummary() {
-    console.log("--- Début de updateSeatSummary ---");
-
+    // Le début de votre fonction est bon (récupération des éléments et des traductions)
     const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    console.log("Langue utilisée:", lang);
-
+    const translation = (translations && translations[lang]) ? translations[lang] : {};
+    
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-    console.log("Sièges sélectionnés:", currentSeats);
-
+    
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
     
@@ -3837,35 +4402,46 @@ function updateSeatSummary() {
         console.error("ERREUR FATALE: Les éléments seatsDisplay ou priceDisplay sont introuvables.");
         return;
     }
-    console.log("Éléments d'affichage trouvés.");
 
     if (!currentBus) {
-        console.warn("ATTENTION: currentBus est indéfini. Impossible de calculer le prix.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
         return;
     }
-    console.log("Bus actuel trouvé. Prix de base:", currentBus.price);
 
     if (currentSeats.length === 0) {
-        console.log("Aucun siège sélectionné. Affichage du texte par défaut.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
     } else {
-        console.log("Calcul du prix pour les sièges:", currentSeats.join(", "));
         seatsDisplay.textContent = currentSeats.join(", ");
+        
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE DE CALCUL
+        // ========================================================
+        
+        // On récupère les règles de tarification actuelles
+        const rules = appRules.ticketing;
+        
+        const adultPrice = currentBus.price;
+        const childDiscount = rules.childDiscountPercentage / 100;
+        const childPrice = adultPrice * (1 - childDiscount); // Calcul du prix enfant basé sur le pourcentage
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
+        
+        // On détermine combien de sièges sélectionnés sont pour des adultes et combien pour des enfants
         const adultsSelected = Math.min(numSeats, numAdults);
         const childrenSelected = numSeats - adultsSelected;
         
-        const totalPrice = (adultsSelected * currentBus.price) + (childrenSelected * CONFIG.CHILD_TICKET_PRICE);
+        const totalPrice = (adultsSelected * adultPrice) + (childrenSelected * childPrice);
         
-        console.log(`Prix calculé: ${totalPrice} FCFA`);
-        priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
+        // On arrondit le prix final et on l'affiche
+        priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
+
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
     }
-    console.log("--- Fin de updateSeatSummary ---");
 }
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
@@ -4174,14 +4750,26 @@ window.proceedToPayment = function() {
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
 
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
+/**
+ * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
+ * prices, available seats, and payment options for a bus reservation.
+ * @returns The `displayBookingSummary` function does not explicitly return any value. It is a function
+ * that performs a series of tasks related to displaying a booking summary on a webpage, updating
+ * payment fields, handling urgency information, and managing payment options. The function interacts
+ * with the DOM elements and updates their content based on the current state of the application
+ * (`appState`).
+ */
+// DANS app.js (remplacez votre fonction displayBookingSummary par celle-ci)
+
 function displayBookingSummary() {
     console.log("📊 Affichage du récapitulatif de réservation...");
     
-    // --- 1. Récupération des traductions ---
+    // --- 1. Récupération des traductions et des règles ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+    const rules = appRules.ticketing; // On récupère les règles de tarification
 
-    // --- 2. Cibles DOM et vérifications ---
+    // --- 2. Cibles DOM et vérifications de sécurité ---
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
         console.error("❌ Élément #booking-summary introuvable.");
@@ -4194,22 +4782,32 @@ function displayBookingSummary() {
         return;
     }
 
-    // --- 3. Calcul du prix ---
+    // --- 3. Calcul du prix via la fonction utilitaire ---
     const priceDetails = Utils.calculateTotalPrice(appState);
     const finalTotalPrice = priceDetails.total;
     const totalTicketsPrice = priceDetails.tickets + priceDetails.returnTickets;
 
-    // --- 4. Construction du récapitulatif HTML ---
+    // --- 4. Construction du récapitulatif HTML (avec traductions dynamiques) ---
+    const passengersSummary = translation.summary_passengers_details(
+        appState.passengerCounts.adults,
+        appState.passengerCounts.children,
+        rules.childMaxAge
+    );
+
     let summaryHTML = `
         <div class="detail-row"><span>${translation.summary_outbound_route}:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
         <div class="detail-row"><span>${translation.summary_outbound_date}:</span><strong>${Utils.formatDate(appState.currentSearch.date, lang)}</strong></div>
     `;
+
     if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
         summaryHTML += `
             <div class="detail-row"><span>${translation.summary_return_route}:</span><strong>${appState.selectedReturnBus.from} → ${appState.selectedReturnBus.to}</strong></div>
             <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate, lang)}</strong></div>
         `;
     }
+    
+    summaryHTML += `<div class="detail-row"><span>Passagers :</span><strong>${passengersSummary}</strong></div>`;
+
     summaryHTML += `
         <hr style="border-color: var(--color-border); margin: 8px 0;">
         <div class="detail-row"><span>${translation.summary_tickets_price}:</span><strong>${Utils.formatPrice(totalTicketsPrice)} FCFA</strong></div>
@@ -4228,47 +4826,42 @@ function displayBookingSummary() {
 
     // --- 6. Boîte d'urgence et décompteur ---
     const urgencyBox = document.getElementById('urgency-box');
-   (async () => {
-    if (!urgencyBox) return;
-    try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
-        const seatData = await response.json();
+    (async () => {
+        if (!urgencyBox) return;
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
+            const seatData = await response.json();
 
-        // ===================================
-        // ✅ CORRECTION ICI
-        // ===================================
-        // On vérifie que la réponse est un succès ET que 'availableSeats' est bien un nombre.
-        if (seatData.success && typeof seatData.availableSeats === 'number') {
-            const availableSeats = seatData.availableSeats;
-            let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
-            if (availableSeats < 10) {
-                seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
+            if (seatData.success && typeof seatData.availableSeats === 'number') {
+                const availableSeats = seatData.availableSeats;
+                let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
+                if (availableSeats < 10) {
+                    seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
+                }
+                
+                const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
+                
+                urgencyBox.innerHTML = `
+                    <div class="urgency-item">
+                        <span class="urgency-label">${translation.urgency_seats_left}</span>
+                        ${seatsLeftHTML}
+                    </div>
+                    <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
+                        <span class="urgency-label">${translation.urgency_deadline}</span>
+                        <span id="payment-countdown-timer" class="urgency-value">--:--</span>
+                    </div>
+                `;
+                urgencyBox.style.display = 'grid';
+                
+                startFrontendCountdown();
+            } else {
+                 urgencyBox.style.display = 'none';
             }
-            
-            const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
-            
-            urgencyBox.innerHTML = `
-                <div class="urgency-item">
-                    <span class="urgency-label">${translation.urgency_seats_left}</span>
-                    ${seatsLeftHTML} <!-- Maintenant, on est sûr que cette variable est définie -->
-                </div>
-                <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
-                    <span class="urgency-label">${translation.urgency_deadline}</span>
-                    <span id="payment-countdown-timer" class="urgency-value">--:--</span>
-                </div>
-            `;
-            urgencyBox.style.display = 'grid';
-            
-            // On peut démarrer le décompteur ici en toute sécurité
-            startFrontendCountdown();
-        } else {
-             urgencyBox.style.display = 'none';
+        } catch (e) {
+            console.error("Erreur affichage urgence:", e);
+            if(urgencyBox) urgencyBox.style.display = 'none';
         }
-    } catch (e) {
-        console.error("Erreur affichage urgence:", e);
-        if(urgencyBox) urgencyBox.style.display = 'none';
-    }
-})();
+    })();
     
     // --- 7. Gestion du paiement à l'agence ---
     const agencyOption = document.getElementById('agency-payment-option');
@@ -4279,10 +4872,11 @@ function displayBookingSummary() {
         } else {
             agencyOption.style.opacity = '0.5';
             agencyOption.querySelector('input').disabled = true;
-            agencyOption.title = "Paiement en agence non disponible (trop proche du départ)";
+            agencyOption.title = translation.payment_agency_unavailable_tooltip || "Agency payment not available (too close to departure)";
         }
     }
     
+    setupPaymentMethodToggle();
     console.log("✅ Récapitulatif affiché et mis à jour.");
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking
@@ -4541,17 +5135,33 @@ async function displayConfirmation(reservation) {
          // ✅ AJOUTER LE BOUTON FACTURE ICI
        actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
         if (reservation.busIdentifier) {
-            actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
+            actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }
         if (reservation.returnRoute) {
             actionsHTML += `<button class="btn-modern btn-download" onclick="downloadTicket(true)"><span class="btn-icon">📥</span><span class="btn-text">${translation.button_download_return}</span></button>`;
             if (reservation.returnBusIdentifier) {
-                actionsHTML += `<a class="btn-modern btn-track" href="Suivi/suivi.html?bus=${reservation.returnBusIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_return}</span></a>`;
+                actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.returnBusIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_return}</span></a>`;
             }
         }
         actionsHTML += `<button class="btn-modern btn-home" onclick="resetAndGoHome()"><span class="btn-icon">🏠</span><span class="btn-text">${translation.button_new_booking_alt}</span></button>`;
         
         actionsContainer.innerHTML = actionsHTML;
+    // ✅ NOTIFICATIONS - Programmer après confirmation réussie
+        if (reservation.status !== 'En attente de paiement') {
+            try {
+                // Rappels locaux
+                await scheduleReminderNotifications(reservation);
+                
+                // Enregistrer pour push
+                const busId = reservation.busIdentifier || 'N/A';
+                await registerTokenWithBooking(reservation.bookingNumber, busId);
+                
+                console.log("✅ Notifications programmées pour", reservation.bookingNumber);
+            } catch (notifError) {
+                console.warn("⚠️ Erreur notifications:", notifError);
+            }
+        }
+
     } catch (err) {
         console.error("❌ Erreur affichage confirmation:", err);
         Utils.showToast("Erreur d'affichage.", 'error');
@@ -4572,7 +5182,7 @@ async function displayReservations() {
     }
 
     let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-    // ✅ C'EST ICI QUE J'INTÈGRE L'ANIMATION
+    
     if (history.length === 0) {
         listContainer.innerHTML = `
             <div class="empty-state-container">
@@ -4583,25 +5193,49 @@ async function displayReservations() {
                     </div>
                     <div class="road"></div>
                 </div>
-                
-                <h3 class="empty-title">${translation.my_bookings_none_title || "C'est calme par ici..."}</h3>
-                <p class="empty-desc">${translation.my_bookings_none_desc || "Vous n'avez aucun voyage prévu pour le moment. Et si on changeait ça ?"}</p>
-                
+                <h3 class="empty-title">${translation.my_bookings_none_title}</h3>
+                <p class="empty-desc">${translation.my_bookings_none_desc}</p>
                 <button class="btn btn-primary btn-pulse" onclick="showPage('home')">
-                    ${translation.button_new_booking || "Réserver un billet"} ➜
+                    ${translation.button_new_booking} ➜
                 </button>
             </div>`;
         return;
     }
 
-
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
         const data = await response.json();
+        
         if (!data.success || !Array.isArray(data.reservations)) {
             throw new Error("Réponse API invalide pour les réservations.");
         }
 
+        if (data.reservations.length === 0) {
+            // ==============================================================
+            // ✅ DÉBUT DE LA MODIFICATION POUR LA TRADUCTION
+            // ==============================================================
+            listContainer.innerHTML = `
+                <div class="empty-state-container">
+                    <div class="not-found-animation">
+                        <div class="magnifying-glass"></div>
+                        <div class="ticket-icon">🎟️</div>
+                        <div class="question-mark">?</div>
+                    </div>
+                    
+                    <h3 class="empty-title">${translation.not_found_title}</h3>
+                    <p class="empty-desc">
+                        ${translation.not_found_desc}
+                    </p>
+                    
+                    <button class="btn btn-primary" onclick="showPage('home')">
+                        ${translation.button_plan_new_trip}
+                    </button>
+                </div>`;
+            // ==============================================================
+            // ✅ FIN DE LA MODIFICATION
+            // ==============================================================
+            return;
+        }
 
         let historyChanged = false;
         const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
@@ -4625,49 +5259,38 @@ async function displayReservations() {
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
                 
-                                let statusHTML = '';
-
+                let statusHTML = '';
                 if (isConfirmed) {
-                    statusHTML = `<span style="color: #73d700;">${translation.status_confirmed || 'Confirmed'}</span>`;
+                    statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
                 } else if (isPending) {
-                    statusHTML = `<span style="color: #ff9800;">${translation.status_pending || 'Pending'}</span>`;
+                    statusHTML = `<span style="color: #ff9800;">${translation.status_pending}</span>`;
                 } else if (isReportPending) {
-                    statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending || 'Reschedule Pending'}</span>`;
+                    statusHTML = `<span style="color: #2196f3;">${translation.status_report_pending}</span>`;
                 } else if (isReported) {
-                    statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported || 'Rescheduled'}</span>`;
-                } 
-                
-               // ✅ LOGIQUE DE TRADUCTION CORRIGÉE
-                else if (isCancelled) {
+                    statusHTML = `<span style="color: #9e9e9e; text-decoration: line-through;">${translation.status_reported}</span>`;
+                } else if (isCancelled) {
                     const lang = getLanguage();
-                    let statusText = res.status; // Par défaut, "Annulé" ou "Expiré"
-
-                    // Si on est en anglais, on traduit manuellement les termes du backend
+                    let statusText = res.status;
                     if (lang === 'en') {
                         if (res.status === 'Annulé') statusText = 'Cancelled';
                         if (res.status === 'Expiré') statusText = 'Expired';
                     }
-                    
-                    // On utilise la fonction de traduction avec le texte déjà traduit
                     if (typeof translation.status_cancelled === 'function') {
                         statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(statusText)}</span>`;
                     } else {
-                        // Fallback si la fonction n'existe pas
                         statusHTML = `<span style="color: #f44336;">${statusText}</span>`;
                     }
-                } 
-                
-                // Fallback final
-                else {
+                } else {
                     statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
                 }
-
 
                 let actionsButtons = '';
                 const trackerIdentifier = res.busIdentifier || res.route?.trackerId;
                 if (isConfirmed) {
                     actionsButtons = `<button class="btn btn-primary" onclick="viewTicket('${res.bookingNumber}')">${translation.button_view_ticket}</button>`;
-                    if (trackerIdentifier) actionsButtons += ` <a href="Suivi/suivi.html?bus=${trackerIdentifier}&booking=${res.bookingNumber}" class="btn btn-secondary">${translation.button_track || 'Suivre'}</a>`;
+                    if (trackerIdentifier) {
+                        actionsButtons += ` <button class="btn btn-secondary" onclick="openTrackerPage('${trackerIdentifier}', '${res.bookingNumber}')">${translation.button_track}</button>`;
+                    }
                     const reportCount = res.reportCount || 0;
                     if (!res.returnRoute && reportCount < 2) {
                         actionsButtons += ` <button class="btn btn-secondary" onclick="initiateReport('${res.bookingNumber}')" style="background-color: #ff9800;">${translation.button_report}</button>`;
@@ -4685,7 +5308,7 @@ async function displayReservations() {
 
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
-                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title || 'Masquer'}">🗑️</button>`;
+                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title}">🗑️</button>`;
                 }
                 
                 const formattedDate = Utils.formatDate(res.date, lang);
@@ -4693,7 +5316,6 @@ async function displayReservations() {
                     ? translation.date_at_time(formattedDate, res.route.departure)
                     : `${formattedDate} à ${res.route.departure}`;
 
-                // --- Génération de la ligne de statut ---
                 let liveStatusHTML = '';
                 if (res.liveStatus && res.status === 'Confirmé') {
                     const statusClass = res.liveStatus.status.toLowerCase().replace(/_/g, '-');
@@ -4732,6 +5354,24 @@ async function displayReservations() {
 }
 
 
+
+// ============================================
+// 🛰️ OUVERTURE PAGE SUIVI (Natif + Web)
+// ============================================
+function openTrackerPage(busId, bookingNumber) {
+    const url = `/suivi/suivi.html?bus=${busId}&booking=${bookingNumber}`;
+    
+    console.log(`🚌 Navigation vers : ${url}`);
+
+    // Natif : Navigation interne
+    if (window.Capacitor?.isNativePlatform()) {
+        window.location.href = url;
+    } 
+    // Web : Ouvrir dans nouvel onglet
+    else {
+        window.open(url, '_blank');
+    }
+}
 
 
 // Action pour télécharger la facture
@@ -5195,6 +5835,28 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
     }
 };
 
+
+
+
+
+// DANS app.js
+
+async function loadTicketingRules() {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
+        const data = await response.json();
+        
+        if (data.success && data.rules) {
+            appRules.ticketing = data.rules;
+            console.log("✅ Règles de tarification chargées :", appRules.ticketing);
+        } else {
+            console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
+        }
+    } catch (error) {
+        console.error("❌ Erreur chargement des règles de tarification:", error);
+    }
+}
+
 // ============================================
 // 🚪 FERMETURE DE LA MODALE
 // ============================================
@@ -5205,7 +5867,73 @@ window.closeReportModal = function() {
 
 
 
+// DANS app.js, AJOUTEZ CETTE FONCTION
 
+function addBookingToLocalHistory(bookingNumber) {
+    try {
+        let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        if (!history.includes(bookingNumber)) {
+            history.unshift(bookingNumber); 
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
+            console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
+        }
+    } catch (e) {
+        console.error("Erreur lors de la sauvegarde de l'historique local:", e);
+    }
+}
+
+
+window.addEventListener("DOMContentLoaded", initApp);
+
+
+
+
+
+// ============================================
+// 🧹 RÉINITIALISATION DE L'ÉTAT DE RÉSERVATION
+// ============================================
+function resetBookingState() {
+    appState.selectedBus = null;
+    appState.selectedReturnBus = null;
+    appState.isSelectingReturn = false;
+    appState.selectedSeats = [];
+    appState.selectedReturnSeats = [];
+    appState.occupiedSeats = [];
+    appState.occupiedReturnSeats = [];
+    appState.passengerInfo = [];
+    appState.baggageCounts = {};
+    appState.currentReservation = null;
+    
+    console.log('✅ État de réservation réinitialisé');
+}
+
+window.resetAndGoHome = function() {
+    resetBookingState();
+    showPage('home');
+}
+
+
+
+// ============================================
+// ↩️ GESTION DU BOUTON RETOUR ANDROID
+// ============================================
+if (window.Capacitor?.isNativePlatform()) {
+    const { App } = Capacitor.Plugins;
+
+    App.addListener('backButton', ({ canGoBack }) => {
+        // Si on peut revenir en arrière dans l'historique de l'app
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // Sinon (si on est sur la page d'accueil), on quitte l'app
+            App.exitApp();
+        }
+    });
+}
+
+
+
+// DANS app.js
 
 // DANS app.js
 
@@ -5249,53 +5977,22 @@ function setupSocialLinks() {
     socialContainer.innerHTML = html;
 }
 
-// DANS app.js, AJOUTEZ CETTE FONCTION
-
-function addBookingToLocalHistory(bookingNumber) {
-    try {
-        let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        if (!history.includes(bookingNumber)) {
-            history.unshift(bookingNumber); 
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
-            console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
-        }
-    } catch (e) {
-        console.error("Erreur lors de la sauvegarde de l'historique local:", e);
-    }
-}
-
-
-window.addEventListener("DOMContentLoaded", initApp);
-
-
-
-
-
 // ============================================
-// 🧹 RÉINITIALISATION DE L'ÉTAT DE RÉSERVATION
+// ⌨️ GESTION DU CLAVIER
 // ============================================
-function resetBookingState() {
-    appState.selectedBus = null;
-    appState.selectedReturnBus = null;
-    appState.isSelectingReturn = false;
-    appState.selectedSeats = [];
-    appState.selectedReturnSeats = [];
-    appState.occupiedSeats = [];
-    appState.occupiedReturnSeats = [];
-    appState.passengerInfo = [];
-    appState.baggageCounts = {};
-    appState.currentReservation = null;
-
+if (window.Capacitor?.isNativePlatform()) {
+    const { Keyboard } = Capacitor.Plugins;
     
-    console.log('✅ État de réservation réinitialisé');
+    // Quand le clavier s'ouvre, on remonte la vue
+    Keyboard.addListener('keyboardWillShow', (info) => {
+        document.body.style.paddingBottom = `${info.keyboardHeight}px`;
+        document.body.scrollTop = document.body.scrollHeight;
+    });
+
+    // Quand le clavier se ferme, on remet la vue à sa place
+    Keyboard.addListener('keyboardWillHide', () => {
+        document.body.style.paddingBottom = '0px';
+    });
 }
-
-window.resetAndGoHome = function() {
-    resetBookingState();
-    showPage('home');
-}
-
-
 
 // Dans app.js - Version améliorée avec numéro de réservation
-
