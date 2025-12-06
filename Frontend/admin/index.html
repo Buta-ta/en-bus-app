@@ -6766,12 +6766,102 @@ function viewReportDetails(bookingNumber) {
         }
 
 
-        async function openSettingsModal() {
-            // D'abord, charger les données
-            await loadSettings();
-            // Ensuite, afficher la modale
-            document.getElementById('settings-modal').classList.add('active');
+       async function openSettingsModal() {
+    // On appelle les deux fonctions de chargement en parallèle
+    await Promise.all([
+        loadReportSettings(),   // Renommée pour plus de clarté
+        loadTicketingSettings() // La nouvelle fonction
+    ]);
+    // Ensuite, on affiche la modale
+    document.getElementById('settings-modal').classList.add('active');
+}
+
+
+// Votre ancienne fonction 'loadSettings' est renommée et ciblée
+async function loadReportSettings() {
+    try {
+        const data = await apiCall('/admin/settings/report');
+        if (data && data.success) {
+            const settings = data.settings;
+            document.getElementById('setting-second-fee').value = settings.secondReportFee;
+            document.getElementById('setting-third-fee').value = settings.thirdReportFee;
+            document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
+            document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
         }
+    } catch (error) {
+        showNotification('Impossible de charger les paramètres de report', 'error');
+    }
+}
+
+// On crée la nouvelle fonction pour charger les règles de tarification
+async function loadTicketingSettings() {
+    try {
+        const data = await apiCall('/admin/settings/ticketing-rules');
+        if (data && data.success) {
+            const settings = data.settings;
+            document.getElementById('setting-child-max-age').value = settings.childMaxAge;
+            document.getElementById('setting-child-discount').value = settings.childDiscountPercentage;
+        }
+    } catch (error) {
+        showNotification('Impossible de charger les règles de tarification', 'error');
+    }
+}
+
+
+// DANS admin/index.html, dans <script>
+
+// On remplace l'ancienne fonction 'saveSettings' par celle-ci
+async function saveAllSettings(e) {
+    e.preventDefault();
+    showNotification("Sauvegarde des paramètres...", "info");
+
+    // On prépare les données pour les deux endpoints
+    const reportUpdates = {
+        secondReportFee: parseInt(document.getElementById('setting-second-fee').value) || 0,
+        thirdReportFee: parseInt(document.getElementById('setting-third-fee').value) || 0,
+        maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value) || 0,
+        minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value) || 0
+    };
+    
+    const ticketingUpdates = {
+        childMaxAge: parseInt(document.getElementById('setting-child-max-age').value) || 0,
+        childDiscountPercentage: parseInt(document.getElementById('setting-child-discount').value) || 0
+    };
+
+    try {
+        // On lance les deux appels de sauvegarde en parallèle
+        const [reportResult, ticketingResult] = await Promise.all([
+            apiCall('/admin/settings/report', 'PATCH', reportUpdates),
+            apiCall('/admin/settings/ticketing-rules', 'PATCH', ticketingUpdates)
+        ]);
+
+        // Si les deux ont réussi
+        if (reportResult?.success && ticketingResult?.success) {
+            showNotification('✅ Tous les paramètres ont été mis à jour avec succès !', 'success');
+            closeSettingsModal();
+        } else {
+            // Gérer le cas où l'un des deux échoue
+            showNotification("Erreur lors de la sauvegarde d'une partie des paramètres.", "error");
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde des paramètres:', error);
+        showNotification('Erreur globale lors de la sauvegarde.', 'error');
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         function closeSettingsModal() {
             document.getElementById('settings-modal').classList.remove('active');
@@ -7283,19 +7373,20 @@ function setupNotificationFormListeners() {
    <!-- ============================================
      ⚙️ MODALE DES PARAMÈTRES
      ============================================ -->
+<!-- DANS admin/index.html, trouvez la modale #settings-modal -->
+
 <div id="settings-modal" class="modal">
-    <div class="modal-dialog" style="max-width: 500px;">
+    <div class="modal-dialog" style="max-width: 600px;"> <!-- J'ai un peu élargi la modale -->
         <div class="modal-header">
-            <h2 class="modal-title">Paramètres du Système</h2>
-            <button class="modal-close" onclick="document.getElementById('settings-modal').classList.remove('active')">&times;</button>
+            <h2 class="modal-title">⚙️ Paramètres du Système</h2>
+            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
         </div>
         
         <div class="modal-body">
-            <!-- ✅ LE FORMULAIRE APPELLE BIEN saveSettings -->
-            <form id="settings-form" onsubmit="saveSettings(event)">
+            <form id="settings-form" onsubmit="saveAllSettings(event)">
                 
-                <h4 style="color: var(--primary); margin-bottom: 20px;">Configuration des Reports</h4>
-                
+                <!-- Section existante pour les Reports -->
+                <h4 style="color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--dark-border); padding-bottom: 10px;">Configuration des Reports</h4>
                 <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                     <div class="form-group">
                         <label class="form-label">Frais 2ème report (FCFA)</label>
@@ -7315,8 +7406,25 @@ function setupNotificationFormListeners() {
                     </div>
                 </div>
                 
+                <!-- ======================================================== -->
+                <!-- ✅ NOUVELLE SECTION POUR LA TARIFICATION ENFANT          -->
+                <!-- ======================================================== -->
+                <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+                <h4 style="color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--dark-border); padding-bottom: 10px;">Règles de Tarification</h4>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="form-group">
+                        <label for="setting-child-max-age" class="form-label">Âge maximum pour tarif enfant</label>
+                        <input type="number" id="setting-child-max-age" class="form-control" placeholder="Ex: 6">
+                    </div>
+                    <div class="form-group">
+                        <label for="setting-child-discount" class="form-label">Réduction enfant (en %)</label>
+                        <input type="number" id="setting-child-discount" class="form-control" placeholder="Ex: 50" min="0" max="100">
+                    </div>
+                </div>
+                <!-- ======================================================== -->
+                
                 <div style="text-align: right; margin-top: 2rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
-                    <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+                    <button type="submit" class="btn btn-primary">💾 Enregistrer tous les Paramètres</button>
                 </div>
 
             </form>

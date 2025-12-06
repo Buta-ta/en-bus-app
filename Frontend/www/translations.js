@@ -112,9 +112,26 @@ const translations = {
     filter_all_locations: "Tous les lieux",
     filter_toggle_button: "🌪️ Filtrer & Trier",
     filter_time_night: "Nuit (21h-5h)",
+    info_no_trips_found: "Aucun trajet disponible pour cet itinéraire à cette date",
+
+    // ============================================
+    // ✅ CLÉ AJOUTÉE ICI
+    // ============================================
+    info_no_trips_match_filters: "Aucun trajet ne correspond à vos critères de filtre.",
+
+    results_no_results_desc: "Essayez de modifier vos critères de recherche.",
+    info_no_trips_match_filters: "Aucun trajet ne correspond à vos critères de filtre.",
+
+    // ============================================
+    // ✅ CLÉ AJOUTÉE ICI
+    // ============================================
+    info_trips_available_before_filter: (count) => `${count} trajet(s) disponible(s) avant filtrage.`,
+    // ============================================
+    // ============================================
 
 
-    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+
+    details_connection_info: (city, wait) => `Changement à ${city} (Attente: ${wait})`,
 
 
 
@@ -413,10 +430,10 @@ const translations = {
     stub_label_passenger: "Passager",
     stub_label_total_paid: "Total Payé",
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
-    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+    details_connection_info: (city, wait) => `Changement à ${city}  (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
-    details_connections_title: "🔄 Correspondances",
-    details_connection_info: (city, wait) => `Changement à <strong>${city}</strong> (Attente: ${wait})`,
+    details_connections_title: " Correspondances",
+    details_connection_info: (city, wait) => `Changement à ${city} (Attente: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Prochain bus: ${company} (N°${bus || '?'}) à ${time}`,
     details_stops_planned: " Arrêts Prévus",
     details_stop_info: (duration, time) => `Arrêt de ${duration} (Arrivée: ${time})`,
@@ -630,7 +647,7 @@ const translations = {
     map_section_title: "Our Network at a Glance",
 
     // --- Results Page ---
-    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+    details_connection_info: (city, wait) => `Change at ${city} (Wait: ${wait})`,
   
   
     
@@ -684,6 +701,22 @@ const translations = {
     filter_all_locations: "All departure locations",
     filter_toggle_button: " Filter & Sort",
     filter_time_night: "Night (9pm-5am)",
+     // ... vos autres traductions ...
+    info_no_trips_found: "No trips available for this route on this date",
+    results_no_results_desc: "Try changing your search criteria.",
+    info_no_trips_match_filters: "No trips match your filter criteria.",
+    
+    // ============================================
+    // ✅ KEY ADDED HERE
+    // ============================================
+    info_trips_available_before_filter: (count) => `${count} trip(s) available before filtering.`,
+    // ============================================
+
+    // ============================================
+    // ✅ KEY ADDED HERE
+    // ============================================
+    info_no_trips_match_filters: "No trips match your filter criteria.",
+    // ============================================
 
 
     
@@ -974,10 +1007,10 @@ const translations = {
     stub_label_passenger: "Passenger",
     stub_label_total_paid: "Total Paid",
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,
-    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+    details_connection_info: (city, wait) => `Change at ${city} (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
-    details_connections_title: "🔄 Connections",
-    details_connection_info: (city, wait) => `Change at <strong>${city}</strong> (Wait: ${wait})`,
+    details_connections_title: " Connections",
+    details_connection_info: (city, wait) => `Change at ${city} (Wait: ${wait})`,
     details_next_bus_info: (company, bus, time) => `Next bus: ${company} (No. ${bus || '?'}) at ${time}`,
     details_stops_planned: " Scheduled Stops",
     details_stop_info: (duration, time) => `Break of ${duration} (Arrival: ${time})`,

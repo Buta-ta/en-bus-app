@@ -327,7 +327,11 @@ let appState = {
     passengerCounts: { adults: 1, children: 0 },
     baggageCounts: {},
     currentResults: [],
-    currentReservation: null
+    displayedResults: [],
+   
+    currentReservation: null,
+      // ✅ NOUVELLE PROPRIÉTÉ
+   
 };
 
 // --- État des filtres de la page de résultats ---
@@ -3195,12 +3199,13 @@ function setupAmenitiesFilters() {
 // ============================================
 // Dans app.js
 
+// DANS app.js
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
     
     try {
-        // ✅ On récupère les traductions tout au début
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
 
@@ -3214,26 +3219,22 @@ window.searchBuses = async function() {
             returnDate = departureDate;
         }
 
-        // =============================================================
-        // ✅ BLOC DE VALIDATION AMÉLIORÉ ET TRADUIT
-        // =============================================================
         if (!origin) {
-            Utils.showToast(translation.error_search_missing_origin || "Veuillez sélectionner une ville de départ.", 'error');
+            Utils.showToast(translation.error_search_missing_origin, 'error');
             return;
         }
         if (!destination) {
-            Utils.showToast(translation.error_search_missing_destination || "Veuillez sélectionner une ville d'arrivée.", 'error');
+            Utils.showToast(translation.error_search_missing_destination, 'error');
             return;
         }
         if (!departureDate) {
-            Utils.showToast(translation.error_search_missing_date || "Veuillez sélectionner une date de voyage.", 'error');
+            Utils.showToast(translation.error_search_missing_date, 'error');
             return;
         }
         if (origin === destination) {
-            Utils.showToast(translation.error_same_origin_destination || "Le départ et l'arrivée doivent être différents.", 'error');
+            Utils.showToast(translation.error_same_origin_destination, 'error');
             return;
         }
-        // =============================================================
         
         appState.currentSearch = { 
             origin, destination, date: departureDate, returnDate, 
@@ -3241,11 +3242,10 @@ window.searchBuses = async function() {
             tripType 
         };
 
-        // Le reste de la fonction est déjà bon car il utilise `translation.info_searching`
         Utils.showToast(translation.info_searching, 'info');
         console.log("3️⃣ Envoi de la requête API...");
         
-        const response = await fetch(`${APP_CONFIG.API_URL}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
         console.log("4️⃣ Réponse reçue du serveur :", response.status);
 
         if (!response.ok) {
@@ -3254,25 +3254,42 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
+        
         console.log("5️⃣ Données JSON parsées:", data);
         
-        if (data.count === 0) {
-            console.log("   -> Aucun résultat trouvé.");
-            Utils.showToast(translation.info_no_trips_found, 'info');
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR
+        // ========================================================
+        if (data.success && data.results) {
+            // On stocke la liste complète et non modifiée des résultats de l'API.
+            // C'est notre "source de vérité" pour les filtres.
+            appState.currentResults = data.results;
+
+            if (data.results.length === 0) {
+                console.log("   -> Aucun résultat trouvé.");
+                Utils.showToast(translation.info_no_trips_found, 'info');
+            } else {
+                console.log(`   -> ${data.results.length} résultats bruts reçus.`);
+            }
+            
+            // On appelle displayResults, qui se chargera d'appliquer les filtres et d'afficher.
+            displayResults(appState.currentResults);
+
+        } else {
+            // En cas d'échec partiel de l'API
             appState.currentResults = [];
             displayResults([]);
-        } else {
-            console.log(`   -> ${data.count} résultats trouvés.`);
-            appState.currentResults = data.results;
-            displayResults(data.results);
+            throw new Error(data.error || "Le serveur a renvoyé des données invalides.");
         }
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
         
         console.log("6️⃣ Affichage de la page 'results'...");
         showPage("results");
 
     } catch (error) {
         console.error('❌ Erreur critique dans searchBuses:', error);
-        // On utilise la clé générique 'error_generic' pour les erreurs inattendues
         Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
@@ -3501,7 +3518,7 @@ async function showDetailedSearch(prefillData = {}) {
 // 🔍 FILTRAGE ET TRI DES RÉSULTATS
 // ============================================
 
-function applyFiltersAndSort(results = appState.currentResults) { // ✅ Paramètre ajouté
+function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
     // ✅ Utilise les résultats passés en paramètre (ou ceux de l'état global par défaut)
     let filteredResults = [...results];
     
@@ -3579,9 +3596,11 @@ function applyFiltersAndSort(results = appState.currentResults) { // ✅ Paramè
 
 // DANS app.js, REMPLACEZ la fonction updateFilter
 
+// DANS app.js (remplacez votre fonction updateFilter)
+
 window.updateFilter = function(filterType, value) {
+    // La première partie de la fonction qui met à jour l'objet 'activeFilters' est correcte et reste inchangée.
     switch (filterType) {
-        // ✅ CORRECTION : Ajout de 'departureLocation' à la liste
         case 'company':
         case 'tripType':
         case 'departureTime':
@@ -3592,14 +3611,20 @@ window.updateFilter = function(filterType, value) {
         
         case 'priceMin':
             activeFilters.priceRange.min = parseInt(value) || 0;
-            document.getElementById('price-min-display').textContent = 
-                Utils.formatPrice(activeFilters.priceRange.min);
+            // On s'assure que l'élément existe avant de le modifier
+            const priceMinDisplay = document.getElementById('price-min-display');
+            if (priceMinDisplay) {
+                priceMinDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.min);
+            }
             break;
         
         case 'priceMax':
             activeFilters.priceRange.max = parseInt(value) || 100000;
-            document.getElementById('price-max-display').textContent = 
-                Utils.formatPrice(activeFilters.priceRange.max);
+            // On s'assure que l'élément existe avant de le modifier
+            const priceMaxDisplay = document.getElementById('price-max-display');
+            if (priceMaxDisplay) {
+                priceMaxDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.max);
+            }
             break;
         
         case 'amenity':
@@ -3612,14 +3637,25 @@ window.updateFilter = function(filterType, value) {
             break;
     }
     
-    // Réappliquer les filtres et rafraîchir l'affichage
-    const filtered = applyFiltersAndSort();
-    displayResults(filtered, appState.isSelectingReturn);
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE
+    // ========================================================
+
+    // On rafraîchit l'affichage en appelant displayResults.
+    // On lui passe TOUJOURS la liste complète et non filtrée des résultats de la recherche initiale.
+    displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // Message si aucun résultat
-    if (filtered.length === 0) {
-        Utils.showToast('Aucun trajet ne correspond à vos critères', 'info');
+    // On vérifie le nombre de résultats APRÈS que displayResults ait fait son travail de filtrage.
+    // 'appState.displayedResults' contient maintenant la liste réellement affichée.
+    if (appState.displayedResults.length === 0) {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        Utils.showToast(translation.info_no_trips_match_filters, 'info');
     }
+    
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
 };
 
 
@@ -3678,8 +3714,10 @@ function setupMobileFilterToggle() {
 
 
 
+// DANS app.js (remplacez votre fonction resetFilters)
+
 window.resetFilters = function() {
-    // 1. Réinitialiser l'objet des filtres actifs
+    // 1. Réinitialiser l'objet des filtres actifs (votre code est parfait)
     activeFilters = {
         company: 'all',
         tripType: 'all',
@@ -3690,14 +3728,25 @@ window.resetFilters = function() {
         departureLocation: 'all'
     };
 
+    // ========================================================
+    // ✅ MISE À JOUR : Ajout de vérifications de sécurité
+    // ========================================================
+
     // 2. Réinitialiser les champs de formulaire dans l'interface utilisateur
     const locationSelect = document.getElementById('filter-departure-location');
     if (locationSelect) locationSelect.value = 'all';
-    
-    document.getElementById('filter-company').value = 'all';
-    document.getElementById('filter-trip-type').value = 'all';
-    document.getElementById('filter-time').value = 'all';
-    document.getElementById('sort-by').value = 'departure';
+
+    const companySelect = document.getElementById('filter-company');
+    if (companySelect) companySelect.value = 'all';
+
+    const tripTypeSelect = document.getElementById('filter-trip-type');
+    if (tripTypeSelect) tripTypeSelect.value = 'all';
+
+    const timeSelect = document.getElementById('filter-time');
+    if (timeSelect) timeSelect.value = 'all';
+
+    const sortBySelect = document.getElementById('sort-by');
+    if (sortBySelect) sortBySelect.value = 'departure';
     
     const priceMinInput = document.getElementById('price-min');
     if (priceMinInput) priceMinInput.value = 0;
@@ -3715,16 +3764,17 @@ window.resetFilters = function() {
         cb.checked = false;
     });
     
-    // 3. Rafraîchir l'affichage des résultats
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
+
+    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale (votre code est parfait)
     displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // ===================================
-    // ✅ TRADUCTION DU MESSAGE DE SUCCÈS
-    // ===================================
+    // 4. Afficher le toast de succès (votre code est parfait)
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     Utils.showToast(translation.success_filters_reset, 'success');
-    // ===================================
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
@@ -3733,6 +3783,8 @@ window.resetFilters = function() {
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
 // DANS app.js (remplacez votre fonction displayResults)
+// DANS app.js (remplacez votre fonction displayResults par celle-ci)
+
 function displayResults(results, isReturn = false) {
     // --- 0. Récupération des traductions ---
     const lang = getLanguage();
@@ -3744,19 +3796,17 @@ function displayResults(results, isReturn = false) {
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
+
+    // --- 2. Application des filtres sur la liste brute fournie en entrée ---
+    const filteredAndSortedResults = applyFiltersAndSort(results);
+
+    // --- 3. Mise à jour de l'état des résultats qui sont réellement affichés ---
+    appState.displayedResults = filteredAndSortedResults;
     
-    // --- 2. Sauvegarder les résultats bruts dans l'état global ---
-    if (!isReturn) {
-        appState.currentResults = results; // ✅ Stocke les résultats pour les filtres
-    }
-    
-    // --- 3. Application des filtres et du tri ---
-    const displayedResults = applyFiltersAndSort(results); // ✅ Passe les résultats en paramètre
-    
-    // --- 4. Mise à jour du résumé de la recherche ---
+    // --- 4. Mise à jour du résumé avec le nombre de résultats APRÈS filtrage ---
     let summaryText = isReturn
-        ? translation.results_summary_return(displayedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
-        : translation.results_summary_outbound(displayedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
+        ? translation.results_summary_return(filteredAndSortedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
+        : translation.results_summary_outbound(filteredAndSortedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
     if (summary) summary.innerHTML = summaryText;
 
     // --- 5. Mise à jour du filtre par lieu de départ ---
@@ -3776,14 +3826,14 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 6. Logique pour les badges "Moins cher" et "Plus rapide" ---
+    // --- 6. Logique pour les badges "Moins cher" et "Plus rapide" (basée sur la liste filtrée) ---
     let cheapestId = null, fastestId = null;
-    if (displayedResults.length > 1) {
-        const minPrice = Math.min(...displayedResults.map(r => r.price));
-        const cheapestRoute = displayedResults.find(r => r.price === minPrice);
+    if (filteredAndSortedResults.length > 1) {
+        const minPrice = Math.min(...filteredAndSortedResults.map(r => r.price));
+        const cheapestRoute = filteredAndSortedResults.find(r => r.price === minPrice);
         if (cheapestRoute) cheapestId = cheapestRoute.id;
 
-        const directTrips = displayedResults.filter(r => r.tripType === 'direct');
+        const directTrips = filteredAndSortedResults.filter(r => r.tripType === 'direct');
         if (directTrips.length > 0) {
             let minDuration = Infinity;
             directTrips.forEach(route => {
@@ -3796,50 +3846,50 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 7. Affichage du message si aucun résultat ---
-    if (displayedResults.length === 0) {
+    // --- 7. Affichage du message si aucun résultat après filtrage ---
+    if (filteredAndSortedResults.length === 0) {
         const totalBeforeFilters = results?.length || 0;
         
-        if (totalBeforeFilters > 0) {
-            // Des résultats existent mais sont filtrés
+         if (totalBeforeFilters > 0) {
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
             resultsList.innerHTML = `
                 <div class="no-results" style="text-align: center; padding: 48px;">
-                    <h3>🔍 Aucun trajet ne correspond à vos filtres</h3>
+                    <h3>${translation.results_no_results_title}</h3>
                     <p style="color: var(--color-text-secondary); margin: 16px 0;">
-                        ${totalBeforeFilters} trajet(s) disponible(s) avant filtrage
+                        ${translation.info_trips_available_before_filter(totalBeforeFilters)}
                     </p>
                     <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 16px;">
                         ${translation.filter_reset_button}
                     </button>
                 </div>`;
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
         } else {
-            // Vraiment aucun résultat
             resultsList.innerHTML = `
                 <div class="no-results" style="text-align: center; padding: 48px;">
-                    <h3>${translation.results_no_results_title}</h3>
+                    <h3>${translation.info_no_trips_found}</h3>
                     <p>${translation.results_no_results_desc}</p>
                 </div>`;
         }
         return;
     }
 
-    // --- 8. Génération des cartes de résultats ---
-    resultsList.innerHTML = displayedResults.map(route => {
+    // --- 8. Génération des cartes de résultats à partir de la liste filtrée ---
+    resultsList.innerHTML = filteredAndSortedResults.map(route => {
         let badgeHTML = '';
         
-        // ✅ PRIORITÉ 1 : Badge trajet de nuit
         if (route.isNightTrip) {
             badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🌙 Trajet de Nuit</div>`;
         }
-        // PRIORITÉ 2 : Badge personnalisé
         else if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
         }
-        // PRIORITÉ 3 : Moins cher
         else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
         }
-        // PRIORITÉ 4 : Plus rapide
         else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
@@ -3852,10 +3902,8 @@ function displayResults(results, isReturn = false) {
             ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` 
             : '';
         
-        // ✅ GESTION DES DÉTAILS DE TRAJET (Arrêts/Correspondances)
         let tripDetailsHTML = '';
 
-        // 1. Gestion des ARRÊTS
         if (route.stops && route.stops.length > 0) {
             tripDetailsHTML += `
                 <div class="trip-details-accordion">
@@ -3872,7 +3920,6 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // 2. Gestion des CORRESPONDANCES
         if (route.connections && route.connections.length > 0) {
             tripDetailsHTML += `
                 <div class="trip-details-accordion" style="margin-top: 4px;">
@@ -3894,35 +3941,17 @@ function displayResults(results, isReturn = false) {
                 </div>`;
         }
 
-        // 3. Si aucun détail, c'est un trajet direct
         if (tripDetailsHTML === '') {
             tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">
                 ${Utils.getAmenityIcon('direct')}
                 <span>${translation.details_direct_trip}</span>
             </div>`;
         }
-
-       
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION POUR L'ALIGNEMENT HORIZONTAL
-        // ========================================================
         
         const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
-            ? `
-                <div class="arrival-time-wrapper">
-                    <span>${route.arrival}</span>
-                    <small>+${route.arrivalDaysOffset}j</small>
-                </div>
-              `
-            : `
-                <div class="arrival-time-wrapper">
-                    <span>${route.arrival}</span>
-                </div>
-              `;
+            ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
+            : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
             
-        // ========================================================
-        // ✅ FIN DE LA CORRECTION
-        // ========================================================
         return `
             <div class="bus-card">
                 ${badgeHTML}
@@ -3934,7 +3963,7 @@ function displayResults(results, isReturn = false) {
                                 <span>→</span><br>
                                 ${route.duration || 'N/A'}
                             </div>
-                            <span>${arrivalDisplay}</span>
+                            ${arrivalDisplay}
                         </div>
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
