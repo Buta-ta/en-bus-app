@@ -581,6 +581,25 @@ const translations = {
     button_plan_new_trip: "Planifier un nouveau voyage",
     footer_follow_us: "Suivez-nous",
     footer_phone_label: "Tél",
+
+
+    // Clés pour la page de paiement
+    summary_passengers_details: (adults, children, maxAge) => {
+        let text = `${adults} Adulte(s)`;
+        if (children > 0) {
+            text += `, ${children} Enfant(s) (0-${maxAge} ans)`;
+        }
+        return text;
+    },
+    // Clés pour le sélecteur de passagers
+    search_form_children_dynamic: (maxAge) => `Enfants <small>(0-${maxAge} ans)</small>`,
+    // ...
+  
+
+
+
+
+
     },
 
 
@@ -1162,8 +1181,21 @@ const translations = {
     footer_follow_us: "Follow Us",
     footer_phone_label: "Phone",
 
-     
+
+     // Keys for the payment page
+    summary_passengers_details: (adults, children, maxAge) => {
+        let text = `${adults} Adult(s)`;
+        if (children > 0) {
+            text += `, ${children} Child(ren) (0-${maxAge} yrs)`;
+        }
+        return text;
+    },
+    // Keys for the passenger selector
+    search_form_children_dynamic: (maxAge) => `Children <small>(0-${maxAge} yrs)</small>`,
+    // ...
   }
+     
+  
 }
 
 

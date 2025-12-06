@@ -20,25 +20,43 @@ const API_CONFIG = {
 
 console.log('API URL:', API_CONFIG.baseUrl);
 
+// DANS app.js, remplacez l'objet CONFIG par ceci
+
 const CONFIG = {
-    CHILD_TICKET_PRICE: 5000,
+    // --- Valeurs qui restent fixes pour l'instant ---
     MAX_BAGGAGE_PER_PERSON: 5,
     SEAT_TOTAL: 61,
     OCCUPANCY_RATE: { min: 0.3, max: 0.5 },
     STORAGE_KEY: 'enbus_reservations',
     
-    // ✅ NOUVEAUX DÉLAIS DE PAIEMENT
-    MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30, // 30 minutes pour MTN/Airtel
+    MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30,
     AGENCY_PAYMENT_DEADLINE_HOURS: 10, 
-    // ✅ CORRECTION : AJOUTER CETTE LIGNE
-    AGENCY_PAYMENT_MIN_HOURS: 12,               // Délai minimum avant départ pour autoriser le paiement en agence (ex: 12h)         // 10 heures pour agence
+    AGENCY_PAYMENT_MIN_HOURS: 12,
     
-    // ✅ NUMÉROS MARCHANDS
     MTN_MERCHANT_NUMBER: '+242 06 150 79 47',
     AIRTEL_MERCHANT_NUMBER: '+242 05 150 79 47',
     
     SCANNER_FPS: 10,
-    SCANNER_QRBOX: 250
+    SCANNER_QRBOX: 250,
+
+    // --- Valeurs par défaut pour les règles dynamiques ---
+    // Celles-ci seront utilisées si l'appel à l'API échoue.
+    DEFAULT_CHILD_MAX_AGE: 6,
+    DEFAULT_CHILD_DISCOUNT_PERCENTAGE: 50,
+};
+
+// ========================================================
+// ✅ NOUVEL OBJET POUR LES RÈGLES DYNAMIQUES
+// ========================================================
+// Cet objet sera rempli par les données venant du serveur.
+let appRules = {
+    ticketing: {
+        childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
+        childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
+    }
+    // Plus tard, on pourra y ajouter d'autres règles :
+    // report: { ... },
+    // fees: { ... }
 };
 // ============================================
 // DONNÉES DE L'APPLICATION
@@ -794,9 +812,11 @@ function updateDynamicTexts(lang) {
     }
     
     const childrenLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_children"]');
-    if (childrenLabel && translation.search_form_children) {
-        childrenLabel.innerHTML = translation.search_form_children;
-    }
+if (childrenLabel && translation.search_form_children) {
+    // Remplacer l'ancienne version par celle-ci
+    const maxAge = appRules.ticketing.childMaxAge;
+    childrenLabel.innerHTML = `Enfants <small>(0-${maxAge} ans)</small>`;
+}
 
     // --- 3. (Futur) Traduction d'autres textes dynamiques ---
     // ...
@@ -816,13 +836,14 @@ window.changeLanguage = function(lang) {
 /**
  * Met à jour l'interface du sélecteur de passagers (chiffres et textes traduits).
  */
+// DANS app.js
+
 function updatePassengerSelectorUI() {
     const adultsCount = document.getElementById("adults-count");
     const childrenCount = document.getElementById("children-count");
     const summary = document.getElementById("passenger-summary");
     const dropdown = document.getElementById("passenger-dropdown");
     
-    // Sécurité pour éviter les erreurs si les éléments n'existent pas
     if (!adultsCount || !childrenCount || !summary || !dropdown) {
         return;
     }
@@ -830,30 +851,34 @@ function updatePassengerSelectorUI() {
     const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
     const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
     
-    // Mettre à jour les compteurs numériques
     adultsCount.textContent = appState.passengerCounts.adults;
     childrenCount.textContent = appState.passengerCounts.children;
     
-    // Gérer l'état des boutons de décrémentation
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
     
-    // --- Traduction des textes ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
-    // 1. Traduire le résumé principal (ex: "1 Adulte, 2 Enfants")
+    const rules = appRules.ticketing; // On récupère les règles
+
+    // --- Traduction du résumé principal ---
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
     
-    // 2. Traduire les labels dans le dropdown
+    // --- Traduction des labels dans le dropdown ---
     if (adultsLabel && translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
-    if (childrenLabel && translation.search_form_children) {
-        childrenLabel.innerHTML = translation.search_form_children;
+    
+    // ========================================================
+    // ✅ MISE À JOUR ICI
+    // ========================================================
+    if (childrenLabel && typeof translation.search_form_children_dynamic === 'function') {
+        // On utilise la nouvelle clé de traduction dynamique
+        childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
     }
+    // ========================================================
 }
 
 
@@ -2071,6 +2096,7 @@ function initApp() {
         setupMobileFilterToggle();
                 // ✅ AJOUTEZ CET APPEL
         setupSocialLinks();
+        loadTicketingRules();
 
 
         // --- Configuration native ---
@@ -4359,17 +4385,16 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
         </div>
     `;
 }
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
 function updateSeatSummary() {
-    console.log("--- Début de updateSeatSummary ---");
-
+    // Le début de votre fonction est bon (récupération des éléments et des traductions)
     const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    console.log("Langue utilisée:", lang);
-
+    const translation = (translations && translations[lang]) ? translations[lang] : {};
+    
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-    console.log("Sièges sélectionnés:", currentSeats);
-
+    
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
     
@@ -4377,35 +4402,46 @@ function updateSeatSummary() {
         console.error("ERREUR FATALE: Les éléments seatsDisplay ou priceDisplay sont introuvables.");
         return;
     }
-    console.log("Éléments d'affichage trouvés.");
 
     if (!currentBus) {
-        console.warn("ATTENTION: currentBus est indéfini. Impossible de calculer le prix.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
         return;
     }
-    console.log("Bus actuel trouvé. Prix de base:", currentBus.price);
 
     if (currentSeats.length === 0) {
-        console.log("Aucun siège sélectionné. Affichage du texte par défaut.");
         seatsDisplay.textContent = translation.seats_summary_none || "Aucun";
         priceDisplay.textContent = "0 FCFA";
     } else {
-        console.log("Calcul du prix pour les sièges:", currentSeats.join(", "));
         seatsDisplay.textContent = currentSeats.join(", ");
+        
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE DE CALCUL
+        // ========================================================
+        
+        // On récupère les règles de tarification actuelles
+        const rules = appRules.ticketing;
+        
+        const adultPrice = currentBus.price;
+        const childDiscount = rules.childDiscountPercentage / 100;
+        const childPrice = adultPrice * (1 - childDiscount); // Calcul du prix enfant basé sur le pourcentage
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
+        
+        // On détermine combien de sièges sélectionnés sont pour des adultes et combien pour des enfants
         const adultsSelected = Math.min(numSeats, numAdults);
         const childrenSelected = numSeats - adultsSelected;
         
-        const totalPrice = (adultsSelected * currentBus.price) + (childrenSelected * CONFIG.CHILD_TICKET_PRICE);
+        const totalPrice = (adultsSelected * adultPrice) + (childrenSelected * childPrice);
         
-        console.log(`Prix calculé: ${totalPrice} FCFA`);
-        priceDisplay.textContent = Utils.formatPrice(totalPrice) + " FCFA";
+        // On arrondit le prix final et on l'affiche
+        priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
+
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
     }
-    console.log("--- Fin de updateSeatSummary ---");
 }
 // Dans app.js
 window.proceedToPassengerInfo = async function() {
@@ -4714,14 +4750,26 @@ window.proceedToPayment = function() {
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
 
 // DANS app.js, REMPLACEZ la fonction displayBookingSummary
+/**
+ * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
+ * prices, available seats, and payment options for a bus reservation.
+ * @returns The `displayBookingSummary` function does not explicitly return any value. It is a function
+ * that performs a series of tasks related to displaying a booking summary on a webpage, updating
+ * payment fields, handling urgency information, and managing payment options. The function interacts
+ * with the DOM elements and updates their content based on the current state of the application
+ * (`appState`).
+ */
+// DANS app.js (remplacez votre fonction displayBookingSummary par celle-ci)
+
 function displayBookingSummary() {
     console.log("📊 Affichage du récapitulatif de réservation...");
     
-    // --- 1. Récupération des traductions ---
+    // --- 1. Récupération des traductions et des règles ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+    const rules = appRules.ticketing; // On récupère les règles de tarification
 
-    // --- 2. Cibles DOM et vérifications ---
+    // --- 2. Cibles DOM et vérifications de sécurité ---
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
         console.error("❌ Élément #booking-summary introuvable.");
@@ -4734,22 +4782,32 @@ function displayBookingSummary() {
         return;
     }
 
-    // --- 3. Calcul du prix ---
+    // --- 3. Calcul du prix via la fonction utilitaire ---
     const priceDetails = Utils.calculateTotalPrice(appState);
     const finalTotalPrice = priceDetails.total;
     const totalTicketsPrice = priceDetails.tickets + priceDetails.returnTickets;
 
-    // --- 4. Construction du récapitulatif HTML ---
+    // --- 4. Construction du récapitulatif HTML (avec traductions dynamiques) ---
+    const passengersSummary = translation.summary_passengers_details(
+        appState.passengerCounts.adults,
+        appState.passengerCounts.children,
+        rules.childMaxAge
+    );
+
     let summaryHTML = `
         <div class="detail-row"><span>${translation.summary_outbound_route}:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
         <div class="detail-row"><span>${translation.summary_outbound_date}:</span><strong>${Utils.formatDate(appState.currentSearch.date, lang)}</strong></div>
     `;
+
     if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
         summaryHTML += `
             <div class="detail-row"><span>${translation.summary_return_route}:</span><strong>${appState.selectedReturnBus.from} → ${appState.selectedReturnBus.to}</strong></div>
             <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate, lang)}</strong></div>
         `;
     }
+    
+    summaryHTML += `<div class="detail-row"><span>Passagers :</span><strong>${passengersSummary}</strong></div>`;
+
     summaryHTML += `
         <hr style="border-color: var(--color-border); margin: 8px 0;">
         <div class="detail-row"><span>${translation.summary_tickets_price}:</span><strong>${Utils.formatPrice(totalTicketsPrice)} FCFA</strong></div>
@@ -4768,47 +4826,42 @@ function displayBookingSummary() {
 
     // --- 6. Boîte d'urgence et décompteur ---
     const urgencyBox = document.getElementById('urgency-box');
-   (async () => {
-    if (!urgencyBox) return;
-    try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
-        const seatData = await response.json();
+    (async () => {
+        if (!urgencyBox) return;
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${appState.selectedBus.id}/seats`);
+            const seatData = await response.json();
 
-        // ===================================
-        // ✅ CORRECTION ICI
-        // ===================================
-        // On vérifie que la réponse est un succès ET que 'availableSeats' est bien un nombre.
-        if (seatData.success && typeof seatData.availableSeats === 'number') {
-            const availableSeats = seatData.availableSeats;
-            let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
-            if (availableSeats < 10) {
-                seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
+            if (seatData.success && typeof seatData.availableSeats === 'number') {
+                const availableSeats = seatData.availableSeats;
+                let seatsLeftHTML = `<span class="urgency-value">${availableSeats}</span>`;
+                if (availableSeats < 10) {
+                    seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
+                }
+                
+                const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
+                
+                urgencyBox.innerHTML = `
+                    <div class="urgency-item">
+                        <span class="urgency-label">${translation.urgency_seats_left}</span>
+                        ${seatsLeftHTML}
+                    </div>
+                    <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
+                        <span class="urgency-label">${translation.urgency_deadline}</span>
+                        <span id="payment-countdown-timer" class="urgency-value">--:--</span>
+                    </div>
+                `;
+                urgencyBox.style.display = 'grid';
+                
+                startFrontendCountdown();
+            } else {
+                 urgencyBox.style.display = 'none';
             }
-            
-            const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
-            
-            urgencyBox.innerHTML = `
-                <div class="urgency-item">
-                    <span class="urgency-label">${translation.urgency_seats_left}</span>
-                    ${seatsLeftHTML} <!-- Maintenant, on est sûr que cette variable est définie -->
-                </div>
-                <div class="urgency-item" id="payment-countdown-container" data-deadline="${deadline.toISOString()}">
-                    <span class="urgency-label">${translation.urgency_deadline}</span>
-                    <span id="payment-countdown-timer" class="urgency-value">--:--</span>
-                </div>
-            `;
-            urgencyBox.style.display = 'grid';
-            
-            // On peut démarrer le décompteur ici en toute sécurité
-            startFrontendCountdown();
-        } else {
-             urgencyBox.style.display = 'none';
+        } catch (e) {
+            console.error("Erreur affichage urgence:", e);
+            if(urgencyBox) urgencyBox.style.display = 'none';
         }
-    } catch (e) {
-        console.error("Erreur affichage urgence:", e);
-        if(urgencyBox) urgencyBox.style.display = 'none';
-    }
-})();
+    })();
     
     // --- 7. Gestion du paiement à l'agence ---
     const agencyOption = document.getElementById('agency-payment-option');
@@ -4822,6 +4875,7 @@ function displayBookingSummary() {
             agencyOption.title = translation.payment_agency_unavailable_tooltip || "Agency payment not available (too close to departure)";
         }
     }
+    
     setupPaymentMethodToggle();
     console.log("✅ Récapitulatif affiché et mis à jour.");
 }
@@ -5780,6 +5834,28 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
         Utils.showToast(error.message, 'error');
     }
 };
+
+
+
+
+
+// DANS app.js
+
+async function loadTicketingRules() {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
+        const data = await response.json();
+        
+        if (data.success && data.rules) {
+            appRules.ticketing = data.rules;
+            console.log("✅ Règles de tarification chargées :", appRules.ticketing);
+        } else {
+            console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
+        }
+    } catch (error) {
+        console.error("❌ Erreur chargement des règles de tarification:", error);
+    }
+}
 
 // ============================================
 // 🚪 FERMETURE DE LA MODALE
