@@ -871,12 +871,11 @@ function updatePassengerSelectorUI() {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
     
-    // ========================================================
-    // ✅ MISE À JOUR ICI
-    // ========================================================
+     // On utilise la nouvelle clé dynamique
     if (childrenLabel && typeof translation.search_form_children_dynamic === 'function') {
-        // On utilise la nouvelle clé de traduction dynamique
         childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
+    } else if (childrenLabel) { // Fallback si la clé n'existe pas
+        childrenLabel.innerHTML = `Enfants <small>(0-${rules.childMaxAge} ans)</small>`;
     }
     // ========================================================
 }
@@ -4225,11 +4224,13 @@ window.toggleSeat = function(seatNumber) {
 // Dans app.js
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction displaySeats par celle-ci
+// DANS app.js, remplacez la fonction displaySeats par celle-ci
+
 function displaySeats() {
     // 1. Récupération des traductions avec une sécurité
     const lang = getLanguage();
-    // Si 'translations' ou la langue spécifique n'existe pas, on utilise un objet vide pour éviter les erreurs
     const translation = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
+    const rules = appRules.ticketing; // On récupère les règles de tarification
 
     // 2. Récupération des données et des éléments DOM
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
@@ -4242,21 +4243,34 @@ function displaySeats() {
 
     if (!busInfo || !seatGrid || !occupancyInfo) return;
     
-    // 3. Traduction de l'en-tête du bus (avec fallback)
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
+
+    // 3. Calcul dynamique des prix et traduction de l'en-tête du bus
     const tripLabel = appState.isSelectingReturn ? (translation.trip_badge_return || "RETOUR") : (translation.trip_badge_outbound || "ALLER");
+    
+    const adultPrice = currentBus.price || 0;
+    const childDiscount = rules.childDiscountPercentage / 100;
+    const childPrice = adultPrice * (1 - childDiscount);
+
     busInfo.innerHTML = `
         <div class="bus-info-header">
             <div class="trip-badge ${appState.isSelectingReturn ? 'return' : 'outbound'}">${tripLabel}</div>
             <h3>${currentBus.company} - ${currentBus.from} → ${currentBus.to}</h3>
             <div class="price-info">
-                <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(currentBus.price)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(adultPrice)} FCFA</span>
                 <span class="price-divider">|</span>
-                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(CONFIG.CHILD_TICKET_PRICE)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(Math.round(childPrice))} FCFA</span>
             </div>
         </div>
     `;
     
-    // 4. Traduction des informations d'occupation du bus (avec fallback)
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
+
+    // 4. Traduction des informations d'occupation du bus (inchangé)
     const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
     const availableSeats = currentBus.availableSeats - currentSeats.length;
     if (totalSeats && availableSeats >= 0) {
@@ -4272,8 +4286,7 @@ function displaySeats() {
         occupancyInfo.style.display = 'none';
     }
     
-
-    // 5. Génération de la grille des sièges (avec labels traduits et fallback)
+    // 5. Génération de la grille des sièges (inchangé)
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
     const backRowSeatsCount = 5;
@@ -4303,7 +4316,7 @@ function displaySeats() {
         seatHTML += `<div class="row-indicator">${row}</div></div>`;
     }
     
-    seatHTML += `</div>`; // Fin de modern-seat-grid
+    seatHTML += `</div>`;
     
     if (hasWC) {
         seatHTML += `<div class="toilet-section"><div class="toilet-icon">🚻</div><span class="toilet-label">${translation.seats_restroom || 'Toilettes'}</span></div>`;
@@ -4321,10 +4334,9 @@ function displaySeats() {
     
     seatGrid.innerHTML = seatHTML;
 
-    // 6. Appel final pour mettre à jour le résumé
+    // 6. Appel final pour mettre à jour le résumé (inchangé)
     updateSeatSummary();
 }
-
 // ✅ Fonction auxiliaire pour générer un siège moderne
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     const isOccupied = occupiedSeats.includes(seatNumber);
@@ -5841,6 +5853,8 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
 
 // DANS app.js
 
+// DANS app.js
+
 async function loadTicketingRules() {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
@@ -5849,6 +5863,14 @@ async function loadTicketingRules() {
         if (data.success && data.rules) {
             appRules.ticketing = data.rules;
             console.log("✅ Règles de tarification chargées :", appRules.ticketing);
+
+            // ========================================================
+            // ✅ CORRECTION : On force la mise à jour de l'UI ici
+            // ========================================================
+            if (typeof refreshPassengerSelectorUI === 'function') {
+                refreshPassengerSelectorUI();
+            }
+            // ========================================================
         } else {
             console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
         }
