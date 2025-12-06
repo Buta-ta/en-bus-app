@@ -2029,6 +2029,94 @@ app.get("/api/admin/settings/report", authenticateToken, async (req, res) => {
 
 
 
+// DANS server.js, avec les autres routes publiques (comme /api/destinations)
+
+app.get("/api/settings/ticketing-rules", async (req, res) => {
+    try {
+        const settings = await systemSettingsCollection.findOne({ key: "ticketingRules" });
+
+        // Si aucun paramètre n'est trouvé, on renvoie des valeurs par défaut sécurisées
+        if (!settings) {
+            return res.json({
+                success: true,
+                rules: {
+                    childMaxAge: 6,
+                    childDiscountPercentage: 50
+                }
+            });
+        }
+        
+        res.json({ success: true, rules: settings.value });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération règles de billetterie:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+
+// DANS server.js, avec les autres routes ADMIN
+
+// Route pour LIRE les paramètres actuels
+app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, res) => {
+    try {
+        const settings = await systemSettingsCollection.findOne({ key: "ticketingRules" });
+
+        if (!settings) {
+            // Si le document n'existe pas, on renvoie des valeurs par défaut pour peupler le formulaire
+            return res.json({ 
+                success: true, 
+                settings: { childMaxAge: 6, childDiscountPercentage: 50 }
+            });
+        }
+        
+        res.json({ success: true, settings: settings.value });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+// Route pour METTRE À JOUR les paramètres
+app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
+    body('childMaxAge').isInt({ min: 0, max: 17 }),
+    body('childDiscountPercentage').isInt({ min: 0, max: 100 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: "Données invalides." });
+    }
+
+    try {
+        const newRules = {
+            childMaxAge: req.body.childMaxAge,
+            childDiscountPercentage: req.body.childDiscountPercentage
+        };
+
+        // On utilise 'upsert: true' pour créer le document s'il n'existe pas
+        await systemSettingsCollection.updateOne(
+            { key: "ticketingRules" },
+            { 
+                $set: { 
+                    value: newRules,
+                    updatedAt: new Date(),
+                    updatedBy: req.user.username 
+                } 
+            },
+            { upsert: true }
+        );
+        
+        console.log(`✅ Règles de billetterie mises à jour par ${req.user.username}`);
+        res.json({ success: true, message: "Règles de tarification mises à jour." });
+
+    } catch (error) {
+        console.error("Erreur sauvegarde règles billetterie:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
 
 // ---ROUTES POST ---
 
