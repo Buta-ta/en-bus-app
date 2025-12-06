@@ -42,6 +42,8 @@ const CONFIG = {
     // --- Valeurs par défaut pour les règles dynamiques ---
     // Celles-ci seront utilisées si l'appel à l'API échoue.
     DEFAULT_CHILD_MAX_AGE: 6,
+    DEFAULT_CHILD_PRICING_MODE: 'percentage',
+    DEFAULT_CHILD_FIXED_PRICE: 5000,
     DEFAULT_CHILD_DISCOUNT_PERCENTAGE: 50,
 };
 
@@ -52,6 +54,8 @@ const CONFIG = {
 let appRules = {
     ticketing: {
         childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
+        childPricingMode: CONFIG.DEFAULT_CHILD_PRICING_MODE,
+        childFixedPrice: CONFIG.DEFAULT_CHILD_FIXED_PRICE,
         childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
     }
     // Plus tard, on pourra y ajouter d'autres règles :
@@ -4252,7 +4256,7 @@ function displaySeats() {
     
     const adultPrice = currentBus.price || 0;
     const childDiscount = rules.childDiscountPercentage / 100;
-    const childPrice = adultPrice * (1 - childDiscount);
+    const childPrice = getChildPrice(adultPrice); 
 
     busInfo.innerHTML = `
         <div class="bus-info-header">
@@ -4261,7 +4265,7 @@ function displaySeats() {
             <div class="price-info">
                 <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(adultPrice)} FCFA</span>
                 <span class="price-divider">|</span>
-                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(Math.round(childPrice))} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong>  ${Utils.formatPrice(Math.round(childPrice))}  FCFA</span>
             </div>
         </div>
     `;
@@ -4399,8 +4403,10 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
 }
 // DANS app.js (remplacez votre fonction updateSeatSummary)
 
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
 function updateSeatSummary() {
-    // Le début de votre fonction est bon (récupération des éléments et des traductions)
+    // Récupération des éléments et des traductions
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
     
@@ -4428,26 +4434,23 @@ function updateSeatSummary() {
         seatsDisplay.textContent = currentSeats.join(", ");
         
         // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE DE CALCUL
+        // ✅ DÉBUT DE LA MISE À JOUR AVEC LA LOGIQUE FLEXIBLE
         // ========================================================
         
-        // On récupère les règles de tarification actuelles
-        const rules = appRules.ticketing;
-        
         const adultPrice = currentBus.price;
-        const childDiscount = rules.childDiscountPercentage / 100;
-        const childPrice = adultPrice * (1 - childDiscount); // Calcul du prix enfant basé sur le pourcentage
+        
+        // On utilise la fonction helper pour obtenir le bon prix enfant
+        // en fonction du mode configuré par l'admin (fixe ou pourcentage).
+        const childPrice = getChildPrice(adultPrice);
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
         
-        // On détermine combien de sièges sélectionnés sont pour des adultes et combien pour des enfants
         const adultsSelected = Math.min(numSeats, numAdults);
         const childrenSelected = numSeats - adultsSelected;
         
         const totalPrice = (adultsSelected * adultPrice) + (childrenSelected * childPrice);
         
-        // On arrondit le prix final et on l'affiche
         priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
 
         // ========================================================

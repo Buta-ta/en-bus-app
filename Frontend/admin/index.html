@@ -4589,6 +4589,8 @@ function showDetails(reservationId) {
         }
 
 
+
+
         // ============================================
         // 🏙️ GESTION DES DESTINATIONS
         // ============================================
@@ -6313,6 +6315,17 @@ function setupEventListeners() {
         }
 
 
+
+        function getChildPrice(adultPrice) {
+    const rules = appRules.ticketing;
+    if (rules.childPricingMode === 'fixed') {
+        return rules.childFixedPrice;
+    } else { // 'percentage'
+        const discount = rules.childDiscountPercentage / 100;
+        return adultPrice * (1 - discount);
+    }
+}
+
         // DANS Admin/index.html, dans <script>
 
         function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
@@ -6770,16 +6783,39 @@ async function loadReportSettings() {
 }
 
 // On crée la nouvelle fonction pour charger les règles de tarification
+// DANS admin/index.html, dans <script>
+
 async function loadTicketingSettings() {
     try {
         const data = await apiCall('/admin/settings/ticketing-rules');
         if (data && data.success) {
             const settings = data.settings;
-            document.getElementById('setting-child-max-age').value = settings.childMaxAge;
-            document.getElementById('setting-child-discount').value = settings.childDiscountPercentage;
+            
+            // On vérifie que les éléments existent avant de leur assigner une valeur
+            const maxAgeInput = document.getElementById('setting-child-max-age');
+            if (maxAgeInput) maxAgeInput.value = settings.childMaxAge;
+
+            const discountInput = document.getElementById('setting-child-discount');
+            if (discountInput) discountInput.value = settings.childDiscountPercentage;
+
+            const priceInput = document.getElementById('setting-child-price');
+            if (priceInput) priceInput.value = settings.childFixedPrice;
+
+            // On coche le bon bouton radio en fonction de la valeur récupérée
+            const modeRadio = document.querySelector(`input[name="child-pricing-mode"][value="${settings.childPricingMode}"]`);
+            if (modeRadio) {
+                modeRadio.checked = true;
+            }
+            
+            // On appelle la fonction pour afficher/masquer les champs correspondants
+            toggleChildPricingFields();
         }
     } catch (error) {
-        showNotification('Impossible de charger les règles de tarification', 'error');
+        // ===============================================
+        // ✅ BLOC CATCH AJOUTÉ POUR CORRIGER LA SYNTAXE
+        // ===============================================
+        console.error('❌ Erreur lors du chargement des règles de tarification:', error);
+        showNotification('Impossible de charger les règles de tarification.', 'error');
     }
 }
 
@@ -6801,6 +6837,8 @@ async function saveAllSettings(e) {
     
     const ticketingUpdates = {
         childMaxAge: parseInt(document.getElementById('setting-child-max-age').value) || 0,
+        childPricingMode: document.querySelector('input[name="child-pricing-mode"]:checked').value,
+        childFixedPrice: parseInt(document.getElementById('setting-child-price').value) || 0,
         childDiscountPercentage: parseInt(document.getElementById('setting-child-discount').value) || 0
     };
 
@@ -7175,7 +7213,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-
+function toggleChildPricingFields() {
+    const mode = document.querySelector('input[name="child-pricing-mode"]:checked').value;
+    document.getElementById('child-percentage-group').style.display = (mode === 'percentage') ? 'block' : 'none';
+    document.getElementById('child-fixed-price-group').style.display = (mode === 'fixed') ? 'block' : 'none';
+}
 
 
 
@@ -7387,16 +7429,38 @@ function setupNotificationFormListeners() {
                 <!-- ======================================================== -->
                 <hr style="border-color: var(--dark-border); margin: 2rem 0;">
                 <h4 style="color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--dark-border); padding-bottom: 10px;">Règles de Tarification</h4>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="form-group">
-                        <label for="setting-child-max-age" class="form-label">Âge maximum pour tarif enfant</label>
-                        <input type="number" id="setting-child-max-age" class="form-control" placeholder="Ex: 6">
-                    </div>
-                    <div class="form-group">
-                        <label for="setting-child-discount" class="form-label">Réduction enfant (en %)</label>
-                        <input type="number" id="setting-child-discount" class="form-control" placeholder="Ex: 50" min="0" max="100">
-                    </div>
-                </div>
+               <div class="form-group">
+    <label class="form-label">Mode de calcul du tarif enfant</label>
+    <div style="display: flex; gap: 20px;">
+        <label>
+            <input type="radio" name="child-pricing-mode" value="percentage" checked onchange="toggleChildPricingFields()">
+            Pourcentage de réduction
+        </label>
+        <label>
+            <input type="radio" name="child-pricing-mode" value="fixed" onchange="toggleChildPricingFields()">
+            Prix Fixe
+        </label>
+    </div>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="form-group">
+        <label class="form-label">Âge maximum pour tarif enfant</label>
+        <input type="number" id="setting-child-max-age" class="form-control" placeholder="Ex: 6">
+    </div>
+    
+    <!-- Champ Pourcentage (visible par défaut) -->
+    <div class="form-group" id="child-percentage-group">
+        <label class="form-label">Réduction enfant (en %)</label>
+        <input type="number" id="setting-child-discount" class="form-control" placeholder="Ex: 50" min="0" max="100">
+    </div>
+
+    <!-- Champ Prix Fixe (caché par défaut) -->
+    <div class="form-group" id="child-fixed-price-group" style="display: none;">
+        <label class="form-label">Prix fixe du billet enfant (FCFA)</label>
+        <input type="number" id="setting-child-price" class="form-control" placeholder="Ex: 5000">
+    </div>
+</div>
                 <!-- ======================================================== -->
                 
                 <div style="text-align: right; margin-top: 2rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
