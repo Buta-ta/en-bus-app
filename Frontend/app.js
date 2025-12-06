@@ -492,36 +492,44 @@ formatPrice(price) {
     },
 
 
-    // ✅ NOUVELLE FONCTION UTILITAIRE
+    // ========================================================
+    // ✅ AJOUTEZ OU REMPLACEZ LA FONCTION CI-DESSOUS
+    // ========================================================
     calculateTotalPrice(state) {
         let totalPrice = 0;
         let ticketsPrice = 0;
         let returnTicketsPrice = 0;
         let baggagePrice = 0;
         
-        // 1. Calcul du trajet ALLER
+        // --- 1. Calcul du prix des billets pour le trajet ALLER ---
         if (state.selectedBus && state.selectedSeats?.length > 0) {
+            const adultPrice = state.selectedBus.price || 0;
+            const childPrice = getChildPrice(adultPrice); // Utilise notre fonction helper
+            
             const numAdults = state.passengerCounts.adults || 0;
             const numSeats = state.selectedSeats.length;
             
             const adultsSeats = Math.min(numSeats, numAdults);
             const childrenSeats = numSeats - adultsSeats;
             
-            ticketsPrice = (adultsSeats * (state.selectedBus.price || 0)) + (childrenSeats * CONFIG.CHILD_TICKET_PRICE);
+            ticketsPrice = (adultsSeats * adultPrice) + (childrenSeats * childPrice);
         }
         
-        // 2. Calcul du trajet RETOUR
+        // --- 2. Calcul du prix des billets pour le trajet RETOUR ---
         if (state.currentSearch.tripType === "round-trip" && state.selectedReturnBus && state.selectedReturnSeats?.length > 0) {
+            const returnAdultPrice = state.selectedReturnBus.price || 0;
+            const returnChildPrice = getChildPrice(returnAdultPrice); // Utilise notre fonction helper
+            
             const numAdults = state.passengerCounts.adults || 0;
             const numSeats = state.selectedReturnSeats.length;
 
             const adultsSeats = Math.min(numSeats, numAdults);
             const childrenSeats = numSeats - adultsSeats;
             
-            returnTicketsPrice = (adultsSeats * (state.selectedReturnBus.price || 0)) + (childrenSeats * CONFIG.CHILD_TICKET_PRICE);
+            returnTicketsPrice = (adultsSeats * returnAdultPrice) + (childrenSeats * returnChildPrice);
         }
         
-        // 3. Calcul des BAGAGES (Aller uniquement pour l'instant)
+        // --- 3. Calcul du prix des BAGAGES ---
         if (state.baggageCounts && Object.keys(state.baggageCounts).length > 0 && state.selectedBus?.baggageOptions) {
              Object.values(state.baggageCounts).forEach(paxBaggage => {
                 baggagePrice += (paxBaggage.standard || 0) * (state.selectedBus.baggageOptions.standard.price || 0);
@@ -531,11 +539,12 @@ formatPrice(price) {
         
         totalPrice = ticketsPrice + returnTicketsPrice + baggagePrice;
         
+        // On retourne un objet détaillé avec les prix arrondis
         return {
-            total: totalPrice,
-            tickets: ticketsPrice,
-            returnTickets: returnTicketsPrice,
-            baggage: baggagePrice
+            total: Math.round(totalPrice),
+            tickets: Math.round(ticketsPrice),
+            returnTickets: Math.round(returnTicketsPrice),
+            baggage: Math.round(baggagePrice)
         };
     },
 
@@ -4341,6 +4350,29 @@ function displaySeats() {
     // 6. Appel final pour mettre à jour le résumé (inchangé)
     updateSeatSummary();
 }
+
+
+function getChildPrice(adultPrice) {
+    // On récupère les règles de tarification actuelles.
+    const rules = appRules.ticketing;
+    
+    // Si le mode est 'prix fixe', on retourne ce prix.
+    if (rules.childPricingMode === 'fixed') {
+        // On s'assure de retourner un nombre, 0 par défaut si la règle n'est pas définie.
+        return rules.childFixedPrice || 0;
+    } 
+    // Sinon, on calcule le prix basé sur le pourcentage.
+    else { 
+        const discount = (rules.childDiscountPercentage || 0) / 100;
+        return adultPrice * (1 - discount);
+    }
+}
+// ========================================================
+
+
+
+
+
 // ✅ Fonction auxiliaire pour générer un siège moderne
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     const isOccupied = occupiedSeats.includes(seatNumber);
