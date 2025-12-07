@@ -106,8 +106,7 @@ body {
         linear-gradient(rgba(10, 14, 39, 0.95), rgba(10, 14, 39, 1)), /* Dégradé pour assombrir */
         url('./Frontend/african-pattern.svg'); /* Votre motif */
     
-    background-size: auto, 250px;
-    border-top: 1px solid var(--color-border); 
+    
     
     background-size: auto, 300px; /* Le dégradé prend toute la place, le motif se répète tous les 300px */
     background-position: center;
