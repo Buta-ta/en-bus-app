@@ -5916,7 +5916,7 @@ body.pwa-installed .container {
     height: 200px;
     
     /* L'image SVG du motif */
-    background-image: url('./Frontend/icons/african-pattern.svg'); /* Mettez votre chemin ici */
+     /* Mettez votre chemin ici */
     background-repeat: no-repeat;
     background-size: contain;
     
@@ -5937,7 +5937,7 @@ body.pwa-installed .container {
     right: auto;
     left: -60px;
     transform: rotate(-15deg);
-    background-image: url('./Frontend/icons/african-pattern.svg'); /* Un autre motif */
+     /* Un autre motif */
 }
 
 .section-with-pattern::before {
