@@ -4351,7 +4351,14 @@ function displaySeats() {
     updateSeatSummary();
 }
 
-
+// ========================================================
+// ✅ AJOUTEZ CETTE FONCTION DANS VOTRE FICHIER
+// ========================================================
+/**
+ * Calcule le prix d'un billet enfant en fonction des règles globales.
+ * @param {number} adultPrice - Le prix du billet adulte pour le trajet.
+ * @returns {number} Le prix calculé pour un enfant.
+ */
 function getChildPrice(adultPrice) {
     // On récupère les règles de tarification actuelles.
     const rules = appRules.ticketing;
