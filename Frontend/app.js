@@ -3360,6 +3360,13 @@ function displayAlternativeTrips(alternatives) {
     const translation = translations[lang] || translations.fr;
 
     // ========================================================
+    // ✅ AJOUTEZ CE BLOC DE DIAGNOSTIC
+    // ========================================================
+    console.log(`[DIAG] Langue active : ${lang}`);
+    console.log("[DIAG] Objet de traduction complet pour cette langue :", translation);
+    console.log("[DIAG] Tentative de lecture de 'alternative_trips_title' :", translation.alternative_trips_title);
+
+    // ========================================================
     // ✅ DÉBUT DE LA CORRECTION
     // ========================================================
     if (summary) {
