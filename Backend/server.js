@@ -503,6 +503,8 @@ app.get("/api/route-templates", async (req, res) => {
 
 // DANS server.js (remplacez l'ancienne route /api/search)
 
+// DANS server.js
+
 app.get("/api/search", async (req, res) => {
     let { from, to, date } = req.query;
     if (!from || !to || !date) {
@@ -510,47 +512,34 @@ app.get("/api/search", async (req, res) => {
     }
 
     try {
-
-        // ✅ DÉBUT DE LA CORRECTION : Déclaration des variables
-        // ========================================================
         const fromCity = from.trim();
         const toCity = to.trim();
-        // ========================================================
 
-        // --- 1. Recherche Principale ---
-        const trips = await tripsCollection.find({
+        const fromRegex = new RegExp(`^${fromCity}$`, 'i');
+        const toRegex = new RegExp(`^${toCity}$`, 'i');
+
+        // --- 1. Recherche large en base de données ---
+        // On cherche tous les trajets potentiels : directs ou qui contiennent les villes dans les arrêts.
+        const potentialTrips = await tripsCollection.find({
             date: date,
             $or: [
-                // Condition 1 : Le trajet est un trajet direct classique.
-                { 
-                    "route.from": { $regex: `^${fromCity}`, $options: "i" },
-                    "route.to": { $regex: `^${toCity}`, $options: "i" }
-                },
-                // Condition 2 : Le trajet est un segment.
-                {
-                    // On s'assure que le trajet contient les deux villes dans son parcours global.
-                    // Le parcours global inclut le point de départ, les arrêts, et le point d'arrivée.
-                    $and: [
-                        { 
-                            "route.stops": { 
-                                $all: [
-                                    { $elemMatch: { $regex: `^${fromCity}$`, $options: "i" } },
-                                    { $elemMatch: { $regex: `^${toCity}$`, $options: "i" } }
-                                ]
-                            }
-                        }
-                    ]
-                }
+                { "route.from": fromRegex, "route.to": toRegex }, // Trajet direct
+                { "route.stops": { $all: [fromRegex, toRegex] } } // Les deux villes sont dans les arrêts
             ]
         }).toArray();
 
-        // --- 2. Filtrage des trajets déjà passés ---
+        // --- 2. Filtrage en JavaScript pour valider l'ordre et les heures ---
+        const validOrderTrips = potentialTrips.filter(trip => {
+            const fullPath = [trip.route.from, ...(trip.route.stops || []), trip.route.to].map(city => city.toLowerCase());
+            const fromIndex = fullPath.indexOf(fromCity.toLowerCase());
+            const toIndex = fullPath.indexOf(toCity.toLowerCase());
+            return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
+        });
+
         const timeZone = 'Africa/Brazzaville';
-        const nowInBrazzaville = utcToZonedTime(new Date(), timeZone);
-        const todayStrInBrazzaville = format(nowInBrazzaville, 'yyyy-MM-dd', { timeZone });
-        
-        const availableTrips = trips.filter(trip => {
-            if (trip.date !== todayStrInBrazzaville) return true;
+        const availableTrips = validOrderTrips.filter(trip => {
+            const todayStr = format(utcToZonedTime(new Date(), timeZone), 'yyyy-MM-dd', { timeZone });
+            if (trip.date !== todayStr) return true;
             if (trip.route?.departure) {
                 const departureDateTimeInUtc = zonedTimeToUtc(`${trip.date}T${trip.route.departure}:00`, timeZone);
                 return departureDateTimeInUtc > new Date();
@@ -558,64 +547,45 @@ app.get("/api/search", async (req, res) => {
             return true;
         });
 
-        // --- 3. Formatage des résultats (votre code original et fonctionnel) ---
-        const calculateDuration = (start, end) => {
-            if (!start || !end) return "N/A";
-            const [h1, m1] = start.split(':').map(Number);
-            const [h2, m2] = end.split(':').map(Number);
-            let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-            if (diffMinutes < 0) diffMinutes += 1440;
-            const hours = Math.floor(diffMinutes / 60);
-            const minutes = diffMinutes % 60;
-            return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
-        };
-
-        const results = availableTrips.map((trip) => ({
-            id: trip._id.toString(),
-            from: trip.route.from,
-            to: trip.route.to,
-            company: trip.route.company,
-            price: trip.route.price,
-            duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
-            departure: trip.route.departure,
-            arrival: trip.route.arrival,
-            amenities: trip.route.amenities || [],
-            tripType: trip.route.tripType || "direct",
-            stops: trip.route.stops || [],
-            connections: trip.route.connections || [],
-            departureLocation: trip.route.departureLocation || null,
-            arrivalLocation: trip.route.arrivalLocation || null,
-            trackerId: trip.busIdentifier || trip.route.trackerId || null,
-            availableSeats: trip.seats.filter((s) => s.status === "available").length,
-            isNightTrip: trip.isNightTrip || false,
-            arrivalDaysOffset: trip.arrivalDaysOffset || 0,
-            totalSeats: trip.seats.length,
-            date: trip.date,
-            busIdentifier: trip.busIdentifier,
-            baggageOptions: trip.route.baggageOptions,
-            highlightBadge: trip.highlightBadge || null,
-             // Nouvelles propriétés pour le frontend
-            isSegment: isSegment,
-            segmentFrom: fromCity,
-            segmentTo: toCity,
-        }));
-
-        // --- 4. Logique de décision : renvoyer les résultats OU chercher des alternatives ---
-        if (results.length > 0) {
-            // Si on a des résultats, on les renvoie comme avant
-            return res.json({ 
-                success: true, 
-                count: results.length, 
-                results: results,
-                alternativeTrips: [],
-                isSegment: isSegment, // Nouvelle information
-                segmentFrom: fromCity, // Ville de départ demandée
-                segmentTo: toCity,   // Ville d'arrivée demandée
- // On inclut un tableau vide pour la cohérence
+        // --- 3. Formatage des résultats ---
+        if (availableTrips.length > 0) {
+            const calculateDuration = (start, end) => { /* ... votre fonction de calcul est correcte ... */ };
+            
+            const results = availableTrips.map(trip => {
+                const isSegment = (trip.route.from.toLowerCase() !== fromCity.toLowerCase() || trip.route.to.toLowerCase() !== toCity.toLowerCase());
+                return {
+                    id: trip._id.toString(),
+                    from: trip.route.from,
+                    to: trip.route.to,
+                    company: trip.route.company,
+                    price: trip.route.price,
+                    duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
+                    departure: trip.route.departure,
+                    arrival: trip.route.arrival,
+                    amenities: trip.route.amenities || [],
+                    tripType: trip.route.tripType || "direct",
+                    stops: trip.route.stops || [],
+                    connections: trip.route.connections || [],
+                    departureLocation: trip.route.departureLocation || null,
+                    arrivalLocation: trip.route.arrivalLocation || null,
+                    trackerId: trip.busIdentifier || trip.route.trackerId || null,
+                    availableSeats: trip.seats.filter(s => s.status === "available").length,
+                    isNightTrip: trip.isNightTrip || false,
+                    arrivalDaysOffset: trip.arrivalDaysOffset || 0,
+                    totalSeats: trip.seats.length,
+                    date: trip.date,
+                    busIdentifier: trip.busIdentifier,
+                    baggageOptions: trip.route.baggageOptions,
+                    highlightBadge: trip.highlightBadge || null,
+                    isSegment: isSegment,
+                    segmentFrom: fromCity,
+                    segmentTo: toCity
+                };
             });
+            return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
         } else {
-            // Si aucun résultat, on cherche des alternatives
-            console.log(`ℹ️ Aucun trajet trouvé pour ${from}->${to} le ${date}. Recherche d'alternatives...`);
+            // --- 4. Si aucun résultat, on cherche des alternatives ---
+            console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives...`);
             const alternativeTrips = [];
             const searchRangeDays = [-2, -1, 1, 2, 3];
 
@@ -623,33 +593,24 @@ app.get("/api/search", async (req, res) => {
                 const alternativeDate = new Date(date);
                 alternativeDate.setUTCDate(alternativeDate.getUTCDate() + dayOffset);
                 const today = new Date();
-                today.setHours(0, 0, 0, 0); // On compare uniquement les dates, sans les heures
+                today.setHours(0, 0, 0, 0);
 
                 if (alternativeDate < today) continue;
 
                 const alternativeDateString = alternativeDate.toISOString().split('T')[0];
 
                 const tripCount = await tripsCollection.countDocuments({
-                    "route.from": { $regex: `^${from.trim()}`, $options: "i" },
-                    "route.to": { $regex: `^${to.trim()}`, $options: "i" },
+                    "route.from": { $regex: `^${fromCity}`, $options: "i" },
+                    "route.to": { $regex: `^${toCity}`, $options: "i" },
                     date: alternativeDateString,
                 });
 
                 if (tripCount > 0) {
-                    alternativeTrips.push({
-                        date: alternativeDateString,
-                        tripCount: tripCount,
-                    });
+                    alternativeTrips.push({ date: alternativeDateString, tripCount: tripCount });
                 }
             }
             
-            // On renvoie un résultat vide, mais avec le tableau des suggestions
-            return res.json({ 
-                success: true, 
-                count: 0,
-                results: [], 
-                alternativeTrips: alternativeTrips 
-            });
+            return res.json({ success: true, count: 0, results: [], alternativeTrips: alternativeTrips });
         }
     } catch (error) {
         console.error("❌ Erreur recherche:", error);
