@@ -851,6 +851,8 @@ window.changeLanguage = function(lang) {
  */
 // DANS app.js
 
+// DANS app.js
+
 function updatePassengerSelectorUI() {
     const adultsCount = document.getElementById("adults-count");
     const childrenCount = document.getElementById("children-count");
@@ -872,9 +874,8 @@ function updatePassengerSelectorUI() {
     
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    const rules = appRules.ticketing; // On récupère les règles
-
-    // --- Traduction du résumé principal ---
+    
+    // --- Traduction du résumé principal (inchangé) ---
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
@@ -884,12 +885,25 @@ function updatePassengerSelectorUI() {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
     
-     // On utilise la nouvelle clé dynamique
-    if (childrenLabel && typeof translation.search_form_children_dynamic === 'function') {
-        childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
-    } else if (childrenLabel) { // Fallback si la clé n'existe pas
-        childrenLabel.innerHTML = `Enfants <small>(0-${rules.childMaxAge} ans)</small>`;
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : LA PARTIE QUE VOUS DEVEZ REMPLACER
+    // ========================================================
+    
+    if (childrenLabel) {
+        // On récupère la règle de l'âge maximum qui est maintenant à jour.
+        const maxAge = appRules.ticketing.childMaxAge;
+
+        // On vérifie si la fonction de traduction dynamique existe et on l'utilise.
+        if (translation.search_form_children_dynamic && typeof translation.search_form_children_dynamic === 'function') {
+            childrenLabel.innerHTML = translation.search_form_children_dynamic(maxAge);
+        } else {
+            // Sinon, on utilise un texte de secours (fallback) qui reste dynamique.
+            childrenLabel.innerHTML = `Enfants <small>(0-${maxAge} ans)</small>`;
+        }
     }
+
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
     // ========================================================
 }
 
@@ -2092,7 +2106,10 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // INITIALISATION DE L'APPLICATION
 // ============================================
 // app.js
-function initApp() {
+// DANS app.js
+
+// ✅ On ajoute le mot-clé "async" ici pour autoriser l'utilisation de "await" à l'intérieur.
+async function initApp() {
     try {
         // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
         setupMobileMenu();
@@ -2106,22 +2123,11 @@ function initApp() {
         initInteractiveMap();
         setupSmartSearch();
         setupMobileFilterToggle();
-                // ✅ AJOUTEZ CET APPEL
         setupSocialLinks();
-        loadTicketingRules();
-
 
         // --- Configuration native ---
         if (window.Capacitor?.isNativePlatform()) {
-            
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
-            // ========================================================
-            
             const { StatusBar, Style } = Capacitor.Plugins;
-
-            // On vérifie que le plugin StatusBar EXISTE avant de l'utiliser.
-            // S'il n'est pas installé, cette condition sera fausse et le code ne plantera pas.
             if (StatusBar) {
                 try {
                     StatusBar.setStyle({ style: Style.Dark });
@@ -2132,10 +2138,6 @@ function initApp() {
             } else {
                 console.warn("⚠️ Plugin @capacitor/status-bar non trouvé. Le style de la barre de statut ne sera pas modifié.");
             }
-
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
         }
 
         // --- Correction pour la superposition de la recherche ---
@@ -2144,13 +2146,18 @@ function initApp() {
             document.body.appendChild(resultsContainer);
         }
 
-        // --- Chargement des données de fond ---
-        loadAllRouteTemplates(); 
+        // --- On attend que les données essentielles soient chargées ---
+        await Promise.all([
+            loadAllRouteTemplates(), 
+            loadTicketingRules()
+        ]);
+        
+        console.log("✅ Données de fond (modèles et règles) chargées.");
 
-        // ✅ APPEL UNIQUE qui va orchestrer tout le reste
+        // --- Maintenant que les données sont là, on met à jour l'UI ---
         applyLanguage();
 
-        // --- Gestion de la redirection (reste ici) ---
+        // --- Gestion de la redirection ---
         const urlParams = new URLSearchParams(window.location.search);
         const page = urlParams.get('page');
         if (page === 'reservations') {
@@ -5897,22 +5904,18 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
 
 // DANS app.js
 
+// DANS app.js, remplacez votre fonction loadTicketingRules
+
 async function loadTicketingRules() {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
         const data = await response.json();
         
         if (data.success && data.rules) {
-            appRules.ticketing = data.rules;
-            console.log("✅ Règles de tarification chargées :", appRules.ticketing);
-
-            // ========================================================
-            // ✅ CORRECTION : On force la mise à jour de l'UI ici
-            // ========================================================
-            if (typeof refreshPassengerSelectorUI === 'function') {
-                refreshPassengerSelectorUI();
-            }
-            // ========================================================
+            // On fusionne les règles reçues avec les règles par défaut
+            // pour éviter les erreurs si un champ est manquant côté serveur
+            appRules.ticketing = { ...appRules.ticketing, ...data.rules };
+            console.log("✅ Règles de tarification mises à jour :", appRules.ticketing);
         } else {
             console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
         }
