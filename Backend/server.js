@@ -517,43 +517,46 @@ app.get("/api/search", async (req, res) => {
     try {
         const fromCity = from.trim();
         const toCity = to.trim();
-
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION : Requête simplifiée et plus large
-        // ========================================================
-        
-        // 1. On récupère TOUS les trajets programmés pour la date demandée.
+         // --- 1. Recherche très large : On récupère tous les trajets du jour ---
         const allTripsForTheDay = await tripsCollection.find({ date: date }).toArray();
 
-        // ========================================================
-        // ✅ FIN DE LA CORRECTION
-        // ========================================================
-        
-        console.log(`[DIAG] ${allTripsForTheDay.length} trajets trouvés dans la DB pour la date ${date}.`);
-
-        // 2. Filtrage puissant en JavaScript pour trouver les trajets valides (directs ou segments)
-        const validOrderTrips = allTripsForTheDay.filter(trip => {
-            // Sécurité : on s'assure que trip.route existe
+        // --- 2. Filtrage puissant en JavaScript ---
+        const validTrips = allTripsForTheDay.filter(trip => {
             if (!trip.route) return false;
 
-            const stopCities = (trip.route.stops || [])
-                .map(stop => (stop && typeof stop.city === 'string' ? stop.city : null))
-                .filter(Boolean); // .filter(Boolean) retire les éventuels 'null'
-
-            // On construit le parcours complet du bus.
-            const fullPath = [trip.route.from, ...stopCities, trip.route.to];
+            // ========================================================
+            // ✅ DÉBUT DE LA NOUVELLE LOGIQUE DE CHEMIN
+            // ========================================================
             
-            // Sécurité : on s'assure que tout est bien une chaîne de caractères
-            if (!fullPath.every(city => typeof city === 'string')) {
+            // On reconstruit le parcours en incluant le point de départ,
+            // les arrêts, ET la première ville de correspondance.
+            const stopCities = (trip.route.stops || [])
+                .map(stop => stop && typeof stop.city === 'string' ? stop.city : null)
+                .filter(Boolean);
+
+            const connectionCities = (trip.route.connections || [])
+                .map(conn => conn && typeof conn.at === 'string' ? conn.at : null)
+                .filter(Boolean);
+                
+            // Le chemin complet inclut maintenant les arrêts ET les villes de correspondance
+            const fullPath = [trip.route.from, ...stopCities, ...connectionCities, trip.route.to];
+            
+            // On s'assure qu'il n'y a pas de doublons pour la recherche d'index
+            const uniqueFullPath = [...new Set(fullPath)];
+
+            // ========================================================
+            // ✅ FIN DE LA NOUVELLE LOGIQUE DE CHEMIN
+            // ========================================================
+
+            if (!uniqueFullPath.every(city => typeof city === 'string')) {
                 console.warn(`[WARN] Trajet ${trip._id} ignoré, parcours invalide.`);
                 return false;
             }
 
-            const pathInLower = fullPath.map(city => city.toLowerCase());
+            const pathInLower = uniqueFullPath.map(city => city.toLowerCase());
             const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
             const toIndex = pathInLower.indexOf(toCity.toLowerCase());
             
-            // Le trajet est valide si les deux villes sont trouvées ET si la ville de départ est AVANT la ville d'arrivée.
             return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
         
