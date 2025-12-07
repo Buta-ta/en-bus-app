@@ -747,7 +747,10 @@ function applyLanguage(lang = getLanguage()) {
     
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translation[key]) el.innerHTML = translation[key];
+       // On vérifie que la clé existe ET que ce n'est PAS une fonction
+        if (translation[key] && typeof translation[key] !== 'function') {
+            el.innerHTML = translation[key];
+        }
     });
 
     const smartSearchInput = document.getElementById('smart-search-input');
