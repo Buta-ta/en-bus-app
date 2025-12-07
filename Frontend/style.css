@@ -5886,3 +5886,47 @@ body.pwa-installed .container {
     /* Met en valeur les villes de l'utilisateur avec la couleur accent */
     color: var(--color-accent);
 }
+
+
+body {
+    /* ... vos styles de body existants ... */
+    background-color: var(--color-background); /* Couleur de fond de secours */
+    
+    /* On superpose la couleur et le motif */
+    background-image: 
+        linear-gradient(rgba(10, 14, 39, 0.95), rgba(10, 14, 39, 1)), /* Dégradé pour assombrir */
+        url('./path/to/your/pattern-bogolan.svg'); /* Votre motif */
+    
+    background-size: auto, 300px; /* Le dégradé prend toute la place, le motif se répète tous les 300px */
+    background-position: center;
+}
+
+
+.footer {
+    /* ... vos styles de footer existants ... */
+    background-color: var(--color-surface); /* Couleur de fond de secours */
+
+    background-image: 
+        linear-gradient(rgba(21, 26, 48, 0.9), rgba(21, 26, 48, 1)),
+        url('./path/to/your/pattern-kente.png'); /* Un autre motif */
+        
+    background-size: auto, 250px;
+    border-top: 1px solid var(--color-border); /* On garde une ligne de séparation */
+}
+
+/*
+ * Ajoute une bordure texturée aux cartes de résultat.
+ * C'est un détail subtil qui renforce l'identité.
+ */
+.bus-card, .reservation-card-pwa {
+    /* ... vos styles de carte existants ... */
+    
+    /* On utilise une image de bordure au lieu d'une couleur unie */
+    border: 2px solid transparent;
+    border-image: url('./Frontend/african-pattern.jpg') 10 round; /* L'image se répète sur la bordure */
+    
+    /* Fallback si border-image n'est pas supporté */
+    @supports not (border-image: url('...')) {
+      border: 1px solid var(--color-border);
+    }
+}
