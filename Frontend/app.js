@@ -893,6 +893,8 @@ function updatePassengerSelectorUI() {
         // On récupère la règle de l'âge maximum qui est maintenant à jour.
         const maxAge = appRules.ticketing.childMaxAge;
 
+         console.log(`4️⃣ [DIAG] Mise à jour du label enfant avec l'âge max : ${maxAge}`);
+
         // On vérifie si la fonction de traduction dynamique existe et on l'utilise.
         if (translation.search_form_children_dynamic && typeof translation.search_form_children_dynamic === 'function') {
             childrenLabel.innerHTML = translation.search_form_children_dynamic(maxAge);
@@ -4369,15 +4371,19 @@ async function displaySeats() { // ✅ On ajoute "async" ici
  */
 // DANS app.js
 // Pas besoin qu'elle soit 'async' car 'appRules' est déjà chargé.
+// DANS app.js
 function getChildPrice(adultPrice) {
     const rules = appRules.ticketing;
+    console.log(`5️⃣ [DIAG] Calcul du prix enfant. Mode actif : '${rules.childPricingMode}'`);
     
-    // ✅ LA LOGIQUE CORRIGÉE
     if (rules.childPricingMode === 'fixed') {
-        return rules.childFixedPrice; // On retourne le prix fixe
-    } else { // Sinon ('percentage')
+        console.log(`   -> [DIAG] Utilisation du prix fixe : ${rules.childFixedPrice}`);
+        return rules.childFixedPrice || 0;
+    } else {
         const discount = (rules.childDiscountPercentage || 0) / 100;
-        return adultPrice * (1 - discount);
+        const calculatedPrice = adultPrice * (1 - discount);
+        console.log(`   -> [DIAG] Utilisation du pourcentage (${rules.childDiscountPercentage}%). Prix calculé : ${calculatedPrice}`);
+        return calculatedPrice;
     }
 }
 // ========================================================
@@ -5923,37 +5929,24 @@ window.closeReportModal = function() {
 // ✅ NOUVELLE APPROCHE : On crée une promesse qui se résoudra avec les règles
 let rulesPromise = null;
 
-function loadTicketingRules() {
-    // Si la promesse est déjà en cours ou résolue, on la retourne
-    if (rulesPromise) {
-        return rulesPromise;
-    }
-    
-    // Sinon, on crée la promesse
-    rulesPromise = new Promise(async (resolve) => {
-        try {
-            const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
-            const data = await response.json();
-            
-            if (data.success && data.rules) {
-                console.log("✅ Règles de tarification chargées :", data.rules);
-                resolve(data.rules); // La promesse se résout avec les règles du serveur
-            } else {
-                throw new Error("Données de règles invalides");
-            }
-        } catch (error) {
-            console.error("❌ Erreur chargement des règles, utilisation des valeurs par défaut:", error);
-            // En cas d'erreur, la promesse se résout avec les valeurs par défaut
-            resolve({
-                childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
-                childPricingMode: CONFIG.DEFAULT_CHILD_PRICING_MODE,
-                childFixedPrice: CONFIG.DEFAULT_CHILD_FIXED_PRICE,
-                childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
-            });
+// DANS app.js
+async function loadTicketingRules() {
+    try {
+        console.log("1️⃣ [DIAG] Lancement du chargement des règles...");
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
+        const data = await response.json();
+        
+        if (data.success && data.rules) {
+            console.log("2️⃣ [DIAG] Règles reçues du serveur :", JSON.stringify(data.rules));
+            appRules.ticketing = { ...appRules.ticketing, ...data.rules };
+            console.log("3️⃣ [DIAG] Objet 'appRules' mis à jour :", JSON.stringify(appRules.ticketing));
+            updatePassengerSelectorUI();
+        } else {
+            console.warn("⚠️ [DIAG] Le serveur n'a pas renvoyé de règles valides. Utilisation des valeurs par défaut.");
         }
-    });
-    
-    return rulesPromise;
+    } catch (error) {
+        console.error("❌ [DIAG] ERREUR CRITIQUE lors du chargement des règles:", error);
+    }
 }
 
 // DANS app.js, AJOUTEZ CETTE FONCTION
