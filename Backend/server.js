@@ -506,6 +506,8 @@ app.get("/api/route-templates", async (req, res) => {
 // DANS server.js
 // DANS server.js
 
+// DANS server.js (remplacez entièrement votre route /api/search)
+
 app.get("/api/search", async (req, res) => {
     let { from, to, date } = req.query;
     if (!from || !to || !date) {
@@ -516,67 +518,48 @@ app.get("/api/search", async (req, res) => {
         const fromCity = from.trim();
         const toCity = to.trim();
 
-        const fromRegex = new RegExp(`^${fromCity}$`, 'i');
-        const toRegex = new RegExp(`^${toCity}$`, 'i');
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Requête simplifiée et plus large
+        // ========================================================
+        
+        // 1. On récupère TOUS les trajets programmés pour la date demandée.
+        const allTripsForTheDay = await tripsCollection.find({ date: date }).toArray();
 
-        // --- 1. Recherche large en base de données ---
-        const potentialTrips = await tripsCollection.find({
-            date: date,
-            $or: [
-                { "route.from": fromRegex, "route.to": toRegex },
-                { "route.stops.city": { $all: [fromRegex, toRegex] } }
-            ]
-        }).toArray();
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+        
+        console.log(`[DIAG] ${allTripsForTheDay.length} trajets trouvés dans la DB pour la date ${date}.`);
 
-        // --- Bloc de Diagnostic ---
-        console.log(`[DIAG] ${potentialTrips.length} trajets potentiels trouvés dans la DB pour la date ${date}.`);
+        // 2. Filtrage puissant en JavaScript pour trouver les trajets valides (directs ou segments)
+        const validOrderTrips = allTripsForTheDay.filter(trip => {
+            // Sécurité : on s'assure que trip.route existe
+            if (!trip.route) return false;
 
-        // --- 2. Filtrage en JavaScript pour valider l'ordre ---
-        const validOrderTrips = potentialTrips.filter(trip => {
-            console.log(`\n[DIAG] Traitement du trajet ID: ${trip._id}`);
-            console.log(`  -> route.from: `, trip.route.from, `(Type: ${typeof trip.route.from})`);
-            console.log(`  -> route.stops: `, trip.route.stops, `(Type: ${typeof trip.route.stops})`);
-            console.log(`  -> route.to: `, trip.route.to, `(Type: ${typeof trip.route.to})`);
+            const stopCities = (trip.route.stops || [])
+                .map(stop => (stop && typeof stop.city === 'string' ? stop.city : null))
+                .filter(Boolean); // .filter(Boolean) retire les éventuels 'null'
 
-            const stopsArray = trip.route.stops || [];
-            if (!Array.isArray(stopsArray)) {
-                console.error(`  -> ERREUR: trip.route.stops n'est pas un tableau !`);
+            // On construit le parcours complet du bus.
+            const fullPath = [trip.route.from, ...stopCities, trip.route.to];
+            
+            // Sécurité : on s'assure que tout est bien une chaîne de caractères
+            if (!fullPath.every(city => typeof city === 'string')) {
+                console.warn(`[WARN] Trajet ${trip._id} ignoré, parcours invalide.`);
                 return false;
             }
-            
-            const stopCities = stopsArray.map(stop => {
-                if (stop && typeof stop === 'object' && typeof stop.city === 'string') {
-                    return stop.city;
-                } else if (typeof stop === 'string') {
-                    return stop;
-                } else {
-                    console.error(`  -> ERREUR: Un élément dans 'stops' n'a pas le bon format. Contenu:`, stop);
-                    return null;
-                }
-            });
 
-            if (stopCities.includes(null)) return false;
-
-            const fullPath = [trip.route.from, ...stopCities, trip.route.to].map(city => {
-                if(typeof city !== 'string') {
-                    console.error(`  -> ERREUR FINALE: L'élément '${JSON.stringify(city)}' n'est pas un string avant .toLowerCase()`);
-                    return '';
-                }
-                return city.toLowerCase();
-            });
-            console.log('  -> Chemin complet normalisé :', fullPath);
+            const pathInLower = fullPath.map(city => city.toLowerCase());
+            const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
+            const toIndex = pathInLower.indexOf(toCity.toLowerCase());
             
-            const fromIndex = fullPath.indexOf(fromCity.toLowerCase());
-            const toIndex = fullPath.indexOf(toCity.toLowerCase());
-            
-            const isValid = fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
-            console.log(`  -> Est valide ? ${isValid} (fromIndex: ${fromIndex}, toIndex: ${toIndex})`);
-            return isValid;
+            // Le trajet est valide si les deux villes sont trouvées ET si la ville de départ est AVANT la ville d'arrivée.
+            return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
         
-        console.log(`[DIAG] ${validOrderTrips.length} trajets trouvés après validation de l'ordre.`);
+        console.log(`[DIAG] ${validOrderTrips.length} trajets valides trouvés après vérification de l'ordre.`);
 
-        // --- Filtrage des heures passées ---
+        // --- 3. Filtrage des heures passées (inchangé) ---
         const timeZone = 'Africa/Brazzaville';
         const availableTrips = validOrderTrips.filter(trip => {
             const todayStr = format(utcToZonedTime(new Date(), timeZone), 'yyyy-MM-dd', { timeZone });
@@ -588,7 +571,7 @@ app.get("/api/search", async (req, res) => {
             return true;
         });
 
-        // --- 3. Formatage des résultats ou recherche d'alternatives ---
+        // --- 4. Formatage des résultats ou recherche d'alternatives ---
         if (availableTrips.length > 0) {
             const calculateDuration = (start, end) => {
                 if (!start || !end) return "N/A";
@@ -634,7 +617,7 @@ app.get("/api/search", async (req, res) => {
             });
             return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
         } else {
-            // --- 4. Si aucun résultat, on cherche des alternatives ---
+            // --- 5. Si aucun résultat, on cherche des alternatives (inchangé) ---
             console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives...`);
             const alternativeTrips = [];
             const searchRangeDays = [-2, -1, 1, 2, 3];
@@ -649,6 +632,7 @@ app.get("/api/search", async (req, res) => {
 
                 const alternativeDateString = alternativeDate.toISOString().split('T')[0];
 
+                // Pour la recherche d'alternatives, on se contente des trajets directs
                 const tripCount = await tripsCollection.countDocuments({
                     "route.from": { $regex: `^${fromCity}`, $options: "i" },
                     "route.to": { $regex: `^${toCity}`, $options: "i" },
