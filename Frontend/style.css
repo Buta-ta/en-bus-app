@@ -5888,3 +5888,54 @@ body.pwa-installed .container {
 }
 
 
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 DÉCORATIONS AVEC ICÔNES DE MOTIFS
+   ============================================ */
+
+.section-with-pattern {
+    position: relative; /* Nécessaire pour positionner le motif */
+    overflow: hidden; /* Empêche le motif de déborder si on le souhaite */
+}
+
+/*
+ * On utilise un pseudo-élément pour ajouter le motif
+ * sans modifier le HTML de la section.
+ */
+.section-with-pattern::before {
+    content: '';
+    position: absolute;
+    
+    /* Positionnement du motif */
+    top: -50px;
+    right: -50px;
+    
+    /* Dimensions du motif */
+    width: 200px;
+    height: 200px;
+    
+    /* L'image SVG du motif */
+    background-image: url('./Frontend/icons/african-pattern.svg'); /* Mettez votre chemin ici */
+    background-repeat: no-repeat;
+    background-size: contain;
+    
+    /* Effets visuels */
+    opacity: 0.05; /* Très subtil pour ne pas être distrayant */
+    transform: rotate(15deg); /* Une légère rotation pour un effet plus dynamique */
+    
+    z-index: 0; /* Se place derrière le contenu de la section */
+}
+
+/*
+ * On peut créer des variantes pour utiliser différents motifs
+ * ou les placer différemment.
+ */
+.section-with-pattern.pattern-bottom-left::before {
+    top: auto;
+    bottom: -60px;
+    right: auto;
+    left: -60px;
+    transform: rotate(-15deg);
+    background-image: url('./Frontend/icons/african-pattern.svg'); /* Un autre motif */
+}
