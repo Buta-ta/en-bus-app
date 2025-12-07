@@ -602,6 +602,11 @@ const translations = {
     alternative_trips_desc: "Nous n'avons rien trouvé pour cette date, mais voici des trajets disponibles sur des jours proches :",
     trips_available: (count) => `${count} trajet(s) disponible(s)`,
     view_trips_button: "Voir les trajets",
+    // ============================================
+    // ✅ CLÉS POUR L'AFFICHAGE DES SEGMENTS
+    // ============================================
+    segment_on_line: (from, to) => `Sur la ligne ${from} → ${to}`,
+    segment_your_trip: "Votre trajet :",
   
 
 
@@ -1207,6 +1212,12 @@ const translations = {
     alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
     trips_available: (count) => `${count} trip(s) available`,
     view_trips_button: "View trips",
+     // ============================================
+    // ✅ KEYS FOR SEGMENT DISPLAY
+    // ============================================
+    segment_on_line: (from, to) => `On the ${from} → ${to} line`,
+    segment_your_trip: "Your trip:",
+    // ============================================
   },
      
 
