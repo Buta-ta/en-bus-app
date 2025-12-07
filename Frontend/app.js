@@ -4101,26 +4101,26 @@ function displayResults(results, isReturn = false) {
             : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
 
 
-
-         // ========================================================
-        // ✅ C'EST ICI QUE VOUS DEVEZ PLACER LE NOUVEAU BLOC
+        
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR POUR LA TRADUCTION
         // ========================================================
         let tripTitleHTML;
-        // On vérifie si la route a la propriété 'isSegment' (que le backend nous envoie)
+        
         if (route.isSegment) {
-            // Si c'est un segment, on affiche le trajet principal ET le segment de l'utilisateur
             tripTitleHTML = `
                 <div class="bus-card-trip-title" style="font-size: 0.9em; color: var(--color-text-secondary);">
-                    Sur la ligne ${route.from} → ${route.to}
+                    ${translation.segment_on_line(route.from, route.to)}
                 </div>
                 <div class="bus-card-segment-info" style="font-size: 1.2em; font-weight: 700; margin-top: 4px;">
-                    Votre trajet : <strong>${route.segmentFrom} → ${route.segmentTo}</strong>
+                    ${translation.segment_your_trip} <strong>${route.segmentFrom} → ${route.segmentTo}</strong>
                 </div>
             `;
         } else {
-            // Sinon, on affiche simplement le trajet direct normal
             tripTitleHTML = `<div class="bus-card-trip-title" style="font-size: 1.2em; font-weight: 700;">${route.from} → ${route.to}</div>`;
         }
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
         // ========================================================
         // ✅ FIN DU NOUVEAU BLOC
         // ========================================================
