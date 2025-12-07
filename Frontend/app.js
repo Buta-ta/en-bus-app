@@ -4246,12 +4246,11 @@ window.toggleSeat = function(seatNumber) {
 // DANS app.js, REMPLACEZ la fonction displaySeats par celle-ci
 // DANS app.js, remplacez la fonction displaySeats par celle-ci
 
-function displaySeats() {
+async function displaySeats() { // ✅ On ajoute "async" ici
     // 1. Récupération des traductions avec une sécurité
     const lang = getLanguage();
     const translation = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
-    const rules = appRules.ticketing; // On récupère les règles de tarification
-
+    
     // 2. Récupération des données et des éléments DOM
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
@@ -4271,8 +4270,9 @@ function displaySeats() {
     const tripLabel = appState.isSelectingReturn ? (translation.trip_badge_return || "RETOUR") : (translation.trip_badge_outbound || "ALLER");
     
     const adultPrice = currentBus.price || 0;
-    const childDiscount = rules.childDiscountPercentage / 100;
-    const childPrice = getChildPrice(adultPrice); 
+    
+    // On ATTEND que la fonction asynchrone getChildPrice nous retourne le bon prix
+    const childPrice = await getChildPrice(adultPrice); 
 
     busInfo.innerHTML = `
         <div class="bus-info-header">
@@ -4281,7 +4281,7 @@ function displaySeats() {
             <div class="price-info">
                 <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(adultPrice)} FCFA</span>
                 <span class="price-divider">|</span>
-                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong>  ${Utils.formatPrice(Math.round(childPrice))}  FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(Math.round(childPrice))} FCFA</span>
             </div>
         </div>
     `;
@@ -4289,6 +4289,7 @@ function displaySeats() {
     // ========================================================
     // ✅ FIN DE LA CORRECTION
     // ========================================================
+
 
     // 4. Traduction des informations d'occupation du bus (inchangé)
     const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
@@ -4366,17 +4367,15 @@ function displaySeats() {
  * @param {number} adultPrice - Le prix du billet adulte pour le trajet.
  * @returns {number} Le prix calculé pour un enfant.
  */
+// DANS app.js
+// Pas besoin qu'elle soit 'async' car 'appRules' est déjà chargé.
 function getChildPrice(adultPrice) {
-    // On récupère les règles de tarification actuelles.
     const rules = appRules.ticketing;
     
-    // Si le mode est 'prix fixe', on retourne ce prix.
+    // ✅ LA LOGIQUE CORRIGÉE
     if (rules.childPricingMode === 'fixed') {
-        // On s'assure de retourner un nombre, 0 par défaut si la règle n'est pas définie.
-        return rules.childFixedPrice || 0;
-    } 
-    // Sinon, on calcule le prix basé sur le pourcentage.
-    else { 
+        return rules.childFixedPrice; // On retourne le prix fixe
+    } else { // Sinon ('percentage')
         const discount = (rules.childDiscountPercentage || 0) / 100;
         return adultPrice * (1 - discount);
     }
@@ -4453,7 +4452,7 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
 
 // DANS app.js (remplacez votre fonction updateSeatSummary)
 
-function updateSeatSummary() {
+async function updateSeatSummary() {
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
     
@@ -4488,7 +4487,7 @@ function updateSeatSummary() {
         
         // On utilise la fonction helper qui contient la logique 'if/else'
         // pour déterminer si on doit utiliser le prix fixe ou le pourcentage.
-        const childPrice = getChildPrice(adultPrice); 
+       const childPrice = await getChildPrice(adultPrice); 
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
@@ -5907,23 +5906,7 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
 
 // DANS app.js, remplacez votre fonction loadTicketingRules
 
-async function loadTicketingRules() {
-    try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
-        const data = await response.json();
-        
-        if (data.success && data.rules) {
-            // On fusionne les règles reçues avec les règles par défaut
-            // pour éviter les erreurs si un champ est manquant côté serveur
-            appRules.ticketing = { ...appRules.ticketing, ...data.rules };
-            console.log("✅ Règles de tarification mises à jour :", appRules.ticketing);
-        } else {
-            console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
-        }
-    } catch (error) {
-        console.error("❌ Erreur chargement des règles de tarification:", error);
-    }
-}
+
 
 // ============================================
 // 🚪 FERMETURE DE LA MODALE
@@ -5933,7 +5916,45 @@ window.closeReportModal = function() {
     document.getElementById('report-modal').classList.remove('active');
 };
 
+// DANS app.js, tout en haut
 
+// Supprimez l'ancien 'let appRules = { ... }'
+
+// ✅ NOUVELLE APPROCHE : On crée une promesse qui se résoudra avec les règles
+let rulesPromise = null;
+
+function loadTicketingRules() {
+    // Si la promesse est déjà en cours ou résolue, on la retourne
+    if (rulesPromise) {
+        return rulesPromise;
+    }
+    
+    // Sinon, on crée la promesse
+    rulesPromise = new Promise(async (resolve) => {
+        try {
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
+            const data = await response.json();
+            
+            if (data.success && data.rules) {
+                console.log("✅ Règles de tarification chargées :", data.rules);
+                resolve(data.rules); // La promesse se résout avec les règles du serveur
+            } else {
+                throw new Error("Données de règles invalides");
+            }
+        } catch (error) {
+            console.error("❌ Erreur chargement des règles, utilisation des valeurs par défaut:", error);
+            // En cas d'erreur, la promesse se résout avec les valeurs par défaut
+            resolve({
+                childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
+                childPricingMode: CONFIG.DEFAULT_CHILD_PRICING_MODE,
+                childFixedPrice: CONFIG.DEFAULT_CHILD_FIXED_PRICE,
+                childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
+            });
+        }
+    });
+    
+    return rulesPromise;
+}
 
 // DANS app.js, AJOUTEZ CETTE FONCTION
 
