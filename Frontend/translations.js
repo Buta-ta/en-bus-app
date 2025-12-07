@@ -110,7 +110,7 @@ const translations = {
     amenity_ac: "Clim",
     filter_departure_location: "Lieu de départ",
     filter_all_locations: "Tous les lieux",
-    filter_toggle_button: "🌪️ Filtrer & Trier",
+    filter_toggle_button: " Filtrer & Trier",
     filter_time_night: "Nuit (21h-5h)",
     info_no_trips_found: "Aucun trajet disponible pour cet itinéraire à cette date",
 
