@@ -1201,14 +1201,16 @@ const translations = {
     // Keys for the passenger selector
     search_form_children_dynamic: (maxAge) => `Children <small>(0-${maxAge} yrs)</small>`,
     // ...
-  },
-     
 
-    no_trips_found_for_date: "No trips found for {date}",
+     no_trips_found_for_date: "No trips found for {date}",
     alternative_trips_title: "Alternative Trip Suggestions",
     alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
     trips_available: (count) => `${count} trip(s) available`,
     view_trips_button: "View trips",
+  },
+     
+
+   
 
   
 }
