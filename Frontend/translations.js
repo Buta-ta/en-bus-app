@@ -598,7 +598,8 @@ const translations = {
      // ============================================
     // ✅ CLÉS POUR LES SUGGESTIONS ALTERNATIVES
     // ============================================
-    no_trips_found_for_date: (date) => `Aucun trajet trouvé pour le <strong>${date}</strong>`,
+     no_trips_found_for_date: "Aucun trajet trouvé pour le {date}",
+
     alternative_trips_title: "Suggestions de trajets alternatifs",
     alternative_trips_desc: "Nous n'avons rien trouvé pour cette date, mais voici des trajets disponibles sur des jours proches :",
     trips_available: (count) => `${count} trajet(s) disponible(s)`,
@@ -1209,7 +1210,8 @@ const translations = {
   // ============================================
     // ✅ KEYS FOR ALTERNATIVE SUGGESTIONS
     // ============================================
-    no_trips_found_for_date: (date) => `No trips found for <strong>${date}</strong>`,
+      no_trips_found_for_date: "No trips found for {date}",
+
     alternative_trips_title: "Alternative Trip Suggestions",
     alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
     trips_available: (count) => `${count} trip(s) available`,
