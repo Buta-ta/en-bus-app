@@ -104,7 +104,7 @@ body {
      /* On superpose la couleur et le motif */
     background-image: 
         linear-gradient(rgba(10, 14, 39, 0.95), rgba(10, 14, 39, 1)), /* Dégradé pour assombrir */
-        url('./Frontend/african-pattern.svg'); /* Votre motif */
+        url('./Frontend/african-pattern.jpg'); /* Votre motif */
     
     
     
