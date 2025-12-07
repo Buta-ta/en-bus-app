@@ -5930,3 +5930,70 @@ body {
       border: 1px solid var(--color-border);
     }
 }
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLE POUR LA SECTION "DESTINATIONS POPULAIRES"
+   ============================================ */
+
+#popular-destinations-section {
+    position: relative; /* Nécessaire pour positionner le pseudo-élément ::before */
+    padding: 4rem 0; /* Ajoute de l'espace vertical */
+    border-radius: var(--radius-xl); /* Bords arrondis pour un look moderne */
+    overflow: hidden; /* Empêche l'image de déborder */
+    margin-top: 3rem; /* Espace par rapport à la section précédente */
+    z-index: 1; /* S'assure que la section est au-dessus du fond du body */
+}
+
+/*
+ * C'est ici que la magie opère. On utilise un pseudo-élément
+ * pour créer un calque d'arrière-plan contrôlé.
+ */
+#popular-destinations-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
+    /* L'image de fond */
+    background-image: url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800'); /* Mettez votre URL d'image ici */
+    background-size: cover;
+    background-position: center;
+    
+    /* Filtre d'assombrissement et de flou */
+    filter: blur(3px) brightness(0.5);
+    
+    z-index: -2; /* Place ce calque tout en arrière-plan de la section */
+}
+
+/*
+ * On crée un deuxième pseudo-élément pour la couleur et le motif,
+ * ce qui nous donne plus de contrôle.
+ */
+#popular-destinations-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    /* Couleur de fond et motif */
+    background-color: var(--dark-bg);
+    background-image: url('./path/to/your/pattern-bogolan.svg'); /* Votre motif */
+    background-size: 300px;
+    opacity: 0.8; /* Contrôle l'opacité de la superposition de couleur/motif */
+
+    z-index: -1; /* Place ce calque entre l'image et le contenu */
+}
+
+/* On s'assure que le contenu (titre, cartes) est bien au-dessus */
+#popular-destinations-section .section-title,
+#popular-destinations-section .popular-destinations-grid {
+    position: relative;
+    z-index: 2;
+}
