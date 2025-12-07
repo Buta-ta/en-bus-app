@@ -1210,12 +1210,17 @@ const translations = {
   // ============================================
     // ✅ KEYS FOR ALTERNATIVE SUGGESTIONS
     // ============================================
-      no_trips_found_for_date: "No trips found for {date}",
+    no_trips_found_for_date: "No trips found for {date}",
 
     alternative_trips_title: "Alternative Trip Suggestions",
     alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
     trips_available: (count) => `${count} trip(s) available`,
     view_trips_button: "View trips",
+
+    // --- Autres clés que vous pourriez avoir oubliées ---
+    success_filters_reset: "Filters have been reset.",
+    info_no_trips_match_filters: "No trips match your filter criteria.",
+
     // ============================================
   
 }
