@@ -594,6 +594,16 @@ const translations = {
     // Clés pour le sélecteur de passagers
     search_form_children_dynamic: (maxAge) => `Enfants <small>(0-${maxAge} ans)</small>`,
     // ...
+
+     // ============================================
+    // ✅ CLÉS POUR LES SUGGESTIONS ALTERNATIVES
+    // ============================================
+    no_trips_found_for_date: (date) => `Aucun trajet trouvé pour le <strong>${date}</strong>`,
+    alternative_trips_title: "Suggestions de trajets alternatifs",
+    alternative_trips_desc: "Nous n'avons rien trouvé pour cette date, mais voici des trajets disponibles sur des jours proches :",
+    trips_available: (count) => `${count} trajet(s) disponible(s)`,
+    view_trips_button: "Voir les trajets",
+    // ============================================
   
 
 
@@ -1193,8 +1203,18 @@ const translations = {
     // Keys for the passenger selector
     search_form_children_dynamic: (maxAge) => `Children <small>(0-${maxAge} yrs)</small>`,
     // ...
-  }
+  },
      
+
+  // ============================================
+    // ✅ KEYS FOR ALTERNATIVE SUGGESTIONS
+    // ============================================
+    no_trips_found_for_date: (date) => `No trips found for <strong>${date}</strong>`,
+    alternative_trips_title: "Alternative Trip Suggestions",
+    alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
+    trips_available: (count) => `${count} trip(s) available`,
+    view_trips_button: "View trips",
+    // ============================================
   
 }
 

@@ -3313,36 +3313,109 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
-        
-        console.log("5️⃣ Données JSON parsées:", data);
-        
-        if (data.success && data.results) {
-            appState.currentResults = data.results;
+console.log("5️⃣ Données JSON parsées:", data);
 
-            if (data.results.length === 0) {
-                console.log("   -> Aucun résultat trouvé.");
-                Utils.showToast(translation.info_no_trips_found, 'info');
-            } else {
-                console.log(`   -> ${data.results.length} résultats bruts reçus.`);
-            }
-            
-            // On appelle displayResults, qui appliquera les filtres (maintenant réinitialisés)
-            displayResults(appState.currentResults);
+// ========================================================
+// ✅ MISE À JOUR DE LA LOGIQUE DE GESTION DE LA RÉPONSE
+// ========================================================
+if (data.success) {
+    appState.currentResults = data.results;
 
-        } else {
-            appState.currentResults = [];
-            displayResults([]);
-            throw new Error(data.error || "Le serveur a renvoyé des données invalides.");
-        }
-        
-        console.log("6️⃣ Affichage de la page 'results'...");
-        showPage("results");
+    // Si on a des résultats directs, on les affiche.
+    if (data.results && data.results.length > 0) {
+        displayResults(data.results);
+    } 
+    // Sinon, si on a des alternatives, on les affiche.
+    else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
+        displayAlternativeTrips(data.alternativeTrips);
+    } 
+    // Sinon, c'est qu'il n'y a vraiment rien.
+    else {
+        displayResults([]); // Affiche le message "Aucun trajet"
+    }
+} else {
+    // Gestion d'erreur
+    appState.currentResults = [];
+    displayResults([]);
+    throw new Error(data.error || "Données invalides.");
+}
+
+showPage("results");
 
     } catch (error) {
         console.error('❌ Erreur critique dans searchBuses:', error);
         Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
+
+
+// DANS app.js (ajoutez cette nouvelle fonction)
+
+function displayAlternativeTrips(alternatives) {
+    const resultsList = document.getElementById("results-list");
+    const summary = document.getElementById("search-summary");
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // Mettre à jour le résumé
+    if (summary) {
+        summary.innerHTML = translation.no_trips_found_for_date(Utils.formatDate(appState.currentSearch.date, lang));
+    }
+
+    let alternativesHTML = `
+        <div class="no-results alternative-suggestions">
+            <h3>${translation.alternative_trips_title}</h3>
+            <p>${translation.alternative_trips_desc}</p>
+            <div class="alternative-trips-list">
+    `;
+
+    alternatives.forEach(alt => {
+        alternativesHTML += `
+            <div class="alternative-trip-card" onclick="searchForAlternativeDate('${alt.date}')">
+                <div class="alt-date">${Utils.formatDate(alt.date, lang)}</div>
+                <div class="alt-info">
+                    <span class="alt-count">${alt.tripCount} ${translation.trips_available(alt.tripCount)}</span>
+                    <span class="alt-action">${translation.view_trips_button} →</span>
+                </div>
+            </div>
+        `;
+    });
+
+    alternativesHTML += `</div></div>`;
+    resultsList.innerHTML = alternativesHTML;
+}
+
+// Fonction helper pour relancer la recherche
+ 
+function searchForAlternativeDate(newDate) {
+    console.log(`🔄 Relance de la recherche pour la date alternative : ${newDate}`);
+    
+    // Mettre à jour la valeur cachée utilisée pour la recherche
+    const departureValueInput = document.getElementById('departure-date-value');
+    if (departureValueInput) {
+        departureValueInput.value = newDate;
+    }
+    
+    // Mettre à jour la valeur visible dans le calendrier Flatpickr
+    const displayInput = document.getElementById('travel-date');
+    if (displayInput && displayInput._flatpickr) {
+        displayInput._flatpickr.setDate(newDate, true); // 'true' déclenche l'événement onChange pour mettre à jour l'affichage
+    }
+    
+    // Relancer la recherche
+    searchBuses();
+}
+
+
+
+
+
+
+
+
+
+
+
 function setupSmartSearch() {
     const searchInput = document.getElementById('smart-search-input');
     const submitBtn = document.getElementById('smart-search-submit-btn');

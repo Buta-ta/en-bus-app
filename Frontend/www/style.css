@@ -5741,3 +5741,79 @@ body.pwa-installed .container {
         justify-content: center;
     }
 }
+
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLES POUR LES SUGGESTIONS DE TRAJETS
+   ============================================ */
+.alternative-suggestions {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--color-surface-dark);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+}
+
+.alternative-suggestions h3 {
+    font-size: 1.5rem;
+    color: var(--color-accent);
+    margin-bottom: 0.5rem;
+}
+
+.alternative-suggestions p {
+    color: var(--color-text-secondary);
+    max-width: 500px;
+    margin: 0 auto 2rem auto;
+}
+
+.alternative-trips-list {
+    display: grid;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.alternative-trip-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.5rem;
+    border: 1px solid var(--color-border);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alternative-trip-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-accent);
+    box-shadow: 0 5px 20px rgba(0, 217, 255, 0.1);
+}
+
+.alt-date {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+}
+
+.alt-info {
+    text-align: right;
+}
+
+.alt-count {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.alt-action {
+    font-weight: 700;
+    color: var(--color-accent);
+    font-size: 1rem;
+}
