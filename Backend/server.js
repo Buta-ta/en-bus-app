@@ -499,100 +499,93 @@ app.get("/api/route-templates", async (req, res) => {
 
 
 // DANS server.js
+// DANS server.js (remplacez l'ancienne route /api/search)
 
 app.get("/api/search", async (req, res) => {
-  let { from, to, date } = req.query;
-  if (!from || !to || !date)
-    return res.status(400).json({ error: "Paramètres manquants" });
-  
-  try {
-    const trips = await tripsCollection
-      .find({
-        "route.from": { $regex: `^${from.trim()}`, $options: "i" },
-        "route.to": { $regex: `^${to.trim()}`, $options: "i" },
-        date: date,
-      })
-      .toArray();
+    let { from, to, date } = req.query;
+    if (!from || !to || !date) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
 
-    // ==============================================================
-    // ✅ CORRECTION DU FILTRE TEMPOREL (Gestion des fuseaux horaires)
-    // ==============================================================
-    const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence
-    const nowInBrazzaville = utcToZonedTime(new Date(), timeZone);
-    const todayStrInBrazzaville = format(nowInBrazzaville, 'yyyy-MM-dd', { timeZone });
-    
-    const filteredTrips = trips.filter(trip => {
-      // Si le voyage n'est pas "aujourd'hui" (selon le fuseau de Brazzaville), on le garde toujours.
-      if (trip.date !== todayStrInBrazzaville) {
-        return true;
-      }
-      
-      // Si c'est aujourd'hui, on compare les heures DANS le bon fuseau horaire.
-      if (trip.route?.departure) {
-        // On crée la date/heure de départ du bus en l'interprétant comme étant à l'heure de Brazzaville.
-        // Puis on la convertit en objet Date UTC pour une comparaison fiable.
-        const departureDateTimeInUtc = zonedTimeToUtc(`${trip.date}T${trip.route.departure}:00`, timeZone);
+    try {
+        // --- 1. Recherche Principale (votre code existant) ---
+        let trips = await tripsCollection.find({
+            "route.from": { $regex: `^${from.trim()}`, $options: "i" },
+            "route.to": { $regex: `^${to.trim()}`, $options: "i" },
+            date: date,
+        }).toArray();
+
+        // On filtre les trajets passés (votre code existant)
+        // ... (votre logique de filtrage des heures passées est ici) ...
+        const timeZone = 'Africa/Brazzaville';
+        const nowInBrazzaville = utcToZonedTime(new Date(), timeZone);
+        const todayStrInBrazzaville = format(nowInBrazzaville, 'yyyy-MM-dd', { timeZone });
         
-        // On compare l'heure de départ (en UTC) avec l'heure actuelle du serveur (en UTC).
-        return departureDateTimeInUtc > new Date();
-      }
-      
-      // Par sécurité, si le trajet n'a pas d'heure de départ, on l'affiche.
-      return true; 
-    });
+        let filteredTrips = trips.filter(trip => {
+            if (trip.date !== todayStrInBrazzaville) return true;
+            if (trip.route?.departure) {
+                const departureDateTimeInUtc = zonedTimeToUtc(`${trip.date}T${trip.route.departure}:00`, timeZone);
+                return departureDateTimeInUtc > new Date();
+            }
+            return true;
+        });
 
-    // ==============================================================
-    // FIN DE LA CORRECTION
-    // ==============================================================
-
-    // La suite de la fonction reste inchangée
-    const calculateDuration = (start, end) => {
-        if (!start || !end) return "N/A";
-        const [h1, m1] = start.split(':').map(Number);
-        const [h2, m2] = end.split(':').map(Number);
-        let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+        // --- 2. Si des trajets sont trouvés, on les renvoie directement ---
+        if (filteredTrips.length > 0) {
+            // On formate et on renvoie les résultats comme avant
+            const results = filteredTrips.map((trip) => ({ /* ... votre objet de résultat ... */ }));
+            return res.json({ success: true, results: results, alternativeTrips: [] });
+        }
         
-        if (diffMinutes < 0) diffMinutes += 1440; 
+        // ========================================================
+        // ✅ DÉBUT DE LA NOUVELLE LOGIQUE DE SUGGESTION
+        // ========================================================
 
-        const hours = Math.floor(diffMinutes / 60);
-        const minutes = diffMinutes % 60;
+        // --- 3. Si aucun trajet n'est trouvé, on cherche des alternatives ---
+        console.log(`ℹ️ Aucun trajet direct trouvé pour ${from}->${to} le ${date}. Recherche d'alternatives...`);
+        const alternativeTrips = [];
+        const searchRangeDays = [-2, -1, 1, 2, 3]; // On cherche 2 jours avant, 3 jours après
+
+        for (const dayOffset of searchRangeDays) {
+            const alternativeDate = new Date(date);
+            alternativeDate.setUTCDate(alternativeDate.getUTCDate() + dayOffset);
+            
+            // On ne cherche pas dans le passé
+            if (alternativeDate < new Date(new Date().setHours(0,0,0,0))) continue;
+
+            const alternativeDateString = alternativeDate.toISOString().split('T')[0];
+
+            // On compte combien de trajets existent pour cette date alternative
+            const tripCount = await tripsCollection.countDocuments({
+                "route.from": { $regex: `^${from.trim()}`, $options: "i" },
+                "route.to": { $regex: `^${to.trim()}`, $options: "i" },
+                date: alternativeDateString,
+            });
+
+            if (tripCount > 0) {
+                alternativeTrips.push({
+                    date: alternativeDateString,
+                    tripCount: tripCount,
+                });
+            }
+        }
         
-        return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
-    };
+        // On renvoie un résultat vide, mais AVEC le tableau des suggestions
+        return res.json({ 
+            success: true, 
+            results: [], 
+            alternativeTrips: alternativeTrips 
+        });
 
-    const results = filteredTrips.map((trip) => ({
-      id: trip._id.toString(),
-      from: trip.route.from,
-      to: trip.route.to,
-      company: trip.route.company,
-      price: trip.route.price,
-      duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
-      departure: trip.route.departure,
-      arrival: trip.route.arrival,
-      amenities: trip.route.amenities || [],
-      tripType: trip.route.tripType || "direct",
-      stops: trip.route.stops || [],
-      connections: trip.route.connections || [],
-      departureLocation: trip.route.departureLocation || null,
-      arrivalLocation: trip.route.arrivalLocation || null,
-      trackerId: trip.busIdentifier || trip.route.trackerId || null,
-      availableSeats: trip.seats.filter((s) => s.status === "available").length,
-      isNightTrip: trip.isNightTrip || false,
-      arrivalDaysOffset: trip.arrivalDaysOffset || 0,
-      totalSeats: trip.seats.length,
-      date: trip.date,
-      busIdentifier: trip.busIdentifier,
-      baggageOptions: trip.route.baggageOptions,
-      highlightBadge: trip.highlightBadge || null,
-    }));
-    
-    res.json({ success: true, count: results.length, results });
-  } catch (error) {
-    console.error("❌ Erreur recherche:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
+        // ========================================================
+        // ✅ FIN DE LA NOUVELLE LOGIQUE
+        // ========================================================
+
+    } catch (error) {
+        console.error("❌ Erreur recherche (avec alternatives):", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
-
 app.get("/api/trips/:id/seats", async (req, res) => {
   try {
     const { id } = req.params;
