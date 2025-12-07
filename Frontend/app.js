@@ -854,6 +854,7 @@ window.changeLanguage = function(lang) {
 // DANS app.js
 
 // DANS app.js (remplacez votre fonction updatePassengerSelectorUI)
+// DANS app.js
 
 function updatePassengerSelectorUI() {
     const adultsCount = document.getElementById("adults-count");
@@ -861,59 +862,43 @@ function updatePassengerSelectorUI() {
     const summary = document.getElementById("passenger-summary");
     const dropdown = document.getElementById("passenger-dropdown");
     
-    // Sécurité : si un élément manque, on arrête
     if (!adultsCount || !childrenCount || !summary || !dropdown) {
         return;
     }
 
-    // Mise à jour des compteurs et des boutons (votre logique est déjà bonne)
+    // Mise à jour des compteurs et boutons
     adultsCount.textContent = appState.passengerCounts.adults;
     childrenCount.textContent = appState.passengerCounts.children;
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
     
-    // --- Logique de traduction centralisée ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     
-    // 1. Traduction du résumé principal ("1 Adulte, 2 Enfants")
+    // Traduction du résumé principal
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
     
-    // 2. Traduction du label "Adultes" dans le dropdown
+    // Traduction du label "Adultes"
     const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
     if (adultsLabel && translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
     
-    // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION : Logique de traduction pour le label "Enfants"
-    // ========================================================
-
+    // Logique pour le label "Enfants"
     const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
     if (childrenLabel) {
-        // On récupère la règle de l'âge maximum qui est maintenant garantie d'être à jour
         const maxAge = appRules.ticketing.childMaxAge;
 
-        // On vérifie si la clé de traduction dynamique existe et est une fonction
         if (translation.search_form_children_dynamic && typeof translation.search_form_children_dynamic === 'function') {
-            // Si oui, on l'utilise. C'est le cas idéal.
             childrenLabel.innerHTML = translation.search_form_children_dynamic(maxAge);
         } else {
-            // Sinon (si la clé est manquante en anglais par ex.), on construit un texte de secours
-            // qui est au moins fonctionnel et affiche le bon âge.
-            // On fait un petit test pour le texte de base.
             const baseText = (lang === 'en') ? 'Children' : 'Enfants';
             childrenLabel.innerHTML = `${baseText} <small>(0-${maxAge} yrs)</small>`;
-            console.warn(`Clé de traduction 'search_form_children_dynamic' manquante pour la langue '${lang}'.`);
         }
     }
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
 }
-
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 function startFrontendCountdown() {
     // On nettoie l'ancien minuteur
