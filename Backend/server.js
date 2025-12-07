@@ -512,9 +512,29 @@ app.get("/api/search", async (req, res) => {
     try {
         // --- 1. Recherche Principale ---
         const trips = await tripsCollection.find({
-            "route.from": { $regex: `^${from.trim()}`, $options: "i" },
-            "route.to": { $regex: `^${to.trim()}`, $options: "i" },
             date: date,
+            $or: [
+                // Condition 1 : Le trajet est un trajet direct classique.
+                { 
+                    "route.from": { $regex: `^${fromCity}`, $options: "i" },
+                    "route.to": { $regex: `^${toCity}`, $options: "i" }
+                },
+                // Condition 2 : Le trajet est un segment.
+                {
+                    // On s'assure que le trajet contient les deux villes dans son parcours global.
+                    // Le parcours global inclut le point de départ, les arrêts, et le point d'arrivée.
+                    $and: [
+                        { 
+                            "route.stops": { 
+                                $all: [
+                                    { $elemMatch: { $regex: `^${fromCity}$`, $options: "i" } },
+                                    { $elemMatch: { $regex: `^${toCity}$`, $options: "i" } }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
         }).toArray();
 
         // --- 2. Filtrage des trajets déjà passés ---
@@ -576,7 +596,11 @@ app.get("/api/search", async (req, res) => {
                 success: true, 
                 count: results.length, 
                 results: results,
-                alternativeTrips: [] // On inclut un tableau vide pour la cohérence
+                alternativeTrips: [],
+                isSegment: isSegment, // Nouvelle information
+                segmentFrom: fromCity, // Ville de départ demandée
+                segmentTo: toCity,   // Ville d'arrivée demandée
+ // On inclut un tableau vide pour la cohérence
             });
         } else {
             // Si aucun résultat, on cherche des alternatives
