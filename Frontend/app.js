@@ -4451,8 +4451,9 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
 
 // DANS app.js (remplacez votre fonction updateSeatSummary)
 
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
 function updateSeatSummary() {
-    // Récupération des éléments et des traductions
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
     
@@ -4480,14 +4481,14 @@ function updateSeatSummary() {
         seatsDisplay.textContent = currentSeats.join(", ");
         
         // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR AVEC LA LOGIQUE FLEXIBLE
+        // ✅ DÉBUT DE LA CORRECTION
         // ========================================================
         
         const adultPrice = currentBus.price;
         
-        // On utilise la fonction helper pour obtenir le bon prix enfant
-        // en fonction du mode configuré par l'admin (fixe ou pourcentage).
-        const childPrice = getChildPrice(adultPrice);
+        // On utilise la fonction helper qui contient la logique 'if/else'
+        // pour déterminer si on doit utiliser le prix fixe ou le pourcentage.
+        const childPrice = getChildPrice(adultPrice); 
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
@@ -4500,7 +4501,7 @@ function updateSeatSummary() {
         priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
 
         // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
+        // ✅ FIN DE LA CORRECTION
         // ========================================================
     }
 }
