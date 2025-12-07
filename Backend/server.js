@@ -2059,28 +2059,49 @@ app.get("/api/settings/ticketing-rules", async (req, res) => {
 // DANS server.js, avec les autres routes ADMIN
 
 // Route pour LIRE les paramètres actuels
+// DANS server.js
+
 app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, res) => {
     try {
         const settings = await systemSettingsCollection.findOne({ key: "ticketingRules" });
 
         if (!settings) {
-            // Si le document n'existe pas, on renvoie des valeurs par défaut pour peupler le formulaire
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            // Si le document n'existe pas, on renvoie un objet complet
+            // avec TOUTES les valeurs par défaut pour pré-remplir le formulaire.
             return res.json({ 
                 success: true, 
-                settings: { childMaxAge: 6, childDiscountPercentage: 50 }
+                settings: { 
+                    childMaxAge: 6, 
+                    childPricingMode: 'percentage', // Mode par défaut
+                    childFixedPrice: 5000, 
+                    childDiscountPercentage: 50 
+                }
             });
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
         }
         
+        // Si le document existe, on renvoie sa valeur
         res.json({ success: true, settings: settings.value });
 
     } catch (error) {
+        // En cas d'erreur serveur, on renvoie une erreur 500
+        console.error("❌ Erreur lecture des règles de billetterie (admin):", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
 
 // Route pour METTRE À JOUR les paramètres
+// DANS server.js
+
 app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
     body('childMaxAge').isInt({ min: 0, max: 17 }),
+    body('childPricingMode').isIn(['percentage', 'fixed']),
+    body('childFixedPrice').isInt({ min: 0 }),
     body('childDiscountPercentage').isInt({ min: 0, max: 100 })
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -2089,17 +2110,27 @@ app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
     }
 
     try {
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
+
+        // On récupère TOUS les champs envoyés par le formulaire de l'admin
         const newRules = {
             childMaxAge: req.body.childMaxAge,
+            childPricingMode: req.body.childPricingMode,
+            childFixedPrice: req.body.childFixedPrice,
             childDiscountPercentage: req.body.childDiscountPercentage
         };
+        
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
 
-        // On utilise 'upsert: true' pour créer le document s'il n'existe pas
         await systemSettingsCollection.updateOne(
             { key: "ticketingRules" },
             { 
                 $set: { 
-                    value: newRules,
+                    value: newRules, // On sauvegarde le nouvel objet complet
                     updatedAt: new Date(),
                     updatedBy: req.user.username 
                 } 
