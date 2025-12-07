@@ -5817,3 +5817,51 @@ body.pwa-installed .container {
     color: var(--color-accent);
     font-size: 1rem;
 }
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 STYLES POUR L'AFFICHAGE DES SEGMENTS
+   ============================================ */
+
+/*
+ * Style pour le titre principal du trajet
+ * (quand ce n'est PAS un segment)
+ */
+.bus-card-trip-title {
+    font-size: 1.3rem; /* Légèrement plus grand */
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem; /* Espace en dessous */
+}
+
+/*
+ * Style pour le sous-titre qui indique la ligne principale
+ * (quand c'est un segment)
+ */
+.bus-card-main .bus-card-trip-title { /* Sélecteur plus spécifique pour surcharger */
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px; /* Espace réduit */
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--color-border);
+}
+
+/*
+ * Style pour la partie qui met en avant le trajet de l'utilisateur
+ * (quand c'est un segment)
+ */
+.bus-card-segment-info {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text-primary); /* Couleur principale pour le mettre en avant */
+    margin-bottom: 0.5rem;
+}
+
+.bus-card-segment-info strong {
+    /* Met en valeur les villes de l'utilisateur avec la couleur accent */
+    color: var(--color-accent);
+}

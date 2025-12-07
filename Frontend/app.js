@@ -4099,12 +4099,45 @@ function displayResults(results, isReturn = false) {
         const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
             ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
             : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
+
+
+
+         // ========================================================
+        // ✅ C'EST ICI QUE VOUS DEVEZ PLACER LE NOUVEAU BLOC
+        // ========================================================
+        let tripTitleHTML;
+        // On vérifie si la route a la propriété 'isSegment' (que le backend nous envoie)
+        if (route.isSegment) {
+            // Si c'est un segment, on affiche le trajet principal ET le segment de l'utilisateur
+            tripTitleHTML = `
+                <div class="bus-card-trip-title" style="font-size: 0.9em; color: var(--color-text-secondary);">
+                    Sur la ligne ${route.from} → ${route.to}
+                </div>
+                <div class="bus-card-segment-info" style="font-size: 1.2em; font-weight: 700; margin-top: 4px;">
+                    Votre trajet : <strong>${route.segmentFrom} → ${route.segmentTo}</strong>
+                </div>
+            `;
+        } else {
+            // Sinon, on affiche simplement le trajet direct normal
+            tripTitleHTML = `<div class="bus-card-trip-title" style="font-size: 1.2em; font-weight: 700;">${route.from} → ${route.to}</div>`;
+        }
+        // ========================================================
+        // ✅ FIN DU NOUVEAU BLOC
+        // ========================================================
+        
+
+
+
+
+
+
             
         return `
             <div class="bus-card">
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
+                     ${tripTitleHTML}
                         <div class="bus-card-time">
                             <span>${route.departure}</span>
                             <div class="bus-card-duration">
