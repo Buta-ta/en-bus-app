@@ -3246,9 +3246,23 @@ function setupAmenitiesFilters() {
 
 // DANS app.js
 
+// DANS app.js (remplacez votre fonction searchBuses)
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
+
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
+    // On réinitialise les filtres en mode "silencieux" (sans toast)
+    // pour garantir que chaque nouvelle recherche part d'un état propre.
+    if (typeof resetFilters === 'function') {
+        resetFilters(true); 
+    }
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
     
     try {
         const lang = getLanguage();
@@ -3302,12 +3316,7 @@ window.searchBuses = async function() {
         
         console.log("5️⃣ Données JSON parsées:", data);
         
-        // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR
-        // ========================================================
         if (data.success && data.results) {
-            // On stocke la liste complète et non modifiée des résultats de l'API.
-            // C'est notre "source de vérité" pour les filtres.
             appState.currentResults = data.results;
 
             if (data.results.length === 0) {
@@ -3317,18 +3326,14 @@ window.searchBuses = async function() {
                 console.log(`   -> ${data.results.length} résultats bruts reçus.`);
             }
             
-            // On appelle displayResults, qui se chargera d'appliquer les filtres et d'afficher.
+            // On appelle displayResults, qui appliquera les filtres (maintenant réinitialisés)
             displayResults(appState.currentResults);
 
         } else {
-            // En cas d'échec partiel de l'API
             appState.currentResults = [];
             displayResults([]);
             throw new Error(data.error || "Le serveur a renvoyé des données invalides.");
         }
-        // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
-        // ========================================================
         
         console.log("6️⃣ Affichage de la page 'results'...");
         showPage("results");
@@ -3760,9 +3765,10 @@ function setupMobileFilterToggle() {
 
 
 // DANS app.js (remplacez votre fonction resetFilters)
+// DANS app.js (remplacez votre fonction resetFilters)
 
-window.resetFilters = function() {
-    // 1. Réinitialiser l'objet des filtres actifs (votre code est parfait)
+window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
+    // 1. Réinitialiser l'objet des filtres actifs
     activeFilters = {
         company: 'all',
         tripType: 'all',
@@ -3772,10 +3778,6 @@ window.resetFilters = function() {
         sortBy: 'departure',
         departureLocation: 'all'
     };
-
-    // ========================================================
-    // ✅ MISE À JOUR : Ajout de vérifications de sécurité
-    // ========================================================
 
     // 2. Réinitialiser les champs de formulaire dans l'interface utilisateur
     const locationSelect = document.getElementById('filter-departure-location');
@@ -3809,17 +3811,19 @@ window.resetFilters = function() {
         cb.checked = false;
     });
     
-    // ========================================================
-    // ✅ FIN DE LA MISE À JOUR
-    // ========================================================
-
-    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale (votre code est parfait)
+    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale
     displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // 4. Afficher le toast de succès (votre code est parfait)
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    Utils.showToast(translation.success_filters_reset, 'success');
+    // ========================================================
+    // ✅ CORRECTION ICI : Affichage conditionnel du toast
+    // ========================================================
+    // 4. On n'affiche le toast que si ce n'est pas un reset "silencieux"
+    if (!isSilent) {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        Utils.showToast(translation.success_filters_reset, 'success');
+    }
+    // ========================================================
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
