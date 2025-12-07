@@ -3351,16 +3351,30 @@ showPage("results");
 
 // DANS app.js (ajoutez cette nouvelle fonction)
 
+// DANS app.js (remplacez cette fonction)
+
 function displayAlternativeTrips(alternatives) {
     const resultsList = document.getElementById("results-list");
     const summary = document.getElementById("search-summary");
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // Mettre à jour le résumé
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
     if (summary) {
-        summary.innerHTML = translation.no_trips_found_for_date(Utils.formatDate(appState.currentSearch.date, lang));
+        // 1. On récupère la chaîne de traduction
+        let summaryText = translation.no_trips_found_for_date || "Aucun trajet trouvé pour le {date}";
+        
+        // 2. On formate la date que l'on veut insérer
+        const formattedDate = Utils.formatDate(appState.currentSearch.date, lang);
+        
+        // 3. On remplace le placeholder {date} par la date formatée
+        summary.innerHTML = summaryText.replace('{date}', `<strong>${formattedDate}</strong>`);
     }
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
 
     let alternativesHTML = `
         <div class="no-results alternative-suggestions">
@@ -3370,11 +3384,16 @@ function displayAlternativeTrips(alternatives) {
     `;
 
     alternatives.forEach(alt => {
+        // Cette partie est déjà correcte car elle utilise une fonction
+        const tripCountText = (typeof translation.trips_available === 'function') 
+            ? translation.trips_available(alt.tripCount) 
+            : `${alt.tripCount} trajet(s) disponible(s)`;
+
         alternativesHTML += `
             <div class="alternative-trip-card" onclick="searchForAlternativeDate('${alt.date}')">
                 <div class="alt-date">${Utils.formatDate(alt.date, lang)}</div>
                 <div class="alt-info">
-                    <span class="alt-count">${alt.tripCount} ${translation.trips_available(alt.tripCount)}</span>
+                    <span class="alt-count">${tripCountText}</span>
                     <span class="alt-action">${translation.view_trips_button} →</span>
                 </div>
             </div>
