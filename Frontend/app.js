@@ -858,48 +858,53 @@ window.changeLanguage = function(lang) {
 
 // DANS app.js (remplacez votre fonction updatePassengerSelectorUI)
 // DANS app.js
+// DANS app.js
 
 function updatePassengerSelectorUI() {
+    const dropdown = document.getElementById("passenger-dropdown");
+    if (!dropdown) return;
+
+    // --- Cibles DOM ---
     const adultsCount = document.getElementById("adults-count");
     const childrenCount = document.getElementById("children-count");
     const summary = document.getElementById("passenger-summary");
-    const dropdown = document.getElementById("passenger-dropdown");
+    const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
+    const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children_dynamic"]');
     
-    if (!adultsCount || !childrenCount || !summary || !dropdown) {
+    // Si un des éléments manque, on arrête.
+    if (!adultsCount || !childrenCount || !summary || !adultsLabel || !childrenLabel) {
+        console.warn("[updatePassengerSelectorUI] Un ou plusieurs éléments du DOM sont manquants.");
         return;
     }
 
-    // Mise à jour des compteurs et boutons
+    // --- Logique de mise à jour des compteurs (inchangée) ---
     adultsCount.textContent = appState.passengerCounts.adults;
     childrenCount.textContent = appState.passengerCounts.children;
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
     
+    // --- Logique de traduction ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+    const rules = appRules.ticketing;
     
-    // Traduction du résumé principal
+    // 1. Résumé principal
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
     
-    // Traduction du label "Adultes"
-    const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
-    if (adultsLabel && translation.search_form_adults) {
+    // 2. Label Adultes (statique)
+    if (translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
-    
-    // Logique pour le label "Enfants"
-    const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
-    if (childrenLabel) {
-        const maxAge = appRules.ticketing.childMaxAge;
 
-        if (translation.search_form_children_dynamic && typeof translation.search_form_children_dynamic === 'function') {
-            childrenLabel.innerHTML = translation.search_form_children_dynamic(maxAge);
-        } else {
-            const baseText = (lang === 'en') ? 'Children' : 'Enfants';
-            childrenLabel.innerHTML = `${baseText} <small>(0-${maxAge} yrs)</small>`;
-        }
+    // 3. Label Enfants (dynamique)
+    if (typeof translation.search_form_children_dynamic === 'function') {
+        childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
+    } else {
+        // Fallback
+        const baseText = (lang === 'en') ? 'Children' : 'Enfants';
+        childrenLabel.innerHTML = `${baseText} <small>(0-${rules.childMaxAge} yrs)</small>`;
     }
 }
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
@@ -3132,6 +3137,7 @@ function setupPassengerSelector() {
     
     // Appel initial pour que tout soit correct au chargement
     updateDisplay();
+    updatePassengerSelectorUI();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
@@ -5922,22 +5928,26 @@ window.closeReportModal = function() {
 let rulesPromise = null;
 
 // DANS app.js
+// DANS app.js
 async function loadTicketingRules() {
     try {
-        console.log("1️⃣ [DIAG] Lancement du chargement des règles...");
         const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
         const data = await response.json();
         
         if (data.success && data.rules) {
-            console.log("2️⃣ [DIAG] Règles reçues du serveur :", JSON.stringify(data.rules));
             appRules.ticketing = { ...appRules.ticketing, ...data.rules };
-            console.log("3️⃣ [DIAG] Objet 'appRules' mis à jour :", JSON.stringify(appRules.ticketing));
+            console.log("✅ Règles de tarification mises à jour :", appRules.ticketing);
+
+            // ========================================================
+            // ✅ CORRECTION : On appelle directement la fonction ici
+            // ========================================================
             updatePassengerSelectorUI();
-        } else {
-            console.warn("⚠️ [DIAG] Le serveur n'a pas renvoyé de règles valides. Utilisation des valeurs par défaut.");
-        }
+            // ========================================================
+        } 
     } catch (error) {
-        console.error("❌ [DIAG] ERREUR CRITIQUE lors du chargement des règles:", error);
+        console.error("❌ Erreur chargement des règles:", error);
+        // Même en cas d'erreur, on met à jour l'UI avec les valeurs par défaut
+        updatePassengerSelectorUI();
     }
 }
 
