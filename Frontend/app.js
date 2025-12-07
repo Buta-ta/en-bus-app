@@ -4029,18 +4029,31 @@ function displayResults(results, isReturn = false) {
     resultsList.innerHTML = filteredAndSortedResults.map(route => {
         let badgeHTML = '';
         
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
+        
+        // PRIORITÉ 1 : Badge trajet de nuit
         if (route.isNightTrip) {
-            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🌙 Trajet de Nuit</div>`;
+            // On utilise la clé de traduction
+            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">${translation.badge_night_trip}</div>`;
         }
+        // PRIORITÉ 2 : Badge personnalisé
         else if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
         }
+        // PRIORITÉ 3 : Moins cher
         else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
         }
+        // PRIORITÉ 4 : Plus rapide
         else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
+
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
 
         const amenitiesHTML = route.amenities.map(amenity => 
             `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`

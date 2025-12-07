@@ -607,6 +607,8 @@ const translations = {
     // ============================================
     segment_on_line: (from, to) => `Sur la ligne ${from} → ${to}`,
     segment_your_trip: "Votre trajet :",
+    
+    badge_night_trip: "🌙 Trajet de Nuit",
   
 
 
@@ -1217,6 +1219,7 @@ const translations = {
     // ============================================
     segment_on_line: (from, to) => `On the ${from} → ${to} line`,
     segment_your_trip: "Your trip:",
+    badge_night_trip: "🌙 Night Trip",
     // ============================================
   },
      
