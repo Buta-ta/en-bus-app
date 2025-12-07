@@ -42,6 +42,8 @@ const CONFIG = {
     // --- Valeurs par défaut pour les règles dynamiques ---
     // Celles-ci seront utilisées si l'appel à l'API échoue.
     DEFAULT_CHILD_MAX_AGE: 6,
+    DEFAULT_CHILD_PRICING_MODE: 'percentage',
+    DEFAULT_CHILD_FIXED_PRICE: 5000,
     DEFAULT_CHILD_DISCOUNT_PERCENTAGE: 50,
 };
 
@@ -52,6 +54,8 @@ const CONFIG = {
 let appRules = {
     ticketing: {
         childMaxAge: CONFIG.DEFAULT_CHILD_MAX_AGE,
+        childPricingMode: CONFIG.DEFAULT_CHILD_PRICING_MODE,
+        childFixedPrice: CONFIG.DEFAULT_CHILD_FIXED_PRICE,
         childDiscountPercentage: CONFIG.DEFAULT_CHILD_DISCOUNT_PERCENTAGE
     }
     // Plus tard, on pourra y ajouter d'autres règles :
@@ -488,7 +492,7 @@ formatPrice(price) {
     },
 
 
-        // ========================================================
+    // ========================================================
     // ✅ AJOUTEZ OU REMPLACEZ LA FONCTION CI-DESSOUS
     // ========================================================
     calculateTotalPrice(state) {
@@ -743,7 +747,10 @@ function applyLanguage(lang = getLanguage()) {
     
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translation[key]) el.innerHTML = translation[key];
+       // On vérifie que la clé existe ET que ce n'est PAS une fonction
+        if (translation[key] && typeof translation[key] !== 'function') {
+            el.innerHTML = translation[key];
+        }
     });
 
     const smartSearchInput = document.getElementById('smart-search-input');
@@ -847,50 +854,59 @@ window.changeLanguage = function(lang) {
  */
 // DANS app.js
 
+// DANS app.js
+
+// DANS app.js (remplacez votre fonction updatePassengerSelectorUI)
+// DANS app.js
+// DANS app.js
+
 function updatePassengerSelectorUI() {
+    const dropdown = document.getElementById("passenger-dropdown");
+    if (!dropdown) return;
+
+    // --- Cibles DOM ---
     const adultsCount = document.getElementById("adults-count");
     const childrenCount = document.getElementById("children-count");
     const summary = document.getElementById("passenger-summary");
-    const dropdown = document.getElementById("passenger-dropdown");
+    const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
+    const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children_dynamic"]');
     
-    if (!adultsCount || !childrenCount || !summary || !dropdown) {
+    // Si un des éléments manque, on arrête.
+    if (!adultsCount || !childrenCount || !summary || !adultsLabel || !childrenLabel) {
+        console.warn("[updatePassengerSelectorUI] Un ou plusieurs éléments du DOM sont manquants.");
         return;
     }
 
-    const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
-    const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children"]');
-    
+    // --- Logique de mise à jour des compteurs (inchangée) ---
     adultsCount.textContent = appState.passengerCounts.adults;
     childrenCount.textContent = appState.passengerCounts.children;
-    
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
     
+    // --- Logique de traduction ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    const rules = appRules.ticketing; // On récupère les règles
-
-    // --- Traduction du résumé principal ---
+    const rules = appRules.ticketing;
+    
+    // 1. Résumé principal
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
     
-    // --- Traduction des labels dans le dropdown ---
-    if (adultsLabel && translation.search_form_adults) {
+    // 2. Label Adultes (statique)
+    if (translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
-    
-    // ========================================================
-    // ✅ MISE À JOUR ICI
-    // ========================================================
-    if (childrenLabel && typeof translation.search_form_children_dynamic === 'function') {
-        // On utilise la nouvelle clé de traduction dynamique
+
+    // 3. Label Enfants (dynamique)
+    if (typeof translation.search_form_children_dynamic === 'function') {
         childrenLabel.innerHTML = translation.search_form_children_dynamic(rules.childMaxAge);
+    } else {
+        // Fallback
+        const baseText = (lang === 'en') ? 'Children' : 'Enfants';
+        childrenLabel.innerHTML = `${baseText} <small>(0-${rules.childMaxAge} yrs)</small>`;
     }
-    // ========================================================
 }
-
-
 // DANS app.js, à ajouter avec les autres fonctions utilitaires
 function startFrontendCountdown() {
     // On nettoie l'ancien minuteur
@@ -2089,7 +2105,10 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // INITIALISATION DE L'APPLICATION
 // ============================================
 // app.js
-function initApp() {
+// DANS app.js
+
+// ✅ On ajoute le mot-clé "async" ici pour autoriser l'utilisation de "await" à l'intérieur.
+async function initApp() {
     try {
         // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
         setupMobileMenu();
@@ -2103,22 +2122,11 @@ function initApp() {
         initInteractiveMap();
         setupSmartSearch();
         setupMobileFilterToggle();
-                // ✅ AJOUTEZ CET APPEL
         setupSocialLinks();
-        loadTicketingRules();
-
 
         // --- Configuration native ---
         if (window.Capacitor?.isNativePlatform()) {
-            
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
-            // ========================================================
-            
             const { StatusBar, Style } = Capacitor.Plugins;
-
-            // On vérifie que le plugin StatusBar EXISTE avant de l'utiliser.
-            // S'il n'est pas installé, cette condition sera fausse et le code ne plantera pas.
             if (StatusBar) {
                 try {
                     StatusBar.setStyle({ style: Style.Dark });
@@ -2129,10 +2137,6 @@ function initApp() {
             } else {
                 console.warn("⚠️ Plugin @capacitor/status-bar non trouvé. Le style de la barre de statut ne sera pas modifié.");
             }
-
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
         }
 
         // --- Correction pour la superposition de la recherche ---
@@ -2141,13 +2145,18 @@ function initApp() {
             document.body.appendChild(resultsContainer);
         }
 
-        // --- Chargement des données de fond ---
-        loadAllRouteTemplates(); 
+        // --- On attend que les données essentielles soient chargées ---
+        await Promise.all([
+            loadAllRouteTemplates(), 
+            loadTicketingRules()
+        ]);
+        
+        console.log("✅ Données de fond (modèles et règles) chargées.");
 
-        // ✅ APPEL UNIQUE qui va orchestrer tout le reste
+        // --- Maintenant que les données sont là, on met à jour l'UI ---
         applyLanguage();
 
-        // --- Gestion de la redirection (reste ici) ---
+        // --- Gestion de la redirection ---
         const urlParams = new URLSearchParams(window.location.search);
         const page = urlParams.get('page');
         if (page === 'reservations') {
@@ -3128,6 +3137,7 @@ function setupPassengerSelector() {
     
     // Appel initial pour que tout soit correct au chargement
     updateDisplay();
+    updatePassengerSelectorUI();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
@@ -3236,9 +3246,23 @@ function setupAmenitiesFilters() {
 
 // DANS app.js
 
+// DANS app.js (remplacez votre fonction searchBuses)
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
+
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
+    // On réinitialise les filtres en mode "silencieux" (sans toast)
+    // pour garantir que chaque nouvelle recherche part d'un état propre.
+    if (typeof resetFilters === 'function') {
+        resetFilters(true); 
+    }
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
     
     try {
         const lang = getLanguage();
@@ -3289,45 +3313,128 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
-        
-        console.log("5️⃣ Données JSON parsées:", data);
-        
-        // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR
-        // ========================================================
-        if (data.success && data.results) {
-            // On stocke la liste complète et non modifiée des résultats de l'API.
-            // C'est notre "source de vérité" pour les filtres.
-            appState.currentResults = data.results;
+console.log("5️⃣ Données JSON parsées:", data);
 
-            if (data.results.length === 0) {
-                console.log("   -> Aucun résultat trouvé.");
-                Utils.showToast(translation.info_no_trips_found, 'info');
-            } else {
-                console.log(`   -> ${data.results.length} résultats bruts reçus.`);
-            }
-            
-            // On appelle displayResults, qui se chargera d'appliquer les filtres et d'afficher.
-            displayResults(appState.currentResults);
+// ========================================================
+// ✅ MISE À JOUR DE LA LOGIQUE DE GESTION DE LA RÉPONSE
+// ========================================================
+if (data.success) {
+    appState.currentResults = data.results;
 
-        } else {
-            // En cas d'échec partiel de l'API
-            appState.currentResults = [];
-            displayResults([]);
-            throw new Error(data.error || "Le serveur a renvoyé des données invalides.");
-        }
-        // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
-        // ========================================================
-        
-        console.log("6️⃣ Affichage de la page 'results'...");
-        showPage("results");
+    // Si on a des résultats directs, on les affiche.
+    if (data.results && data.results.length > 0) {
+        displayResults(data.results);
+    } 
+    // Sinon, si on a des alternatives, on les affiche.
+    else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
+        displayAlternativeTrips(data.alternativeTrips);
+    } 
+    // Sinon, c'est qu'il n'y a vraiment rien.
+    else {
+        displayResults([]); // Affiche le message "Aucun trajet"
+    }
+} else {
+    // Gestion d'erreur
+    appState.currentResults = [];
+    displayResults([]);
+    throw new Error(data.error || "Données invalides.");
+}
+
+showPage("results");
 
     } catch (error) {
         console.error('❌ Erreur critique dans searchBuses:', error);
         Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
+
+
+// DANS app.js (ajoutez cette nouvelle fonction)
+
+// DANS app.js (remplacez cette fonction)
+
+function displayAlternativeTrips(alternatives) {
+    const resultsList = document.getElementById("results-list");
+    const summary = document.getElementById("search-summary");
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
+    if (summary) {
+        // 1. On récupère la chaîne de traduction
+        let summaryText = translation.no_trips_found_for_date || "Aucun trajet trouvé pour le {date}";
+        
+        // 2. On formate la date que l'on veut insérer
+        const formattedDate = Utils.formatDate(appState.currentSearch.date, lang);
+        
+        // 3. On remplace le placeholder {date} par la date formatée
+        summary.innerHTML = summaryText.replace('{date}', `<strong>${formattedDate}</strong>`);
+    }
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
+
+    let alternativesHTML = `
+        <div class="no-results alternative-suggestions">
+            <h3>${translation.alternative_trips_title}</h3>
+            <p>${translation.alternative_trips_desc}</p>
+            <div class="alternative-trips-list">
+    `;
+
+    alternatives.forEach(alt => {
+        // Cette partie est déjà correcte car elle utilise une fonction
+        const tripCountText = (typeof translation.trips_available === 'function') 
+            ? translation.trips_available(alt.tripCount) 
+            : `${alt.tripCount} trajet(s) disponible(s)`;
+
+        alternativesHTML += `
+            <div class="alternative-trip-card" onclick="searchForAlternativeDate('${alt.date}')">
+                <div class="alt-date">${Utils.formatDate(alt.date, lang)}</div>
+                <div class="alt-info">
+                    <span class="alt-count">${tripCountText}</span>
+                    <span class="alt-action">${translation.view_trips_button} →</span>
+                </div>
+            </div>
+        `;
+    });
+
+    alternativesHTML += `</div></div>`;
+    resultsList.innerHTML = alternativesHTML;
+}
+
+// Fonction helper pour relancer la recherche
+ 
+function searchForAlternativeDate(newDate) {
+    console.log(`🔄 Relance de la recherche pour la date alternative : ${newDate}`);
+    
+    // Mettre à jour la valeur cachée utilisée pour la recherche
+    const departureValueInput = document.getElementById('departure-date-value');
+    if (departureValueInput) {
+        departureValueInput.value = newDate;
+    }
+    
+    // Mettre à jour la valeur visible dans le calendrier Flatpickr
+    const displayInput = document.getElementById('travel-date');
+    if (displayInput && displayInput._flatpickr) {
+        displayInput._flatpickr.setDate(newDate, true); // 'true' déclenche l'événement onChange pour mettre à jour l'affichage
+    }
+    
+    // Relancer la recherche
+    searchBuses();
+}
+
+
+
+
+
+
+
+
+
+
+
 function setupSmartSearch() {
     const searchInput = document.getElementById('smart-search-input');
     const submitBtn = document.getElementById('smart-search-submit-btn');
@@ -3750,9 +3857,10 @@ function setupMobileFilterToggle() {
 
 
 // DANS app.js (remplacez votre fonction resetFilters)
+// DANS app.js (remplacez votre fonction resetFilters)
 
-window.resetFilters = function() {
-    // 1. Réinitialiser l'objet des filtres actifs (votre code est parfait)
+window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
+    // 1. Réinitialiser l'objet des filtres actifs
     activeFilters = {
         company: 'all',
         tripType: 'all',
@@ -3762,10 +3870,6 @@ window.resetFilters = function() {
         sortBy: 'departure',
         departureLocation: 'all'
     };
-
-    // ========================================================
-    // ✅ MISE À JOUR : Ajout de vérifications de sécurité
-    // ========================================================
 
     // 2. Réinitialiser les champs de formulaire dans l'interface utilisateur
     const locationSelect = document.getElementById('filter-departure-location');
@@ -3799,17 +3903,19 @@ window.resetFilters = function() {
         cb.checked = false;
     });
     
-    // ========================================================
-    // ✅ FIN DE LA MISE À JOUR
-    // ========================================================
-
-    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale (votre code est parfait)
+    // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale
     displayResults(appState.currentResults, appState.isSelectingReturn);
     
-    // 4. Afficher le toast de succès (votre code est parfait)
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    Utils.showToast(translation.success_filters_reset, 'success');
+    // ========================================================
+    // ✅ CORRECTION ICI : Affichage conditionnel du toast
+    // ========================================================
+    // 4. On n'affiche le toast que si ce n'est pas un reset "silencieux"
+    if (!isSilent) {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        Utils.showToast(translation.success_filters_reset, 'success');
+    }
+    // ========================================================
 };
 // DANS app.js, REMPLACEZ la fonction displayResults
 
@@ -4234,12 +4340,13 @@ window.toggleSeat = function(seatNumber) {
 // Dans app.js
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction displaySeats par celle-ci
-function displaySeats() {
+// DANS app.js, remplacez la fonction displaySeats par celle-ci
+
+async function displaySeats() { // ✅ On ajoute "async" ici
     // 1. Récupération des traductions avec une sécurité
     const lang = getLanguage();
-    // Si 'translations' ou la langue spécifique n'existe pas, on utilise un objet vide pour éviter les erreurs
     const translation = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
-
+    
     // 2. Récupération des données et des éléments DOM
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
@@ -4251,21 +4358,36 @@ function displaySeats() {
 
     if (!busInfo || !seatGrid || !occupancyInfo) return;
     
-    // 3. Traduction de l'en-tête du bus (avec fallback)
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION
+    // ========================================================
+
+    // 3. Calcul dynamique des prix et traduction de l'en-tête du bus
     const tripLabel = appState.isSelectingReturn ? (translation.trip_badge_return || "RETOUR") : (translation.trip_badge_outbound || "ALLER");
+    
+    const adultPrice = currentBus.price || 0;
+    
+    // On ATTEND que la fonction asynchrone getChildPrice nous retourne le bon prix
+    const childPrice = await getChildPrice(adultPrice); 
+
     busInfo.innerHTML = `
         <div class="bus-info-header">
             <div class="trip-badge ${appState.isSelectingReturn ? 'return' : 'outbound'}">${tripLabel}</div>
             <h3>${currentBus.company} - ${currentBus.from} → ${currentBus.to}</h3>
             <div class="price-info">
-                <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(currentBus.price)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_adult || 'Adulte'}:</strong> ${Utils.formatPrice(adultPrice)} FCFA</span>
                 <span class="price-divider">|</span>
-                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(CONFIG.CHILD_TICKET_PRICE)} FCFA</span>
+                <span class="price-item"><strong>${translation.seats_price_info_child || 'Enfant'}:</strong> ${Utils.formatPrice(Math.round(childPrice))} FCFA</span>
             </div>
         </div>
     `;
     
-    // 4. Traduction des informations d'occupation du bus (avec fallback)
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
+
+
+    // 4. Traduction des informations d'occupation du bus (inchangé)
     const totalSeats = currentBus.totalSeats || CONFIG.SEAT_TOTAL;
     const availableSeats = currentBus.availableSeats - currentSeats.length;
     if (totalSeats && availableSeats >= 0) {
@@ -4281,8 +4403,7 @@ function displaySeats() {
         occupancyInfo.style.display = 'none';
     }
     
-
-    // 5. Génération de la grille des sièges (avec labels traduits et fallback)
+    // 5. Génération de la grille des sièges (inchangé)
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
     const backRowSeatsCount = 5;
@@ -4312,7 +4433,7 @@ function displaySeats() {
         seatHTML += `<div class="row-indicator">${row}</div></div>`;
     }
     
-    seatHTML += `</div>`; // Fin de modern-seat-grid
+    seatHTML += `</div>`;
     
     if (hasWC) {
         seatHTML += `<div class="toilet-section"><div class="toilet-icon">🚻</div><span class="toilet-label">${translation.seats_restroom || 'Toilettes'}</span></div>`;
@@ -4330,9 +4451,40 @@ function displaySeats() {
     
     seatGrid.innerHTML = seatHTML;
 
-    // 6. Appel final pour mettre à jour le résumé
+    // 6. Appel final pour mettre à jour le résumé (inchangé)
     updateSeatSummary();
 }
+
+// ========================================================
+// ✅ AJOUTEZ CETTE FONCTION DANS VOTRE FICHIER
+// ========================================================
+/**
+ * Calcule le prix d'un billet enfant en fonction des règles globales.
+ * @param {number} adultPrice - Le prix du billet adulte pour le trajet.
+ * @returns {number} Le prix calculé pour un enfant.
+ */
+// DANS app.js
+// Pas besoin qu'elle soit 'async' car 'appRules' est déjà chargé.
+// DANS app.js
+function getChildPrice(adultPrice) {
+    const rules = appRules.ticketing;
+    console.log(`5️⃣ [DIAG] Calcul du prix enfant. Mode actif : '${rules.childPricingMode}'`);
+    
+    if (rules.childPricingMode === 'fixed') {
+        console.log(`   -> [DIAG] Utilisation du prix fixe : ${rules.childFixedPrice}`);
+        return rules.childFixedPrice || 0;
+    } else {
+        const discount = (rules.childDiscountPercentage || 0) / 100;
+        const calculatedPrice = adultPrice * (1 - discount);
+        console.log(`   -> [DIAG] Utilisation du pourcentage (${rules.childDiscountPercentage}%). Prix calculé : ${calculatedPrice}`);
+        return calculatedPrice;
+    }
+}
+// ========================================================
+
+
+
+
 
 // ✅ Fonction auxiliaire pour générer un siège moderne
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
@@ -4396,8 +4548,11 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
 }
 // DANS app.js (remplacez votre fonction updateSeatSummary)
 
-function updateSeatSummary() {
-    // Le début de votre fonction est bon (récupération des éléments et des traductions)
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
+// DANS app.js (remplacez votre fonction updateSeatSummary)
+
+async function updateSeatSummary() {
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
     
@@ -4425,30 +4580,27 @@ function updateSeatSummary() {
         seatsDisplay.textContent = currentSeats.join(", ");
         
         // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE DE CALCUL
+        // ✅ DÉBUT DE LA CORRECTION
         // ========================================================
         
-        // On récupère les règles de tarification actuelles
-        const rules = appRules.ticketing;
-        
         const adultPrice = currentBus.price;
-        const childDiscount = rules.childDiscountPercentage / 100;
-        const childPrice = adultPrice * (1 - childDiscount); // Calcul du prix enfant basé sur le pourcentage
+        
+        // On utilise la fonction helper qui contient la logique 'if/else'
+        // pour déterminer si on doit utiliser le prix fixe ou le pourcentage.
+       const childPrice = await getChildPrice(adultPrice); 
         
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
         
-        // On détermine combien de sièges sélectionnés sont pour des adultes et combien pour des enfants
         const adultsSelected = Math.min(numSeats, numAdults);
         const childrenSelected = numSeats - adultsSelected;
         
         const totalPrice = (adultsSelected * adultPrice) + (childrenSelected * childPrice);
         
-        // On arrondit le prix final et on l'affiche
         priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
 
         // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
+        // ✅ FIN DE LA CORRECTION
         // ========================================================
     }
 }
@@ -5850,21 +6002,11 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
 
 // DANS app.js
 
-async function loadTicketingRules() {
-    try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
-        const data = await response.json();
-        
-        if (data.success && data.rules) {
-            appRules.ticketing = data.rules;
-            console.log("✅ Règles de tarification chargées :", appRules.ticketing);
-        } else {
-            console.warn("⚠️ Impossible de charger les règles de tarification, utilisation des valeurs par défaut.");
-        }
-    } catch (error) {
-        console.error("❌ Erreur chargement des règles de tarification:", error);
-    }
-}
+// DANS app.js
+
+// DANS app.js, remplacez votre fonction loadTicketingRules
+
+
 
 // ============================================
 // 🚪 FERMETURE DE LA MODALE
@@ -5874,7 +6016,36 @@ window.closeReportModal = function() {
     document.getElementById('report-modal').classList.remove('active');
 };
 
+// DANS app.js, tout en haut
 
+// Supprimez l'ancien 'let appRules = { ... }'
+
+// ✅ NOUVELLE APPROCHE : On crée une promesse qui se résoudra avec les règles
+let rulesPromise = null;
+
+// DANS app.js
+// DANS app.js
+async function loadTicketingRules() {
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
+        const data = await response.json();
+        
+        if (data.success && data.rules) {
+            appRules.ticketing = { ...appRules.ticketing, ...data.rules };
+            console.log("✅ Règles de tarification mises à jour :", appRules.ticketing);
+
+            // ========================================================
+            // ✅ CORRECTION : On appelle directement la fonction ici
+            // ========================================================
+            updatePassengerSelectorUI();
+            // ========================================================
+        } 
+    } catch (error) {
+        console.error("❌ Erreur chargement des règles:", error);
+        // Même en cas d'erreur, on met à jour l'UI avec les valeurs par défaut
+        updatePassengerSelectorUI();
+    }
+}
 
 // DANS app.js, AJOUTEZ CETTE FONCTION
 
