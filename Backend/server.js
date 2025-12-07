@@ -529,13 +529,23 @@ app.get("/api/search", async (req, res) => {
         }).toArray();
 
         // --- 2. Filtrage en JavaScript pour valider l'ordre et les heures ---
-        const validOrderTrips = potentialTrips.filter(trip => {
-            const fullPath = [trip.route.from, ...(trip.route.stops || []), trip.route.to].map(city => city.toLowerCase());
+          const validOrderTrips = potentialTrips.filter(trip => {
+            
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            // On reconstruit le chemin en extrayant le nom de la ville de chaque objet
+            const stopCities = (trip.route.stops || []).map(stop => stop.city);
+            const fullPath = [trip.route.from, ...stopCities, trip.route.to].map(city => city.toLowerCase());
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
+
             const fromIndex = fullPath.indexOf(fromCity.toLowerCase());
             const toIndex = fullPath.indexOf(toCity.toLowerCase());
+            
             return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
-
         const timeZone = 'Africa/Brazzaville';
         const availableTrips = validOrderTrips.filter(trip => {
             const todayStr = format(utcToZonedTime(new Date(), timeZone), 'yyyy-MM-dd', { timeZone });
