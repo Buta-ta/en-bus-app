@@ -510,6 +510,13 @@ app.get("/api/search", async (req, res) => {
     }
 
     try {
+
+        // ✅ DÉBUT DE LA CORRECTION : Déclaration des variables
+        // ========================================================
+        const fromCity = from.trim();
+        const toCity = to.trim();
+        // ========================================================
+
         // --- 1. Recherche Principale ---
         const trips = await tripsCollection.find({
             date: date,
@@ -587,6 +594,10 @@ app.get("/api/search", async (req, res) => {
             busIdentifier: trip.busIdentifier,
             baggageOptions: trip.route.baggageOptions,
             highlightBadge: trip.highlightBadge || null,
+             // Nouvelles propriétés pour le frontend
+            isSegment: isSegment,
+            segmentFrom: fromCity,
+            segmentTo: toCity,
         }));
 
         // --- 4. Logique de décision : renvoyer les résultats OU chercher des alternatives ---
