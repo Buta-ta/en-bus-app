@@ -101,6 +101,16 @@ body {
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
+     /* On superpose la couleur et le motif */
+    background-image: 
+        linear-gradient(rgba(10, 14, 39, 0.95), rgba(10, 14, 39, 1)), /* Dégradé pour assombrir */
+        url('./Frontend/african-pattern.svg'); /* Votre motif */
+    
+    background-size: auto, 250px;
+    border-top: 1px solid var(--color-border); 
+    
+    background-size: auto, 300px; /* Le dégradé prend toute la place, le motif se répète tous les 300px */
+    background-position: center;
 }
 
 main {
@@ -118,6 +128,21 @@ h3 {
     font-family: var(--font-logo);
     color: var(--color-text-primary);
     margin-bottom: var(--space-12);
+}
+
+
+
+.bus-card, .reservation-card-pwa {
+    /* ... vos styles de carte existants ... */
+    
+    /* On utilise une image de bordure au lieu d'une couleur unie */
+    border: 2px solid transparent;
+    border-image: url('./path/to/your/pattern-imigongo.svg') 10 round; /* L'image se répète sur la bordure */
+    
+    /* Fallback si border-image n'est pas supporté */
+    @supports not (border-image: url('...')) {
+      border: 1px solid var(--color-border);
+    }
 }
 
 /* ============================================
