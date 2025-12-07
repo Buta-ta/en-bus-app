@@ -602,33 +602,54 @@ app.get("/api/search", async (req, res) => {
                 };
             });
             return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
-        } else {
-            // --- 5. Si aucun résultat, on cherche des alternatives sur 7 jours ---
-            console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives sur 7 jours...`);
-            const searchPromises = [];
+        
+} else {
+    // --- Si aucun résultat, on cherche des alternatives ---
+    console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives...`);
+    const alternativeTrips = [];
+    const searchPromises = [];
 
-            for (let i = 1; i <= 7; i++) {
-                const alternativeDate = new Date(date);
-                alternativeDate.setUTCDate(alternativeDate.getUTCDate() + i);
-                const alternativeDateString = alternativeDate.toISOString().split('T')[0];
+    for (let i = 1; i <= 7; i++) {
+        const alternativeDate = new Date(date);
+        alternativeDate.setUTCDate(alternativeDate.getUTCDate() + i);
+        const alternativeDateString = alternativeDate.toISOString().split('T')[0];
 
-                const promise = tripsCollection.countDocuments({
-                    "route.from": { $regex: `^${fromCity}`, $options: "i" },
-                    "route.to": { $regex: `^${toCity}`, $options: "i" },
-                    date: alternativeDateString,
-                }).then(tripCount => {
-                    if (tripCount > 0) {
-                        return { date: alternativeDateString, tripCount: tripCount };
-                    }
-                    return null;
-                });
-                searchPromises.push(promise);
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Requête intelligente pour les alternatives
+        // ========================================================
+        const promise = tripsCollection.find({
+            date: alternativeDateString
+        }).toArray().then(allTripsForThatDay => {
+            // On applique la même logique de filtrage que pour la recherche principale
+            const validTrips = allTripsForThatDay.filter(trip => {
+                if (!trip.route) return null;
+                const stopCities = (trip.route.stops || []).map(stop => stop && stop.city).filter(Boolean);
+                const connectionCities = (trip.route.connections || []).map(conn => conn && conn.at).filter(Boolean);
+                const fullPath = [...new Set([trip.route.from, ...stopCities, ...connectionCities, trip.route.to])];
+                if (!fullPath.every(city => typeof city === 'string')) return false;
+
+                const pathInLower = fullPath.map(city => city.toLowerCase());
+                const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
+                const toIndex = pathInLower.indexOf(toCity.toLowerCase());
+                return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
+            });
+
+            if (validTrips.length > 0) {
+                return { date: alternativeDateString, tripCount: validTrips.length };
             }
+            return null;
+        });
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+        searchPromises.push(promise);
+    }
 
-            const resolvedAlternatives = await Promise.all(searchPromises);
-            const finalAlternatives = resolvedAlternatives.filter(Boolean);
-            
-            return res.json({ success: true, count: 0, results: [], alternativeTrips: finalAlternatives });
+    const resolvedAlternatives = await Promise.all(searchPromises);
+    const finalAlternatives = resolvedAlternatives.filter(Boolean);
+    
+    return res.json({ success: true, count: 0, results: [], alternativeTrips: finalAlternatives });
+
         }
     } catch (error) {
         console.error("❌ Erreur recherche:", error);
