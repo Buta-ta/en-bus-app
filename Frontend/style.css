@@ -5939,3 +5939,10 @@ body.pwa-installed .container {
     transform: rotate(-15deg);
     background-image: url('./Frontend/icons/african-pattern.svg'); /* Un autre motif */
 }
+
+.section-with-pattern::before {
+    /* ... */
+    opacity: 1 !important; /* Force la visibilité */
+    background-color: red !important; /* Pour voir la zone de l'icône */
+    /* ... */
+}
