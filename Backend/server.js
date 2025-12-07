@@ -504,6 +504,7 @@ app.get("/api/route-templates", async (req, res) => {
 // DANS server.js (remplacez l'ancienne route /api/search)
 
 // DANS server.js
+// DANS server.js
 
 app.get("/api/search", async (req, res) => {
     let { from, to, date } = req.query;
@@ -519,33 +520,63 @@ app.get("/api/search", async (req, res) => {
         const toRegex = new RegExp(`^${toCity}$`, 'i');
 
         // --- 1. Recherche large en base de données ---
-        // On cherche tous les trajets potentiels : directs ou qui contiennent les villes dans les arrêts.
         const potentialTrips = await tripsCollection.find({
             date: date,
             $or: [
-                { "route.from": fromRegex, "route.to": toRegex }, // Trajet direct
-                { "route.stops": { $all: [fromRegex, toRegex] } } // Les deux villes sont dans les arrêts
+                { "route.from": fromRegex, "route.to": toRegex },
+                { "route.stops.city": { $all: [fromRegex, toRegex] } }
             ]
         }).toArray();
 
-        // --- 2. Filtrage en JavaScript pour valider l'ordre et les heures ---
-          const validOrderTrips = potentialTrips.filter(trip => {
-            
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
-            // ========================================================
-            // On reconstruit le chemin en extrayant le nom de la ville de chaque objet
-            const stopCities = (trip.route.stops || []).map(stop => stop.city);
-            const fullPath = [trip.route.from, ...stopCities, trip.route.to].map(city => city.toLowerCase());
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
+        // --- Bloc de Diagnostic ---
+        console.log(`[DIAG] ${potentialTrips.length} trajets potentiels trouvés dans la DB pour la date ${date}.`);
 
+        // --- 2. Filtrage en JavaScript pour valider l'ordre ---
+        const validOrderTrips = potentialTrips.filter(trip => {
+            console.log(`\n[DIAG] Traitement du trajet ID: ${trip._id}`);
+            console.log(`  -> route.from: `, trip.route.from, `(Type: ${typeof trip.route.from})`);
+            console.log(`  -> route.stops: `, trip.route.stops, `(Type: ${typeof trip.route.stops})`);
+            console.log(`  -> route.to: `, trip.route.to, `(Type: ${typeof trip.route.to})`);
+
+            const stopsArray = trip.route.stops || [];
+            if (!Array.isArray(stopsArray)) {
+                console.error(`  -> ERREUR: trip.route.stops n'est pas un tableau !`);
+                return false;
+            }
+            
+            const stopCities = stopsArray.map(stop => {
+                if (stop && typeof stop === 'object' && typeof stop.city === 'string') {
+                    return stop.city;
+                } else if (typeof stop === 'string') {
+                    return stop;
+                } else {
+                    console.error(`  -> ERREUR: Un élément dans 'stops' n'a pas le bon format. Contenu:`, stop);
+                    return null;
+                }
+            });
+
+            if (stopCities.includes(null)) return false;
+
+            const fullPath = [trip.route.from, ...stopCities, trip.route.to].map(city => {
+                if(typeof city !== 'string') {
+                    console.error(`  -> ERREUR FINALE: L'élément '${JSON.stringify(city)}' n'est pas un string avant .toLowerCase()`);
+                    return '';
+                }
+                return city.toLowerCase();
+            });
+            console.log('  -> Chemin complet normalisé :', fullPath);
+            
             const fromIndex = fullPath.indexOf(fromCity.toLowerCase());
             const toIndex = fullPath.indexOf(toCity.toLowerCase());
             
-            return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
+            const isValid = fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
+            console.log(`  -> Est valide ? ${isValid} (fromIndex: ${fromIndex}, toIndex: ${toIndex})`);
+            return isValid;
         });
+        
+        console.log(`[DIAG] ${validOrderTrips.length} trajets trouvés après validation de l'ordre.`);
+
+        // --- Filtrage des heures passées ---
         const timeZone = 'Africa/Brazzaville';
         const availableTrips = validOrderTrips.filter(trip => {
             const todayStr = format(utcToZonedTime(new Date(), timeZone), 'yyyy-MM-dd', { timeZone });
@@ -557,9 +588,18 @@ app.get("/api/search", async (req, res) => {
             return true;
         });
 
-        // --- 3. Formatage des résultats ---
+        // --- 3. Formatage des résultats ou recherche d'alternatives ---
         if (availableTrips.length > 0) {
-            const calculateDuration = (start, end) => { /* ... votre fonction de calcul est correcte ... */ };
+            const calculateDuration = (start, end) => {
+                if (!start || !end) return "N/A";
+                const [h1, m1] = start.split(':').map(Number);
+                const [h2, m2] = end.split(':').map(Number);
+                let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+                if (diffMinutes < 0) diffMinutes += 1440;
+                const hours = Math.floor(diffMinutes / 60);
+                const minutes = diffMinutes % 60;
+                return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
+            };
             
             const results = availableTrips.map(trip => {
                 const isSegment = (trip.route.from.toLowerCase() !== fromCity.toLowerCase() || trip.route.to.toLowerCase() !== toCity.toLowerCase());
