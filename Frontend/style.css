@@ -5898,7 +5898,7 @@ body.pwa-installed .container {
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
+    
     
     /* On retire l'animation pour le test */
     /* animation: fadeIn 0.3s ease; */
