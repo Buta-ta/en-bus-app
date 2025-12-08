@@ -3233,13 +3233,32 @@ function showPage(pageName) {
 
 // DANS app.js, avec vos autres fonctions
 
+// DANS app.js
+
 async function loadAllRouteTemplates() {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/route-templates`);
         const data = await response.json();
         if (data.success && data.templates) {
             allRouteTemplates = data.templates;
-            console.log(`✅ ${allRouteTemplates.length} modèles de trajets chargés pour les suggestions.`);
+            console.log(`✅ ${allRouteTemplates.length} modèles de trajets chargés.`);
+
+            // ============================================
+            // ✅ LOG DE DIAGNOSTIC
+            // ============================================
+            if (allRouteTemplates.length > 0) {
+                console.log("[DIAG] Structure du premier modèle de trajet :", allRouteTemplates[0]);
+            }
+            // ============================================
+
+            const options = {
+                keys: ['from', 'to'],
+                includeScore: true, 
+                threshold: 0.4 
+            };
+            fuse = new Fuse(allRouteTemplates, options);
+            
+            // ... (logique pour activer la barre de recherche) ...
         }
     } catch (error) {
         console.error("Erreur chargement des modèles de trajets:", error);
@@ -3805,12 +3824,17 @@ function searchForAlternativeDate(newDate) {
 
 // DANS app.js (remplacez votre fonction setupSmartSearch)
 
+// DANS app.js (remplacez votre fonction setupSmartSearch)
+
 function setupSmartSearch() {
     const searchInput = document.getElementById('smart-search-input');
     const submitBtn = document.getElementById('smart-search-submit-btn');
     const resultsContainer = document.getElementById('smart-search-results');
 
-    if (!searchInput || !submitBtn || !resultsContainer) return;
+    if (!searchInput || !submitBtn || !resultsContainer) {
+        console.error("[setupSmartSearch] Un des éléments HTML de la recherche est introuvable.");
+        return;
+    }
 
     // Fonction interne pour afficher le formulaire détaillé
     const triggerDetailedSearch = (prefillData = {}) => {
@@ -3832,51 +3856,54 @@ function setupSmartSearch() {
             if (firstResult) {
                 firstResult.click();
             } else {
-                // Si pas de résultat suggéré, on lance la recherche avec ce qui est tapé
                 triggerDetailedSearch({ to: searchInput.value.trim() });
             }
         }
     });
         
-    // ========================================================
-    // ✅ DÉBUT DE LA MISE À JOUR : LOGIQUE DE RECHERCHE FLOUЕ
-    // ========================================================
-    
-    // Auto-complétion pendant la frappe avec Fuse.js
+    // Auto-complétion pendant la frappe
     searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim(); // On retire les espaces inutiles
+        const query = searchInput.value.trim();
 
-        // On ne cherche que si l'utilisateur a tapé au moins 2 caractères
         if (query.length < 2) {
             resultsContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             return;
         }
         
-        // On vérifie que l'instance de Fuse est prête
+        // ========================================================
+        // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
+        // ========================================================
+        
+        // LOG 1 : On vérifie si l'instance de Fuse est prête
         if (!fuse) {
-            console.warn("Fuse.js n'est pas encore initialisé. La recherche est différée.");
+            console.warn("[DIAG] L'instance de Fuse.js est 'null'. La recherche ne peut pas se faire. Le chargement des données n'est probablement pas terminé.");
             return;
         }
+        console.log("[DIAG] L'instance de Fuse.js est prête, on lance la recherche.");
 
-        // On lance la recherche floue avec Fuse.js
+        // On lance la recherche floue
         const fuseResults = fuse.search(query);
         
-        // Fuse.js renvoie un tableau d'objets { item: ..., score: ... }
-        // On ne garde que l'objet 'item' qui est notre trajet original.
+        // LOG 2 : On affiche le résultat brut de la recherche
+        console.log(`[DIAG] Fuse.js a cherché "${query}". ${fuseResults.length} résultat(s) brut(s) trouvé(s) :`, fuseResults);
+
         const filteredRoutes = fuseResults.map(result => result.item);
         
-        console.log(`🔍 Recherche floue pour "${query}" : ${filteredRoutes.length} résultats trouvés par Fuse.js.`);
+        // LOG 3 : On vérifie si on a bien des trajets à afficher
+        if (filteredRoutes.length === 0) {
+            console.log("[DIAG] Aucun trajet à afficher après mapping. La fonction displaySmartSearchResults ne sera pas appelée avec des données.");
+        }
+        
+        // ========================================================
+        // ✅ FIN DU BLOC DE DIAGNOSTIC
+        // ========================================================
 
         // On affiche les 5 meilleurs résultats
         displaySmartSearchResults(filteredRoutes.slice(0, 5));
     });
 
-    // ========================================================
-    // ✅ FIN DE LA MISE À JOUR
-    // ========================================================
-
-    // Fermeture des résultats au clic extérieur (inchangé)
+    // Fermeture des résultats au clic extérieur
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.smart-search-wrapper')) {
             resultsContainer.innerHTML = '';

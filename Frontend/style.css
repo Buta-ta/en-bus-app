@@ -6133,11 +6133,18 @@ body.pwa-installed .container {
     right: 0;
     max-height: 250px;
     overflow-y: auto;
-    background: var(--color-surface-dark);
+    /* ============================================ */
+    /* ✅ CORRECTION ICI                            */
+    /* ============================================ */
+    /* On utilise une couleur de surface sombre et opaque */
+    background-color: var(--color-surface-dark); 
+    /* ============================================ */
     border: 1px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     z-index: 100;
+    /* On ajoute une ombre pour que la liste se détache bien */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
 
 .suggestion-item {

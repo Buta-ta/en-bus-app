@@ -896,6 +896,17 @@ async function geolocateUser() {
 
     try {
         let position;
+
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Options de géolocalisation améliorées
+        // ========================================================
+        
+        const geolocationOptions = {
+            enableHighAccuracy: true,  // On demande la meilleure précision possible
+            timeout: 30000,            // On augmente le timeout à 30 secondes
+            maximumAge: 15000          // On accepte une position en cache si elle date de moins de 15s
+        };
+
         if (window.Capacitor?.isNativePlatform() && Capacitor.Plugins.Geolocation) {
             const { Geolocation } = Capacitor.Plugins;
             const permStatus = await Geolocation.requestPermissions();

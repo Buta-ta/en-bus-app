@@ -654,7 +654,7 @@ const translations = {
     geolocation_city_not_served: (city) => `Ville proche trouvée (${city}), mais non desservie.`,
     geolocation_reverse_geocode_error: "Impossible de traduire les coordonnées en nom de ville.",
 
-
+     search_city_placeholder: "Tapez une ville...",
 
     },
 
@@ -1307,6 +1307,8 @@ const translations = {
     geolocation_city_found: (city) => `City found: ${city}`,
     geolocation_city_not_served: (city) => `Nearby city found (${city}), but not served.`,
     geolocation_reverse_geocode_error: "Could not translate coordinates to a city name.",
+
+    search_city_placeholder: "Type a city...",
   },
      
 
