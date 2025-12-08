@@ -1256,6 +1256,8 @@ function stopAgencySpecificCountdown() {
 
 // DANS app.js
 
+// DANS app.js (remplacez cette fonction)
+
 function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
     return new Promise((resolve) => {
         const modalId = `modal-${Date.now()}`;
@@ -1263,56 +1265,64 @@ function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, con
         wrapper.id = modalId;
         wrapper.className = 'custom-modal-overlay';
         
-        // ... (votre code pour générer le innerHTML est correct) ...
-        wrapper.innerHTML = `...`;
+        // ========================================================
+        // ✅ LE HTML COMPLET EST MAINTENANT ICI
+        // ========================================================
+        wrapper.innerHTML = `
+            <div class="custom-modal-card">
+                <div class="custom-modal-header">
+                    <div class="custom-modal-icon">${icon}</div>
+                    <h3>${title}</h3>
+                </div>
+                <div class="custom-modal-body">
+                    ${message}
+                </div>
+                <div class="custom-modal-footer">
+                    ${cancelText ? `<button id="btn-cancel-${modalId}" class="btn btn-secondary">${cancelText}</button>` : ''}
+                    <button id="btn-confirm-${modalId}" class="btn ${confirmClass}">${confirmText}</button>
+                </div>
+            </div>
+        `;
+        // ========================================================
 
         document.body.appendChild(wrapper);
 
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION D'ANIMATION
-        // ========================================================
-
-        // On attend que le navigateur ait une chance de "voir" la modale
-        // avant de lancer l'animation d'apparition.
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                wrapper.classList.add('visible');
-            }, 10); // Un minuscule délai pour la robustesse
-        });
-
-        const cleanup = (result) => {
-            // On lance l'animation de disparition
-            wrapper.classList.remove('visible');
-            
-            // On attend la fin de l'animation avant de supprimer l'élément et de résoudre la promesse
-            setTimeout(() => {
-                wrapper.remove();
-                resolve(result);
-            }, 300); // 300ms correspond à la durée de notre transition CSS
-        };
-
-        // ========================================================
-        // ✅ FIN DE LA CORRECTION
-        // ========================================================
-
+        // Cette partie va maintenant trouver les boutons car ils existent dans le HTML
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
-        btnConfirm.onclick = () => {
-            cleanup(true); // On passe le résultat à cleanup
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                wrapper.classList.add('visible');
+            }, 10);
+        });
+
+        const cleanup = (result) => {
+            wrapper.classList.remove('visible');
+            setTimeout(() => {
+                wrapper.remove();
+                resolve(result);
+            }, 300);
         };
-        
-        if (btnCancel) {
-            btnCancel.onclick = () => {
-                cleanup(false); // On passe le résultat à cleanup
-            };
+
+        // Sécurité : si le bouton n'est pas trouvé, on ne plante pas
+        if (btnConfirm) {
+            btnConfirm.onclick = () => cleanup(true);
+        } else {
+            console.error("Bouton de confirmation introuvable !");
+            cleanup(false); // On ferme et on annule
         }
         
-        // La logique onOpen reste la même
+        if (btnCancel) {
+            btnCancel.onclick = () => cleanup(false);
+        }
+        
         if (onOpen && typeof onOpen === 'function') {
             try {
                 onOpen();
-            } catch (e) { console.error("Erreur dans onOpen:", e); }
+            } catch (e) {
+                console.error("Erreur dans la fonction onOpen de la modale:", e);
+            }
         }
     });
 }
