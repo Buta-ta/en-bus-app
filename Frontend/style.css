@@ -5887,37 +5887,115 @@ body.pwa-installed .container {
     color: var(--color-accent);
 }
 
+
+
+
 /* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 MODALE PERSONNALISÉE - VERSION AMÉLIORÉE
+   ============================================ */
 
 .custom-modal-overlay {
     position: fixed;
-    /* ... (autres styles) ... */
-    
-    /* On met l'opacité à 0 au début, la modale est invisible */
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 14, 39, 0.85);
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem; /* Ajoute de l'espace sur les côtés sur mobile */
     opacity: 0;
-    /* On prépare la transition */
     transition: opacity 0.3s ease;
 }
 
-/* NOUVELLE CLASSE : la modale devient visible */
 .custom-modal-overlay.visible {
     opacity: 1;
 }
 
 .custom-modal-card {
-    /* ... (autres styles) ... */
-    
-    /* On positionne la modale légèrement plus haut au début */
+    background: #1C1C27;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px; /* On peut l'élargir un peu */
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: flex; /* Utilisation de Flexbox pour la structure interne */
+    flex-direction: column;
+    max-height: 90vh; /* Hauteur maximale pour éviter de dépasser de l'écran */
     transform: translateY(-20px);
-    /* On prépare la transition */
     transition: transform 0.3s ease-out;
 }
 
-/* NOUVELLE CLASSE : la carte "descend" à sa place */
 .custom-modal-overlay.visible .custom-modal-card {
     transform: translateY(0);
 }
 
-/* On supprime les anciennes animations qui se déclenchaient automatiquement */
-/* @keyframes fadeIn { ... } */
-/* @keyframes slideUp { ... } */
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0; /* Empêche l'en-tête de rétrécir */
+}
+
+.custom-modal-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.custom-modal-icon {
+    font-size: 2rem;
+    color: var(--color-accent);
+}
+
+.custom-modal-body {
+    padding: 1.5rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    overflow-y: auto; /* ✅ LA CLÉ : AJOUTE UNE BARRE DE DÉFILEMENT SI NÉCESSAIRE */
+}
+
+.custom-modal-body p {
+    margin-bottom: 1rem;
+}
+
+.custom-modal-body .docs-list {
+    list-style-type: '✓ ';
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+}
+
+.custom-modal-body .docs-list li {
+    margin-bottom: 0.75rem;
+    padding-left: 0.5rem;
+}
+
+.custom-modal-body .docs-confirmation-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface);
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+}
+
+.custom-modal-body .docs-confirmation-label input[type="checkbox"] {
+    width: 1.2em;
+    height: 1.2em;
+}
+
+.custom-modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    background: var(--color-surface-dark);
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0; /* Empêche le pied de page de rétrécir */
+}
