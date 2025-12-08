@@ -3081,22 +3081,30 @@ app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) =>
 
 // DANS server.js
 
+// DANS server.js
+
 app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, res) => {
     const { id, action } = req.params;
     if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de réservation invalide." });
 
     try {
+        // On charge l'objet de réservation original une seule fois au début.
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
-        if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
+        if (!reservation) {
+            return res.status(404).json({ error: "Réservation introuvable." });
+        }
 
         // --- CAS 1 : Confirmation de paiement ---
         if (action === "confirm-payment") {
-            if (reservation.status !== "En attente de paiement") return res.status(400).json({ error: "Cette réservation n'est pas en attente de paiement." });
+            if (reservation.status !== "En attente de paiement") {
+                return res.status(400).json({ error: "Cette réservation n'est pas en attente de paiement." });
+            }
             
             const { transactionProof } = req.body;
-            if (!transactionProof || transactionProof.trim() === '') return res.status(400).json({ error: "Une preuve de transaction est requise." });
+            if (!transactionProof || transactionProof.trim() === '') {
+                return res.status(400).json({ error: "Une preuve de transaction est requise." });
+            }
 
-            // Votre code est déjà correct ici, on le conserve.
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { 
@@ -3109,14 +3117,32 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                 }
             );
             
-            const updatedReservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
-            sendPaymentConfirmedEmail(updatedReservation);
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            
+            // On met à jour l'objet 'reservation' que nous avons déjà en mémoire.
+            // C'est plus sûr car on sait qu'il contient tous les champs nécessaires (date, route...).
+            reservation.status = "Confirmé"; 
+            reservation.confirmedAt = new Date();
+            if(!reservation.paymentDetails) reservation.paymentDetails = {};
+            reservation.paymentDetails.confirmedByAdmin = req.user.username;
+            
+            // On envoie cet objet mis à jour, qui est garanti d'être complet.
+            sendPaymentConfirmedEmail(reservation); 
+            
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
+
             return res.json({ success: true, message: "Paiement confirmé !" });
         }
 
         // --- CAS 2 : Annulation de la réservation ---
         if (action === "cancel") {
-            if (['Annulé', 'Expiré'].includes(reservation.status)) return res.status(400).json({ error: "Cette réservation est déjà annulée ou expirée." });
+            if (['Annulé', 'Expiré'].includes(reservation.status)) {
+                return res.status(400).json({ error: "Cette réservation est déjà annulée ou expirée." });
+            }
             
             // Libérer les sièges du trajet aller
             await tripsCollection.updateOne(
@@ -3134,20 +3160,16 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                 );
             }
 
-            // ========================================================
-            // ✅ MISE À JOUR ICI
-            // ========================================================
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { 
                     $set: { 
                         status: "Annulé", 
                         cancelledAt: new Date(), 
-                        cancelledBy: req.user.username // On remplace "admin" par le nom de l'utilisateur
+                        cancelledBy: req.user.username
                     } 
                 }
             );
-            // ========================================================
             
             // TODO: Envoyer un email d'annulation au client
             
@@ -3162,7 +3184,6 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 
 // ============================================
 // --- GESTION DES DESTINATIONS (ADMIN) ---
