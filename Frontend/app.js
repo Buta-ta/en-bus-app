@@ -1252,16 +1252,17 @@ function stopAgencySpecificCountdown() {
 // DANS app.js
 
 // ✅ On ajoute 'onOpen' à la liste des paramètres déstructurés
+// DANS app.js
+
 function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
     return new Promise((resolve) => {
-        console.log("🚀 Ouverture de la modale...");
+        console.log("   -> [DIAG] Dans showCustomConfirm : Création de la modale en mémoire...");
 
         const modalId = `modal-${Date.now()}`;
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
-        wrapper.className = 'custom-modal-overlay'; // Utilisons une classe pour le style
+        wrapper.className = 'custom-modal-overlay';
         
-        // On utilise des classes pour une meilleure gestion du style
         wrapper.innerHTML = `
             <div class="custom-modal-card">
                 <div class="custom-modal-header">
@@ -1278,43 +1279,54 @@ function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, con
             </div>
         `;
 
+        console.log("   -> [DIAG] Modale créée. Ajout au DOM...");
         document.body.appendChild(wrapper);
+        console.log("   -> [DIAG] Modale ajoutée au DOM.");
 
         // --- Logique des boutons ---
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
+        if (!btnConfirm) {
+            console.error("   -> [DIAG] ERREUR CRITIQUE : Le bouton de confirmation n'a pas été trouvé dans le DOM !");
+            // On ferme tout pour éviter un blocage
+            wrapper.remove();
+            resolve(false); // On considère que l'opération a échoué
+            return;
+        }
+
         const cleanup = () => {
+            console.log("   -> [DIAG] Nettoyage et suppression de la modale du DOM.");
             wrapper.remove();
         };
 
         btnConfirm.onclick = () => {
+            console.log("   -> [DIAG] Bouton 'Confirmer' cliqué.");
             cleanup();
             resolve(true);
         };
         
         if (btnCancel) {
             btnCancel.onclick = () => {
+                console.log("   -> [DIAG] Bouton 'Annuler' cliqué.");
                 cleanup();
                 resolve(false);
             };
         }
 
-        // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR
-        // ========================================================
-        // Si une fonction 'onOpen' est fournie, on l'exécute maintenant que
-        // la modale est ajoutée au DOM et que ses éléments sont accessibles.
+        // --- Exécution de la fonction onOpen ---
         if (onOpen && typeof onOpen === 'function') {
+            console.log("   -> [DIAG] Tentative d'exécution de la fonction onOpen...");
             try {
                 onOpen();
             } catch (e) {
-                console.error("Erreur dans la fonction onOpen de la modale:", e);
+                console.error("   -> [DIAG] ERREUR CRITIQUE lors de l'exécution de onOpen :", e);
+                cleanup();
+                resolve(false); // On considère que l'opération a échoué
             }
+        } else {
+            console.log("   -> [DIAG] Aucune fonction onOpen n'a été fournie.");
         }
-        // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
-        // ========================================================
     });
 }
 // ============================================
@@ -4887,6 +4899,7 @@ function updateBookingSummary() {
     });
 }
 // DANS app.js, REMPLACEZ la fonction proceedToPayment par celle-ci
+// DANS app.js
 
 window.proceedToPayment = async function() {
     console.log('🟢 proceedToPayment() appelée. Vérification des données...');
@@ -4901,7 +4914,6 @@ window.proceedToPayment = async function() {
     appState.passengerInfo = [];
     let allFieldsValid = true;
 
-    // ✅ CORRECTION : S'assurer que baggageCounts est bien un objet avant la boucle
     if (!appState.baggageCounts) {
         appState.baggageCounts = {};
         console.warn("⚠️ appState.baggageCounts était manquant, réinitialisé à {}.");
@@ -4912,7 +4924,6 @@ window.proceedToPayment = async function() {
         const phoneInput = document.getElementById(`phone-${i}`);
         const emailInput = document.getElementById(`email-${i}`);
 
-        // Sécurité : vérifier que les champs existent dans le DOM
         if (!nameInput || !phoneInput || !emailInput) {
             Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
@@ -4941,7 +4952,6 @@ window.proceedToPayment = async function() {
             break;
         }
         
-        // ✅ CORRECTION : Récupération plus sûre des données de bagages
         const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
         
         appState.passengerInfo.push({
@@ -4953,86 +4963,126 @@ window.proceedToPayment = async function() {
         });
     }
 
-    // Si la boucle s'est terminée prématurément, on s'arrête ici.
     if (!allFieldsValid) {
-        console.log("❌ Validation échouée. Navigation annulée.");
+        console.log("❌ Validation des passagers échouée. Navigation annulée.");
         return;
     }
 
-     // --- 2. Affichage de la modale de confirmation des documents ---
-    const documentsConfirmed = await showDocumentChecklist();
-    
-    // --- 3. Navigation vers le paiement si confirmé ---
-    if (documentsConfirmed) {
-        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
-        displayBookingSummary(); 
-        showPage("payment");
-    } else {
-        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
+    // ========================================================
+    // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
+    // ========================================================
+    try {
+        console.log("1️⃣ [DIAG] Validation des passagers réussie. Avant d'appeler showDocumentChecklist...");
+        const documentsConfirmed = await showDocumentChecklist();
+        console.log("4️⃣ [DIAG] 'showDocumentChecklist' a terminé et a retourné :", documentsConfirmed);
+
+        if (documentsConfirmed) {
+            console.log("✅ Documents confirmés par l'utilisateur. Navigation vers la page de paiement.");
+            displayBookingSummary(); 
+            showPage("payment");
+        } else {
+            console.log("❌ L'utilisateur a annulé la confirmation des documents.");
+        }
+    } catch (e) {
+        console.error("❌ ERREUR FATALE attrapée dans proceedToPayment lors de l'appel à showDocumentChecklist :", e);
+        Utils.showToast("Une erreur inattendue est survenue.", "error");
     }
+    // ========================================================
+    // ✅ FIN DU BLOC DE DIAGNOSTIC
+    // ========================================================
 }
 
 
 // DANS app.js, ajoutez cette nouvelle fonction
+// DANS app.js
 
 async function showDocumentChecklist() {
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    
-    // On récupère le type de trajet depuis l'état de l'application
-    const jurisdiction = appState.selectedBus?.route?.jurisdiction || 'national';
-    
-    let checklistItemsHTML = '';
+    // ========================================================
+    // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
+    // ========================================================
+    console.log("2️⃣ [DIAG] Entrée dans showDocumentChecklist. Préparation de la modale...");
+    try {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        
+        const jurisdiction = appState.selectedBus?.route?.jurisdiction || 'national';
+        console.log(`   -> [DIAG] Juridiction détectée : ${jurisdiction}`);
+        
+        let checklistItemsHTML = '';
 
-    if (jurisdiction === 'international') {
-        checklistItemsHTML = `
-            <p>${translation.docs_international_intro}</p>
-            <ul class="docs-list">
-                <li>${translation.docs_international_item_1}</li>
-                <li>${translation.docs_international_item_2}</li>
-                <li>${translation.docs_international_item_3}</li>
-            </ul>
-        `;
-    } else {
-        checklistItemsHTML = `
-            <p>${translation.docs_national_intro}</p>
-            <ul class="docs-list">
-                <li>${translation.docs_national_item_1}</li>
-            </ul>
-        `;
-    }
-    
-    // On construit le contenu complet de la modale
-    const modalContent = `
-        <p>${translation.docs_checklist_intro}</p>
-        ${checklistItemsHTML}
-        <label class="docs-confirmation-label">
-            <input type="checkbox" id="docs-confirm-checkbox">
-            <span>${translation.docs_confirmation_checkbox}</span>
-        </label>
-    `;
-
-    // On utilise votre modale personnalisée, mais on va la modifier pour accepter du HTML
-    const confirmed = await showCustomConfirm({
-        title: translation.docs_checklist_title,
-        message: modalContent, // On passe notre HTML ici
-        icon: '🛂',
-        confirmText: translation.docs_continue_button,
-        cancelText: translation.button_cancel,
-        // On ajoute un 'hook' pour gérer l'état du bouton
-        onOpen: () => {
-            const checkbox = document.getElementById('docs-confirm-checkbox');
-            // Le bouton 'Confirmer' est désactivé au début
-            const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
-            confirmBtn.disabled = true;
-
-            checkbox.onchange = () => {
-                confirmBtn.disabled = !checkbox.checked;
-            };
+        if (jurisdiction === 'international') {
+            checklistItemsHTML = `
+                <p>${translation.docs_international_intro}</p>
+                <ul class="docs-list">
+                    <li>${translation.docs_international_item_1}</li>
+                    <li>${translation.docs_international_item_2}</li>
+                    <li>${translation.docs_international_item_3}</li>
+                </ul>
+            `;
+        } else {
+            checklistItemsHTML = `
+                <p>${translation.docs_national_intro}</p>
+                <ul class="docs-list">
+                    <li>${translation.docs_national_item_1}</li>
+                </ul>
+            `;
         }
-    });
+        
+        const modalContent = `
+            <p>${translation.docs_checklist_intro}</p>
+            ${checklistItemsHTML}
+            <label class="docs-confirmation-label">
+                <input type="checkbox" id="docs-confirm-checkbox">
+                <span>${translation.docs_confirmation_checkbox}</span>
+            </label>
+        `;
 
-    return confirmed;
+        console.log("   -> [DIAG] Contenu de la modale généré. Appel de showCustomConfirm...");
+        
+        const confirmed = await showCustomConfirm({
+            title: translation.docs_checklist_title,
+            message: modalContent,
+            icon: '🛂',
+            confirmText: translation.docs_continue_button,
+            cancelText: translation.button_cancel,
+            onOpen: () => {
+                try {
+                    console.log("3️⃣ [DIAG] La fonction 'onOpen' s'exécute...");
+                    const checkbox = document.getElementById('docs-confirm-checkbox');
+                    const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
+                    
+                    if (!checkbox) {
+                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : la checkbox #docs-confirm-checkbox est INTROUVABLE !");
+                        return;
+                    }
+                    if (!confirmBtn) {
+                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : le bouton de confirmation est INTROUVABLE !");
+                        return;
+                    }
+                    
+                    console.log("  -> [DIAG] Éléments checkbox et bouton trouvés.");
+                    confirmBtn.disabled = true;
+                    checkbox.onchange = () => {
+                        confirmBtn.disabled = !checkbox.checked;
+                    };
+                    console.log("  -> [DIAG] 'onOpen' a terminé avec succès.");
+                } catch (e) {
+                    console.error("  -> [DIAG] ERREUR CRITIQUE DANS onOpen :", e);
+                }
+            }
+        });
+
+        console.log("   -> [DIAG] 'showCustomConfirm' a retourné une valeur.");
+        return confirmed;
+
+    } catch (error) {
+        console.error("❌ ERREUR FATALE dans showDocumentChecklist :", error);
+        // En cas d'erreur, on retourne 'false' pour ne pas bloquer l'utilisateur
+        return false;
+    }
+    // ========================================================
+    // ✅ FIN DU BLOC DE DIAGNOSTIC
+    // ========================================================
 }
 /**
  * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
