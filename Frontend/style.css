@@ -6062,3 +6062,55 @@ body.pwa-installed .container {
 
 
 
+
+/* DANS index.html, dans <style> */
+
+/* ============================================
+   📍 STYLE POUR L'ICÔNE DE GÉOLOCALISATION
+   ============================================ */
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon .form-control {
+    padding-right: 3rem; /* Laisse de la place pour l'icône */
+}
+
+.icon-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 3.5rem; /* Zone de clic généreuse */
+    
+    background: none;
+    border: none;
+    cursor: pointer;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: var(--color-accent);
+}
+
+.icon-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Animation pour le bouton quand il cherche */
+.icon-btn.loading svg {
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
