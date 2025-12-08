@@ -1249,62 +1249,84 @@ function stopAgencySpecificCountdown() {
 
 // DANS app.js
 
-function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
-    return new Promise((resolve) => {
-        console.log("🚀 Ouverture de la modale (Mode Atomique)...");
+// DANS app.js
 
-        // 1. Créer un conteneur unique
+// ✅ On ajoute 'onOpen' à la liste des paramètres déstructurés
+// DANS app.js
+
+function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
+    return new Promise((resolve) => {
+        console.log("   -> [DIAG] Dans showCustomConfirm : Création de la modale en mémoire...");
+
         const modalId = `modal-${Date.now()}`;
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
-        wrapper.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 2147483647;
-            display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(4px);
-        `;
-
-        // 2. Définir les couleurs des boutons
-        const confirmBg = confirmClass === 'btn-danger' ? '#ef5350' : '#73d700';
-        const confirmColor = confirmClass === 'btn-danger' ? '#ffffff' : '#000000';
-
-        // 3. Injecter le HTML interne
+        wrapper.className = 'custom-modal-overlay';
+        
         wrapper.innerHTML = `
-            <div style="background: #1C1C27; border: 1px solid rgba(115, 215, 0, 0.3); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out;">
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    <div style="font-size: 32px;">${icon}</div>
-                    <h3 style="margin: 0; color: white; font-family: sans-serif; font-size: 20px;">${title}</h3>
+            <div class="custom-modal-card">
+                <div class="custom-modal-header">
+                    <div class="custom-modal-icon">${icon}</div>
+                    <h3>${title}</h3>
                 </div>
-                <p style="color: #B0BAC9; margin-bottom: 24px; line-height: 1.6; font-family: sans-serif;">${message}</p>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button id="btn-cancel-${modalId}" style="background: transparent; border: 1px solid #555; color: #B0BAC9; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${cancelText}</button>
-                    <button id="btn-confirm-${modalId}" style="background: ${confirmBg}; border: none; color: ${confirmColor}; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${confirmText}</button>
+                <div class="custom-modal-body">
+                    ${message}
+                </div>
+                <div class="custom-modal-footer">
+                    ${cancelText ? `<button id="btn-cancel-${modalId}" class="btn btn-secondary">${cancelText}</button>` : ''}
+                    <button id="btn-confirm-${modalId}" class="btn ${confirmClass}">${confirmText}</button>
                 </div>
             </div>
         `;
 
-        // 4. Ajouter au corps de la page
+        console.log("   -> [DIAG] Modale créée. Ajout au DOM...");
         document.body.appendChild(wrapper);
+        console.log("   -> [DIAG] Modale ajoutée au DOM.");
 
-        // 5. Attacher les événements (C'est ici que la magie opère)
+        // --- Logique des boutons ---
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
+        if (!btnConfirm) {
+            console.error("   -> [DIAG] ERREUR CRITIQUE : Le bouton de confirmation n'a pas été trouvé dans le DOM !");
+            // On ferme tout pour éviter un blocage
+            wrapper.remove();
+            resolve(false); // On considère que l'opération a échoué
+            return;
+        }
+
         const cleanup = () => {
-            document.body.removeChild(wrapper); // On détruit la modale du DOM
+            console.log("   -> [DIAG] Nettoyage et suppression de la modale du DOM.");
+            wrapper.remove();
         };
 
         btnConfirm.onclick = () => {
-            console.log("✅ Clic Confirmer détecté");
+            console.log("   -> [DIAG] Bouton 'Confirmer' cliqué.");
             cleanup();
-            resolve(true); // DÉBLOQUE L'AWAIT
+            resolve(true);
         };
+        
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                console.log("   -> [DIAG] Bouton 'Annuler' cliqué.");
+                cleanup();
+                resolve(false);
+            };
+        }
 
-        btnCancel.onclick = () => {
-            console.log("❌ Clic Annuler détecté");
-            cleanup();
-            resolve(false); // DÉBLOQUE L'AWAIT
-        };
+        // --- Exécution de la fonction onOpen ---
+        if (onOpen && typeof onOpen === 'function') {
+            console.log("   -> [DIAG] Tentative d'exécution de la fonction onOpen...");
+            try {
+                onOpen();
+            } catch (e) {
+                console.error("   -> [DIAG] ERREUR CRITIQUE lors de l'exécution de onOpen :", e);
+                cleanup();
+                resolve(false); // On considère que l'opération a échoué
+            }
+        } else {
+            console.log("   -> [DIAG] Aucune fonction onOpen n'a été fournie.");
+        }
     });
 }
 // ============================================
@@ -2108,6 +2130,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // DANS app.js
 
 // ✅ On ajoute le mot-clé "async" ici pour autoriser l'utilisation de "await" à l'intérieur.
+// DANS app.js
+
 async function initApp() {
     try {
         // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
@@ -2123,6 +2147,21 @@ async function initApp() {
         setupSmartSearch();
         setupMobileFilterToggle();
         setupSocialLinks();
+
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Ajout de l'écouteur d'événement
+        // ========================================================
+        const proceedButton = document.getElementById('btn-proceed-to-payment');
+        if (proceedButton) {
+            proceedButton.addEventListener('click', () => {
+                // On appelle la fonction globale qui est déjà 'async'
+                window.proceedToPayment(); 
+            });
+            console.log("✅ Écouteur d'événement ajouté au bouton 'Continuer vers Paiement'.");
+        }
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
 
         // --- Configuration native ---
         if (window.Capacitor?.isNativePlatform()) {
@@ -3069,74 +3108,54 @@ function setupDatePickers() {
 }
 
 
+// DANS app.js
+
 function setupPassengerSelector() {
     const input = document.getElementById("passenger-input");
     const dropdown = document.getElementById("passenger-dropdown");
-    const adultsCount = document.getElementById("adults-count");
-    const childrenCount = document.getElementById("children-count");
-    const summary = document.getElementById("passenger-summary");
     
-    if (!input || !dropdown || !adultsCount || !childrenCount || !summary) {
+    // Si les éléments de base n'existent pas, on ne fait rien.
+    if (!input || !dropdown) {
         return;
     }
-    
-    function updateDisplay() {
-        // Logique pour s'assurer que les valeurs sont correctes
-        appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
-        appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
-        
-        // Mettre à jour les chiffres dans le dropdown
-        adultsCount.textContent = appState.passengerCounts.adults;
-        childrenCount.textContent = appState.passengerCounts.children;
-        
-        // Gérer l'état des boutons
-        dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
-        dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
-        
-        // Traduire le résumé principal (ex: "1 Adulte")
-        const lang = getLanguage();
-        const translation = translations[lang] || translations.fr;
-        if (typeof translation.passenger_summary === 'function') {
-            summary.textContent = translation.passenger_summary(
-                appState.passengerCounts.adults, 
-                appState.passengerCounts.children
-            );
-        }
-    }
-    
-    // Gérer les clics (inchangé)
-    input.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle("open");
-    });
-    
+
+    // --- Gestion des clics sur les boutons +/- ---
     dropdown.addEventListener("click", (e) => {
         const target = e.target.closest('.counter-btn');
         if (target) {
             const type = target.dataset.type;
             const action = target.dataset.action;
-            if (action === "increment") appState.passengerCounts[type]++;
-            else if (action === "decrement") appState.passengerCounts[type]--;
-            updateDisplay();
+
+            // Mise à jour de l'état de l'application
+            if (action === "increment") {
+                appState.passengerCounts[type]++;
+            } else if (action === "decrement") {
+                appState.passengerCounts[type]--;
+            }
+            
+            // On s'assure que les adultes sont au moins 1 et les enfants au moins 0
+            appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
+            appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
+
+            // On rafraîchit l'interface après chaque changement
+            updatePassengerSelectorUI();
         }
     });
-    
+
+    // --- Gestion de l'ouverture/fermeture du dropdown ---
+    input.addEventListener("click", (e) => {
+        e.stopPropagation(); // Empêche le clic de se propager et de fermer le menu
+        dropdown.classList.toggle("open");
+    });
+
     document.addEventListener("click", (e) => {
-        if (!dropdown.contains(e.target) && !input.contains(e.target)) {
+        // Si on clique en dehors de l'input ET en dehors du dropdown, on le ferme.
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.remove("open");
         }
     });
 
-    // ===========================================
-    // ✅ LA MODIFICATION EST ICI
-    // ===========================================
-    // On rend la fonction 'updateDisplay' accessible depuis l'extérieur
-    // en l'assignant à notre variable globale.
-    refreshPassengerSelectorUI = updateDisplay;
-    // ===========================================
-    
-    // Appel initial pour que tout soit correct au chargement
-    updateDisplay();
+    // --- Appel initial pour que l'UI soit correcte au chargement de la page ---
     updatePassengerSelectorUI();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
@@ -3358,6 +3377,13 @@ function displayAlternativeTrips(alternatives) {
     const summary = document.getElementById("search-summary");
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
+
+    // ========================================================
+    // ✅ AJOUTEZ CE BLOC DE DIAGNOSTIC
+    // ========================================================
+    console.log(`[DIAG] Langue active : ${lang}`);
+    console.log("[DIAG] Objet de traduction complet pour cette langue :", translation);
+    console.log("[DIAG] Tentative de lecture de 'alternative_trips_title' :", translation.alternative_trips_title);
 
     // ========================================================
     // ✅ DÉBUT DE LA CORRECTION
@@ -4022,18 +4048,31 @@ function displayResults(results, isReturn = false) {
     resultsList.innerHTML = filteredAndSortedResults.map(route => {
         let badgeHTML = '';
         
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
+        
+        // PRIORITÉ 1 : Badge trajet de nuit
         if (route.isNightTrip) {
-            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🌙 Trajet de Nuit</div>`;
+            // On utilise la clé de traduction
+            badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">${translation.badge_night_trip}</div>`;
         }
+        // PRIORITÉ 2 : Badge personnalisé
         else if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
         }
+        // PRIORITÉ 3 : Moins cher
         else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
         }
+        // PRIORITÉ 4 : Plus rapide
         else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
+
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
 
         const amenitiesHTML = route.amenities.map(amenity => 
             `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`
@@ -4092,12 +4131,45 @@ function displayResults(results, isReturn = false) {
         const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
             ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
             : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
+
+
+        
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR POUR LA TRADUCTION
+        // ========================================================
+        let tripTitleHTML;
+        
+        if (route.isSegment) {
+            tripTitleHTML = `
+                <div class="bus-card-trip-title" style="font-size: 0.9em; color: var(--color-text-secondary);">
+                    ${translation.segment_on_line(route.from, route.to)}
+                </div>
+                <div class="bus-card-segment-info" style="font-size: 1.2em; font-weight: 700; margin-top: 4px;">
+                    ${translation.segment_your_trip} <strong>${route.segmentFrom} → ${route.segmentTo}</strong>
+                </div>
+            `;
+        } else {
+            tripTitleHTML = `<div class="bus-card-trip-title" style="font-size: 1.2em; font-weight: 700;">${route.from} → ${route.to}</div>`;
+        }
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
+        // ✅ FIN DU NOUVEAU BLOC
+        // ========================================================
+        
+
+
+
+
+
+
             
         return `
             <div class="bus-card">
                 ${badgeHTML}
                 <div class="bus-card-wrapper">
                     <div class="bus-card-main">
+                     ${tripTitleHTML}
                         <div class="bus-card-time">
                             <span>${route.departure}</span>
                             <div class="bus-card-duration">
@@ -4763,29 +4835,49 @@ function handleBaggageChange(event) {
 // ============================================
 // 💰 MISE À JOUR DU RÉCAPITULATIF DE PRIX
 // ============================================
+// DANS app.js (remplacez votre fonction updateBookingSummary)
+
 function updateBookingSummary() {
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
-        // Si on n'est pas sur la page de paiement, on ne fait rien
-        return; 
+        // Si le conteneur n'est pas sur la page actuelle, on ne fait rien.
+        return;
     }
 
-    // Récupérer les options de bagages du trajet (avec valeurs par défaut)
-    const baggageOptions = appState.selectedBus.baggageOptions || {
-        standard: { price: 2000 },
-        oversized: { price: 5000 }
-    };
+    // --- Sécurisation des données en entrée ---
+    const bus = appState.selectedBus;
+    const passengers = appState.passengerCounts;
+    const seats = appState.selectedSeats;
+    const baggage = appState.baggageCounts;
+
+    // Si le bus ou son prix est manquant, on ne peut pas calculer.
+    // On affiche un total de 0 pour éviter un crash.
+    if (!bus || typeof bus.price !== 'number') {
+        console.warn("[DIAG] updateBookingSummary: Données de bus ou prix manquantes. Calcul impossible.");
+        summaryContainer.innerHTML = `<div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>0 FCFA</strong></div>`;
+        return;
+    }
+
+    // ========================================================
+    // ✅ NOUVELLE LOGIQUE DE CALCUL
+    // ========================================================
     
-    // Calcul du prix des billets
-    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
-    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
-    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    // --- Calcul du prix des billets ---
+    const adultPrice = bus.price;
+    const childPrice = getChildPrice(adultPrice); // Utilise la fonction helper (fixe ou %)
+
+    const numAdultsSeats = Math.min(seats.length, passengers.adults);
+    const numChildrenSeats = seats.length - numAdultsSeats;
     
-    // Calcul du prix des bagages
+    const ticketsPrice = (numAdultsSeats * adultPrice) + (numChildrenSeats * childPrice);
+    
+    // --- Calcul du prix des bagages ---
+    const baggageOptions = bus.baggageOptions || { standard: { price: 0 }, oversized: { price: 0 } };
     let totalStandardBaggage = 0;
     let totalOversizedBaggage = 0;
-    if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
-        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+
+    if (baggage && Object.keys(baggage).length > 0) {
+        Object.values(baggage).forEach(paxBaggage => {
             totalStandardBaggage += paxBaggage.standard || 0;
             totalOversizedBaggage += paxBaggage.oversized || 0;
         });
@@ -4795,26 +4887,30 @@ function updateBookingSummary() {
     const oversizedBaggagePrice = totalOversizedBaggage * baggageOptions.oversized.price;
     const totalBaggagePrice = standardBaggagePrice + oversizedBaggagePrice;
 
-    // Calcul du prix total
+    // --- Calcul du prix total ---
     const totalPrice = ticketsPrice + totalBaggagePrice;
     
-    // Mise à jour de l'affichage du récapitulatif
+    // ========================================================
+    // ✅ FIN DE LA NOUVELLE LOGIQUE
+    // ========================================================
+    
+    // --- Mise à jour de l'affichage ---
     summaryContainer.innerHTML = `
-        <div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>Itinéraire:</span><strong>${bus.from} → ${bus.to}</strong></div>
         <div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
-        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div>
-        <div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div>
+        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${passengers.adults} Adulte(s), ${passengers.children} Enfant(s))</strong></div>
+        <div class="detail-row"><span>Sièges:</span><strong>${seats.join(", ")}</strong></div>
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div>
-        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(standardBaggagePrice)} FCFA</strong></div>
-        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(oversizedBaggagePrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(Math.round(ticketsPrice))} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(Math.round(standardBaggagePrice))} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(Math.round(oversizedBaggagePrice))} FCFA</strong></div>
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>
+        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(Math.round(totalPrice))} FCFA</strong></div>
     `;
 
-    // Mettre à jour les champs de paiement
+    // --- Mise à jour des champs de paiement (inchangé) ---
     const bookingRef = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
-    const amountStr = `${Utils.formatPrice(totalPrice)} FCFA`;
+    const amountStr = `${Utils.formatPrice(Math.round(totalPrice))} FCFA`;
     
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
@@ -4824,93 +4920,122 @@ function updateBookingSummary() {
     });
 }
 // DANS app.js, REMPLACEZ la fonction proceedToPayment par celle-ci
+// DANS app.js
 
-window.proceedToPayment = function() {
-    console.log('🟢 proceedToPayment() appelée. Vérification des données...');
-    
-    if (!appState.selectedBus) {
-        Utils.showToast("Erreur critique : Aucun voyage sélectionné.", "error");
-        console.error("❌ Tentative de continuer sans 'appState.selectedBus'.");
-        showPage('home'); 
-        return;
-    }
+// DANS app.js (remplacez TEMPORAIREMENT votre fonction)
 
-    appState.passengerInfo = [];
+// DANS app.js (restaurez la version finale)
+window.proceedToPayment = async function() {
+    console.log('🟢 proceedToPayment() appelée. Validation des passagers...');
     let allFieldsValid = true;
+    appState.passengerInfo = [];
+    
+    // ... (votre boucle de validation des passagers) ...
+    if (!allFieldsValid) { return; }
 
-    // ✅ CORRECTION : S'assurer que baggageCounts est bien un objet avant la boucle
-    if (!appState.baggageCounts) {
-        appState.baggageCounts = {};
-        console.warn("⚠️ appState.baggageCounts était manquant, réinitialisé à {}.");
+    const documentsConfirmed = await showDocumentChecklist();
+    
+    if (documentsConfirmed) {
+        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
+        displayBookingSummary(); 
+        showPage("payment");
+    } else {
+        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
     }
-
-    for (let i = 0; i < appState.currentSearch.passengers; i++) {
-        const nameInput = document.getElementById(`name-${i}`);
-        const phoneInput = document.getElementById(`phone-${i}`);
-        const emailInput = document.getElementById(`email-${i}`);
-
-        // Sécurité : vérifier que les champs existent dans le DOM
-        if (!nameInput || !phoneInput || !emailInput) {
-            Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-
-        const name = nameInput.value.trim();
-        const phone = phoneInput.value.trim();
-        const email = emailInput.value.trim();
-        
-        if (!name || !phone) {
-            Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        if (!Utils.validatePhone(phone)) {
-            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        if (email && !Utils.validateEmail(email)) {
-            Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        // ✅ CORRECTION : Récupération plus sûre des données de bagages
-        const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
-        
-        appState.passengerInfo.push({
-            seat: appState.selectedSeats[i],
-            name: name,
-            phone: phone,
-            email: email,
-            baggage: passengerBaggage
-        });
-    }
-
-    // Si la boucle s'est terminée prématurément, on s'arrête ici.
-    if (!allFieldsValid) {
-        console.log("❌ Validation échouée. Navigation annulée.");
-        return;
-    }
-
-    // Si tout est valide, on continue vers la page de paiement
-    console.log("✅ Validation réussie. Affichage de la page de paiement.");
-    displayBookingSummary(); 
-    showPage("payment");
 }
-// Dans app.js
 
-// Dans Frontend/app.js
 
-// Dans app.js
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary par celle-ci
+// DANS app.js, ajoutez cette nouvelle fonction
+// DANS app.js
 
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary
+async function showDocumentChecklist() {
+    // ========================================================
+    // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
+    // ========================================================
+    console.log("2️⃣ [DIAG] Entrée dans showDocumentChecklist. Préparation de la modale...");
+    try {
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+        
+        const jurisdiction = appState.selectedBus?.route?.jurisdiction || 'national';
+        console.log(`   -> [DIAG] Juridiction détectée : ${jurisdiction}`);
+        
+        let checklistItemsHTML = '';
 
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary
+        if (jurisdiction === 'international') {
+            checklistItemsHTML = `
+                <p>${translation.docs_international_intro}</p>
+                <ul class="docs-list">
+                    <li>${translation.docs_international_item_1}</li>
+                    <li>${translation.docs_international_item_2}</li>
+                    <li>${translation.docs_international_item_3}</li>
+                </ul>
+            `;
+        } else {
+            checklistItemsHTML = `
+                <p>${translation.docs_national_intro}</p>
+                <ul class="docs-list">
+                    <li>${translation.docs_national_item_1}</li>
+                </ul>
+            `;
+        }
+        
+        const modalContent = `
+            <p>${translation.docs_checklist_intro}</p>
+            ${checklistItemsHTML}
+            <label class="docs-confirmation-label">
+                <input type="checkbox" id="docs-confirm-checkbox">
+                <span>${translation.docs_confirmation_checkbox}</span>
+            </label>
+        `;
+
+        console.log("   -> [DIAG] Contenu de la modale généré. Appel de showCustomConfirm...");
+        
+        const confirmed = await showCustomConfirm({
+            title: translation.docs_checklist_title,
+            message: modalContent,
+            icon: '🛂',
+            confirmText: translation.docs_continue_button,
+            cancelText: translation.button_cancel,
+            onOpen: () => {
+                try {
+                    console.log("3️⃣ [DIAG] La fonction 'onOpen' s'exécute...");
+                    const checkbox = document.getElementById('docs-confirm-checkbox');
+                    const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
+                    
+                    if (!checkbox) {
+                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : la checkbox #docs-confirm-checkbox est INTROUVABLE !");
+                        return;
+                    }
+                    if (!confirmBtn) {
+                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : le bouton de confirmation est INTROUVABLE !");
+                        return;
+                    }
+                    
+                    console.log("  -> [DIAG] Éléments checkbox et bouton trouvés.");
+                    confirmBtn.disabled = true;
+                    checkbox.onchange = () => {
+                        confirmBtn.disabled = !checkbox.checked;
+                    };
+                    console.log("  -> [DIAG] 'onOpen' a terminé avec succès.");
+                } catch (e) {
+                    console.error("  -> [DIAG] ERREUR CRITIQUE DANS onOpen :", e);
+                }
+            }
+        });
+
+        console.log("   -> [DIAG] 'showCustomConfirm' a retourné une valeur.");
+        return confirmed;
+
+    } catch (error) {
+        console.error("❌ ERREUR FATALE dans showDocumentChecklist :", error);
+        // En cas d'erreur, on retourne 'false' pour ne pas bloquer l'utilisateur
+        return false;
+    }
+    // ========================================================
+    // ✅ FIN DU BLOC DE DIAGNOSTIC
+    // ========================================================
+}
 /**
  * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
  * prices, available seats, and payment options for a bus reservation.
@@ -5571,10 +5696,7 @@ function downloadInvoice(bookingNumber) {
         }
     }, 1800); // Délai de 1.8 secondes
 }
-// Ajoute un écouteur pour fermer les menus en cliquant n'importe où
-window.addEventListener('click', () => {
 
-});
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
 async function viewTicket(bookingNumber) {
