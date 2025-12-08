@@ -1725,10 +1725,29 @@ window.checkPaymentStatus = async function(bookingNumber) {
             Utils.showToast(translation.toast_payment_pending_check, 'info');
         } 
         
+       
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
         else if (data.status === 'Annulé' || data.status === 'Expiré') {
-            Utils.showToast(translation.toast_booking_cancelled_status(data.status.toLowerCase()), 'error');
+            let translatedStatus = data.status.toLowerCase();
+
+            // On traduit manuellement le statut si la langue est l'anglais
+            if (lang === 'en') {
+                if (data.status === 'Annulé') {
+                    translatedStatus = 'cancelled';
+                } else if (data.status === 'Expiré') {
+                    translatedStatus = 'expired';
+                }
+            }
+            
+            // On appelle la fonction de traduction avec le statut déjà traduit
+            Utils.showToast(translation.toast_booking_cancelled_status(translatedStatus), 'error');
         } 
-        
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+
         
         
         else {
