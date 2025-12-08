@@ -544,7 +544,7 @@ app.get("/api/route-templates", async (req, res) => {
 // DANS server.js (remplacez entièrement votre route /api/search)
 
 app.get("/api/search", async (req, res) => {
-    let { from, to, date } = req.query;
+     let { from, to, date } = req.query;
     if (!from || !to || !date) {
         return res.status(400).json({ error: "Paramètres manquants" });
     }
@@ -553,27 +553,19 @@ app.get("/api/search", async (req, res) => {
         const fromCity = from.trim();
         const toCity = to.trim();
 
-        // --- 1. On récupère tous les trajets programmés pour la date demandée ---
+        // --- 1. On récupère tous les trajets du jour ---
         const allTripsForTheDay = await tripsCollection.find({ date: date }).toArray();
 
-        // --- 2. Filtrage puissant en JavaScript pour trouver les trajets valides (directs, segments, correspondances) ---
+        // --- 2. Filtrage pour trouver les trajets valides (directs ou segments) ---
         const validTrips = allTripsForTheDay.filter(trip => {
             if (!trip.route) return false;
-
-            const stopCities = (trip.route.stops || []).map(stop => stop && typeof stop.city === 'string' ? stop.city : null).filter(Boolean);
-            const connectionCities = (trip.route.connections || []).map(conn => conn && typeof conn.at === 'string' ? conn.at : null).filter(Boolean);
-            const fullPath = [trip.route.from, ...stopCities, ...connectionCities, trip.route.to];
-            const uniqueFullPath = [...new Set(fullPath)];
-
-            if (!uniqueFullPath.every(city => typeof city === 'string')) {
-                console.warn(`[WARN] Trajet ${trip._id} ignoré, parcours invalide.`);
-                return false;
-            }
-
-            const pathInLower = uniqueFullPath.map(city => city.toLowerCase());
+            const stopCities = (trip.route.stops || []).map(stop => stop && stop.city).filter(Boolean);
+            const connectionCities = (trip.route.connections || []).map(conn => conn && conn.at).filter(Boolean);
+            const fullPath = [...new Set([trip.route.from, ...stopCities, ...connectionCities, trip.route.to])];
+            if (!fullPath.every(city => typeof city === 'string')) return false;
+            const pathInLower = fullPath.map(city => city.toLowerCase());
             const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
             const toIndex = pathInLower.indexOf(toCity.toLowerCase());
-            
             return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
 
@@ -588,17 +580,17 @@ app.get("/api/search", async (req, res) => {
             }
             return true;
         });
-
-        // --- 4. Formatage des résultats ou recherche d'alternatives ---
-        if (availableTrips.length > 0) { // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
+        
+        // --- 4. Formatage des résultats OU recherche d'alternatives ---
+        if (availableTrips.length > 0) {
+            
+            // ========================================================
+            // ✅ CORRECTION PRINCIPALE ICI
             // ========================================================
             const calculateDuration = (start, end, daysOffset = 0) => {
                 if (!start || !end) return "N/A";
                 const [h1, m1] = start.split(':').map(Number);
                 const [h2, m2] = end.split(':').map(Number);
-                
-                // Calcul de base de la différence en minutes
                 let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
                 
                 // On ajoute 24h (1440 minutes) pour chaque jour de décalage
@@ -606,7 +598,6 @@ app.get("/api/search", async (req, res) => {
 
                 const hours = Math.floor(diffMinutes / 60);
                 const minutes = diffMinutes % 60;
-                
                 return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
             };
             
@@ -615,15 +606,12 @@ app.get("/api/search", async (req, res) => {
                 
                 return {
                     id: trip._id.toString(),
-                    // On passe l'objet route ENTIER, qui contient la juridiction.
-                    route: trip.route,
-                    
-                    // On garde les champs de premier niveau pour la compatibilité avec le frontend
                     from: trip.route.from,
                     to: trip.route.to,
                     company: trip.route.company,
                     price: trip.route.price,
-                    duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival),
+                    // On passe bien le 'arrivalDaysOffset' à la fonction de calcul
+                    duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival, trip.arrivalDaysOffset || 0),
                     departure: trip.route.departure,
                     arrival: trip.route.arrival,
                     amenities: trip.route.amenities || [],
@@ -632,8 +620,6 @@ app.get("/api/search", async (req, res) => {
                     connections: trip.route.connections || [],
                     departureLocation: trip.route.departureLocation || null,
                     arrivalLocation: trip.route.arrivalLocation || null,
-                    
-                    // Le reste des informations au niveau du 'trip'
                     trackerId: trip.busIdentifier || trip.route.trackerId || null,
                     availableSeats: trip.seats.filter(s => s.status === "available").length,
                     isNightTrip: trip.isNightTrip || false,
@@ -643,8 +629,6 @@ app.get("/api/search", async (req, res) => {
                     busIdentifier: trip.busIdentifier,
                     baggageOptions: trip.route.baggageOptions,
                     highlightBadge: trip.highlightBadge || null,
-                    
-                    // Informations sur le segment
                     isSegment: isSegment,
                     segmentFrom: fromCity,
                     segmentTo: toCity
