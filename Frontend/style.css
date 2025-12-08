@@ -5899,8 +5899,11 @@ body.pwa-installed .container {
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(4px);
-    animation: fadeIn 0.3s ease;
+    
+    /* On retire l'animation pour le test */
+    /* animation: fadeIn 0.3s ease; */
 }
+
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -5911,8 +5914,10 @@ body.pwa-installed .container {
     width: 90%;
     max-width: 450px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    animation: slideUp 0.3s ease-out;
     overflow: hidden;
+
+    /* On retire l'animation pour le test */
+    /* animation: slideUp 0.3s ease-out; */
 }
 
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
