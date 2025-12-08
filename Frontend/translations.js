@@ -609,6 +609,27 @@ const translations = {
     segment_your_trip: "Votre trajet :",
     
     badge_night_trip: "🌙 Trajet de Nuit",
+
+
+     // ============================================
+    // ✅ CLÉS POUR LA CONFIRMATION DES DOCUMENTS
+    // ============================================
+    docs_checklist_title: "🛂 Vérification des documents",
+    docs_checklist_intro: "Avant de continuer, veuillez confirmer que vous possédez les documents requis pour ce voyage.",
+    
+    // Checklist pour trajet NATIONAL
+    docs_national_intro: "Pour ce trajet national, chaque passager doit avoir :",
+    docs_national_item_1: "Une pièce d'identité nationale en cours de validité (CNI, Passeport, etc.).",
+    
+    // Checklist pour trajet INTERNATIONAL
+    docs_international_intro: "Pour ce trajet international, chaque passager doit avoir :",
+    docs_international_item_1: "Un passeport avec au moins 6 mois de validité.",
+    docs_international_item_2: "Le visa requis pour le pays de destination (si nécessaire).",
+    docs_international_item_3: "Le carnet de vaccination international à jour (ex: fièvre jaune).",
+
+    docs_confirmation_checkbox: "Je confirme que tous les passagers ont les documents requis.",
+    docs_continue_button: "Continuer vers le paiement",
+    // ============================================
   
 
 
@@ -1220,6 +1241,27 @@ const translations = {
     segment_on_line: (from, to) => `On the ${from} → ${to} line`,
     segment_your_trip: "Your trip:",
     badge_night_trip: "🌙 Night Trip",
+
+
+     // ============================================
+    // ✅ KEYS FOR DOCUMENT CONFIRMATION
+    // ============================================
+    docs_checklist_title: "🛂 Document Check",
+    docs_checklist_intro: "Before proceeding, please confirm you have the required documents for this trip.",
+
+    // Checklist for NATIONAL trip
+    docs_national_intro: "For this national trip, each passenger must have:",
+    docs_national_item_1: "A valid national ID document (National ID Card, Passport, etc.).",
+
+    // Checklist for INTERNATIONAL trip
+    docs_international_intro: "For this international trip, each passenger must have:",
+    docs_international_item_1: "A passport valid for at least 6 months.",
+    docs_international_item_2: "The required visa for the destination country (if applicable).",
+    docs_international_item_3: "An up-to-date international vaccination record (e.g., yellow fever).",
+
+    docs_confirmation_checkbox: "I confirm all passengers have the required documents.",
+    docs_continue_button: "Continue to Payment",
+    // ============================================
     // ============================================
   },
      

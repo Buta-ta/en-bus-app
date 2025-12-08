@@ -2310,6 +2310,18 @@
                                     <input type="text" id="template-arrival" class="form-control" placeholder="12:00"
                                         required />
                                 </div>
+
+
+
+                                <!-- DANS admin/index.html, dans le formulaire de création de modèle -->
+
+<div class="form-group">
+    <label for="template-jurisdiction" class="form-label">Juridiction du Trajet</label>
+    <select id="template-jurisdiction" class="form-control">
+        <option value="national" selected>National</option>
+        <option value="international">International</option>
+    </select>
+</div>
                             </div>
 
                             <!-- Type de trajet -->
@@ -3834,6 +3846,8 @@ function showDetails(reservationId) {
                 distance: parseInt(document.getElementById("template-distance").value), // ✅ NOUVELLE LIGNE
                 departure: document.getElementById("template-departure").value,
                 arrival: document.getElementById("template-arrival").value,
+                jurisdiction: document.getElementById("template-jurisdiction").value,
+
                 amenities: amenities,
                 tripType: tripType,
                 stops: stops,

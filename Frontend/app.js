@@ -1249,62 +1249,72 @@ function stopAgencySpecificCountdown() {
 
 // DANS app.js
 
-function showCustomConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
-    return new Promise((resolve) => {
-        console.log("🚀 Ouverture de la modale (Mode Atomique)...");
+// DANS app.js
 
-        // 1. Créer un conteneur unique
+// ✅ On ajoute 'onOpen' à la liste des paramètres déstructurés
+function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
+    return new Promise((resolve) => {
+        console.log("🚀 Ouverture de la modale...");
+
         const modalId = `modal-${Date.now()}`;
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
-        wrapper.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 2147483647;
-            display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(4px);
-        `;
-
-        // 2. Définir les couleurs des boutons
-        const confirmBg = confirmClass === 'btn-danger' ? '#ef5350' : '#73d700';
-        const confirmColor = confirmClass === 'btn-danger' ? '#ffffff' : '#000000';
-
-        // 3. Injecter le HTML interne
+        wrapper.className = 'custom-modal-overlay'; // Utilisons une classe pour le style
+        
+        // On utilise des classes pour une meilleure gestion du style
         wrapper.innerHTML = `
-            <div style="background: #1C1C27; border: 1px solid rgba(115, 215, 0, 0.3); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out;">
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    <div style="font-size: 32px;">${icon}</div>
-                    <h3 style="margin: 0; color: white; font-family: sans-serif; font-size: 20px;">${title}</h3>
+            <div class="custom-modal-card">
+                <div class="custom-modal-header">
+                    <div class="custom-modal-icon">${icon}</div>
+                    <h3>${title}</h3>
                 </div>
-                <p style="color: #B0BAC9; margin-bottom: 24px; line-height: 1.6; font-family: sans-serif;">${message}</p>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button id="btn-cancel-${modalId}" style="background: transparent; border: 1px solid #555; color: #B0BAC9; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${cancelText}</button>
-                    <button id="btn-confirm-${modalId}" style="background: ${confirmBg}; border: none; color: ${confirmColor}; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">${confirmText}</button>
+                <div class="custom-modal-body">
+                    ${message}
+                </div>
+                <div class="custom-modal-footer">
+                    ${cancelText ? `<button id="btn-cancel-${modalId}" class="btn btn-secondary">${cancelText}</button>` : ''}
+                    <button id="btn-confirm-${modalId}" class="btn ${confirmClass}">${confirmText}</button>
                 </div>
             </div>
         `;
 
-        // 4. Ajouter au corps de la page
         document.body.appendChild(wrapper);
 
-        // 5. Attacher les événements (C'est ici que la magie opère)
+        // --- Logique des boutons ---
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
         const cleanup = () => {
-            document.body.removeChild(wrapper); // On détruit la modale du DOM
+            wrapper.remove();
         };
 
         btnConfirm.onclick = () => {
-            console.log("✅ Clic Confirmer détecté");
             cleanup();
-            resolve(true); // DÉBLOQUE L'AWAIT
+            resolve(true);
         };
+        
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                cleanup();
+                resolve(false);
+            };
+        }
 
-        btnCancel.onclick = () => {
-            console.log("❌ Clic Annuler détecté");
-            cleanup();
-            resolve(false); // DÉBLOQUE L'AWAIT
-        };
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR
+        // ========================================================
+        // Si une fonction 'onOpen' est fournie, on l'exécute maintenant que
+        // la modale est ajoutée au DOM et que ses éléments sont accessibles.
+        if (onOpen && typeof onOpen === 'function') {
+            try {
+                onOpen();
+            } catch (e) {
+                console.error("Erreur dans la fonction onOpen de la modale:", e);
+            }
+        }
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
     });
 }
 // ============================================
@@ -4878,7 +4888,7 @@ function updateBookingSummary() {
 }
 // DANS app.js, REMPLACEZ la fonction proceedToPayment par celle-ci
 
-window.proceedToPayment = function() {
+window.proceedToPayment = async function() {
     console.log('🟢 proceedToPayment() appelée. Vérification des données...');
     
     if (!appState.selectedBus) {
@@ -4949,21 +4959,81 @@ window.proceedToPayment = function() {
         return;
     }
 
-    // Si tout est valide, on continue vers la page de paiement
-    console.log("✅ Validation réussie. Affichage de la page de paiement.");
-    displayBookingSummary(); 
-    showPage("payment");
+     // --- 2. Affichage de la modale de confirmation des documents ---
+    const documentsConfirmed = await showDocumentChecklist();
+    
+    // --- 3. Navigation vers le paiement si confirmé ---
+    if (documentsConfirmed) {
+        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
+        displayBookingSummary(); 
+        showPage("payment");
+    } else {
+        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
+    }
 }
-// Dans app.js
 
-// Dans Frontend/app.js
 
-// Dans app.js
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary par celle-ci
+// DANS app.js, ajoutez cette nouvelle fonction
 
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary
+async function showDocumentChecklist() {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // On récupère le type de trajet depuis l'état de l'application
+    const jurisdiction = appState.selectedBus?.route?.jurisdiction || 'national';
+    
+    let checklistItemsHTML = '';
 
-// DANS app.js, REMPLACEZ la fonction displayBookingSummary
+    if (jurisdiction === 'international') {
+        checklistItemsHTML = `
+            <p>${translation.docs_international_intro}</p>
+            <ul class="docs-list">
+                <li>${translation.docs_international_item_1}</li>
+                <li>${translation.docs_international_item_2}</li>
+                <li>${translation.docs_international_item_3}</li>
+            </ul>
+        `;
+    } else {
+        checklistItemsHTML = `
+            <p>${translation.docs_national_intro}</p>
+            <ul class="docs-list">
+                <li>${translation.docs_national_item_1}</li>
+            </ul>
+        `;
+    }
+    
+    // On construit le contenu complet de la modale
+    const modalContent = `
+        <p>${translation.docs_checklist_intro}</p>
+        ${checklistItemsHTML}
+        <label class="docs-confirmation-label">
+            <input type="checkbox" id="docs-confirm-checkbox">
+            <span>${translation.docs_confirmation_checkbox}</span>
+        </label>
+    `;
+
+    // On utilise votre modale personnalisée, mais on va la modifier pour accepter du HTML
+    const confirmed = await showCustomConfirm({
+        title: translation.docs_checklist_title,
+        message: modalContent, // On passe notre HTML ici
+        icon: '🛂',
+        confirmText: translation.docs_continue_button,
+        cancelText: translation.button_cancel,
+        // On ajoute un 'hook' pour gérer l'état du bouton
+        onOpen: () => {
+            const checkbox = document.getElementById('docs-confirm-checkbox');
+            // Le bouton 'Confirmer' est désactivé au début
+            const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
+            confirmBtn.disabled = true;
+
+            checkbox.onchange = () => {
+                confirmBtn.disabled = !checkbox.checked;
+            };
+        }
+    });
+
+    return confirmed;
+}
 /**
  * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
  * prices, available seats, and payment options for a bus reservation.
