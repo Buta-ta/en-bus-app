@@ -282,6 +282,7 @@ function sendPendingPaymentEmail(reservation) {
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
 
+// DANS server.js
 
 function sendPaymentConfirmedEmail(reservation) {
     const client = reservation.passengers?.[0];
@@ -294,10 +295,43 @@ function sendPaymentConfirmedEmail(reservation) {
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
     const headerTitle = translation.email_confirmed_title;
     
-    const timeZone = 'Africa/Brazzaville';
-    const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
-    const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
-    const formattedDateTime = format(zonedDeparture, "PPPP ''p", { locale: locale });
+    // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : Sécurisation du formatage de date
+    // ========================================================
+
+    let formattedDateTime = "Date/Heure non spécifiée"; // Valeur de secours par défaut
+
+    // On vérifie que les données nécessaires existent avant de tenter de les formater
+    if (reservation.date && reservation.route?.departure) {
+        try {
+            const timeZone = 'Africa/Brazzaville';
+            const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
+
+            // On vérifie que la date créée est valide avant de la formater
+            if (!isNaN(departureDateTimeUTC.getTime())) {
+                const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
+                // Votre format original a été conservé
+                formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale });
+            } else {
+                 // Si la date est invalide, on logue une alerte
+                 console.warn(`[WARN] Date de départ invalide pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
+                 // On pourrait utiliser une autre date en secours, comme la date de confirmation
+                 if (reservation.confirmedAt) {
+                     formattedDateTime = new Date(reservation.confirmedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+                 }
+            }
+        } catch (e) {
+            // Si une erreur se produit pendant le formatage, on logue et on continue
+            console.error(`[ERROR] Erreur lors du formatage de la date pour l'email (réservation ${reservation.bookingNumber}):`, e);
+        }
+    } else {
+        // Si les données de base sont manquantes, on logue une alerte
+        console.warn(`[WARN] Données de date ou d'heure de départ manquantes pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
+    }
+
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
@@ -308,27 +342,24 @@ function sendPaymentConfirmedEmail(reservation) {
             <span>${reservation.route.from} ➝ ${reservation.route.to}</span>
             
             <strong>${translation.email_confirmed_details_date}</strong>
-            <span>${formattedDateTime}</span>
+            <span>${formattedDateTime}</span> <!-- On utilise la variable sécurisée -->
             
-            <!-- ===================== CORRECTION ICI ===================== -->
             <strong>${translation.email_booking_reference}</strong>
-            <!-- ========================================================== -->
             <span style="font-family: monospace; letter-spacing: 1px;">${reservation.bookingNumber}</span>
         </div>
         
         <p>${translation.email_confirmed_cta}</p>
         
-      <div style="text-align: center; margin-top: 30px;">
-    <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
-        ${translation.email_confirmed_button}
-    </a>
-</div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
+                ${translation.email_confirmed_button}
+            </a>
+        </div>
         <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_confirmed_outro}</p>
     `;
 
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
-
 
 function sendReportConfirmedEmail(oldReservation, newReservation) {
     const client = newReservation.passengers?.[0];
