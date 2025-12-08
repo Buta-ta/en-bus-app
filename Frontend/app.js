@@ -4855,29 +4855,49 @@ function handleBaggageChange(event) {
 // ============================================
 // 💰 MISE À JOUR DU RÉCAPITULATIF DE PRIX
 // ============================================
+// DANS app.js (remplacez votre fonction updateBookingSummary)
+
 function updateBookingSummary() {
     const summaryContainer = document.getElementById("booking-summary");
     if (!summaryContainer) {
-        // Si on n'est pas sur la page de paiement, on ne fait rien
-        return; 
+        // Si le conteneur n'est pas sur la page actuelle, on ne fait rien.
+        return;
     }
 
-    // Récupérer les options de bagages du trajet (avec valeurs par défaut)
-    const baggageOptions = appState.selectedBus.baggageOptions || {
-        standard: { price: 2000 },
-        oversized: { price: 5000 }
-    };
+    // --- Sécurisation des données en entrée ---
+    const bus = appState.selectedBus;
+    const passengers = appState.passengerCounts;
+    const seats = appState.selectedSeats;
+    const baggage = appState.baggageCounts;
+
+    // Si le bus ou son prix est manquant, on ne peut pas calculer.
+    // On affiche un total de 0 pour éviter un crash.
+    if (!bus || typeof bus.price !== 'number') {
+        console.warn("[DIAG] updateBookingSummary: Données de bus ou prix manquantes. Calcul impossible.");
+        summaryContainer.innerHTML = `<div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>0 FCFA</strong></div>`;
+        return;
+    }
+
+    // ========================================================
+    // ✅ NOUVELLE LOGIQUE DE CALCUL
+    // ========================================================
     
-    // Calcul du prix des billets
-    const numAdultsSeats = Math.min(appState.selectedSeats.length, appState.passengerCounts.adults);
-    const numChildrenSeats = appState.selectedSeats.length - numAdultsSeats;
-    const ticketsPrice = (numAdultsSeats * appState.selectedBus.price) + (numChildrenSeats * CONFIG.CHILD_TICKET_PRICE);
+    // --- Calcul du prix des billets ---
+    const adultPrice = bus.price;
+    const childPrice = getChildPrice(adultPrice); // Utilise la fonction helper (fixe ou %)
+
+    const numAdultsSeats = Math.min(seats.length, passengers.adults);
+    const numChildrenSeats = seats.length - numAdultsSeats;
     
-    // Calcul du prix des bagages
+    const ticketsPrice = (numAdultsSeats * adultPrice) + (numChildrenSeats * childPrice);
+    
+    // --- Calcul du prix des bagages ---
+    const baggageOptions = bus.baggageOptions || { standard: { price: 0 }, oversized: { price: 0 } };
     let totalStandardBaggage = 0;
     let totalOversizedBaggage = 0;
-    if (appState.baggageCounts && Object.keys(appState.baggageCounts).length > 0) {
-        Object.values(appState.baggageCounts).forEach(paxBaggage => {
+
+    if (baggage && Object.keys(baggage).length > 0) {
+        Object.values(baggage).forEach(paxBaggage => {
             totalStandardBaggage += paxBaggage.standard || 0;
             totalOversizedBaggage += paxBaggage.oversized || 0;
         });
@@ -4887,26 +4907,30 @@ function updateBookingSummary() {
     const oversizedBaggagePrice = totalOversizedBaggage * baggageOptions.oversized.price;
     const totalBaggagePrice = standardBaggagePrice + oversizedBaggagePrice;
 
-    // Calcul du prix total
+    // --- Calcul du prix total ---
     const totalPrice = ticketsPrice + totalBaggagePrice;
     
-    // Mise à jour de l'affichage du récapitulatif
+    // ========================================================
+    // ✅ FIN DE LA NOUVELLE LOGIQUE
+    // ========================================================
+    
+    // --- Mise à jour de l'affichage ---
     summaryContainer.innerHTML = `
-        <div class="detail-row"><span>Itinéraire:</span><strong>${appState.selectedBus.from} → ${appState.selectedBus.to}</strong></div>
+        <div class="detail-row"><span>Itinéraire:</span><strong>${bus.from} → ${bus.to}</strong></div>
         <div class="detail-row"><span>Date:</span><strong>${Utils.formatDate(appState.currentSearch.date)}</strong></div>
-        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${appState.passengerCounts.adults} Adulte(s), ${appState.passengerCounts.children} Enfant(s))</strong></div>
-        <div class="detail-row"><span>Sièges:</span><strong>${appState.selectedSeats.join(", ")}</strong></div>
+        <div class="detail-row"><span>Passagers:</span><strong>${appState.currentSearch.passengers} (${passengers.adults} Adulte(s), ${passengers.children} Enfant(s))</strong></div>
+        <div class="detail-row"><span>Sièges:</span><strong>${seats.join(", ")}</strong></div>
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(ticketsPrice)} FCFA</strong></div>
-        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(standardBaggagePrice)} FCFA</strong></div>
-        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(oversizedBaggagePrice)} FCFA</strong></div>
+        <div class="detail-row"><span>Prix des billets:</span><strong>${Utils.formatPrice(Math.round(ticketsPrice))} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages standard (${totalStandardBaggage}):</span><strong>+ ${Utils.formatPrice(Math.round(standardBaggagePrice))} FCFA</strong></div>
+        <div class="detail-row"><span>Bagages hors format (${totalOversizedBaggage}):</span><strong>+ ${Utils.formatPrice(Math.round(oversizedBaggagePrice))} FCFA</strong></div>
         <hr style="border-color: var(--color-border); margin: 8px 0;">
-        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(totalPrice)} FCFA</strong></div>
+        <div class="detail-row total-row"><span>PRIX TOTAL:</span><strong>${Utils.formatPrice(Math.round(totalPrice))} FCFA</strong></div>
     `;
 
-    // Mettre à jour les champs de paiement
+    // --- Mise à jour des champs de paiement (inchangé) ---
     const bookingRef = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
-    const amountStr = `${Utils.formatPrice(totalPrice)} FCFA`;
+    const amountStr = `${Utils.formatPrice(Math.round(totalPrice))} FCFA`;
     
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
