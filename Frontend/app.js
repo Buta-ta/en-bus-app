@@ -4922,25 +4922,83 @@ function updateBookingSummary() {
 // DANS app.js (remplacez TEMPORAIREMENT votre fonction)
 
 // DANS app.js (restaurez la version finale)
-window.proceedToPayment = async function() {
-    console.log('🟢 proceedToPayment() appelée. Validation des passagers...');
-    let allFieldsValid = true;
-    appState.passengerInfo = [];
-    
-    // ... (votre boucle de validation des passagers) ...
-    if (!allFieldsValid) { return; }
+// DANS app.js (remplacez cette fonction)
 
+window.proceedToPayment = async function() {
+    console.log('🟢 proceedToPayment() appelée. Étape 1: Validation des passagers...');
+    
+    // --- 1. Validation et remplissage de appState.passengerInfo ---
+    appState.passengerInfo = []; // On réinitialise la liste
+    let allFieldsValid = true;
+
+    if (!appState.baggageCounts) {
+        appState.baggageCounts = {};
+    }
+
+    for (let i = 0; i < appState.currentSearch.passengers; i++) {
+        const nameInput = document.getElementById(`name-${i}`);
+        const phoneInput = document.getElementById(`phone-${i}`);
+        const emailInput = document.getElementById(`email-${i}`);
+
+        if (!nameInput || !phoneInput || !emailInput) {
+            Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
+        
+        if (!name || !phone) {
+            Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        if (!Utils.validatePhone(phone)) {
+            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        if (email && !Utils.validateEmail(email)) {
+            Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
+        
+        // On remplit le tableau 'passengerInfo'
+        appState.passengerInfo.push({
+            seat: appState.selectedSeats[i],
+            name: name,
+            phone: phone,
+            email: email,
+            baggage: passengerBaggage
+        });
+    }
+
+    if (!allFieldsValid) {
+        console.log("❌ Validation des passagers échouée. Arrêt.");
+        return;
+    }
+    console.log("✅ Validation des passagers réussie. 'appState.passengerInfo' est rempli :", appState.passengerInfo);
+
+    // --- 2. Affichage de la modale de confirmation des documents ---
+    console.log("   Étape 2: Affichage de la checklist des documents...");
     const documentsConfirmed = await showDocumentChecklist();
     
+    // --- 3. Navigation vers le paiement si confirmé ---
     if (documentsConfirmed) {
-        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
+        console.log("   Étape 3: Documents confirmés. Navigation vers la page de paiement.");
         displayBookingSummary(); 
         showPage("payment");
     } else {
-        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
+        console.log("❌ L'utilisateur a annulé la confirmation des documents.");
     }
 }
-
 
 // DANS app.js, ajoutez cette nouvelle fonction
 // DANS app.js
