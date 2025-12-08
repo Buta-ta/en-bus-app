@@ -4947,22 +4947,40 @@ window.proceedToPayment = async function() {
 
 // DANS app.js, ajoutez cette nouvelle fonction
 // DANS app.js
+// DANS app.js (remplacez votre fonction showDocumentChecklist)
 
 async function showDocumentChecklist() {
-    // ========================================================
-    // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
-    // ========================================================
     console.log("2️⃣ [DIAG] Entrée dans showDocumentChecklist. Préparation de la modale...");
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
         
-        const jurisdiction = appState.selectedBus?.route?.jurisdiction || 'national';
-        console.log(`   -> [DIAG] Juridiction détectée : ${jurisdiction}`);
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Logique de juridiction améliorée
+        // ========================================================
         
+        let isInternational = false;
+
+        // 1. On vérifie si le trajet aller est international
+        if (appState.selectedBus?.route?.jurisdiction === 'international') {
+            isInternational = true;
+        }
+
+        // 2. S'il y a un trajet retour, on le vérifie aussi. Si L'UN des deux est international, le voyage entier l'est.
+        if (appState.selectedReturnBus?.route?.jurisdiction === 'international') {
+            isInternational = true;
+        }
+        
+        console.log(`   -> [DIAG] Juridiction finale calculée : ${isInternational ? 'international' : 'national'}`);
+        
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+
         let checklistItemsHTML = '';
 
-        if (jurisdiction === 'international') {
+        // On utilise la nouvelle variable 'isInternational' pour décider quelle checklist afficher
+        if (isInternational) {
             checklistItemsHTML = `
                 <p>${translation.docs_international_intro}</p>
                 <ul class="docs-list">
@@ -5003,12 +5021,8 @@ async function showDocumentChecklist() {
                     const checkbox = document.getElementById('docs-confirm-checkbox');
                     const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
                     
-                    if (!checkbox) {
-                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : la checkbox #docs-confirm-checkbox est INTROUVABLE !");
-                        return;
-                    }
-                    if (!confirmBtn) {
-                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : le bouton de confirmation est INTROUVABLE !");
+                    if (!checkbox || !confirmBtn) {
+                        console.error("  -> [DIAG] ERREUR FATALE dans onOpen : la checkbox ou le bouton de confirmation est INTROUVABLE !");
                         return;
                     }
                     
@@ -5029,12 +5043,8 @@ async function showDocumentChecklist() {
 
     } catch (error) {
         console.error("❌ ERREUR FATALE dans showDocumentChecklist :", error);
-        // En cas d'erreur, on retourne 'false' pour ne pas bloquer l'utilisateur
-        return false;
+        return false; // On retourne 'false' pour ne pas bloquer l'application
     }
-    // ========================================================
-    // ✅ FIN DU BLOC DE DIAGNOSTIC
-    // ========================================================
 }
 /**
  * The function `displayBookingSummary` displays a booking summary with details such as routes, dates,
