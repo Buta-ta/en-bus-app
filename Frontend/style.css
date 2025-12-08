@@ -6017,11 +6017,7 @@ body.pwa-installed .container {
 }
 
 /* Style spécifique pour le bouton PARTAGER */
-.btn-modern.btn-share {
-    background-color: var(--color-surface); /* Fond sombre */
-    border-color: var(--color-accent); /* Bordure cyan */
-    color: var(--color-accent); /* Texte et icône en cyan */
-}
+
 
 /* Le pseudo-élément qui contient le motif africain */
 .btn-modern.btn-share::before {
