@@ -590,20 +590,27 @@ app.get("/api/search", async (req, res) => {
         });
 
         // --- 4. Formatage des résultats ou recherche d'alternatives ---
-        if (availableTrips.length > 0) {
-            const calculateDuration = (start, end) => {
+        if (availableTrips.length > 0) { // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION
+            // ========================================================
+            const calculateDuration = (start, end, daysOffset = 0) => {
                 if (!start || !end) return "N/A";
                 const [h1, m1] = start.split(':').map(Number);
                 const [h2, m2] = end.split(':').map(Number);
+                
+                // Calcul de base de la différence en minutes
                 let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-                if (diffMinutes < 0) diffMinutes += 1440;
+                
+                // On ajoute 24h (1440 minutes) pour chaque jour de décalage
+                diffMinutes += daysOffset * 1440;
+
                 const hours = Math.floor(diffMinutes / 60);
                 const minutes = diffMinutes % 60;
+                
                 return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
             };
             
             const results = availableTrips.map(trip => {
-                console.log(`[DIAG /api/search] Trajet ${trip._id}, Juridiction:`, trip.route?.jurisdiction);
                 const isSegment = (trip.route.from.toLowerCase() !== fromCity.toLowerCase() || trip.route.to.toLowerCase() !== toCity.toLowerCase());
                 
                 return {
