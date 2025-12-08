@@ -1254,15 +1254,20 @@ function stopAgencySpecificCountdown() {
 // ✅ On ajoute 'onOpen' à la liste des paramètres déstructurés
 // DANS app.js
 
+// DANS app.js
+
+// DANS app.js (remplacez cette fonction)
+
 function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
     return new Promise((resolve) => {
-        console.log("   -> [DIAG] Dans showCustomConfirm : Création de la modale en mémoire...");
-
         const modalId = `modal-${Date.now()}`;
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
         wrapper.className = 'custom-modal-overlay';
         
+        // ========================================================
+        // ✅ LE HTML COMPLET EST MAINTENANT ICI
+        // ========================================================
         wrapper.innerHTML = `
             <div class="custom-modal-card">
                 <div class="custom-modal-header">
@@ -1278,54 +1283,46 @@ function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, con
                 </div>
             </div>
         `;
+        // ========================================================
 
-        console.log("   -> [DIAG] Modale créée. Ajout au DOM...");
         document.body.appendChild(wrapper);
-        console.log("   -> [DIAG] Modale ajoutée au DOM.");
 
-        // --- Logique des boutons ---
+        // Cette partie va maintenant trouver les boutons car ils existent dans le HTML
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
-        if (!btnConfirm) {
-            console.error("   -> [DIAG] ERREUR CRITIQUE : Le bouton de confirmation n'a pas été trouvé dans le DOM !");
-            // On ferme tout pour éviter un blocage
-            wrapper.remove();
-            resolve(false); // On considère que l'opération a échoué
-            return;
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                wrapper.classList.add('visible');
+            }, 10);
+        });
+
+        const cleanup = (result) => {
+            wrapper.classList.remove('visible');
+            setTimeout(() => {
+                wrapper.remove();
+                resolve(result);
+            }, 300);
+        };
+
+        // Sécurité : si le bouton n'est pas trouvé, on ne plante pas
+        if (btnConfirm) {
+            btnConfirm.onclick = () => cleanup(true);
+        } else {
+            console.error("Bouton de confirmation introuvable !");
+            cleanup(false); // On ferme et on annule
         }
-
-        const cleanup = () => {
-            console.log("   -> [DIAG] Nettoyage et suppression de la modale du DOM.");
-            wrapper.remove();
-        };
-
-        btnConfirm.onclick = () => {
-            console.log("   -> [DIAG] Bouton 'Confirmer' cliqué.");
-            cleanup();
-            resolve(true);
-        };
         
         if (btnCancel) {
-            btnCancel.onclick = () => {
-                console.log("   -> [DIAG] Bouton 'Annuler' cliqué.");
-                cleanup();
-                resolve(false);
-            };
+            btnCancel.onclick = () => cleanup(false);
         }
-
-        // --- Exécution de la fonction onOpen ---
+        
         if (onOpen && typeof onOpen === 'function') {
-            console.log("   -> [DIAG] Tentative d'exécution de la fonction onOpen...");
             try {
                 onOpen();
             } catch (e) {
-                console.error("   -> [DIAG] ERREUR CRITIQUE lors de l'exécution de onOpen :", e);
-                cleanup();
-                resolve(false); // On considère que l'opération a échoué
+                console.error("Erreur dans la fonction onOpen de la modale:", e);
             }
-        } else {
-            console.log("   -> [DIAG] Aucune fonction onOpen n'a été fournie.");
         }
     });
 }
@@ -1726,9 +1723,34 @@ window.checkPaymentStatus = async function(bookingNumber) {
             
         } else if (data.status === 'En attente de paiement') {
             Utils.showToast(translation.toast_payment_pending_check, 'info');
-        } else if (data.status === 'Annulé' || data.status === 'Expiré') {
-            Utils.showToast(translation.toast_booking_cancelled_status(data.status.toLowerCase()), 'error');
-        } else {
+        } 
+        
+       
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
+        else if (data.status === 'Annulé' || data.status === 'Expiré') {
+            let translatedStatus = data.status.toLowerCase();
+
+            // On traduit manuellement le statut si la langue est l'anglais
+            if (lang === 'en') {
+                if (data.status === 'Annulé') {
+                    translatedStatus = 'cancelled';
+                } else if (data.status === 'Expiré') {
+                    translatedStatus = 'expired';
+                }
+            }
+            
+            // On appelle la fonction de traduction avec le statut déjà traduit
+            Utils.showToast(translation.toast_booking_cancelled_status(translatedStatus), 'error');
+        } 
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+
+        
+        
+        else {
             Utils.showToast(`${translation.toast_current_status || 'Statut actuel :'} ${data.status}`, 'info');
         }
         
@@ -1737,6 +1759,65 @@ window.checkPaymentStatus = async function(bookingNumber) {
         Utils.showToast(translation.error_check_status || 'Erreur lors de la vérification.', 'error');
     }
 };
+
+
+
+
+
+
+// DANS app.js (ajoutez cette nouvelle fonction)
+
+async function shareTicket() {
+    const { Share } = Capacitor.Plugins;
+    const reservation = appState.currentReservation;
+    if (!reservation) return;
+
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // On prépare les informations à partager
+    const from = reservation.route.from;
+    const to = reservation.route.to;
+    const date = Utils.formatDate(reservation.date, lang);
+    const time = reservation.route.departure;
+    const seat = reservation.seats.join(', ');
+    const bookingNum = reservation.bookingNumber;
+    // On crée une URL qui mène directement à la page de la réservation (à développer plus tard)
+    const url = `https://incomparable-llama-84897e.netlify.app/?booking=${bookingNum}`;
+
+    const shareData = {
+        title: translation.share_message_subject(bookingNum),
+        text: translation.share_message_body(from, to, date, time, seat, bookingNum, url),
+        url: url,
+        dialogTitle: translation.button_share_ticket,
+    };
+
+    try {
+        // On vérifie si on peut utiliser l'API de partage native
+        const canShare = await Share.canShare();
+        if (canShare.value) {
+            console.log("🚀 Utilisation du partage natif...");
+            await Share.share(shareData);
+        } else {
+            // Fallback pour le web si l'API de partage n'est pas dispo : lien WhatsApp
+            console.log("🌐 Fallback vers le lien WhatsApp...");
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    } catch (error) {
+        console.error("❌ Erreur de partage:", error);
+        // Fallback ultime : copier le texte dans le presse-papiers
+        navigator.clipboard.writeText(shareData.text).then(() => {
+            Utils.showToast("Les détails du voyage ont été copiés !", 'success');
+        });
+    }
+}
+
+
+
+
+
+
 
 // Dans app.js
 // Dans app.js
@@ -4925,25 +5006,83 @@ function updateBookingSummary() {
 // DANS app.js (remplacez TEMPORAIREMENT votre fonction)
 
 // DANS app.js (restaurez la version finale)
-window.proceedToPayment = async function() {
-    console.log('🟢 proceedToPayment() appelée. Validation des passagers...');
-    let allFieldsValid = true;
-    appState.passengerInfo = [];
-    
-    // ... (votre boucle de validation des passagers) ...
-    if (!allFieldsValid) { return; }
+// DANS app.js (remplacez cette fonction)
 
+window.proceedToPayment = async function() {
+    console.log('🟢 proceedToPayment() appelée. Étape 1: Validation des passagers...');
+    
+    // --- 1. Validation et remplissage de appState.passengerInfo ---
+    appState.passengerInfo = []; // On réinitialise la liste
+    let allFieldsValid = true;
+
+    if (!appState.baggageCounts) {
+        appState.baggageCounts = {};
+    }
+
+    for (let i = 0; i < appState.currentSearch.passengers; i++) {
+        const nameInput = document.getElementById(`name-${i}`);
+        const phoneInput = document.getElementById(`phone-${i}`);
+        const emailInput = document.getElementById(`email-${i}`);
+
+        if (!nameInput || !phoneInput || !emailInput) {
+            Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
+        
+        if (!name || !phone) {
+            Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        if (!Utils.validatePhone(phone)) {
+            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        if (email && !Utils.validateEmail(email)) {
+            Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
+            allFieldsValid = false;
+            break;
+        }
+        
+        const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
+        
+        // On remplit le tableau 'passengerInfo'
+        appState.passengerInfo.push({
+            seat: appState.selectedSeats[i],
+            name: name,
+            phone: phone,
+            email: email,
+            baggage: passengerBaggage
+        });
+    }
+
+    if (!allFieldsValid) {
+        console.log("❌ Validation des passagers échouée. Arrêt.");
+        return;
+    }
+    console.log("✅ Validation des passagers réussie. 'appState.passengerInfo' est rempli :", appState.passengerInfo);
+
+    // --- 2. Affichage de la modale de confirmation des documents ---
+    console.log("   Étape 2: Affichage de la checklist des documents...");
     const documentsConfirmed = await showDocumentChecklist();
     
+    // --- 3. Navigation vers le paiement si confirmé ---
     if (documentsConfirmed) {
-        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
+        console.log("   Étape 3: Documents confirmés. Navigation vers la page de paiement.");
         displayBookingSummary(); 
         showPage("payment");
     } else {
-        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
+        console.log("❌ L'utilisateur a annulé la confirmation des documents.");
     }
 }
-
 
 // DANS app.js, ajoutez cette nouvelle fonction
 // DANS app.js
@@ -5430,6 +5569,13 @@ async function displayConfirmation(reservation) {
 
          // ✅ AJOUTER LE BOUTON FACTURE ICI
        actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
+       // ========================================================
+        // ✅ AJOUT DU BOUTON "PARTAGER"
+        // ========================================================
+        actionsHTML += `<button class="btn-modern btn-share" onclick="shareTicket()"><span class="btn-icon">↗️</span><span class="btn-text">${translation.button_share_ticket}</span></button>`;
+        // ========================================================
+
+        
         if (reservation.busIdentifier) {
             actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }

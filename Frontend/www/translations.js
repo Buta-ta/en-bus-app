@@ -571,6 +571,7 @@ const translations = {
     confirmation_title_pending: "Finalisez votre paiement",
     confirmation_subtitle_pending: "Réservation en attente",
     error_critical: "Erreur critique. Veuillez recommencer.",
+    toast_booking_cancelled_status: (status) => `❌ Cette réservation a été ${status}.`,
     payment_agency_unavailable_tooltip: "Paiement en agence indisponible (trop proche du départ)",
     confirm_cancel_title: "Annuler la réservation ?",
     confirm_cancel_desc: (num) => `Voulez-vous vraiment annuler ${num} ?`,
@@ -596,14 +597,50 @@ const translations = {
     // ...
 
      // ============================================
-    // ✅ CLÉS POUR LES SUGGESTIONS ALTERNATIVES
-    // ============================================
-     no_trips_found_for_date: "Aucun trajet trouvé pour le {date}",
-
+    
+    no_trips_found_for_date: "Aucun trajet trouvé pour le {date}",
     alternative_trips_title: "Suggestions de trajets alternatifs",
     alternative_trips_desc: "Nous n'avons rien trouvé pour cette date, mais voici des trajets disponibles sur des jours proches :",
     trips_available: (count) => `${count} trajet(s) disponible(s)`,
     view_trips_button: "Voir les trajets",
+    // ============================================
+    // ✅ CLÉS POUR L'AFFICHAGE DES SEGMENTS
+    // ============================================
+    segment_on_line: (from, to) => `Sur la ligne ${from} → ${to}`,
+    segment_your_trip: "Votre trajet :",
+    
+    badge_night_trip: "🌙 Trajet de Nuit",
+
+
+     // ============================================
+    // ✅ CLÉS POUR LA CONFIRMATION DES DOCUMENTS
+    // ============================================
+    docs_checklist_title: "🛂 Vérification des documents",
+    docs_checklist_intro: "Avant de continuer, veuillez confirmer que vous possédez les documents requis pour ce voyage.",
+    
+    // Checklist pour trajet NATIONAL
+    docs_national_intro: "Pour ce trajet national, chaque passager doit avoir :",
+    docs_national_item_1: "Une pièce d'identité nationale en cours de validité (CNI, Passeport, etc.).",
+    
+    // Checklist pour trajet INTERNATIONAL
+    docs_international_intro: "Pour ce trajet international, chaque passager doit avoir :",
+    docs_international_item_1: "Un passeport avec au moins 6 mois de validité.",
+    docs_international_item_2: "Le visa requis pour le pays de destination (si nécessaire).",
+    docs_international_item_3: "Le carnet de vaccination international à jour (ex: fièvre jaune).",
+
+    docs_confirmation_checkbox: "Je confirme que tous les passagers ont les documents requis.",
+    docs_continue_button: "Continuer vers le paiement",
+
+
+
+
+    // ============================================
+    // ✅ CLÉS POUR LE PARTAGE DE BILLET
+    // ============================================
+    button_share_ticket: "Partager le Billet",
+    share_message_subject: (bookingNum) => `Ton billet de bus En-Bus (N° ${bookingNum})`,
+    share_message_body: (from, to, date, time, seat, bookingNum, url) => `Salut ! Voici les infos pour ton voyage avec En-Bus :\n\n- Trajet : ${from} → ${to}\n- Date : ${date}\n- Départ : ${time}\n- Siège : ${seat}\n- Référence : ${bookingNum}\n\nPour voir tous les détails et suivre le bus, clique ici : ${url}`,
+    // ============================================
     // ============================================
   
 
@@ -896,6 +933,8 @@ const translations = {
     error_booking_not_found: "Booking not found",
     toast_current_status: "Current status:",
     error_check_status: "Error while checking status. Please try again.",
+    toast_booking_cancelled_status: (status) => `❌ This booking was ${status}.`,
+
 
 
 
@@ -1204,26 +1243,54 @@ const translations = {
     // Keys for the passenger selector
     search_form_children_dynamic: (maxAge) => `Children <small>(0-${maxAge} yrs)</small>`,
     // ...
-  },
-     
 
-  // ============================================
-    // ✅ KEYS FOR ALTERNATIVE SUGGESTIONS
-    // ============================================
-     // ========================================================
-    // ✅ VÉRIFIEZ SCRUPULEUSEMENT LA PRÉSENCE ET L'ORTHOGRAPHE DE CES CLÉS
-    // ========================================================
-
-    no_trips_found_for_date: "No trips found for {date}",
+     no_trips_found_for_date: "No trips found for {date}",
     alternative_trips_title: "Alternative Trip Suggestions",
     alternative_trips_desc: "We couldn't find anything for that date, but here are some available trips on nearby dates:",
     trips_available: (count) => `${count} trip(s) available`,
     view_trips_button: "View trips",
-    // --- Autres clés que vous pourriez avoir oubliées ---
-    success_filters_reset: "Filters have been reset.",
-    info_no_trips_match_filters: "No trips match your filter criteria.",
-
+     // ============================================
+    // ✅ KEYS FOR SEGMENT DISPLAY
     // ============================================
+    segment_on_line: (from, to) => `On the ${from} → ${to} line`,
+    segment_your_trip: "Your trip:",
+    badge_night_trip: "🌙 Night Trip",
+
+
+     // ============================================
+    // ✅ KEYS FOR DOCUMENT CONFIRMATION
+    // ============================================
+    docs_checklist_title: "🛂 Document Check",
+    docs_checklist_intro: "Before proceeding, please confirm you have the required documents for this trip.",
+
+    // Checklist for NATIONAL trip
+    docs_national_intro: "For this national trip, each passenger must have:",
+    docs_national_item_1: "A valid national ID document (National ID Card, Passport, etc.).",
+
+    // Checklist for INTERNATIONAL trip
+    docs_international_intro: "For this international trip, each passenger must have:",
+    docs_international_item_1: "A passport valid for at least 6 months.",
+    docs_international_item_2: "The required visa for the destination country (if applicable).",
+    docs_international_item_3: "An up-to-date international vaccination record (e.g., yellow fever).",
+
+    docs_confirmation_checkbox: "I confirm all passengers have the required documents.",
+    docs_continue_button: "Continue to Payment",
+
+
+
+    //============================================
+    // ✅ KEYS FOR TICKET SHARING
+    // ============================================
+    button_share_ticket: "Share Ticket",
+    share_message_subject: (bookingNum) => `Your En-Bus Bus Ticket (Ref ${bookingNum})`,
+    share_message_body: (from, to, date, time, seat, bookingNum, url) => `Hi! Here is your travel info from En-Bus:\n\n- Trip: ${from} → ${to}\n- Date: ${date}\n- Departure: ${time}\n- Seat: ${seat}\n- Reference: ${bookingNum}\n\nSee all details and track the bus here: ${url}`,
+    // ============================================
+    // ============================================
+  },
+     
+
+   
+
   
 }
 

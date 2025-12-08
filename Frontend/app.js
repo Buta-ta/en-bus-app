@@ -1766,51 +1766,81 @@ window.checkPaymentStatus = async function(bookingNumber) {
 
 
 // DANS app.js (ajoutez cette nouvelle fonction)
+// DANS app.js (remplacez votre fonction shareTicket)
 
 async function shareTicket() {
-    const { Share } = Capacitor.Plugins;
     const reservation = appState.currentReservation;
-    if (!reservation) return;
+    if (!reservation) {
+        console.warn("Aucune réservation à partager.");
+        return;
+    }
 
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // On prépare les informations à partager
+    // --- 1. Préparation des données à partager (votre code est correct) ---
     const from = reservation.route.from;
     const to = reservation.route.to;
     const date = Utils.formatDate(reservation.date, lang);
     const time = reservation.route.departure;
     const seat = reservation.seats.join(', ');
     const bookingNum = reservation.bookingNumber;
-    // On crée une URL qui mène directement à la page de la réservation (à développer plus tard)
     const url = `https://incomparable-llama-84897e.netlify.app/?booking=${bookingNum}`;
 
     const shareData = {
         title: translation.share_message_subject(bookingNum),
         text: translation.share_message_body(from, to, date, time, seat, bookingNum, url),
-        url: url,
-        dialogTitle: translation.button_share_ticket,
+        url: url
     };
 
-    try {
-        // On vérifie si on peut utiliser l'API de partage native
-        const canShare = await Share.canShare();
-        if (canShare.value) {
-            console.log("🚀 Utilisation du partage natif...");
-            await Share.share(shareData);
-        } else {
-            // Fallback pour le web si l'API de partage n'est pas dispo : lien WhatsApp
-            console.log("🌐 Fallback vers le lien WhatsApp...");
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text)}`;
-            window.open(whatsappUrl, '_blank');
+    // ========================================================
+    // ✅ DÉBUT DE LA NOUVELLE LOGIQUE DE PARTAGE UNIVERSELLE
+    // ========================================================
+
+    // CAS 1 : On est sur une application NATIVE (Android/iOS)
+    if (window.Capacitor?.isNativePlatform()) {
+        const { Share } = Capacitor.Plugins;
+        console.log("🚀 Tentative de partage natif...");
+        try {
+            await Share.share({
+                ...shareData,
+                dialogTitle: translation.button_share_ticket,
+            });
+            console.log("Partage natif réussi.");
+        } catch (error) {
+            console.error("❌ Erreur de partage natif:", error);
+            // Si le partage natif échoue, on copie dans le presse-papiers
+            navigator.clipboard.writeText(shareData.text)
+                .then(() => Utils.showToast("Détails copiés dans le presse-papiers !", 'success'))
+                .catch(err => console.error("Échec de la copie de secours:", err));
         }
-    } catch (error) {
-        console.error("❌ Erreur de partage:", error);
-        // Fallback ultime : copier le texte dans le presse-papiers
-        navigator.clipboard.writeText(shareData.text).then(() => {
-            Utils.showToast("Les détails du voyage ont été copiés !", 'success');
-        });
+    } 
+    // CAS 2 : On est sur un navigateur web qui supporte l'API de Partage (la plupart des mobiles)
+    else if (navigator.share) {
+        console.log("🌐 Tentative de partage avec l'API Web Share...");
+        try {
+            await navigator.share(shareData);
+            console.log("Partage web API réussi.");
+        } catch (error) {
+            // L'utilisateur a probablement annulé le partage, ce n'est pas une erreur critique.
+            console.log("Partage web annulé par l'utilisateur.", error);
+        }
+    } 
+    // CAS 3 : Fallback pour les navigateurs de bureau ou anciens navigateurs
+    else {
+        console.log("📋 Fallback : Copie dans le presse-papiers...");
+        try {
+            await navigator.clipboard.writeText(shareData.text);
+            Utils.showToast("Les détails du voyage ont été copiés dans le presse-papiers !", 'success');
+        } catch (err) {
+            console.error("❌ Échec de la copie dans le presse-papiers:", err);
+            // Fallback ultime si tout échoue : on affiche le texte dans une alerte.
+            alert(shareData.text);
+        }
     }
+    // ========================================================
+    // ✅ FIN DE LA NOUVELLE LOGIQUE
+    // ========================================================
 }
 
 
@@ -5575,7 +5605,7 @@ async function displayConfirmation(reservation) {
         actionsHTML += `<button class="btn-modern btn-share" onclick="shareTicket()"><span class="btn-icon">↗️</span><span class="btn-text">${translation.button_share_ticket}</span></button>`;
         // ========================================================
 
-        
+
         if (reservation.busIdentifier) {
             actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }
