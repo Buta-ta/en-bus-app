@@ -852,61 +852,134 @@ window.changeLanguage = function(lang) {
 
 // DANS app.js
 
+
+// DANS app.js
+// DANS app.js
+
 async function geolocateUser() {
     const geolocateBtn = document.getElementById('geolocate-btn');
-    if (!navigator.geolocation) {
-        Utils.showToast("La géolocalisation n'est pas supportée par votre navigateur.", "error");
-        if(geolocateBtn) geolocateBtn.disabled = true;
-        return;
-    }
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
+    const processPosition = async (position) => {
+        // ... (logique interne qui reste la même) ...
+        const { latitude, longitude } = position.coords;
+        const rawCityName = await reverseGeocode(latitude, longitude);
+
+        if (rawCityName) {
+            const cleanedCityName = rawCityName.replace(/\s*\(.*\)\s*/g, '').trim();
+            const originSelect = document.getElementById('origin');
+            const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+
+            if (matchingOption) {
+                originSelect.value = matchingOption.value;
+                Utils.showToast(translation.geolocation_city_found(matchingOption.value), "success");
+            } else {
+                Utils.showToast(translation.geolocation_city_not_served(cleanedCityName), "warning");
+            }
+        }
+    };
+
+    if (geolocateBtn) {
+        geolocateBtn.classList.add('loading');
+        geolocateBtn.disabled = true;
+    }
+    Utils.showToast(translation.geolocation_searching, "info");
+
+    try {
+        if (window.Capacitor?.isNativePlatform() && Capacitor.Plugins.Geolocation) {
+            const { Geolocation } = Capacitor.Plugins;
+            const permStatus = await Geolocation.requestPermissions();
+            if (permStatus.location !== 'granted') {
+                throw new Error(translation.geolocation_permission_denied);
+            }
+            const position = await Geolocation.getCurrentPosition();
+            await processPosition(position);
+        } else if (navigator.geolocation) {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: false, timeout: 10000, maximumAge: 60000
+                });
+            });
+            await processPosition(position);
+        } else {
+            throw new Error(translation.geolocation_not_supported);
+        }
+    } catch (error) {
+        let errorMessage = error.message || translation.geolocation_generic_error;
+        if (error.code === 1) errorMessage = translation.geolocation_permission_denied;
+        else if (error.code === 2) errorMessage = translation.geolocation_position_unavailable;
+        else if (error.code === 3) errorMessage = translation.geolocation_timeout;
+        
+        console.error("❌ Erreur de géolocalisation:", error);
+        Utils.showToast(errorMessage, "error");
+    } finally {
+        if (geolocateBtn) {
+            geolocateBtn.classList.remove('loading');
+            geolocateBtn.disabled = false;
+        }
+    }
+}
+
+async function reverseGeocode(lat, lon) {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // On ajoute 'accept-language' pour que l'API réponde si possible dans la langue de l'utilisateur
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=${lang}`;
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
+        
+        const data = await response.json();
+        const cityName = data.address.city || data.address.town || data.address.village;
+        
+        console.log("🏙️ Ville retournée par l'API de géocodage :", cityName);
+        return cityName;
+    } catch (error) {
+        console.error("❌ Erreur de reverse geocoding:", error);
+        // On utilise la nouvelle clé de traduction
+        Utils.showToast(translation.geolocation_reverse_geocode_error, "error");
+        return null;
+    }
+}
+
+
+
+
+async function processPosition(positionPromise) {
+    const geolocateBtn = document.getElementById('geolocate-btn');
     if(geolocateBtn) {
         geolocateBtn.classList.add('loading');
         geolocateBtn.disabled = true;
     }
-    
     Utils.showToast("Recherche de votre position...", "info");
 
     try {
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { 
-                enableHighAccuracy: false,
-                timeout: 10000,
-                maximumAge: 60000
-            });
-        });
-
+        const position = await positionPromise;
         const { latitude, longitude } = position.coords;
         console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
         
         const rawCityName = await reverseGeocode(latitude, longitude);
 
         if (rawCityName) {
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION : Nettoyage du nom de la ville
-            // ========================================================
-            
-            // On supprime tout ce qui est entre parenthèses et les espaces superflus.
-            // "Brazzaville (commune)" devient "Brazzaville".
             const cleanedCityName = rawCityName.replace(/\s*\(.*\)\s*/g, '').trim();
-            console.log(`🧼 Nom de ville nettoyé : "${cleanedCityName}"`);
-
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
-            
             const originSelect = document.getElementById('origin');
-            const cityExists = [...originSelect.options].some(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+            const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
 
-            if (cityExists) {
-                // On utilise le nom nettoyé pour la comparaison, mais la valeur du select pour être sûr d'avoir le bon format.
-                const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
-                originSelect.value = matchingOption.value; // ex: "Brazzaville" et non "brazzaville"
+            if (matchingOption) {
+                originSelect.value = matchingOption.value;
                 Utils.showToast(`Ville trouvée : ${matchingOption.value}`, "success");
             } else {
                 Utils.showToast(`Ville proche trouvée (${cleanedCityName}), mais non desservie.`, "warning");
             }
         }
+    } catch (error) {
+        let errorMessage = "Impossible d'obtenir votre position.";
+        if (error.code === 1) errorMessage = "Vous avez refusé la permission de géolocalisation.";
+        else if (error.code === 2) errorMessage = "Position non disponible (vérifiez votre GPS/réseau).";
+        else if (error.code === 3) errorMessage = "La recherche de position a pris trop de temps.";
         console.error("❌ Erreur de géolocalisation:", error);
         Utils.showToast(errorMessage, "error");
     } finally {
@@ -917,34 +990,23 @@ async function geolocateUser() {
     }
 }
 
-
-
-// DANS app.js
-
-async function reverseGeocode(lat, lon) {
-    // API gratuite et open-source, respecte la vie privée
-    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
-
-    try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
-        
-        const data = await response.json();
-        
-        // Nominatim renvoie la ville dans différents champs possibles
-        const cityName = data.address.city || data.address.town || data.address.village;
-        
-        console.log("🏙️ Ville retournée par l'API de géocodage :", cityName);
-        return cityName;
-
-    } catch (error) {
-        console.error("❌ Erreur de reverse geocoding:", error);
-        Utils.showToast("Impossible de traduire les coordonnées en nom de ville.", "error");
-        return null;
-    }
+// Fonction qui utilise le plugin Capacitor
+function getPositionWithPlugin(Geolocation) {
+    const positionPromise = Geolocation.getCurrentPosition();
+    processPosition(positionPromise);
 }
 
-
+// Fonction qui utilise l'API Web
+function getPositionWithWebAPI() {
+    const positionPromise = new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 60000
+        });
+    });
+    processPosition(positionPromise);
+}
 // DANS app.js
 // DANS app.js
 

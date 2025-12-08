@@ -644,7 +644,15 @@ const translations = {
     // ============================================
   
 
-
+    geolocation_not_supported: "La géolocalisation n'est pas supportée par votre appareil.",
+    geolocation_permission_denied: "Vous avez refusé la permission de géolocalisation.",
+    geolocation_position_unavailable: "Position non disponible (vérifiez votre GPS/réseau).",
+    geolocation_timeout: "La recherche de position a pris trop de temps.",
+    geolocation_generic_error: "Impossible d'obtenir votre position.",
+    geolocation_searching: "Recherche de votre position...",
+    geolocation_city_found: (city) => `Ville trouvée : ${city}`,
+    geolocation_city_not_served: (city) => `Ville proche trouvée (${city}), mais non desservie.`,
+    geolocation_reverse_geocode_error: "Impossible de traduire les coordonnées en nom de ville.",
 
 
 
@@ -1286,6 +1294,19 @@ const translations = {
     share_message_body: (from, to, date, time, seat, bookingNum, url) => `Hi! Here is your travel info from En-Bus:\n\n- Trip: ${from} → ${to}\n- Date: ${date}\n- Departure: ${time}\n- Seat: ${seat}\n- Reference: ${bookingNum}\n\nSee all details and track the bus here: ${url}`,
     // ============================================
     // ============================================
+
+
+     // ✅ KEYS FOR GEOLOCATION
+    // ============================================
+    geolocation_not_supported: "Geolocation is not supported on your device.",
+    geolocation_permission_denied: "You denied the geolocation permission.",
+    geolocation_position_unavailable: "Position unavailable (check your GPS/network).",
+    geolocation_timeout: "Finding your position took too long.",
+    geolocation_generic_error: "Could not get your position.",
+    geolocation_searching: "Finding your location...",
+    geolocation_city_found: (city) => `City found: ${city}`,
+    geolocation_city_not_served: (city) => `Nearby city found (${city}), but not served.`,
+    geolocation_reverse_geocode_error: "Could not translate coordinates to a city name.",
   },
      
 

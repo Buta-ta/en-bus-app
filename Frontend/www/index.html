@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- ✅ LEAFLET ROUTING MACHINE (CSS & JS) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#73d700" />
@@ -29,10 +29,10 @@
   <meta name="keywords" content="bus, transport, afrique, réservation, billet, voyage" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="shortcut icon" href="/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-<link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="msapplication-TileColor" content="#73d700" />
   <meta name="msapplication-TileImage" content="/icons/icon-512x512.png" />
   <meta name="theme-color" content="#10101A" />
@@ -243,20 +243,20 @@
 
 <body>
   <nav class="navbar">
-  <div class="container">
-    <div class="nav-content">
-      
-      <!-- 1. GAUCHE : Tous les liens de navigation (Desktop) -->
-      <div class="nav-links desktop-links">
-        <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
-        <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-        <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
-        <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
-      </div>
-      
-      <!-- 2. DROITE : Logo -->
-      <div class="logo" onclick="showPage('home')">
-        <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
+    <div class="container">
+      <div class="nav-content">
+
+        <!-- 1. GAUCHE : Tous les liens de navigation (Desktop) -->
+        <div class="nav-links desktop-links">
+          <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
+          <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+          <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
+          <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
+        </div>
+
+        <!-- 2. DROITE : Logo -->
+        <div class="logo" onclick="showPage('home')">
+          <svg class="logo-svg animated-logo" width="44" height="44" viewBox="0 0 120 120"
             xmlns="http://www.w3.org/2000/svg" aria-label="Logo En-Bus">
             <defs>
               <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
@@ -306,37 +306,37 @@
               </g>
             </g>
           </svg>
-        <span class="logo-text">En-Bus</span>
+          <span class="logo-text">En-Bus</span>
+        </div>
+
+        <!-- 3. DROITE : Boutons langues (Desktop) -->
+        <div class="language-selector desktop-only">
+          <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷</button>
+          <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧</button>
+        </div>
+
+        <!-- 4. HAMBURGER : Mobile uniquement -->
+        <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+
       </div>
 
-      <!-- 3. DROITE : Boutons langues (Desktop) -->
-      <div class="language-selector desktop-only">
-        <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷</button>
-        <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧</button>
-      </div>
-      
-      <!-- 4. HAMBURGER : Mobile uniquement -->
-      <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
+      <!-- Menu Mobile -->
+      <div id="mobile-nav-menu" class="mobile-nav">
+        <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
+        <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
+        <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
+        <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
 
-    </div>
-    
-    <!-- Menu Mobile -->
-    <div id="mobile-nav-menu" class="mobile-nav">
-      <a href="#" onclick="closeMenuAndShowPage('home')" data-i18n="nav_home">Accueil</a>
-      <a href="#" onclick="closeMenuAndShowPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-      <a href="#" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
-      <a href="#" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
-      
-      <!-- Langues dans le menu mobile -->
-      <div class="mobile-lang-selector">
-        <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷 Français</button>
-        <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧 English</button>
+        <!-- Langues dans le menu mobile -->
+        <div class="mobile-lang-selector">
+          <button class="lang-btn" onclick="changeLanguage('fr')" aria-label="Français">🇫🇷 Français</button>
+          <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧 English</button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
   <main>
     <!-- Toutes les pages de l'application -->
@@ -383,7 +383,16 @@
 
                   <div class="form-group">
                     <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
-                    <select id="origin" class="form-control"></select>
+                    <div class="input-with-icon">
+                      <select id="origin" class="form-control"></select>
+                      <button type="button" id="geolocate-btn" class="icon-btn" title="Utiliser ma position actuelle">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path
+                            d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+                        </svg>
+                      </button>
+                    </div>
+                    
                   </div>
 
                   <button type="button" id="swap-destinations-btn" class="swap-btn" title="Inverser les destinations">
@@ -394,6 +403,7 @@
 
                   <div class="form-group">
                     <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
+
                     <select id="destination" class="form-control"></select>
                   </div>
 
@@ -413,9 +423,9 @@
                     <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
                     <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder"
                       placeholder="Sélectionnez vos dates" />
-                      <!-- Les inputs CACHÉS pour stocker les valeurs -->
-    <input type="hidden" id="departure-date-value">
-    <input type="hidden" id="return-date-value">
+                    <!-- Les inputs CACHÉS pour stocker les valeurs -->
+                    <input type="hidden" id="departure-date-value">
+                    <input type="hidden" id="return-date-value">
                   </div>
 
                 </div>
@@ -439,7 +449,7 @@
                       <div class="passenger-row">
                         <!-- ============================================ -->
                         <label data-i18n="search_form_children_dynamic"></label>
-  <!-- ============================================ -->
+                        <!-- ============================================ -->
                         <div class="passenger-counter">
                           <button type="button" class="counter-btn" data-type="children"
                             data-action="decrement">-</button>
@@ -939,175 +949,190 @@
     <!-- ============================================
      📄 PAGE À PROPOS (MODERNE)
      ============================================ -->
-<div id="about-page" class="page">
-  
-  <!-- 1. Section Héros Visuelle -->
-  <div class="about-hero">
-    <div class="container">
-      <h1 data-i18n="about_hero_title">Connecter l'Afrique, un voyage à la fois.</h1>
-      <p data-i18n="about_hero_subtitle">Notre mission est de simplifier les voyages en bus sur le continent, en offrant une plateforme fiable, sécurisée et facile à utiliser.</p>
-    </div>
-  </div>
+    <div id="about-page" class="page">
 
-  <div class="container">
-    
-    <!-- 2. Section Mission, Vision, Valeurs -->
-    <div class="about-features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎯</div>
-        <h3 data-i18n="about_mission_title">Notre Mission</h3>
-        <p data-i18n="about_mission_desc">Rendre la réservation de billets de bus en Afrique aussi simple que quelques clics, pour tout le monde, partout.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔭</div>
-        <h3 data-i18n="about_vision_title">Notre Vision</h3>
-        <p data-i18n="about_vision_desc">Devenir la plateforme de référence pour tous les déplacements terrestres en Afrique, en connectant les villes et les peuples.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">❤️</div>
-        <h3 data-i18n="about_values_title">Nos Valeurs</h3>
-        <p data-i18n="about_values_desc">Confiance, sécurité, simplicité et innovation sont au cœur de tout ce que nous faisons.</p>
-      </div>
-    </div>
-
-    <!-- 3. Section Chiffres Clés -->
-    <div class="stats-section">
-      <h2 data-i18n="about_stats_title">En-Bus en chiffres</h2>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span class="stat-number" data-target="50000">0</span>
-          <span class="stat-label" data-i18n="about_stats_passengers">Passagers Transportés</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="50">0</span>
-          <span class="stat-label" data-i18n="about_stats_destinations">Destinations</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="15">0</span>
-          <span class="stat-label" data-i18n="about_stats_partners">Compagnies Partenaires</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="98">0</span>
-          <span class="stat-label" data-i18n="about_stats_satisfaction">Satisfaction Client (%)</span>
+      <!-- 1. Section Héros Visuelle -->
+      <div class="about-hero">
+        <div class="container">
+          <h1 data-i18n="about_hero_title">Connecter l'Afrique, un voyage à la fois.</h1>
+          <p data-i18n="about_hero_subtitle">Notre mission est de simplifier les voyages en bus sur le continent, en
+            offrant une plateforme fiable, sécurisée et facile à utiliser.</p>
         </div>
       </div>
-    </div>
 
-    <!-- 4. Section Partenaires -->
-    <div class="partners-section">
-      <h2 data-i18n="about_partners_title">Nos compagnies partenaires</h2>
-      <div class="logos-container">
-        <!-- Remplace par les vrais chemins de tes images -->
-        <img src="https://www.ocean-du-nord.com/img/congo_profond.png" alt="Océan du Nord">
-        <img src="https://cg.touritouri.com/uploads/image/2025/01/unnamed.jpg" alt="Trans Bony">
-        <img src="https://sc04.alicdn.com/kf/H43a002e641e54f108b7a4432b36e7cd4l.jpg" alt="Stellimac">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Logo_wordmark_United_Express_%282019%29.svg/512px-Logo_wordmark_United_Express_%282019%29.svg.png?20250518143428" alt="United Express">
-        <img src="https://ayilaa.s3.eu-west-1.amazonaws.com/attraction/logos/64fa01f73c632_1694106103_BUCAVOYAGE%20(3).jpg" alt="Buca Voyages">
+      <div class="container">
+
+        <!-- 2. Section Mission, Vision, Valeurs -->
+        <div class="about-features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3 data-i18n="about_mission_title">Notre Mission</h3>
+            <p data-i18n="about_mission_desc">Rendre la réservation de billets de bus en Afrique aussi simple que
+              quelques clics, pour tout le monde, partout.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔭</div>
+            <h3 data-i18n="about_vision_title">Notre Vision</h3>
+            <p data-i18n="about_vision_desc">Devenir la plateforme de référence pour tous les déplacements terrestres en
+              Afrique, en connectant les villes et les peuples.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">❤️</div>
+            <h3 data-i18n="about_values_title">Nos Valeurs</h3>
+            <p data-i18n="about_values_desc">Confiance, sécurité, simplicité et innovation sont au cœur de tout ce que
+              nous faisons.</p>
+          </div>
+        </div>
+
+        <!-- 3. Section Chiffres Clés -->
+        <div class="stats-section">
+          <h2 data-i18n="about_stats_title">En-Bus en chiffres</h2>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number" data-target="50000">0</span>
+              <span class="stat-label" data-i18n="about_stats_passengers">Passagers Transportés</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" data-target="50">0</span>
+              <span class="stat-label" data-i18n="about_stats_destinations">Destinations</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" data-target="15">0</span>
+              <span class="stat-label" data-i18n="about_stats_partners">Compagnies Partenaires</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" data-target="98">0</span>
+              <span class="stat-label" data-i18n="about_stats_satisfaction">Satisfaction Client (%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Section Partenaires -->
+        <div class="partners-section">
+          <h2 data-i18n="about_partners_title">Nos compagnies partenaires</h2>
+          <div class="logos-container">
+            <!-- Remplace par les vrais chemins de tes images -->
+            <img src="https://www.ocean-du-nord.com/img/congo_profond.png" alt="Océan du Nord">
+            <img src="https://cg.touritouri.com/uploads/image/2025/01/unnamed.jpg" alt="Trans Bony">
+            <img src="https://sc04.alicdn.com/kf/H43a002e641e54f108b7a4432b36e7cd4l.jpg" alt="Stellimac">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Logo_wordmark_United_Express_%282019%29.svg/512px-Logo_wordmark_United_Express_%282019%29.svg.png?20250518143428"
+              alt="United Express">
+            <img
+              src="https://ayilaa.s3.eu-west-1.amazonaws.com/attraction/logos/64fa01f73c632_1694106103_BUCAVOYAGE%20(3).jpg"
+              alt="Buca Voyages">
+          </div>
+        </div>
+
+        <!-- 5. Appel à l'Action (CTA) -->
+        <div class="cta-section">
+          <h2 data-i18n="about_cta_title">Prêt à voyager ?</h2>
+          <p data-i18n="about_cta_subtitle">Trouvez votre prochain trajet dès maintenant.</p>
+          <button class="btn btn-primary" onclick="showPage('home')" data-i18n="about_cta_button">Rechercher un
+            billet</button>
+        </div>
+
       </div>
     </div>
-
-    <!-- 5. Appel à l'Action (CTA) -->
-    <div class="cta-section">
-      <h2 data-i18n="about_cta_title">Prêt à voyager ?</h2>
-      <p data-i18n="about_cta_subtitle">Trouvez votre prochain trajet dès maintenant.</p>
-      <button class="btn btn-primary" onclick="showPage('home')" data-i18n="about_cta_button">Rechercher un billet</button>
-    </div>
-
-  </div>
-</div>
 
     <!-- ============================================
      📞 PAGE CONTACT (MODERNE)
      ============================================ -->
-<div id="contact-page" class="page">
-    <div class="container">
-        
+    <div id="contact-page" class="page">
+      <div class="container">
+
         <!-- 1. En-tête de la page -->
         <div class="page-header" style="text-align: center; margin-bottom: 3rem;">
-            <h1 class="contact-main-title" data-i18n="contact_main_title">Contactez-nous</h1>
-            <p class="contact-main-subtitle" data-i18n="contact_main_subtitle">Une question ? Une suggestion ? Notre équipe est là pour vous aider.</p>
+          <h1 class="contact-main-title" data-i18n="contact_main_title">Contactez-nous</h1>
+          <p class="contact-main-subtitle" data-i18n="contact_main_subtitle">Une question ? Une suggestion ? Notre
+            équipe est là pour vous aider.</p>
         </div>
 
         <!-- 2. Conteneur principal (Formulaire + Infos) -->
         <div class="contact-grid">
-            
-            <!-- Colonne de gauche : Infos de contact -->
-            <div class="contact-info-cards">
-                <div class="info-card">
-                    <div class="info-card-icon">📧</div>
-                    <h3 data-i18n="contact_email_title">Par Email</h3>
-                    <p data-i18n="contact_email_desc">Pour toute demande générale ou support.</p>
-                    <a href="mailto:contact@en-bus.com" class="info-card-link">contact@en-bus.com</a>
-                </div>
-                <div class="info-card">
-                    <div class="info-card-icon">📞</div>
-                    <h3 data-i18n="contact_phone_title">Par Téléphone</h3>
-                    <p data-i18n="contact_phone_desc">Assistance immédiate du Lundi au Samedi.</p>
-                    <a href="tel:+242061234567" class="info-card-link">+242 06 123 4567</a>
-                </div>
-                <div class="info-card">
-                    <div class="info-card-icon">📍</div>
-                    <h3 data-i18n="contact_hq_title">Siège Social</h3>
-                    <p data-i18n="contact_hq_address">Avenue de la République, Brazzaville, Congo</p>
-                </div>
-            </div>
 
-            <!-- Colonne de droite : Formulaire de contact -->
-            <div class="contact-form-card">
-                <h3 data-i18n="contact_form_title">Envoyez-nous un message</h3>
-                <form id="contact-form" action="https://formspree.io/f/xrbwjwrj" method="POST">
-                    <div class="form-group">
-                        <label for="contact-name" data-i18n="contact_form_name">Votre Nom</label>
-                        <input type="text" id="contact-name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-email" data-i18n="contact_form_email">Votre Email</label>
-                        <input type="email" id="contact-email" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-subject" data-i18n="contact_form_subject">Sujet</label>
-                        <select id="contact-subject" class="form-control" required>
-                            <option value="general" data-i18n="contact_subject_general">Question générale</option>
-                            <option value="booking" data-i18n="contact_subject_booking">Aide à la réservation</option>
-                            <option value="partnership" data-i18n="contact_subject_partnership">Partenariat</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="contact-message" data-i18n="contact_form_message">Message</label>
-                        <textarea id="contact-message" class="form-control" rows="5" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary" data-i18n="contact_form_button">Envoyer le message</button>
-                </form>
+          <!-- Colonne de gauche : Infos de contact -->
+          <div class="contact-info-cards">
+            <div class="info-card">
+              <div class="info-card-icon">📧</div>
+              <h3 data-i18n="contact_email_title">Par Email</h3>
+              <p data-i18n="contact_email_desc">Pour toute demande générale ou support.</p>
+              <a href="mailto:contact@en-bus.com" class="info-card-link">contact@en-bus.com</a>
             </div>
+            <div class="info-card">
+              <div class="info-card-icon">📞</div>
+              <h3 data-i18n="contact_phone_title">Par Téléphone</h3>
+              <p data-i18n="contact_phone_desc">Assistance immédiate du Lundi au Samedi.</p>
+              <a href="tel:+242061234567" class="info-card-link">+242 06 123 4567</a>
+            </div>
+            <div class="info-card">
+              <div class="info-card-icon">📍</div>
+              <h3 data-i18n="contact_hq_title">Siège Social</h3>
+              <p data-i18n="contact_hq_address">Avenue de la République, Brazzaville, Congo</p>
+            </div>
+          </div>
+
+          <!-- Colonne de droite : Formulaire de contact -->
+          <div class="contact-form-card">
+            <h3 data-i18n="contact_form_title">Envoyez-nous un message</h3>
+            <form id="contact-form" action="https://formspree.io/f/xrbwjwrj" method="POST">
+              <div class="form-group">
+                <label for="contact-name" data-i18n="contact_form_name">Votre Nom</label>
+                <input type="text" id="contact-name" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="contact-email" data-i18n="contact_form_email">Votre Email</label>
+                <input type="email" id="contact-email" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="contact-subject" data-i18n="contact_form_subject">Sujet</label>
+                <select id="contact-subject" class="form-control" required>
+                  <option value="general" data-i18n="contact_subject_general">Question générale</option>
+                  <option value="booking" data-i18n="contact_subject_booking">Aide à la réservation</option>
+                  <option value="partnership" data-i18n="contact_subject_partnership">Partenariat</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="contact-message" data-i18n="contact_form_message">Message</label>
+                <textarea id="contact-message" class="form-control" rows="5" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" data-i18n="contact_form_button">Envoyer le message</button>
+            </form>
+          </div>
         </div>
 
         <!-- 3. Section FAQ (Foire Aux Questions) -->
         <div class="faq-section">
-            <h2 data-i18n="contact_faq_title">Questions Fréquentes</h2>
-            <div class="faq-container">
-                <div class="faq-item">
-                    <button class="faq-question" data-i18n="faq_q1_title">Comment puis-je payer ma réservation ?</button>
-                    <div class="faq-answer">
-                        <p data-i18n="faq_q1_answer">Vous pouvez payer par MTN Mobile Money, Airtel Money, ou directement dans l'une de nos agences partenaires. Toutes les options vous seront proposées au moment du paiement.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-question" data-i18n="faq_q2_title">Puis-je annuler ou modifier mon billet ?</button>
-                    <div class="faq-answer">
-                        <p data-i18n="faq_q2_answer">Oui, il est possible de reporter votre voyage sous certaines conditions via la section "Mes Réservations". Les annulations avec remboursement ne sont généralement pas possibles, mais dépendent de la politique de la compagnie de bus.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <button class="faq-question" data-i18n="faq_q3_title">Je n'ai pas reçu mon billet, que faire ?</button>
-                    <div class="faq-answer">
-                        <p data-i18n="faq_q3_answer">Après un paiement confirmé, votre billet est immédiatement disponible dans la section "Mes Réservations" de l'application. Si vous ne le voyez pas, veuillez vérifier le statut de votre paiement ou nous contacter.</p>
-                    </div>
-                </div>
+          <h2 data-i18n="contact_faq_title">Questions Fréquentes</h2>
+          <div class="faq-container">
+            <div class="faq-item">
+              <button class="faq-question" data-i18n="faq_q1_title">Comment puis-je payer ma réservation ?</button>
+              <div class="faq-answer">
+                <p data-i18n="faq_q1_answer">Vous pouvez payer par MTN Mobile Money, Airtel Money, ou directement dans
+                  l'une de nos agences partenaires. Toutes les options vous seront proposées au moment du paiement.</p>
+              </div>
             </div>
+            <div class="faq-item">
+              <button class="faq-question" data-i18n="faq_q2_title">Puis-je annuler ou modifier mon billet ?</button>
+              <div class="faq-answer">
+                <p data-i18n="faq_q2_answer">Oui, il est possible de reporter votre voyage sous certaines conditions via
+                  la section "Mes Réservations". Les annulations avec remboursement ne sont généralement pas possibles,
+                  mais dépendent de la politique de la compagnie de bus.</p>
+              </div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-question" data-i18n="faq_q3_title">Je n'ai pas reçu mon billet, que faire ?</button>
+              <div class="faq-answer">
+                <p data-i18n="faq_q3_answer">Après un paiement confirmé, votre billet est immédiatement disponible dans
+                  la section "Mes Réservations" de l'application. Si vous ne le voyez pas, veuillez vérifier le statut
+                  de votre paiement ou nous contacter.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
+      </div>
     </div>
-</div>
   </main>
 
   <footer class="footer">
@@ -1131,15 +1156,15 @@
         </div>
 
         <!-- ============================================ -->
-      <!-- ✅ NOUVELLE SECTION AJOUTÉE ICI                 -->
-      <!-- ============================================ -->
-      <div class="footer-section">
-        <h4 data-i18n="footer_follow_us">Suivez-nous</h4>
-        <div class="social-icons" id="footer-social-links">
-          <!-- Les liens seront insérés ici par JavaScript -->
+        <!-- ✅ NOUVELLE SECTION AJOUTÉE ICI                 -->
+        <!-- ============================================ -->
+        <div class="footer-section">
+          <h4 data-i18n="footer_follow_us">Suivez-nous</h4>
+          <div class="social-icons" id="footer-social-links">
+            <!-- Les liens seront insérés ici par JavaScript -->
+          </div>
         </div>
-      </div>
-      <!-- ============================================ -->
+        <!-- ============================================ -->
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer_copyright">&copy; 2025 En-Bus. Tous droits réservés.</p>
@@ -1149,20 +1174,20 @@
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
-   <!-- ✅ Script du Plugin de Range (À ajouter juste après) -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/rangePlugin.js"></script>
-   
+  <!-- ✅ Script du Plugin de Range (À ajouter juste après) -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/rangePlugin.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
 
   <!-- ✅ AJOUTER CETTE LIGNE AVANT translations.js ET app.js -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
-   <!-- ✅ AJOUTEZ CES LIGNES AVANT app.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-  <script src="config.js"></script> 
+  <!-- ✅ AJOUTEZ CES LIGNES AVANT app.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script src="config.js"></script>
   <script src="translations.js"></script>
   <script src="app.js"></script>
 
@@ -1253,21 +1278,21 @@
   <!-- ============================================
      🪟 MODALE DE CONFIRMATION PERSONNALISÉE
      ============================================ -->
-<div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
+  <div id="custom-confirm-modal" class="custom-modal-overlay" style="display: none;">
     <div class="custom-modal-card">
-        <div class="custom-modal-header">
-            <div id="custom-confirm-icon" class="custom-modal-icon">⚠️</div>
-            <h3 id="custom-confirm-title">Confirmation</h3>
-        </div>
-        <div class="custom-modal-body">
-            <p id="custom-confirm-message">Êtes-vous sûr ?</p>
-        </div>
-        <div class="custom-modal-footer">
-            <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
-            <button id="custom-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
-        </div>
+      <div class="custom-modal-header">
+        <div id="custom-confirm-icon" class="custom-modal-icon">⚠️</div>
+        <h3 id="custom-confirm-title">Confirmation</h3>
+      </div>
+      <div class="custom-modal-body">
+        <p id="custom-confirm-message">Êtes-vous sûr ?</p>
+      </div>
+      <div class="custom-modal-footer">
+        <button id="custom-confirm-cancel-btn" class="btn btn-secondary">Annuler</button>
+        <button id="custom-confirm-ok-btn" class="btn btn-danger">Confirmer</button>
+      </div>
     </div>
-</div>
+  </div>
 
 
 
@@ -1311,10 +1336,10 @@
 
   <div id="pdf-loading-modal" class="pdf-loader-overlay">
     <div class="pdf-loader-content">
-        <div class="pdf-loader-spinner"></div>
-        <p>Préparation du document...</p>
+      <div class="pdf-loader-spinner"></div>
+      <p>Préparation du document...</p>
     </div>
-</div>
+  </div>
 
 
 </body>

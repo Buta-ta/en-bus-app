@@ -849,14 +849,102 @@ window.changeLanguage = function(lang) {
 
 
 
-/**
- * Met à jour l'interface du sélecteur de passagers (chiffres et textes traduits).
- */
-// DANS app.js
 
 // DANS app.js
 
-// DANS app.js (remplacez votre fonction updatePassengerSelectorUI)
+async function geolocateUser() {
+    const geolocateBtn = document.getElementById('geolocate-btn');
+    if (!navigator.geolocation) {
+        Utils.showToast("La géolocalisation n'est pas supportée par votre navigateur.", "error");
+        if(geolocateBtn) geolocateBtn.disabled = true;
+        return;
+    }
+
+    if(geolocateBtn) {
+        geolocateBtn.classList.add('loading');
+        geolocateBtn.disabled = true;
+    }
+    
+    Utils.showToast("Recherche de votre position...", "info");
+
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+                enableHighAccuracy: false,
+                timeout: 10000,
+                maximumAge: 60000
+            });
+        });
+
+        const { latitude, longitude } = position.coords;
+        console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
+        
+        const rawCityName = await reverseGeocode(latitude, longitude);
+
+        if (rawCityName) {
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION : Nettoyage du nom de la ville
+            // ========================================================
+            
+            // On supprime tout ce qui est entre parenthèses et les espaces superflus.
+            // "Brazzaville (commune)" devient "Brazzaville".
+            const cleanedCityName = rawCityName.replace(/\s*\(.*\)\s*/g, '').trim();
+            console.log(`🧼 Nom de ville nettoyé : "${cleanedCityName}"`);
+
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
+            
+            const originSelect = document.getElementById('origin');
+            const cityExists = [...originSelect.options].some(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+
+            if (cityExists) {
+                // On utilise le nom nettoyé pour la comparaison, mais la valeur du select pour être sûr d'avoir le bon format.
+                const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+                originSelect.value = matchingOption.value; // ex: "Brazzaville" et non "brazzaville"
+                Utils.showToast(`Ville trouvée : ${matchingOption.value}`, "success");
+            } else {
+                Utils.showToast(`Ville proche trouvée (${cleanedCityName}), mais non desservie.`, "warning");
+            }
+        }
+        console.error("❌ Erreur de géolocalisation:", error);
+        Utils.showToast(errorMessage, "error");
+    } finally {
+        if(geolocateBtn) {
+            geolocateBtn.classList.remove('loading');
+            geolocateBtn.disabled = false;
+        }
+    }
+}
+
+
+
+// DANS app.js
+
+async function reverseGeocode(lat, lon) {
+    // API gratuite et open-source, respecte la vie privée
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
+        
+        const data = await response.json();
+        
+        // Nominatim renvoie la ville dans différents champs possibles
+        const cityName = data.address.city || data.address.town || data.address.village;
+        
+        console.log("🏙️ Ville retournée par l'API de géocodage :", cityName);
+        return cityName;
+
+    } catch (error) {
+        console.error("❌ Erreur de reverse geocoding:", error);
+        Utils.showToast("Impossible de traduire les coordonnées en nom de ville.", "error");
+        return null;
+    }
+}
+
+
 // DANS app.js
 // DANS app.js
 
@@ -1766,51 +1854,81 @@ window.checkPaymentStatus = async function(bookingNumber) {
 
 
 // DANS app.js (ajoutez cette nouvelle fonction)
+// DANS app.js (remplacez votre fonction shareTicket)
 
 async function shareTicket() {
-    const { Share } = Capacitor.Plugins;
     const reservation = appState.currentReservation;
-    if (!reservation) return;
+    if (!reservation) {
+        console.warn("Aucune réservation à partager.");
+        return;
+    }
 
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // On prépare les informations à partager
+    // --- 1. Préparation des données à partager (votre code est correct) ---
     const from = reservation.route.from;
     const to = reservation.route.to;
     const date = Utils.formatDate(reservation.date, lang);
     const time = reservation.route.departure;
     const seat = reservation.seats.join(', ');
     const bookingNum = reservation.bookingNumber;
-    // On crée une URL qui mène directement à la page de la réservation (à développer plus tard)
     const url = `https://incomparable-llama-84897e.netlify.app/?booking=${bookingNum}`;
 
     const shareData = {
         title: translation.share_message_subject(bookingNum),
         text: translation.share_message_body(from, to, date, time, seat, bookingNum, url),
-        url: url,
-        dialogTitle: translation.button_share_ticket,
+        url: url
     };
 
-    try {
-        // On vérifie si on peut utiliser l'API de partage native
-        const canShare = await Share.canShare();
-        if (canShare.value) {
-            console.log("🚀 Utilisation du partage natif...");
-            await Share.share(shareData);
-        } else {
-            // Fallback pour le web si l'API de partage n'est pas dispo : lien WhatsApp
-            console.log("🌐 Fallback vers le lien WhatsApp...");
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text)}`;
-            window.open(whatsappUrl, '_blank');
+    // ========================================================
+    // ✅ DÉBUT DE LA NOUVELLE LOGIQUE DE PARTAGE UNIVERSELLE
+    // ========================================================
+
+    // CAS 1 : On est sur une application NATIVE (Android/iOS)
+    if (window.Capacitor?.isNativePlatform()) {
+        const { Share } = Capacitor.Plugins;
+        console.log("🚀 Tentative de partage natif...");
+        try {
+            await Share.share({
+                ...shareData,
+                dialogTitle: translation.button_share_ticket,
+            });
+            console.log("Partage natif réussi.");
+        } catch (error) {
+            console.error("❌ Erreur de partage natif:", error);
+            // Si le partage natif échoue, on copie dans le presse-papiers
+            navigator.clipboard.writeText(shareData.text)
+                .then(() => Utils.showToast("Détails copiés dans le presse-papiers !", 'success'))
+                .catch(err => console.error("Échec de la copie de secours:", err));
         }
-    } catch (error) {
-        console.error("❌ Erreur de partage:", error);
-        // Fallback ultime : copier le texte dans le presse-papiers
-        navigator.clipboard.writeText(shareData.text).then(() => {
-            Utils.showToast("Les détails du voyage ont été copiés !", 'success');
-        });
+    } 
+    // CAS 2 : On est sur un navigateur web qui supporte l'API de Partage (la plupart des mobiles)
+    else if (navigator.share) {
+        console.log("🌐 Tentative de partage avec l'API Web Share...");
+        try {
+            await navigator.share(shareData);
+            console.log("Partage web API réussi.");
+        } catch (error) {
+            // L'utilisateur a probablement annulé le partage, ce n'est pas une erreur critique.
+            console.log("Partage web annulé par l'utilisateur.", error);
+        }
+    } 
+    // CAS 3 : Fallback pour les navigateurs de bureau ou anciens navigateurs
+    else {
+        console.log("📋 Fallback : Copie dans le presse-papiers...");
+        try {
+            await navigator.clipboard.writeText(shareData.text);
+            Utils.showToast("Les détails du voyage ont été copiés dans le presse-papiers !", 'success');
+        } catch (err) {
+            console.error("❌ Échec de la copie dans le presse-papiers:", err);
+            // Fallback ultime si tout échoue : on affiche le texte dans une alerte.
+            alert(shareData.text);
+        }
     }
+    // ========================================================
+    // ✅ FIN DE LA NOUVELLE LOGIQUE
+    // ========================================================
 }
 
 
@@ -2228,6 +2346,12 @@ async function initApp() {
         setupSmartSearch();
         setupMobileFilterToggle();
         setupSocialLinks();
+
+
+        const geolocateBtn = document.getElementById('geolocate-btn');
+        if (geolocateBtn) {
+            geolocateBtn.addEventListener('click', geolocateUser);
+        }
 
         // ========================================================
         // ✅ DÉBUT DE LA CORRECTION : Ajout de l'écouteur d'événement
@@ -5575,7 +5699,7 @@ async function displayConfirmation(reservation) {
         actionsHTML += `<button class="btn-modern btn-share" onclick="shareTicket()"><span class="btn-icon">↗️</span><span class="btn-text">${translation.button_share_ticket}</span></button>`;
         // ========================================================
 
-        
+
         if (reservation.busIdentifier) {
             actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }
