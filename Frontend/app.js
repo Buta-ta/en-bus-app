@@ -3108,74 +3108,54 @@ function setupDatePickers() {
 }
 
 
+// DANS app.js
+
 function setupPassengerSelector() {
     const input = document.getElementById("passenger-input");
     const dropdown = document.getElementById("passenger-dropdown");
-    const adultsCount = document.getElementById("adults-count");
-    const childrenCount = document.getElementById("children-count");
-    const summary = document.getElementById("passenger-summary");
     
-    if (!input || !dropdown || !adultsCount || !childrenCount || !summary) {
+    // Si les éléments de base n'existent pas, on ne fait rien.
+    if (!input || !dropdown) {
         return;
     }
-    
-    function updateDisplay() {
-        // Logique pour s'assurer que les valeurs sont correctes
-        appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
-        appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
-        
-        // Mettre à jour les chiffres dans le dropdown
-        adultsCount.textContent = appState.passengerCounts.adults;
-        childrenCount.textContent = appState.passengerCounts.children;
-        
-        // Gérer l'état des boutons
-        dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
-        dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
-        
-        // Traduire le résumé principal (ex: "1 Adulte")
-        const lang = getLanguage();
-        const translation = translations[lang] || translations.fr;
-        if (typeof translation.passenger_summary === 'function') {
-            summary.textContent = translation.passenger_summary(
-                appState.passengerCounts.adults, 
-                appState.passengerCounts.children
-            );
-        }
-    }
-    
-    // Gérer les clics (inchangé)
-    input.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle("open");
-    });
-    
+
+    // --- Gestion des clics sur les boutons +/- ---
     dropdown.addEventListener("click", (e) => {
         const target = e.target.closest('.counter-btn');
         if (target) {
             const type = target.dataset.type;
             const action = target.dataset.action;
-            if (action === "increment") appState.passengerCounts[type]++;
-            else if (action === "decrement") appState.passengerCounts[type]--;
-            updateDisplay();
+
+            // Mise à jour de l'état de l'application
+            if (action === "increment") {
+                appState.passengerCounts[type]++;
+            } else if (action === "decrement") {
+                appState.passengerCounts[type]--;
+            }
+            
+            // On s'assure que les adultes sont au moins 1 et les enfants au moins 0
+            appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
+            appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
+
+            // On rafraîchit l'interface après chaque changement
+            updatePassengerSelectorUI();
         }
     });
-    
+
+    // --- Gestion de l'ouverture/fermeture du dropdown ---
+    input.addEventListener("click", (e) => {
+        e.stopPropagation(); // Empêche le clic de se propager et de fermer le menu
+        dropdown.classList.toggle("open");
+    });
+
     document.addEventListener("click", (e) => {
-        if (!dropdown.contains(e.target) && !input.contains(e.target)) {
+        // Si on clique en dehors de l'input ET en dehors du dropdown, on le ferme.
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.remove("open");
         }
     });
 
-    // ===========================================
-    // ✅ LA MODIFICATION EST ICI
-    // ===========================================
-    // On rend la fonction 'updateDisplay' accessible depuis l'extérieur
-    // en l'assignant à notre variable globale.
-    refreshPassengerSelectorUI = updateDisplay;
-    // ===========================================
-    
-    // Appel initial pour que tout soit correct au chargement
-    updateDisplay();
+    // --- Appel initial pour que l'UI soit correcte au chargement de la page ---
     updatePassengerSelectorUI();
 }
 // DANS app.js (remplacez votre fonction setupPaymentMethodToggle)
@@ -5716,10 +5696,7 @@ function downloadInvoice(bookingNumber) {
         }
     }, 1800); // Délai de 1.8 secondes
 }
-// Ajoute un écouteur pour fermer les menus en cliquant n'importe où
-window.addEventListener('click', () => {
 
-});
 // DANS app.js, AJOUTEZ CES DEUX FONCTIONS
 
 async function viewTicket(bookingNumber) {
