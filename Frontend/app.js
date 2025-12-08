@@ -2130,6 +2130,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
 // DANS app.js
 
 // ✅ On ajoute le mot-clé "async" ici pour autoriser l'utilisation de "await" à l'intérieur.
+// DANS app.js
+
 async function initApp() {
     try {
         // --- Fonctions qui n'ont pas besoin des traductions pour se lancer ---
@@ -2145,6 +2147,21 @@ async function initApp() {
         setupSmartSearch();
         setupMobileFilterToggle();
         setupSocialLinks();
+
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION : Ajout de l'écouteur d'événement
+        // ========================================================
+        const proceedButton = document.getElementById('btn-proceed-to-payment');
+        if (proceedButton) {
+            proceedButton.addEventListener('click', () => {
+                // On appelle la fonction globale qui est déjà 'async'
+                window.proceedToPayment(); 
+            });
+            console.log("✅ Écouteur d'événement ajouté au bouton 'Continuer vers Paiement'.");
+        }
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
 
         // --- Configuration native ---
         if (window.Capacitor?.isNativePlatform()) {
