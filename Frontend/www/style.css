@@ -6114,3 +6114,50 @@ body.pwa-installed .container {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+
+/* DANS index.html, dans <style> */
+
+/* ============================================
+   🎨 AUTO-COMPLÉTION POUR LES CHAMPS DE VILLE
+   ============================================ */
+.autocomplete-container {
+    position: relative;
+}
+
+.autocomplete-suggestions {
+    display: none; /* Caché par défaut */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    background: var(--color-surface-dark);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    z-index: 100;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover, .suggestion-item.highlighted {
+    background-color: var(--color-accent);
+    color: var(--color-background);
+}
+
+.suggestion-item strong {
+    color: var(--color-text-primary);
+}
+
+.suggestion-item small {
+    margin-left: 0.5rem;
+    font-style: italic;
+    color: var(--primary); /* Vert pour mettre en avant "Populaire" */
+}
