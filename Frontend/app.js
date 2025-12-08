@@ -4612,30 +4612,37 @@ return `
         ${badgeHTML}
         <div class="bus-card-wrapper">
             
-            <!-- Colonne de gauche : TOUTES les informations du trajet -->
+            <!-- On remet tout dans une seule colonne principale -->
             <div class="bus-card-main">
                 ${tripTitleHTML}
-                <div class="bus-card-time">...</div>
+                <div class="bus-card-time">
+                    <span>${route.departure}</span>
+                    <div class="bus-card-duration">
+                        <span>→</span><br>
+                        ${route.duration || 'N/A'}
+                    </div>
+                    ${arrivalDisplay}
+                </div>
                 ${departureLocationHTML}
-                <div class="bus-card-company">...</div>
+                <div class="bus-card-company">${route.company}</div>
                 ${tripDetailsHTML}
                 <div class="bus-card-details">
-                    <div class="bus-amenities">...</div>
-                    <div class="bus-seats">...</div>
+                    <div class="bus-amenities">${amenitiesHTML}</div>
+                    <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
                 </div>
+                <!-- On remet les alertes ici, à la fin de la colonne principale -->
+                ${alertsHTML} 
             </div>
 
-            <!-- Colonne de droite : PRIX, ALERTES, et BOUTON -->
+            <!-- La partie prix et bouton est séparée comme avant -->
             <div class="bus-card-pricing">
                 <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                ${alertsHTML}
                 <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
             </div>
 
         </div>
     </div>
 `;
-
     // ========================================================
     // ✅ FIN DE LA MISE À JOUR
     // ========================================================
