@@ -6001,10 +6001,6 @@ body.pwa-installed .container {
 }
 
 
-.btn-modern.btn-share {
-    background-color: #25D366; /* Vert WhatsApp */
-    color: white;
-}
 
 
 
@@ -6014,21 +6010,10 @@ body.pwa-installed .container {
    ✨ BOUTON PARTAGER - DESIGN AFRICAIN MODERNE
    ============================================ */
 
-/* Style de base pour tous les .btn-modern (si vous ne l'avez pas déjà) */
-.btn-modern {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 50px; /* Complètement arrondi pour un look moderne */
-    font-weight: 700;
-    text-decoration: none;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    overflow: hidden; /* Important pour l'effet de fond */
-    position: relative; /* Nécessaire pour le pseudo-élément */
+
+.btn-modern.btn-share {
+    background-color: #25D366; /* Vert WhatsApp */
+    color: white;
 }
 
 /* Style spécifique pour le bouton PARTAGER */
