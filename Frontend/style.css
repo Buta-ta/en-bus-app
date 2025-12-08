@@ -6178,7 +6178,7 @@ body.pwa-installed .container {
 /* DANS index.html, dans la balise <style> */
 
 /* ============================================
-   🎨 STYLES POUR LES ALERTES (VERSION SIMPLE)
+   🎨 STYLES CORRIGÉS POUR LES ALERTES
    ============================================ */
 
 .bus-card-alerts {
@@ -6189,16 +6189,18 @@ body.pwa-installed .container {
 
 .alert-item {
     display: flex;
-    align-items: flex-start; /* Aligne sur le haut */
-    gap: 0.5rem;
+    align-items: flex-start; /* Aligne l'icône et le texte sur le haut */
+    gap: 0.5rem; /* Espace entre l'icône et le texte */
     font-size: 0.85rem;
+    text-align: left; /* Assure que le texte est bien aligné à gauche */
     margin-bottom: 0.5rem;
-    text-align: left; /* S'assure que le texte est aligné à gauche */
 }
 
 .alert-item .icon {
+    /* On s'assure qu'il n'y a pas de propriété 'order' qui changerait l'ordre */
     font-size: 1rem;
-    margin-top: 2px;
+    flex-shrink: 0; /* Empêche l'icône de rétrécir si le texte est long */
+    margin-top: 1px; /* Petit ajustement vertical pour un alignement parfait */
 }
 
 /* Styles des couleurs d'alerte (inchangés) */
