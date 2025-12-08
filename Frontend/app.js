@@ -4618,14 +4618,12 @@ function displayResults(results, isReturn = false) {
     // ========================================================
     // ✅ DÉBUT DE LA MISE À JOUR DE LA STRUCTURE HTML COMPLÈTE
     // ========================================================
-    return `
+     return `
         <div class="bus-card">
             ${badgeHTML}
             <div class="bus-card-wrapper">
-                
-                <!-- COLONNE DE GAUCHE : INFOS TRAJET -->
                 <div class="bus-card-main">
-                    ${tripTitleHTML}
+                 ${tripTitleHTML}
                     <div class="bus-card-time">
                         <span>${route.departure}</span>
                         <div class="bus-card-duration">
@@ -4637,23 +4635,16 @@ function displayResults(results, isReturn = false) {
                     ${departureLocationHTML}
                     <div class="bus-card-company">${route.company}</div>
                     ${tripDetailsHTML}
+                     ${alertsHTML} <!-- ON AJOUTE LE BLOC D'ALERTES ICI -->
                     <div class="bus-card-details">
                         <div class="bus-amenities">${amenitiesHTML}</div>
                         <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
                     </div>
                 </div>
-
-                <!-- COLONNE DE DROITE : PRIX, ALERTES, BOUTON -->
-                <div class="bus-card-actions-col">
-                    <div class="price-and-alerts-group">
-                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                        <!-- Les alertes sont maintenant ici -->
-                        ${alertsHTML}
-                    </div>
-                    
+                <div class="bus-card-pricing">
+                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
                     <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
                 </div>
-
             </div>
         </div>
     `;
