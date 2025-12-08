@@ -571,6 +571,7 @@ const translations = {
     confirmation_title_pending: "Finalisez votre paiement",
     confirmation_subtitle_pending: "Réservation en attente",
     error_critical: "Erreur critique. Veuillez recommencer.",
+    toast_booking_cancelled_status: (status) => `❌ Cette réservation a été ${status}.`,
     payment_agency_unavailable_tooltip: "Paiement en agence indisponible (trop proche du départ)",
     confirm_cancel_title: "Annuler la réservation ?",
     confirm_cancel_desc: (num) => `Voulez-vous vraiment annuler ${num} ?`,
@@ -921,6 +922,8 @@ const translations = {
     error_booking_not_found: "Booking not found",
     toast_current_status: "Current status:",
     error_check_status: "Error while checking status. Please try again.",
+    toast_booking_cancelled_status: (status) => `❌ This booking was ${status}.`,
+
 
 
 
