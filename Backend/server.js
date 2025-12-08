@@ -665,18 +665,62 @@ app.get("/api/search", async (req, res) => {
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
+// DANS server.js (REMPLACEZ PAR CETTE VERSION)
+
 app.get("/api/trips/:id/seats", async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!ObjectId.isValid(id))
-      return res.status(400).json({ error: "ID invalide" });
-    const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-    if (!trip) return res.status(404).json({ error: "Voyage non trouvé" });
-    res.json({ success: true, seats: trip.seats });
-  } catch (error) {
-    console.error("❌ Erreur sièges:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID de voyage invalide" });
+        }
+
+        const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+        if (!trip) {
+            return res.status(404).json({ error: "Voyage non trouvé" });
+        }
+
+        // ========================================================
+        // ✅ DÉBUT DE LA NOUVELLE LOGIQUE
+        // ========================================================
+
+        // 1. On récupère toutes les réservations CONFIRMÉES pour ce voyage
+        const reservations = await reservationsCollection.find({ 
+            "route.id": id,
+            "status": "Confirmé" 
+        }).toArray();
+
+        // 2. On crée une map (un dictionnaire) : { numeroSiege: "Nom du Passager" }
+        const passengerSeatMap = new Map();
+        reservations.forEach(res => {
+            res.passengers.forEach(pax => {
+                // On s'assure que le siège et le nom existent
+                if (pax.seat && pax.name) {
+                    passengerSeatMap.set(parseInt(pax.seat), pax.name);
+                }
+            });
+        });
+
+        // 3. On enrichit les données des sièges avant de les envoyer
+        const enrichedSeats = trip.seats.map(seat => {
+            if (seat.status === 'occupied' && passengerSeatMap.has(seat.number)) {
+                return {
+                    ...seat,
+                    passengerName: passengerSeatMap.get(seat.number) // On ajoute le nom
+                };
+            }
+            return seat; // On retourne le siège tel quel sinon
+        });
+        
+        // ========================================================
+        // ✅ FIN DE LA NOUVELLE LOGIQUE
+        // ========================================================
+
+        res.json({ success: true, seats: enrichedSeats }); // On envoie les sièges enrichis
+
+    } catch (error) {
+        console.error("❌ Erreur récupération des sièges enrichis:", error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 
