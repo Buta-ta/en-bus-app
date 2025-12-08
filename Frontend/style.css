@@ -6177,73 +6177,44 @@ body.pwa-installed .container {
 
 
 
-
 /* DANS index.html, dans la balise <style> */
 
-/* ============================================
-   🎨 MISE EN PAGE AVANCÉE POUR LES CARTES
-   ============================================ */
-
+/* On modifie le conteneur principal de la carte */
 .bus-card-wrapper {
-    display: grid;
-    /* On définit deux colonnes : la première prend l'espace, la deuxième est fixe */
-    grid-template-columns: 1fr auto; 
-    gap: 1rem; /* Espace entre les deux colonnes */
+    display: flex; /* On active Flexbox */
+    justify-content: space-between; /* Espace maximum entre les deux colonnes */
+    gap: 1rem; /* Espace entre les colonnes */
 }
 
-/* Colonne de gauche : Informations principales du trajet */
+/* La colonne de gauche prend toute la place disponible */
 .bus-card-main {
-    /* Rien de spécial à faire ici, elle prendra la place disponible */
+    flex-grow: 1;
 }
 
-/* Colonne de droite : Prix, Alertes et Bouton */
-.bus-card-actions-col {
-    display: flex;
-    flex-direction: column; /* On empile les éléments verticalement */
-    justify-content: space-between; /* Pousse le bouton en bas */
-    align-items: flex-end; /* Aligne tout à droite */
-    min-width: 200px; /* Largeur minimale pour éviter que ça soit trop écrasé */
-}
-
-/* Conteneur pour le prix et les alertes */
-.price-and-alerts-group {
-    width: 100%;
-}
-
-.bus-price {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary);
+/* La colonne de droite prend juste la place nécessaire */
+.bus-card-pricing {
+    flex-shrink: 0; /* Empêche cette colonne de rétrécir */
     text-align: right;
-    margin-bottom: 0.75rem; /* Espace entre le prix et les alertes */
-}
-
-/* Le conteneur des alertes est maintenant dans la colonne de droite */
-.bus-card-alerts {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
     display: flex;
     flex-direction: column;
-    align-items: flex-end; /* Aligne les alertes à droite */
-    gap: 0.5rem;
+    justify-content: space-between; /* Aligne le prix en haut et le bouton en bas */
 }
 
+/* On supprime les anciennes marges sur les alertes */
+.bus-card-alerts {
+    margin-top: 0.75rem;
+    padding-top: 0; /* Plus besoin de padding ou de bordure ici */
+    border-top: none;
+}
+
+/* Le style pour chaque alerte reste le même */
 .alert-item {
     display: flex;
-    align-items: center;
+    align-items: center; /* Aligne l'icône et le texte */
     gap: 0.5rem;
-    font-size: 0.8rem; /* Un peu plus petit pour être discret */
-    text-align: right;
-    max-width: 220px; /* Limite la largeur pour ne pas déborder */
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    justify-content: flex-start; /* S'assure que le texte est aligné à gauche */
 }
 
-.alert-item .icon {
-    order: 1; /* Place l'icône à droite du texte */
-    font-size: 1rem;
-}
-
-/* Le bouton reste en bas de la colonne */
-.bus-card-actions-col .btn-primary {
-    width: 100%; /* Le bouton prend toute la largeur de la colonne */
-}
+/* ... (vos autres styles pour .alert-item.info, .warning, etc. sont corrects) ... */
