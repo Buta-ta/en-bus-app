@@ -4216,56 +4216,67 @@ function renderTable(reservations) {
         }
 
         // Dans Admin/index.html (section <script>)
-        function manageSeats(tripId) {
-            const trip = allTrips.find((t) => t._id === tripId);
-            if (!trip) {
-                showNotification("Erreur : Le voyage n'a pas été trouvé.", "error");
-                return;
-            }
+     async function manageSeats(tripId) {
+    const trip = allTrips.find((t) => t._id === tripId);
+    if (!trip) {
+        showNotification("Erreur : Le voyage n'a pas été trouvé.", "error");
+        return;
+    }
 
-            const modalTitle = document.getElementById("modal-title");
-            const modalBody = document.getElementById("modal-body");
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
 
-            modalTitle.textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to
-                } (${new Date(trip.date).toLocaleDateString("fr-FR")})`;
+    modalTitle.textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to}`;
+    modalBody.innerHTML = `<div style="text-align: center; padding: 2rem;">Chargement des sièges...</div>`;
+    document.getElementById("details-modal").classList.add("active");
 
-            let seatMapHTML =
-                '<div class="seat-map-container"><div class="seat-map">';
+    // On appelle la route API que nous venons de modifier
+    const seatData = await apiCall(`/trips/${tripId}/seats`);
 
-            trip.seats.forEach((seat, index) => {
-                const seatClass = `seat seat-${seat.status}`;
+    if (!seatData || !seatData.success) {
+        modalBody.innerHTML = `<p style="color: red;">Erreur lors du chargement des sièges.</p>`;
+        return;
+    }
 
-                // ✅ CORRECTION : ON AJOUTE TOUJOURS L'ATTRIBUT ONCLICK
-                const onClick = `onclick="toggleSeatStatus('${trip._id}', ${seat.number}, '${seat.status}')"`;
+    // ========================================================
+    // ✅ DÉBUT DE LA NOUVELLE LOGIQUE D'AFFICHAGE
+    // ========================================================
 
-                seatMapHTML += `<div class="${seatClass}" ${onClick} title="Siège ${seat.number}: ${seat.status}">${seat.number}</div>`;
+    let seatMapHTML = '<div class="seat-map-container"><div class="seat-map">';
+    
+    seatData.seats.forEach((seat, index) => {
+        let seatClass = `seat seat-${seat.status}`;
+        let title = `Siège ${seat.number}: ${seat.status}`;
+        let passengerNameAttr = '';
 
-                if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
-                    seatMapHTML += '<div class="seat-aisle"></div>';
-                }
-            });
+        // Si le siège est occupé, on ajoute le nom du passager dans un 'title'
+        // et dans un attribut 'data-' pour une utilisation future.
+        if (seat.status === 'occupied' && seat.passengerName) {
+            title += ` - ${seat.passengerName}`;
+            passengerNameAttr = `data-passenger-name="${seat.passengerName}"`;
+        }
 
-            seatMapHTML += `</div></div>`;
+        const onClick = `onclick="toggleSeatStatus('${trip._id}', ${seat.number}, '${seat.status}')"`;
+        
+        seatMapHTML += `<div class="${seatClass}" ${onClick} title="${title}" ${passengerNameAttr}>${seat.number}</div>`;
 
-            modalBody.innerHTML = `
-        <p>Cliquez sur un siège pour changer son statut (Disponible ↔ Bloqué) ou pour libérer un siège occupé.</p>
+        if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
+            seatMapHTML += '<div class="seat-aisle"></div>';
+        }
+    });
+
+    seatMapHTML += `</div></div>`;
+
+    modalBody.innerHTML = `
+        <p>Cliquez sur un siège pour changer son statut. Survolez un siège occupé pour voir le nom du passager.</p>
         ${seatMapHTML}
         <div class="seat-legend">
-            <div class="legend-item">
-                <div class="legend-box" style="background:var(--primary);"></div>
-                <span>Disponible</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background:#ef5350;"></div>
-                <span>Occupé</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background:var(--dark-border);"></div>
-                <span>Bloqué</span>
-            </div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--primary);"></div><span>Disponible</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#ef5350;"></div><span>Occupé</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--dark-border);"></div><span>Bloqué</span></div>
         </div>
     `;
-
+    
             document.getElementById("details-modal").classList.add("active");
         }
 
