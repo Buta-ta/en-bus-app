@@ -4901,95 +4901,26 @@ function updateBookingSummary() {
 // DANS app.js, REMPLACEZ la fonction proceedToPayment par celle-ci
 // DANS app.js
 
+// DANS app.js (remplacez TEMPORAIREMENT votre fonction)
+
 window.proceedToPayment = async function() {
-    console.log('🟢 proceedToPayment() appelée. Vérification des données...');
+    console.log("🟢 [TEST] Début de proceedToPayment...");
+
+    // On empêche tout comportement par défaut si jamais il y en a un
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
     
-    if (!appState.selectedBus) {
-        Utils.showToast("Erreur critique : Aucun voyage sélectionné.", "error");
-        console.error("❌ Tentative de continuer sans 'appState.selectedBus'.");
-        showPage('home'); 
-        return;
-    }
+    // On remplace toute la logique de la modale par un simple 'alert'
+    // Un alert bloque TOUTE exécution de code tant qu'il n'est pas fermé.
+    // S'il disparaît de lui-même, c'est que la page se recharge.
+    alert("Si cette alerte reste, le problème est dans la modale. Si elle disparaît, la page se recharge.");
 
-    appState.passengerInfo = [];
-    let allFieldsValid = true;
+    console.log("✅ [TEST] L'alerte a été fermée.");
 
-    if (!appState.baggageCounts) {
-        appState.baggageCounts = {};
-        console.warn("⚠️ appState.baggageCounts était manquant, réinitialisé à {}.");
-    }
-
-    for (let i = 0; i < appState.currentSearch.passengers; i++) {
-        const nameInput = document.getElementById(`name-${i}`);
-        const phoneInput = document.getElementById(`phone-${i}`);
-        const emailInput = document.getElementById(`email-${i}`);
-
-        if (!nameInput || !phoneInput || !emailInput) {
-            Utils.showToast(`Erreur interne : champs manquants pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-
-        const name = nameInput.value.trim();
-        const phone = phoneInput.value.trim();
-        const email = emailInput.value.trim();
-        
-        if (!name || !phone) {
-            Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        if (!Utils.validatePhone(phone)) {
-            Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        if (email && !Utils.validateEmail(email)) {
-            Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
-            allFieldsValid = false;
-            break;
-        }
-        
-        const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
-        
-        appState.passengerInfo.push({
-            seat: appState.selectedSeats[i],
-            name: name,
-            phone: phone,
-            email: email,
-            baggage: passengerBaggage
-        });
-    }
-
-    if (!allFieldsValid) {
-        console.log("❌ Validation des passagers échouée. Navigation annulée.");
-        return;
-    }
-
-    // ========================================================
-    // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
-    // ========================================================
-    try {
-        console.log("1️⃣ [DIAG] Validation des passagers réussie. Avant d'appeler showDocumentChecklist...");
-        const documentsConfirmed = await showDocumentChecklist();
-        console.log("4️⃣ [DIAG] 'showDocumentChecklist' a terminé et a retourné :", documentsConfirmed);
-
-        if (documentsConfirmed) {
-            console.log("✅ Documents confirmés par l'utilisateur. Navigation vers la page de paiement.");
-            displayBookingSummary(); 
-            showPage("payment");
-        } else {
-            console.log("❌ L'utilisateur a annulé la confirmation des documents.");
-        }
-    } catch (e) {
-        console.error("❌ ERREUR FATALE attrapée dans proceedToPayment lors de l'appel à showDocumentChecklist :", e);
-        Utils.showToast("Une erreur inattendue est survenue.", "error");
-    }
-    // ========================================================
-    // ✅ FIN DU BLOC DE DIAGNOSTIC
-    // ========================================================
+    // Pour l'instant, on ne fait rien après.
+    // showPage("payment"); 
 }
 
 
