@@ -6127,6 +6127,8 @@ body.pwa-installed .container {
 
 /* DANS index.html, dans <style> */
 
+/* DANS index.html, dans la balise <style> */
+
 .autocomplete-suggestions {
     display: none;
     position: absolute;
@@ -6137,17 +6139,18 @@ body.pwa-installed .container {
     overflow-y: auto;
     
     /* ============================================ */
-    /* ✅ CORRECTION FORCÉE                         */
+    /* ✅ CORRECTION FORCÉE POUR L'OPACITÉ          */
     /* ============================================ */
-    background-color: var(--color-surface-dark) !important; /* Couleur de fond opaque forcée */
+    /* On utilise une couleur de fond sombre et GARANTIE opaque */
+    background: #151a30;
+    /* ============================================ */
+    
     border: 1px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 1050 !important; /* On s'assure qu'il est au-dessus de tout */
-    /* ============================================ */
 }
-
 .suggestion-item {
     padding: 0.75rem 1rem;
     color: var(--color-text-secondary);

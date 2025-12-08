@@ -855,14 +855,65 @@ window.changeLanguage = function(lang) {
 // DANS app.js
 
 
+// DANS app.js (collez ce bloc complet)
 
+// Fonction qui traduit les coordonnées GPS en nom de ville
+async function reverseGeocode(lat, lon) {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=${lang}`;
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
+        const data = await response.json();
+        const cityName = data.address.city || data.address.town || data.address.village;
+        console.log("🏙️ Ville retournée par l'API :", cityName);
+        return cityName;
+    } catch (error) {
+        console.error("❌ Erreur de reverse geocoding:", error);
+        Utils.showToast(translation.geolocation_reverse_geocode_error, "error");
+        return null;
+    }
+}
+
+// Fonction principale de géolocalisation
 async function geolocateUser() {
     const geolocateBtn = document.getElementById('geolocate-btn');
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
-    // --- Fonction interne pour le traitement ---
-    const processPosition = async (position) => {
+    if (geolocateBtn) {
+        geolocateBtn.classList.add('loading');
+        geolocateBtn.disabled = true;
+    }
+    Utils.showToast(translation.geolocation_searching, "info");
+
+    try {
+        let position;
+        const geolocationOptions = { enableHighAccuracy: true, timeout: 30000, maximumAge: 15000 };
+
+        // CAS 1 : Natif
+        if (window.Capacitor?.isNativePlatform() && Capacitor.Plugins.Geolocation) {
+            const { Geolocation } = Capacitor.Plugins;
+            const permStatus = await Geolocation.requestPermissions();
+            if (permStatus.location !== 'granted') {
+                throw new Error(translation.geolocation_permission_denied);
+            }
+            position = await Geolocation.getCurrentPosition(geolocationOptions);
+        } 
+        // CAS 2 : Web
+        else if (navigator.geolocation) {
+            position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, geolocationOptions);
+            });
+        } 
+        // CAS 3 : Non supporté
+        else {
+            throw new Error(translation.geolocation_not_supported);
+        }
+
+        // --- Traitement de la position obtenue ---
         const { latitude, longitude } = position.coords;
         console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
         
@@ -872,105 +923,40 @@ async function geolocateUser() {
             const cleanedCityName = rawCityName.replace(/\s*\(.*\)\s*/g, '').trim();
             console.log(`🧼 Nom de ville nettoyé : "${cleanedCityName}"`);
 
-            const originSelect = document.getElementById('origin');
-            const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+            // On cible le bon input de texte
+            const originInput = document.getElementById('origin-input');
+            if (!originInput) {
+                console.error("Erreur critique : L'input #origin-input est introuvable.");
+                return;
+            }
 
-            // ========================================================
-            // ✅ CORRECTION : Utilisation de l'objet 'translation'
-            // ========================================================
-            if (matchingOption) {
-                originSelect.value = matchingOption.value;
-                Utils.showToast(translation.geolocation_city_found(matchingOption.value), "success");
+            // On cherche dans le tableau de données 'allDestinations'
+            const matchingDestination = allDestinations.find(dest => dest.name.toLowerCase() === cleanedCityName.toLowerCase());
+
+            if (matchingDestination) {
+                originInput.value = matchingDestination.name;
+                Utils.showToast(translation.geolocation_city_found(matchingDestination.name), "success");
             } else {
                 Utils.showToast(translation.geolocation_city_not_served(cleanedCityName), "warning");
             }
         }
-    };
-
-    // --- Logique principale ---
-    if(geolocateBtn) {
-        geolocateBtn.classList.add('loading');
-        geolocateBtn.disabled = true;
-    }
-    Utils.showToast(translation.geolocation_searching, "info");
-
-    try {
-        let position;
-
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION : Options de géolocalisation améliorées
-        // ========================================================
-        
-        const geolocationOptions = {
-            enableHighAccuracy: true,  // On demande la meilleure précision possible
-            timeout: 30000,            // On augmente le timeout à 30 secondes
-            maximumAge: 15000          // On accepte une position en cache si elle date de moins de 15s
-        };
-
-        if (window.Capacitor?.isNativePlatform() && Capacitor.Plugins.Geolocation) {
-            const { Geolocation } = Capacitor.Plugins;
-            const permStatus = await Geolocation.requestPermissions();
-            if (permStatus.location !== 'granted') {
-                // On utilise la clé de traduction directement
-                throw new Error(translation.geolocation_permission_denied);
-            }
-            position = await Geolocation.getCurrentPosition();
-        } else if (navigator.geolocation) {
-            position = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: false, timeout: 10000, maximumAge: 60000
-                });
-            });
-        } else {
-            throw new Error(translation.geolocation_not_supported);
-        }
-        await processPosition(position);
 
     } catch (error) {
-        // La gestion des erreurs utilise maintenant l'objet 'translation'
-        let errorMessage = error.message;
-        // On vérifie si l'erreur vient du navigateur (avec un code)
+        let errorMessage = error.message || translation.geolocation_generic_error;
         if (error.code) {
             if (error.code === 1) errorMessage = translation.geolocation_permission_denied;
             else if (error.code === 2) errorMessage = translation.geolocation_position_unavailable;
             else if (error.code === 3) errorMessage = translation.geolocation_timeout;
-            else errorMessage = translation.geolocation_generic_error;
         }
-        
         console.error("❌ Erreur de géolocalisation:", error);
         Utils.showToast(errorMessage, "error");
     } finally {
-        if(geolocateBtn) {
+        if (geolocateBtn) {
             geolocateBtn.classList.remove('loading');
             geolocateBtn.disabled = false;
         }
     }
 }
-
-async function reverseGeocode(lat, lon) {
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
-    
-    // On ajoute 'accept-language' pour que l'API réponde si possible dans la langue de l'utilisateur
-    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=${lang}`;
-
-    try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
-        
-        const data = await response.json();
-        const cityName = data.address.city || data.address.town || data.address.village;
-        
-        console.log("🏙️ Ville retournée par l'API de géocodage :", cityName);
-        return cityName;
-    } catch (error) {
-        console.error("❌ Erreur de reverse geocoding:", error);
-        // On utilise la nouvelle clé de traduction
-        Utils.showToast(translation.geolocation_reverse_geocode_error, "error");
-        return null;
-    }
-}
-
 
 
 // DANS app.js (remplacez votre fonction processPosition)
