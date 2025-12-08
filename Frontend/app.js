@@ -849,14 +849,99 @@ window.changeLanguage = function(lang) {
 
 
 
-/**
- * Met à jour l'interface du sélecteur de passagers (chiffres et textes traduits).
- */
-// DANS app.js
 
 // DANS app.js
 
-// DANS app.js (remplacez votre fonction updatePassengerSelectorUI)
+async function geolocateUser() {
+    const geolocateBtn = document.getElementById('geolocate-btn');
+    if (!navigator.geolocation) {
+        Utils.showToast("La géolocalisation n'est pas supportée par votre navigateur.", "error");
+        if(geolocateBtn) geolocateBtn.disabled = true;
+        return;
+    }
+
+    if(geolocateBtn) {
+        geolocateBtn.classList.add('loading');
+        geolocateBtn.disabled = true;
+    }
+    
+    Utils.showToast("Recherche de votre position...", "info");
+
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+                enableHighAccuracy: false, // Plus rapide, moins précis, suffisant pour trouver une ville
+                timeout: 10000, // 10 secondes de timeout
+                maximumAge: 60000 // Accepte une position en cache datant de moins d'une minute
+            });
+        });
+
+        const { latitude, longitude } = position.coords;
+        console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
+        
+        // On appelle l'API pour traduire les coordonnées en nom de ville
+        const cityName = await reverseGeocode(latitude, longitude);
+
+        if (cityName) {
+            const originSelect = document.getElementById('origin');
+            // On vérifie si la ville trouvée existe dans notre liste
+            const cityExists = [...originSelect.options].some(opt => opt.value.toLowerCase() === cityName.toLowerCase());
+
+            if (cityExists) {
+                originSelect.value = cityName;
+                Utils.showToast(`Ville trouvée : ${cityName}`, "success");
+            } else {
+                Utils.showToast(`Ville proche trouvée (${cityName}), mais non desservie.`, "warning");
+            }
+        }
+
+    } catch (error) {
+        let errorMessage = "Impossible d'obtenir votre position.";
+        if (error.code === 1) {
+            errorMessage = "Vous avez refusé la permission de géolocalisation.";
+        } else if (error.code === 2) {
+            errorMessage = "Position non disponible (vérifiez votre GPS/réseau).";
+        } else if (error.code === 3) {
+            errorMessage = "La recherche de position a pris trop de temps.";
+        }
+        console.error("❌ Erreur de géolocalisation:", error);
+        Utils.showToast(errorMessage, "error");
+    } finally {
+        if(geolocateBtn) {
+            geolocateBtn.classList.remove('loading');
+            geolocateBtn.disabled = false;
+        }
+    }
+}
+
+
+
+// DANS app.js
+
+async function reverseGeocode(lat, lon) {
+    // API gratuite et open-source, respecte la vie privée
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Le service de géocodage a échoué.");
+        
+        const data = await response.json();
+        
+        // Nominatim renvoie la ville dans différents champs possibles
+        const cityName = data.address.city || data.address.town || data.address.village;
+        
+        console.log("🏙️ Ville retournée par l'API de géocodage :", cityName);
+        return cityName;
+
+    } catch (error) {
+        console.error("❌ Erreur de reverse geocoding:", error);
+        Utils.showToast("Impossible de traduire les coordonnées en nom de ville.", "error");
+        return null;
+    }
+}
+
+
 // DANS app.js
 // DANS app.js
 
@@ -2258,6 +2343,12 @@ async function initApp() {
         setupSmartSearch();
         setupMobileFilterToggle();
         setupSocialLinks();
+
+
+        const geolocateBtn = document.getElementById('geolocate-btn');
+        if (geolocateBtn) {
+            geolocateBtn.addEventListener('click', geolocateUser);
+        }
 
         // ========================================================
         // ✅ DÉBUT DE LA CORRECTION : Ajout de l'écouteur d'événement
