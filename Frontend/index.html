@@ -369,115 +369,105 @@
                   </svg>
                 </button>
               </div>
-              <!-- ✅ ASSUREZ-VOUS QUE CE DIV EST BIEN LÀ -->
-              <div id="smart-search-results"></div>
-            </div>
+              <!-- ... (votre code pour la barre de recherche intelligente se termine ici) ... -->
+    <div id="smart-search-results"></div>
+  </div>
+</div>
 
-            <!-- ================================================ -->
-            <!-- ✅ FORMULAIRE DÉTAILLÉ CORRIGÉ ET FUSIONNÉ -->
-            <!-- ================================================ -->
-            <div id="detailed-search-box" class="search-box"> <!-- Un seul div avec le bon ID -->
-              <div class="search-form">
-                <!-- ✅ On utilise le nouveau conteneur que le CSS va reconnaître -->
-                <div class="destination-swap-container">
+<!-- ================================================ -->
+<!-- ✅ FORMULAIRE DÉTAILLÉ CORRIGÉ ET FUSIONNÉ        -->
+<!-- ================================================ -->
+<div id="detailed-search-box" class="search-box">
+  <div class="search-form">
 
-                  <div class="form-group">
-                    <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
+    <!-- 1. Conteneur principal pour les destinations et le bouton d'inversion -->
+    <div class="destination-swap-container">
 
+      <!-- Colonne 1 : VILLE DE DÉPART -->
+      <div class="form-group">
+        <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
+        <div class="input-with-icon">
+          <select id="origin" class="form-control"></select>
+          <button type="button" id="geolocate-btn" class="icon-btn" title="Utiliser ma position actuelle">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" /></svg>
+          </button>
+        </div>
+      </div>
 
+      <!-- Colonne 2 : BOUTON D'INVERSION -->
+      <button type="button" id="swap-destinations-btn" class="swap-btn" title="Inverser les destinations">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"></path>
+        </svg>
+      </button>
 
-                    <!-- ============================================ -->
-                    <!-- ✅ NOUVEAU CONTENEUR POUR LE CHAMP ET L'ICÔNE -->
-                    <!-- ============================================ -->
-                    <div class="input-with-icon">
-                      <select id="origin" class="form-control">
-                        <!-- Options de villes -->
-                      </select>
-                      <button type="button" id="geolocate-btn" class="icon-btn" title="Utiliser ma position actuelle">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path
-                            d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <!-- ============================================ -->
+      <!-- Colonne 3 : VILLE D'ARRIVÉE -->
+      <div class="form-group">
+        <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
+        <select id="destination" class="form-control"></select>
+      </div>
 
-                  </div>
+    </div> <!-- FIN du conteneur des destinations -->
 
-                
+    <!-- 2. Rangée pour le type de voyage et les dates -->
+    <div class="form-row">
+      <div class="form-group">
+        <label data-i18n="search_form_trip_type">Type de voyage</label>
+        <div class="trip-type-toggle" data-mode="one-way">
+          <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller simple</label>
+          <label class="toggle-option" data-value="round-trip" data-i18n="search_form_round_trip">Aller-retour</label>
+          <div class="toggle-switch"></div>
+        </div>
+      </div>
 
-                <button type="button" id="swap-destinations-btn" class="swap-btn" title="Inverser les destinations">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"></path>
-                  </svg>
-                </button>
+      <div class="form-group">
+        <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
+        <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder" placeholder="Sélectionnez vos dates" />
+        <input type="hidden" id="departure-date-value">
+        <input type="hidden" id="return-date-value">
+      </div>
+    </div>
 
-                <div class="form-group">
-                  <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
-                  <select id="destination" class="form-control"></select>
-                </div>
-
-              </div>
-
-            </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label data-i18n="search_form_trip_type">Type de voyage</label>
-                  <div class="trip-type-toggle" data-mode="one-way">
-                    <label class="toggle-option active" data-value="one-way" data-i18n="search_form_one_way">Aller
-                      simple</label>
-                    <label class="toggle-option" data-value="round-trip"
-                      data-i18n="search_form_round_trip">Aller-retour</label>
-                    <div class="toggle-switch"></div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="travel-date" data-i18n="search_form_dates">Dates du voyage</label>
-                  <input type="text" id="travel-date" class="form-control" data-i18n="search_form_dates_placeholder"
-                    placeholder="Sélectionnez vos dates" />
-                  <!-- Les inputs CACHÉS pour stocker les valeurs -->
-                  <input type="hidden" id="departure-date-value">
-                  <input type="hidden" id="return-date-value">
-                </div>
-
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label data-i18n="search_form_passengers">Passagers</label>
-                  <div id="passenger-input" class="form-control passenger-selector">
-                    <span id="passenger-summary">1 Adulte</span>
-                  </div>
-                  <div id="passenger-dropdown" class="passenger-dropdown-menu">
-                    <div class="passenger-row">
-                      <label data-i18n="search_form_adults">Adultes</label>
-                      <div class="passenger-counter">
-                        <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
-                        <span id="adults-count">1</span>
-                        <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
-                      </div>
-                    </div>
-                    <div class="passenger-row">
-                      <label data-i18n="search_form_children_dynamic"></label>
-                      <div class="passenger-counter">
-                        <button type="button" class="counter-btn" data-type="children"
-                          data-action="decrement">-</button>
-                        <span id="children-count">0</span>
-                        <button type="button" class="counter-btn" data-type="children"
-                          data-action="increment">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button class="btn btn-primary btn-large" onclick="searchBuses()"
-                data-i18n="search_form_button">Rechercher</button>
+    <!-- 3. Rangée pour les passagers -->
+    <div class="form-row">
+      <div class="form-group">
+        <label data-i18n="search_form_passengers">Passagers</label>
+        <div id="passenger-input" class="form-control passenger-selector">
+          <span id="passenger-summary">1 Adulte</span>
+        </div>
+        <div id="passenger-dropdown" class="passenger-dropdown-menu">
+          <div class="passenger-row">
+            <label data-i18n="search_form_adults">Adultes</label>
+            <div class="passenger-counter">
+              <button type="button" class="counter-btn" data-type="adults" data-action="decrement">-</button>
+              <span id="adults-count">1</span>
+              <button type="button" class="counter-btn" data-type="adults" data-action="increment">+</button>
             </div>
           </div>
-
+          <div class="passenger-row">
+            <label data-i18n="search_form_children_dynamic"></label>
+            <div class="passenger-counter">
+              <button type="button" class="counter-btn" data-type="children" data-action="decrement">-</button>
+              <span id="children-count">0</span>
+              <button type="button" class="counter-btn" data-type="children" data-action="increment">+</button>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+
+    <!-- 4. Bouton de recherche final -->
+    <button class="btn btn-primary btn-large" onclick="searchBuses()" data-i18n="search_form_button">Rechercher</button>
+    
+  </div> <!-- FIN de .search-form -->
+</div> <!-- FIN de #detailed-search-box -->
+
+<!-- ... (votre section </div></div></div> qui se fermait mal) ... -->
     </section>
+
     <section class="popular-destinations">
+      <!-- ... (début de la section suivante) ... -->
       <div class="container">
         <h2 data-i18n="popular_destinations_title">Destinations populaires</h2>
         <div class="destinations-grid" id="popular-destinations-grid"></div>
