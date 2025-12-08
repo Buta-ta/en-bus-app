@@ -330,7 +330,7 @@ let frontendCountdownInterval = null;
 // --- Données dynamiques ---
 let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
 let allReservations = []; // Pour la page "Mes réservations"
-
+let fuse = null;            
 
 
 
@@ -3745,6 +3745,8 @@ function searchForAlternativeDate(newDate) {
 
 
 
+// DANS app.js (remplacez votre fonction setupSmartSearch)
+
 function setupSmartSearch() {
     const searchInput = document.getElementById('smart-search-input');
     const submitBtn = document.getElementById('smart-search-submit-btn');
@@ -3752,22 +3754,13 @@ function setupSmartSearch() {
 
     if (!searchInput || !submitBtn || !resultsContainer) return;
 
-    // --- Fonction interne pour afficher le formulaire détaillé ---
+    // Fonction interne pour afficher le formulaire détaillé
     const triggerDetailedSearch = (prefillData = {}) => {
         resultsContainer.innerHTML = '';
         resultsContainer.style.display = 'none';
         showDetailedSearch(prefillData);
     };
 
-    // ===================================
-    // ❌ PARTIE SUPPRIMÉE (plus nécessaire)
-    // ===================================
-    // searchInput.addEventListener('focus', ...);
-    // searchInput.addEventListener('blur', ...);
-    // ===================================
-
-    // --- Écouteurs d'événements (votre code est correct et conservé) ---
-    
     // Clic sur le bouton loupe 🔍
     submitBtn.addEventListener('click', () => {
         triggerDetailedSearch({ to: searchInput.value.trim() });
@@ -3781,35 +3774,51 @@ function setupSmartSearch() {
             if (firstResult) {
                 firstResult.click();
             } else {
+                // Si pas de résultat suggéré, on lance la recherche avec ce qui est tapé
                 triggerDetailedSearch({ to: searchInput.value.trim() });
             }
         }
     });
         
-    // Auto-complétion pendant la frappe
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR : LOGIQUE DE RECHERCHE FLOUЕ
+    // ========================================================
+    
+    // Auto-complétion pendant la frappe avec Fuse.js
     searchInput.addEventListener('input', () => {
-        const query = searchInput.value.toLowerCase();
+        const query = searchInput.value.trim(); // On retire les espaces inutiles
 
-
-        
+        // On ne cherche que si l'utilisateur a tapé au moins 2 caractères
         if (query.length < 2) {
             resultsContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
             return;
         }
+        
+        // On vérifie que l'instance de Fuse est prête
+        if (!fuse) {
+            console.warn("Fuse.js n'est pas encore initialisé. La recherche est différée.");
+            return;
+        }
 
+        // On lance la recherche floue avec Fuse.js
+        const fuseResults = fuse.search(query);
         
-         // ✅ ON UTILISE LA NOUVELLE VARIABLE DYNAMIQUE
-    const filteredRoutes = allRouteTemplates.filter(route => 
-        `${route.from} ${route.to}`.toLowerCase().includes(query) ||
-        `${route.to} ${route.from}`.toLowerCase().includes(query)
-    );
-    
+        // Fuse.js renvoie un tableau d'objets { item: ..., score: ... }
+        // On ne garde que l'objet 'item' qui est notre trajet original.
+        const filteredRoutes = fuseResults.map(result => result.item);
         
+        console.log(`🔍 Recherche floue pour "${query}" : ${filteredRoutes.length} résultats trouvés par Fuse.js.`);
+
+        // On affiche les 5 meilleurs résultats
         displaySmartSearchResults(filteredRoutes.slice(0, 5));
     });
 
-    // Fermeture des résultats au clic extérieur
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
+
+    // Fermeture des résultats au clic extérieur (inchangé)
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.smart-search-wrapper')) {
             resultsContainer.innerHTML = '';
@@ -3817,7 +3826,6 @@ function setupSmartSearch() {
         }
     });
 }
-
 // Fichier : app.js
 
 /**

@@ -330,7 +330,9 @@ let frontendCountdownInterval = null;
 // --- Données dynamiques ---
 let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
 let allReservations = []; // Pour la page "Mes réservations"
-let fuse = null;            
+let fuse = null;
+let allDestinations = [];
+let fuseDestinations = null;         
 
 
 
@@ -853,10 +855,6 @@ window.changeLanguage = function(lang) {
 // DANS app.js
 
 
-// DANS app.js
-// DANS app.js
-
-// DANS app.js
 
 async function geolocateUser() {
     const geolocateBtn = document.getElementById('geolocate-btn');
@@ -2425,6 +2423,10 @@ async function initApp() {
         setupSmartSearch();
         setupMobileFilterToggle();
         setupSocialLinks();
+        loadAllDestinations();
+        // ✅ AJOUTER CES DEUX LIGNES
+        setupAutocomplete('origin-input', 'origin-suggestions');
+        setupAutocomplete('destination-input', 'destination-suggestions');
 
 
         const geolocateBtn = document.getElementById('geolocate-btn');
@@ -2495,6 +2497,56 @@ async function initApp() {
 }
 
 
+
+// DANS app.js
+function setupAutocomplete(inputId, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const suggestionsContainer = document.getElementById(suggestionsId);
+
+    if (!input || !suggestionsContainer) return;
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim();
+        if (query.length < 1 || !fuseDestinations) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+
+        const results = fuseDestinations.search(query);
+        const filteredDests = results.map(res => res.item);
+
+        // On trie pour mettre les destinations populaires en premier
+        filteredDests.sort((a, b) => b.isPopular - a.isPopular);
+
+        suggestionsContainer.innerHTML = '';
+        if (filteredDests.length > 0) {
+            filteredDests.slice(0, 5).forEach(dest => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                // On met en gras la partie qui correspond à la recherche
+                const boldedName = dest.name.replace(new RegExp(query, 'gi'), '<strong>$&</strong>');
+                item.innerHTML = `${boldedName}, ${dest.country} ${dest.isPopular ? '<small>★ Populaire</small>' : ''}`;
+                
+                item.addEventListener('click', () => {
+                    input.value = dest.name; // On met le nom propre dans le champ
+                    suggestionsContainer.style.display = 'none';
+                });
+                suggestionsContainer.appendChild(item);
+            });
+            suggestionsContainer.style.display = 'block';
+        } else {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+
+    // Fermer les suggestions si on clique ailleurs
+    document.addEventListener('click', (e) => {
+        if (e.target !== input) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
+
 function animateCountersOnScroll() {
     const counters = document.querySelectorAll('.stat-number');
     const speed = 200; // Vitesse de l'animation
@@ -2542,8 +2594,9 @@ function setupSwapButton() {
 }
 
 function swapDestinations() {
-    const originSelect = document.getElementById('origin');
-    const destinationSelect = document.getElementById('destination');
+    const originInput = document.getElementById('origin-input');
+    const destinationInput = document.getElementById('destination-input');
+
 
     if (!originSelect || !destinationSelect) return;
 
@@ -3183,6 +3236,43 @@ async function loadAllRouteTemplates() {
 }
 // DANS Frontend/app.js
 
+
+
+
+// DANS app.js
+async function loadAllDestinations() {
+    try {
+        const [destRes, popularRes] = await Promise.all([
+            fetch(`${API_CONFIG.baseUrl}/api/destinations`),
+            fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`)
+        ]);
+        const destData = await destRes.json();
+        const popularData = await popularRes.json();
+
+        if (destData.success) {
+            const popularCities = new Set([
+                ...popularData.destinations.map(d => d.from),
+                ...popularData.destinations.map(d => d.to)
+            ]);
+
+            allDestinations = destData.destinations.map(dest => ({
+                ...dest,
+                isPopular: popularCities.has(dest.name)
+            }));
+
+            // Initialisation de Fuse.js pour les destinations
+            fuseDestinations = new Fuse(allDestinations, {
+                keys: ['name', 'country'],
+                includeScore: true,
+                threshold: 0.4
+            });
+            console.log("🚀 Fuse.js pour les VILLES est initialisé.");
+        }
+    } catch (error) {
+        console.error("Erreur chargement des destinations pour l'auto-complétion:", error);
+    }
+}
+
 async function populateCitySelects() {
     const originSelect = document.getElementById("origin");
     const destinationSelect = document.getElementById("destination");
@@ -3571,8 +3661,8 @@ window.searchBuses = async function() {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
 
-        const origin = document.getElementById("origin").value;
-        const destination = document.getElementById("destination").value;
+        const origin = document.getElementById("origin-input").value;
+        const destination = document.getElementById("destination-input").value;
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
         

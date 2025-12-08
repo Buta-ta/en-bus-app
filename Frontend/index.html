@@ -384,7 +384,7 @@
                   <div class="form-group">
                     <label for="origin" data-i18n="search_form_origin">Ville de départ</label>
                     <div class="input-with-icon">
-                      <select id="origin" class="form-control"></select>
+                      <input type="text" id="origin-input" class="form-control" autocomplete="off" placeholder="Tapez une ville...">
                       <button type="button" id="geolocate-btn" class="icon-btn" title="Utiliser ma position actuelle">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path
@@ -392,7 +392,9 @@
                         </svg>
                       </button>
                     </div>
-                    
+                      <!-- Conteneur pour les suggestions -->
+        <div id="origin-suggestions" class="autocomplete-suggestions"></div>
+
                   </div>
 
                   <button type="button" id="swap-destinations-btn" class="swap-btn" title="Inverser les destinations">
@@ -404,7 +406,10 @@
                   <div class="form-group">
                     <label for="destination" data-i18n="search_form_destination">Ville d'arrivée</label>
 
-                    <select id="destination" class="form-control"></select>
+                            <!-- ✅ Le <select> devient aussi un <input type="text"> -->
+        <input type="text" id="destination-input" class="form-control" autocomplete="off" placeholder="Tapez une ville...">
+                              <!-- Conteneur pour les suggestions -->
+        <div id="destination-suggestions" class="autocomplete-suggestions"></div>
                   </div>
 
                 </div>
