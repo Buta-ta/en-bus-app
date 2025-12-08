@@ -3229,76 +3229,74 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
         // DANS admin/index.html
 
-        function renderTable(reservations) {
-            const tbody = document.getElementById('reservations-body');
-            if (!tbody) {
-                console.error("❌ Élément 'reservations-body' introuvable !");
-                return;
-            }
+      // DANS admin/index.html
 
-            if (!reservations || reservations.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
-                return;
-            }
+function renderTable(reservations) {
+    const tbody = document.getElementById('reservations-body');
+    if (!tbody) {
+        console.error("❌ Élément 'reservations-body' introuvable !");
+        return;
+    }
 
-            tbody.innerHTML = reservations.map(r => {
-                const p = r.passengers?.[0] || {};
-                const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning', 'Reporté': 'gray' };
-                const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
+    if (!reservations || reservations.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:3rem;">Aucune réservation ne correspond à vos filtres.</td></tr>`;
+        return;
+    }
 
-                const proof = r.paymentDetails?.transactionProof || r.paymentDetails?.clientTransactionId || r.agencyPaymentCode || 'N/A';
-                const method = r.paymentMethod || 'N/A';
+    tbody.innerHTML = reservations.map(r => {
+        const p = r.passengers?.[0] || {};
+        const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'info', 'Reporté': 'gray' };
+        const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
 
-                let countdownHTML = '';
-                if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-                    countdownHTML = `
-                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
-                    <span class="countdown-icon">⏱️</span>
-                    <span class="countdown-time">Calcul...</span>
-                </div>`;
-                }
+        const proof = r.paymentDetails?.transactionProof || r.paymentDetails?.clientTransactionId || r.agencyPaymentCode || 'N/A';
+        const method = r.paymentMethod || 'N/A';
 
-                // ========================================================
-                // ✅ DÉBUT DE LA MISE À JOUR : Traçabilité de l'admin
-                // ========================================================
+        let countdownHTML = '';
+        if (r.status === 'En attente de paiement' && r.paymentDeadline) {
+            countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"><span class="countdown-icon">⏱️</span><span class="countdown-time">Calcul...</span></div>`;
+        }
 
-                let statusHTML = `<span class="badge ${badgeClass}">${r.status}</span>`;
+        let statusHTML = `<span class="badge ${badgeClass}">${r.status}</span>`;
+        if (r.status === 'Confirmé' && r.paymentDetails?.confirmedByAdmin) {
+            statusHTML += `<div class="text-xs text-muted mt-1">Validé par: <strong style="color: var(--primary);">${r.paymentDetails.confirmedByAdmin}</strong></div>`;
+        } else if (r.status === 'Annulé' && r.cancelledBy) {
+            statusHTML += `<div class="text-xs text-muted mt-1">Annulé par: <strong style="color: var(--status-cancelled);">${r.cancelledBy}</strong></div>`;
+        }
 
-                // Si la réservation est confirmée, on affiche qui l'a confirmée
-                if (r.status === 'Confirmé' && r.paymentDetails?.confirmedByAdmin) {
-                    statusHTML += `
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: left;">
-                    Validé par: <strong style="color: var(--primary);">${r.paymentDetails.confirmedByAdmin}</strong>
-                </div>`;
-                }
-                // Si la réservation est annulée, on affiche qui l'a annulée
-                else if (r.status === 'Annulé' && r.cancelledBy) {
-                    statusHTML += `
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: left;">
-                    Annulé par: <strong style="color: var(--status-cancelled);">${r.cancelledBy}</strong>
-                </div>`;
-                }
+        const isRoundTrip = r.returnRoute ? true : false;
+        const outboundInfo = `<div style="margin-bottom: 6px;"><strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br><small class="text-muted">🕐 ${r.route.departure}</small></div>`;
+        const returnInfo = isRoundTrip ? `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);"><strong style="color: #ffa726;">↩ Retour :</strong> ${r.returnRoute.from} → ${r.returnRoute.to}<br><small class="text-muted">📅 ${new Date(r.returnDate).toLocaleDateString('fr-FR')} à ${r.returnRoute.departure}</small></div>` : '';
 
-                // ========================================================
-                // ✅ FIN DE LA MISE À JOUR
-                // ========================================================
+        // ========================================================
+        // ✅ DÉBUT DE LA MISE À JOUR : Logique des boutons d'action
+        // ========================================================
+        
+        let actionButtons = [];
+        
+        // Bouton Détails (toujours visible)
+        actionButtons.push(`<button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>`);
 
-                const isRoundTrip = r.returnRoute ? true : false;
+        // Bouton Confirmer Paiement
+        if (r.status === 'En attente de paiement') {
+            actionButtons.push(`<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer le paiement">✅</button>`);
+        }
+        
+        // Bouton Modifier Sièges (toujours visible pour l'instant, on pourrait le restreindre plus tard)
+        actionButtons.push(`<button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>`);
+        
+        // Bouton Annuler
+        if (!['Annulé', 'Expiré', 'Reporté'].includes(r.status)) {
+            actionButtons.push(`<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">❌</button>`);
+        }
 
-                const outboundInfo = `
-            <div style="margin-bottom: 6px;">
-                <strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br>
-                <small class="text-muted">🕐 ${r.route.departure}</small>
-            </div>`;
+        const actionButtonsHTML = `<div class="actions-cell">${actionButtons.join('')}</div>`;
+        
+        // ========================================================
+        // ✅ FIN DE LA MISE À JOUR
+        // ========================================================
 
-                const returnInfo = isRoundTrip ? `
-            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);">
-                <strong style="color: #ffa726;">↩ Retour :</strong> ${r.returnRoute.from} → ${r.returnRoute.to}<br>
-                <small class="text-muted">📅 ${new Date(r.returnDate).toLocaleDateString('fr-FR')} à ${r.returnRoute.departure}</small>
-            </div>` : '';
-
-                return `
-            <tr>
+        return `
+            <tr class="${r.status === 'En attente de paiement' ? 'pending-payment' : ''}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>
                     ${new Date(r.date).toLocaleDateString('fr-FR')}<br>
@@ -3320,18 +3318,13 @@
                     ${statusHTML}
                     ${countdownHTML} 
                 </td>
-                <td class="actions-cell">
-                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
-                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')">💺</button>
-                    ${!['Annulé', 'Expiré', 'Reporté'].includes(r.status) ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
-                </td>
+                <td>${actionButtonsHTML}</td>
             </tr>
         `;
-            }).join('');
+    }).join('');
 
-            startCountdownUpdates();
-        }
+    startCountdownUpdates();
+}
         // Dans Admin/index.html - Ajouter après renderTable()
 
         // ============================================
