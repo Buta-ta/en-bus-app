@@ -4592,16 +4592,24 @@ function displayResults(results, isReturn = false) {
   let alertsHTML = '';
 if (route.route.alerts && route.route.alerts.length > 0) {
     const alertIcons = { info: 'ℹ️', warning: '⚠️', danger: '🛑' };
+      // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : Structure HTML simplifiée
+    // ========================================================
     alertsHTML = `
         <div class="bus-card-alerts">
-            ${route.route.alerts.map(alert => `
-                <div class="alert-item ${alert.type}">
-                    <span>${alert.message}</span>
-                    <span class="icon">${alertIcons[alert.type] || 'ℹ️'}</span>
-                </div>
-            `).join('')}
+            ${route.route.alerts.map(alert => {
+                // On met l'icône et le message DANS LA MÊME BALISE
+                return `
+                    <div class="alert-item ${alert.type}">
+                        ${alertIcons[alert.type] || 'ℹ️'} ${alert.message}
+                    </div>
+                `;
+            }).join('')}
         </div>
     `;
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
 }
 
 // ========================================================

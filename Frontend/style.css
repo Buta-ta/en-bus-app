@@ -6177,33 +6177,26 @@ body.pwa-installed .container {
 
 /* DANS index.html, dans la balise <style> */
 
-/* ============================================
-   🎨 STYLES CORRIGÉS POUR LES ALERTES
-   ============================================ */
+/* DANS index.html, dans la balise <style> */
 
 .bus-card-alerts {
     margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px dashed var(--color-border);
+    /* On utilise flexbox pour empiler les alertes verticalement */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Espace entre chaque ligne d'alerte */
 }
 
 .alert-item {
-    display: flex;
-    align-items: flex-start; /* Aligne l'icône et le texte sur le haut */
-    gap: 0.5rem; /* Espace entre l'icône et le texte */
+    /* Plus besoin de flexbox ici, c'est juste un bloc de texte */
     font-size: 0.85rem;
-    text-align: left; /* Assure que le texte est bien aligné à gauche */
-    margin-bottom: 0.5rem;
+    text-align: left;
+    line-height: 1.4; /* Améliore la lisibilité si le texte passe à la ligne */
 }
 
-.alert-item .icon {
-    /* On s'assure qu'il n'y a pas de propriété 'order' qui changerait l'ordre */
-    font-size: 1rem;
-    flex-shrink: 0; /* Empêche l'icône de rétrécir si le texte est long */
-    margin-top: 1px; /* Petit ajustement vertical pour un alignement parfait */
-}
-
-/* Styles des couleurs d'alerte (inchangés) */
+/* Les couleurs restent les mêmes */
 .alert-item.info { color: var(--color-text-secondary); }
-.alert-item.warning { color: #ffa726; }
-.alert-item.danger { color: #ef5350; }
+.alert-item.warning { color: #ffa726; font-weight: 600; }
+.alert-item.danger { color: #ef5350; font-weight: 700; }
