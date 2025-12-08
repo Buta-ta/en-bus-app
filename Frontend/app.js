@@ -765,7 +765,7 @@ function applyLanguage(lang = getLanguage()) {
     if (!hasInitialSetupRun) {
         console.log("🚀 Exécution de la configuration initiale de l'interface...");
         
-        populateCitySelects();
+        
         setupTripTypeToggle();
         setupPassengerSelector();
         setupAmenitiesFilters();
