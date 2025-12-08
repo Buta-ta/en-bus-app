@@ -765,7 +765,7 @@ function applyLanguage(lang = getLanguage()) {
     if (!hasInitialSetupRun) {
         console.log("🚀 Exécution de la configuration initiale de l'interface...");
         
-        populateCitySelects();
+        
         setupTripTypeToggle();
         setupPassengerSelector();
         setupAmenitiesFilters();
@@ -2499,52 +2499,63 @@ async function initApp() {
 
 
 // DANS app.js
+// DANS app.js
 function setupAutocomplete(inputId, suggestionsId) {
     const input = document.getElementById(inputId);
     const suggestionsContainer = document.getElementById(suggestionsId);
-
     if (!input || !suggestionsContainer) return;
 
+    // Affiche les destinations populaires quand on clique dans un champ vide
+    input.addEventListener('focus', () => {
+        if (input.value.trim() === '') {
+            const popularDests = allDestinations.filter(d => d.isPopular);
+            displaySuggestions(popularDests, '', suggestionsContainer, input);
+        }
+    });
+
+    // Logique de recherche floue (inchangée mais importante)
     input.addEventListener('input', () => {
         const query = input.value.trim();
         if (query.length < 1 || !fuseDestinations) {
             suggestionsContainer.style.display = 'none';
             return;
         }
-
         const results = fuseDestinations.search(query);
         const filteredDests = results.map(res => res.item);
-
-        // On trie pour mettre les destinations populaires en premier
-        filteredDests.sort((a, b) => b.isPopular - a.isPopular);
-
-        suggestionsContainer.innerHTML = '';
-        if (filteredDests.length > 0) {
-            filteredDests.slice(0, 5).forEach(dest => {
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                // On met en gras la partie qui correspond à la recherche
-                const boldedName = dest.name.replace(new RegExp(query, 'gi'), '<strong>$&</strong>');
-                item.innerHTML = `${boldedName}, ${dest.country} ${dest.isPopular ? '<small>★ Populaire</small>' : ''}`;
-                
-                item.addEventListener('click', () => {
-                    input.value = dest.name; // On met le nom propre dans le champ
-                    suggestionsContainer.style.display = 'none';
-                });
-                suggestionsContainer.appendChild(item);
-            });
-            suggestionsContainer.style.display = 'block';
-        } else {
-            suggestionsContainer.style.display = 'none';
-        }
+        displaySuggestions(filteredDests.slice(0, 5), query, suggestionsContainer, input);
     });
 
-    // Fermer les suggestions si on clique ailleurs
+    // Fermeture au clic extérieur
     document.addEventListener('click', (e) => {
         if (e.target !== input) {
             suggestionsContainer.style.display = 'none';
         }
     });
+}
+
+// NOUVELLE FONCTION HELPER pour afficher les suggestions
+function displaySuggestions(destinations, query, container, inputElement) {
+    container.innerHTML = '';
+    if (destinations.length > 0) {
+        destinations.forEach(dest => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            
+            // On met en gras la partie qui correspond à la recherche (si recherche il y a)
+            const boldedName = query ? dest.name.replace(new RegExp(query, 'gi'), '<strong>$&</strong>') : dest.name;
+            
+            item.innerHTML = `${boldedName}, ${dest.country} ${dest.isPopular ? '<small>★ Populaire</small>' : ''}`;
+            
+            item.addEventListener('click', () => {
+                inputElement.value = dest.name;
+                container.style.display = 'none';
+            });
+            container.appendChild(item);
+        });
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
 }
 
 function animateCountersOnScroll() {
@@ -3273,49 +3284,6 @@ async function loadAllDestinations() {
     }
 }
 
-async function populateCitySelects() {
-    const originSelect = document.getElementById("origin");
-    const destinationSelect = document.getElementById("destination");
-    
-    if (!originSelect || !destinationSelect) {
-        console.error("Erreur: Sélecteurs de destination introuvables.");
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/destinations`);
-        const data = await response.json();
-
-        if (data.success && data.destinations) {
-            const cities = data.destinations;
-            
-            originSelect.innerHTML = '';
-            destinationSelect.innerHTML = '';
-            
-            // ===================================
-            // ✅ CORRECTION DE LA TRADUCTION
-            // ===================================
-            const lang = getLanguage();
-            const translation = translations[lang] || translations.fr;
-            const defaultOptionText = translation.select_a_city || "Choisissez une ville";
-            
-            originSelect.innerHTML = `<option value="">${defaultOptionText}</option>`;
-            destinationSelect.innerHTML = `<option value="">${defaultOptionText}</option>`;
-            // ===================================
-
-            cities.forEach(city => {
-                const optionHTML = `<option value="${city.name}">${city.name}, ${city.country}</option>`;
-                originSelect.innerHTML += optionHTML;
-                destinationSelect.innerHTML += optionHTML;
-            });
-            console.log(`✅ ${cities.length} destinations chargées dans les formulaires.`);
-        } else {
-            console.error("Impossible de charger les destinations depuis l'API.");
-        }
-    } catch (error) {
-        console.error("Erreur critique lors du chargement des destinations:", error);
-    }
-}
 // Remplacez votre ancienne fonction par celle-ci
 
 async function populatePopularDestinations() {
@@ -4017,6 +3985,8 @@ function selectSmartSearchResult(from, to) {
 }
 
 
+// DANS app.js (remplacez votre fonction showDetailedSearch)
+
 async function showDetailedSearch(prefillData = {}) {
     const smartSearchContainer = document.getElementById('smart-search-container');
     const detailedSearchBox = document.getElementById('detailed-search-box');
@@ -4031,37 +4001,62 @@ async function showDetailedSearch(prefillData = {}) {
     detailedSearchBox.style.display = 'block';
     setTimeout(() => { detailedSearchBox.classList.add('visible'); }, 10);
 
-    // ============================================
-    // ✅ CORRECTION DE L'ORDRE D'EXÉCUTION
-    // ============================================
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR
+    // ========================================================
 
-    // 1. On attend que la liste des villes soit chargée et affichée
-    if (typeof populateCitySelects === 'function') {
-        await populateCitySelects();
+    // --- On cible les nouveaux <input> de texte ---
+    const originInput = document.getElementById('origin-input');
+    const destinationInput = document.getElementById('destination-input');
+    const travelDateInput = document.getElementById('travel-date');
+    
+    // --- On ne peuple plus les <select>, donc on supprime cette partie ---
+    // if (typeof populateCitySelects === 'function') {
+    //     await populateCitySelects();
+    // }
+
+    // --- On traduit les placeholders des nouveaux inputs ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    if (originInput && translation.search_city_placeholder) {
+        originInput.placeholder = translation.search_city_placeholder;
     }
-
-    // 2. SEULEMENT APRÈS, on pré-remplit les valeurs
+    if (destinationInput && translation.search_city_placeholder) {
+        destinationInput.placeholder = translation.search_city_placeholder;
+    }
+    
+    // --- On pré-remplit les valeurs avec les bons ID ---
     if (prefillData) {
-        if (prefillData.from) document.getElementById('origin').value = prefillData.from;
-        if (prefillData.to) document.getElementById('destination').value = prefillData.to;
+        if (prefillData.from && originInput) {
+            originInput.value = prefillData.from;
+        }
+        if (prefillData.to && destinationInput) {
+            destinationInput.value = prefillData.to;
+        }
     }
 
-    // 3. On initialise le calendrier
+    // --- Initialisation du calendrier (inchangé) ---
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
     
-    // 4. On met le focus sur le bon champ
-    if (prefillData.from && prefillData.to) {
-        document.getElementById('travel-date').focus();
-    } else if (prefillData.to) {
-        document.getElementById('origin').focus();
-    } else {
-        document.getElementById('origin').focus();
+    // --- Logique de focus plus robuste qui vérifie l'existence des éléments ---
+    if (prefillData.from && prefillData.to && travelDateInput) {
+        travelDateInput.focus();
+    } else if (prefillData.to && originInput) {
+        originInput.focus();
+    } else if (destinationInput && !destinationInput.value) {
+        // Met le focus sur la destination si elle est vide
+        destinationInput.focus();
+    } else if (originInput) {
+        // Sinon, met le focus sur l'origine par défaut
+        originInput.focus();
     }
-    // ============================================
-}
 
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
+}
 
 
 // ============================================
