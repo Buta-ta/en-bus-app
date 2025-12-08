@@ -1760,6 +1760,65 @@ window.checkPaymentStatus = async function(bookingNumber) {
     }
 };
 
+
+
+
+
+
+// DANS app.js (ajoutez cette nouvelle fonction)
+
+async function shareTicket() {
+    const { Share } = Capacitor.Plugins;
+    const reservation = appState.currentReservation;
+    if (!reservation) return;
+
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    // On prépare les informations à partager
+    const from = reservation.route.from;
+    const to = reservation.route.to;
+    const date = Utils.formatDate(reservation.date, lang);
+    const time = reservation.route.departure;
+    const seat = reservation.seats.join(', ');
+    const bookingNum = reservation.bookingNumber;
+    // On crée une URL qui mène directement à la page de la réservation (à développer plus tard)
+    const url = `https://incomparable-llama-84897e.netlify.app/?booking=${bookingNum}`;
+
+    const shareData = {
+        title: translation.share_message_subject(bookingNum),
+        text: translation.share_message_body(from, to, date, time, seat, bookingNum, url),
+        url: url,
+        dialogTitle: translation.button_share_ticket,
+    };
+
+    try {
+        // On vérifie si on peut utiliser l'API de partage native
+        const canShare = await Share.canShare();
+        if (canShare.value) {
+            console.log("🚀 Utilisation du partage natif...");
+            await Share.share(shareData);
+        } else {
+            // Fallback pour le web si l'API de partage n'est pas dispo : lien WhatsApp
+            console.log("🌐 Fallback vers le lien WhatsApp...");
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    } catch (error) {
+        console.error("❌ Erreur de partage:", error);
+        // Fallback ultime : copier le texte dans le presse-papiers
+        navigator.clipboard.writeText(shareData.text).then(() => {
+            Utils.showToast("Les détails du voyage ont été copiés !", 'success');
+        });
+    }
+}
+
+
+
+
+
+
+
 // Dans app.js
 // Dans app.js
 // DANS app.js, REMPLACEZ la fonction generateTicketPDF par celle-ci
@@ -5510,6 +5569,13 @@ async function displayConfirmation(reservation) {
 
          // ✅ AJOUTER LE BOUTON FACTURE ICI
        actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
+       // ========================================================
+        // ✅ AJOUT DU BOUTON "PARTAGER"
+        // ========================================================
+        actionsHTML += `<button class="btn-modern btn-share" onclick="shareTicket()"><span class="btn-icon">↗️</span><span class="btn-text">${translation.button_share_ticket}</span></button>`;
+        // ========================================================
+
+        
         if (reservation.busIdentifier) {
             actionsHTML += `<a class="btn-modern btn-track" href="suivi/suivi.html?bus=${reservation.busIdentifier}&booking=${reservation.bookingNumber}" target="_blank"><span class="btn-icon">🛰️</span><span class="btn-text">${translation.button_track_outbound}</span></a>`;
         }

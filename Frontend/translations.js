@@ -630,6 +630,17 @@ const translations = {
 
     docs_confirmation_checkbox: "Je confirme que tous les passagers ont les documents requis.",
     docs_continue_button: "Continuer vers le paiement",
+
+
+
+
+    // ============================================
+    // ✅ CLÉS POUR LE PARTAGE DE BILLET
+    // ============================================
+    button_share_ticket: "Partager le Billet",
+    share_message_subject: (bookingNum) => `Ton billet de bus En-Bus (N° ${bookingNum})`,
+    share_message_body: (from, to, date, time, seat, bookingNum, url) => `Salut ! Voici les infos pour ton voyage avec En-Bus :\n\n- Trajet : ${from} → ${to}\n- Date : ${date}\n- Départ : ${time}\n- Siège : ${seat}\n- Référence : ${bookingNum}\n\nPour voir tous les détails et suivre le bus, clique ici : ${url}`,
+    // ============================================
     // ============================================
   
 
@@ -1264,6 +1275,15 @@ const translations = {
 
     docs_confirmation_checkbox: "I confirm all passengers have the required documents.",
     docs_continue_button: "Continue to Payment",
+
+
+
+    //============================================
+    // ✅ KEYS FOR TICKET SHARING
+    // ============================================
+    button_share_ticket: "Share Ticket",
+    share_message_subject: (bookingNum) => `Your En-Bus Bus Ticket (Ref ${bookingNum})`,
+    share_message_body: (from, to, date, time, seat, bookingNum, url) => `Hi! Here is your travel info from En-Bus:\n\n- Trip: ${from} → ${to}\n- Date: ${date}\n- Departure: ${time}\n- Seat: ${seat}\n- Reference: ${bookingNum}\n\nSee all details and track the bus here: ${url}`,
     // ============================================
     // ============================================
   },

@@ -5999,3 +5999,9 @@ body.pwa-installed .container {
     border-top: 1px solid var(--color-border);
     flex-shrink: 0; /* Empêche le pied de page de rétrécir */
 }
+
+
+.btn-modern.btn-share {
+    background-color: #25D366; /* Vert WhatsApp */
+    color: white;
+}
