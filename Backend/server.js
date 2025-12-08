@@ -532,18 +532,6 @@ app.get("/api/route-templates", async (req, res) => {
 // DANS server.js
 // DANS server.js (remplacez l'ancienne route /api/search)
 
-// DANS server.js (remplacez l'ancienne route /api/search)
-
-// DANS server.js
-// DANS server.js
-
-// DANS server.js (remplacez entièrement votre route /api/search)
-
-// DANS server.js (remplacez entièrement votre route /api/search)
-
-// DANS server.js (remplacez entièrement votre route /api/search)
-
-// DANS server.js (remplacez entièrement votre route /api/search)
 
 app.get("/api/search", async (req, res) => {
     let { from, to, date } = req.query;
@@ -555,30 +543,23 @@ app.get("/api/search", async (req, res) => {
         const fromCity = from.trim();
         const toCity = to.trim();
 
-        // --- 1. On récupère tous les trajets programmés pour la date demandée ---
         const allTripsForTheDay = await tripsCollection.find({ date: date }).toArray();
 
-        // --- 2. Filtrage en JavaScript pour trouver les trajets valides ---
         const validTrips = allTripsForTheDay.filter(trip => {
             if (!trip.route) return false;
-
-            const stopCities = (trip.route.stops || []).map(stop => stop && typeof stop.city === 'string' ? stop.city : null).filter(Boolean);
-            const connectionCities = (trip.route.connections || []).map(conn => conn && typeof conn.at === 'string' ? conn.at : null).filter(Boolean);
+            const stopCities = (trip.route.stops || []).map(stop => stop && stop.city).filter(Boolean);
+            const connectionCities = (trip.route.connections || []).map(conn => conn && conn.at).filter(Boolean);
             const fullPath = [...new Set([trip.route.from, ...stopCities, ...connectionCities, trip.route.to])];
-
             if (!fullPath.every(city => typeof city === 'string')) {
                 console.warn(`[WARN] Trajet ${trip._id} ignoré, parcours invalide.`);
                 return false;
             }
-
             const pathInLower = fullPath.map(city => city.toLowerCase());
             const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
             const toIndex = pathInLower.indexOf(toCity.toLowerCase());
-            
             return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
 
-        // --- 3. Filtrage des heures passées ---
         const timeZone = 'Africa/Brazzaville';
         const availableTrips = validTrips.filter(trip => {
             const todayStr = format(utcToZonedTime(new Date(), timeZone), 'yyyy-MM-dd', { timeZone });
@@ -589,15 +570,13 @@ app.get("/api/search", async (req, res) => {
             }
             return true;
         });
-        
-        // --- 4. Formatage des résultats OU recherche d'alternatives ---
+
         if (availableTrips.length > 0) {
             const calculateDuration = (start, end, daysOffset = 0) => {
                 if (!start || !end) return "N/A";
                 const [h1, m1] = start.split(':').map(Number);
                 const [h2, m2] = end.split(':').map(Number);
-                let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-                diffMinutes += daysOffset * 1440;
+                let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1) + (daysOffset * 1440);
                 const hours = Math.floor(diffMinutes / 60);
                 const minutes = diffMinutes % 60;
                 return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
@@ -608,10 +587,10 @@ app.get("/api/search", async (req, res) => {
                 
                 return {
                     id: trip._id.toString(),
-                    // On passe l'objet route ENTIER pour inclure la juridiction
+                    // On passe l'objet route complet pour la juridiction
                     route: trip.route,
                     
-                    // On garde les champs de premier niveau pour compatibilité
+                    // On garde les champs plats pour la compatibilité avec l'affichage
                     from: trip.route.from,
                     to: trip.route.to,
                     company: trip.route.company,
@@ -620,46 +599,51 @@ app.get("/api/search", async (req, res) => {
                     arrival: trip.route.arrival,
                     amenities: trip.route.amenities || [],
                     
-                    // On calcule la durée en passant le décalage
+                    // ========================================================
+                    // ✅ CORRECTION PRINCIPALE : On rajoute les champs manquants
+                    // ========================================================
+                    tripType: trip.route.tripType || "direct",
+                    stops: trip.route.stops || [],
+                    connections: trip.route.connections || [],
+                    // ========================================================
+                    
                     duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival, trip.arrivalDaysOffset || 0),
                     
-                    // Le reste des informations du trajet
+                    departureLocation: trip.route.departureLocation || null,
+                    arrivalLocation: trip.route.arrivalLocation || null,
+                    trackerId: trip.busIdentifier || trip.route.trackerId || null,
                     availableSeats: trip.seats.filter(s => s.status === "available").length,
                     isNightTrip: trip.isNightTrip || false,
                     arrivalDaysOffset: trip.arrivalDaysOffset || 0,
                     totalSeats: trip.seats.length,
                     date: trip.date,
                     busIdentifier: trip.busIdentifier,
+                    baggageOptions: trip.route.baggageOptions,
                     highlightBadge: trip.highlightBadge || null,
                     
-                    // Infos sur le segment
                     isSegment: isSegment,
                     segmentFrom: fromCity,
                     segmentTo: toCity
                 };
             });
+
             return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
         
         } else {
-            // --- 5. Si aucun résultat, on cherche des alternatives sur 7 jours ---
+            // Logique pour les alternatives (inchangée)
             console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives sur 7 jours...`);
             const searchPromises = [];
-
             for (let i = 1; i <= 7; i++) {
                 const alternativeDate = new Date(date);
                 alternativeDate.setUTCDate(alternativeDate.getUTCDate() + i);
                 const alternativeDateString = alternativeDate.toISOString().split('T')[0];
-
-                const promise = tripsCollection.find({
-                    date: alternativeDateString
-                }).toArray().then(allTripsForThatDay => {
+                const promise = tripsCollection.find({ date: alternativeDateString }).toArray().then(allTripsForThatDay => {
                     const validTrips = allTripsForThatDay.filter(trip => {
                         if (!trip.route) return false;
                         const stopCities = (trip.route.stops || []).map(stop => stop && stop.city).filter(Boolean);
                         const connectionCities = (trip.route.connections || []).map(conn => conn && conn.at).filter(Boolean);
                         const fullPath = [...new Set([trip.route.from, ...stopCities, ...connectionCities, trip.route.to])];
                         if (!fullPath.every(city => typeof city === 'string')) return false;
-
                         const pathInLower = fullPath.map(city => city.toLowerCase());
                         const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
                         const toIndex = pathInLower.indexOf(toCity.toLowerCase());
@@ -672,10 +656,8 @@ app.get("/api/search", async (req, res) => {
                 });
                 searchPromises.push(promise);
             }
-
             const resolvedAlternatives = await Promise.all(searchPromises);
             const finalAlternatives = resolvedAlternatives.filter(Boolean);
-            
             return res.json({ success: true, count: 0, results: [], alternativeTrips: finalAlternatives });
         }
     } catch (error) {
