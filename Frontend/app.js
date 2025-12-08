@@ -4920,24 +4920,24 @@ function updateBookingSummary() {
 
 // DANS app.js (remplacez TEMPORAIREMENT votre fonction)
 
+// DANS app.js (restaurez la version finale)
 window.proceedToPayment = async function() {
-    console.log("🟢 [TEST] Début de proceedToPayment...");
-
-    // On empêche tout comportement par défaut si jamais il y en a un
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
+    console.log('🟢 proceedToPayment() appelée. Validation des passagers...');
+    let allFieldsValid = true;
+    appState.passengerInfo = [];
     
-    // On remplace toute la logique de la modale par un simple 'alert'
-    // Un alert bloque TOUTE exécution de code tant qu'il n'est pas fermé.
-    // S'il disparaît de lui-même, c'est que la page se recharge.
-    alert("Si cette alerte reste, le problème est dans la modale. Si elle disparaît, la page se recharge.");
+    // ... (votre boucle de validation des passagers) ...
+    if (!allFieldsValid) { return; }
 
-    console.log("✅ [TEST] L'alerte a été fermée.");
-
-    // Pour l'instant, on ne fait rien après.
-    // showPage("payment"); 
+    const documentsConfirmed = await showDocumentChecklist();
+    
+    if (documentsConfirmed) {
+        console.log("✅ Documents confirmés. Navigation vers la page de paiement.");
+        displayBookingSummary(); 
+        showPage("payment");
+    } else {
+        console.log("❌ Confirmation des documents annulée par l'utilisateur.");
+    }
 }
 
 
