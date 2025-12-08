@@ -4591,26 +4591,19 @@ function displayResults(results, isReturn = false) {
     // ========================================================
     let alertsHTML = '';
     if (route.route.alerts && route.route.alerts.length > 0) {
-        const alertIcons = {
-            info: 'ℹ️',
-            warning: '⚠️',
-            danger: '🛑'
-        };
+        const alertIcons = { info: 'ℹ️', warning: '⚠️', danger: '🛑' };
         alertsHTML = `
             <div class="bus-card-alerts">
                 ${route.route.alerts.map(alert => `
                     <div class="alert-item ${alert.type}">
-                        <span class="icon">${alertIcons[alert.type] || 'ℹ️'}</span>
                         <span>${alert.message}</span>
+                        <span class="icon">${alertIcons[alert.type] || 'ℹ️'}</span>
                     </div>
                 `).join('')}
             </div>
         `;
     }
-    // ========================================================
-
-
-            
+    
     // ========================================================
     // ✅ DÉBUT DE LA MISE À JOUR DE LA STRUCTURE HTML COMPLÈTE
     // ========================================================
@@ -4619,25 +4612,34 @@ function displayResults(results, isReturn = false) {
             ${badgeHTML}
             <div class="bus-card-wrapper">
                 
-                <!-- Colonne de gauche : tous les détails -->
+                <!-- COLONNE DE GAUCHE : INFOS TRAJET -->
                 <div class="bus-card-main">
                     ${tripTitleHTML}
-                    <div class="bus-card-time"> ... </div>
+                    <div class="bus-card-time">
+                        <span>${route.departure}</span>
+                        <div class="bus-card-duration">
+                            <span>→</span><br>
+                            ${route.duration || 'N/A'}
+                        </div>
+                        ${arrivalDisplay}
+                    </div>
                     ${departureLocationHTML}
-                    <div class="bus-card-company">...</div>
+                    <div class="bus-card-company">${route.company}</div>
                     ${tripDetailsHTML}
                     <div class="bus-card-details">
-                        <div class="bus-amenities">...</div>
-                        <!-- Les alertes sont maintenant ici, à la fin de la colonne de gauche -->
-                        ${alertsHTML} 
+                        <div class="bus-amenities">${amenitiesHTML}</div>
+                        <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
                     </div>
                 </div>
 
-                <!-- Colonne de droite : prix et bouton -->
-                <div class="bus-card-pricing">
-                    <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                    <!-- Le div suivant est un espaceur pour pousser le bouton en bas -->
-                    <div style="flex-grow: 1;"></div> 
+                <!-- COLONNE DE DROITE : PRIX, ALERTES, BOUTON -->
+                <div class="bus-card-actions-col">
+                    <div class="price-and-alerts-group">
+                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                        <!-- Les alertes sont maintenant ici -->
+                        ${alertsHTML}
+                    </div>
+                    
                     <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
                 </div>
 

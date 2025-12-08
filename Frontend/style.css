@@ -6191,10 +6191,7 @@ body.pwa-installed .container {
     gap: 1rem; /* Espace entre les deux colonnes */
 }
 
-/* Colonne de gauche : Informations principales du trajet */
-.bus-card-main {
-    /* Rien de spécial à faire ici, elle prendra la place disponible */
-}
+
 
 /* Colonne de droite : Prix, Alertes et Bouton */
 .bus-card-actions-col {
