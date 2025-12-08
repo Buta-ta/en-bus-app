@@ -6061,6 +6061,30 @@ body.pwa-installed .container {
 
 
 
+/* DANS index.html, dans <style> */
+
+.bus-card-alerts {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.alert-item .icon {
+    font-size: 1rem;
+    margin-top: 2px;
+}
+.alert-item.info { color: var(--color-text-secondary); }
+.alert-item.warning { color: #ffa726; }
+.alert-item.danger { color: #ef5350; }
+
 
 
 /* DANS index.html, dans <style> */

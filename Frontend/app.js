@@ -4586,6 +4586,28 @@ function displayResults(results, isReturn = false) {
         // ✅ FIN DU NOUVEAU BLOC
         // ========================================================
         
+            // ========================================================
+    // ✅ NOUVELLE LOGIQUE POUR AFFICHER LES ALERTES
+    // ========================================================
+    let alertsHTML = '';
+    if (route.route.alerts && route.route.alerts.length > 0) {
+        const alertIcons = {
+            info: 'ℹ️',
+            warning: '⚠️',
+            danger: '🛑'
+        };
+        alertsHTML = `
+            <div class="bus-card-alerts">
+                ${route.route.alerts.map(alert => `
+                    <div class="alert-item ${alert.type}">
+                        <span class="icon">${alertIcons[alert.type] || 'ℹ️'}</span>
+                        <span>${alert.message}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    // ========================================================
 
 
 
@@ -4610,6 +4632,7 @@ function displayResults(results, isReturn = false) {
                         ${departureLocationHTML}
                         <div class="bus-card-company">${route.company}</div>
                         ${tripDetailsHTML}
+                         ${alertsHTML} <!-- ON AJOUTE LE BLOC D'ALERTES ICI -->
                         <div class="bus-card-details">
                             <div class="bus-amenities">${amenitiesHTML}</div>
                             <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>

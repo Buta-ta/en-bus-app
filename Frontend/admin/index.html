@@ -2440,6 +2440,21 @@
 
 
 
+
+
+                            <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+
+<div class="form-group form-group-full">
+    <label class="form-label">📢 Alertes et Informations sur le Trajet</label>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem;">
+        Informez les voyageurs des conditions spécifiques à cette ligne (état de la route, sécurité, etc.).
+    </p>
+    <div id="alerts-container">
+        <!-- Les alertes seront ajoutées ici par JS -->
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="addAlertField()">+ Ajouter une alerte</button>
+</div>
+
                             <button type="submit" class="btn btn-primary mt-4">
                                 <span>💾</span>
                                 Créer le modèle
@@ -3810,90 +3825,116 @@ function renderTable(reservations) {
             }).join("");
         }
 
+
+
+
+
+
+
+
+        let alertCounter = 0;
+function addAlertField(type = 'info', message = '') {
+    const container = document.getElementById('alerts-container');
+    const alertId = `alert-${alertCounter++}`;
+
+    const alertDiv = document.createElement('div');
+    alertDiv.id = alertId;
+    alertDiv.className = 'alert-field-item';
+    alertDiv.style.display = 'flex';
+    alertDiv.style.gap = '10px';
+    alertDiv.style.marginBottom = '10px';
+
+    alertDiv.innerHTML = `
+        <select class="form-control" style="flex: 0 0 150px;">
+            <option value="info" ${type === 'info' ? 'selected' : ''}>ℹ️ Info</option>
+            <option value="warning" ${type === 'warning' ? 'selected' : ''}>⚠️ Avertissement</option>
+            <option value="danger" ${type === 'danger' ? 'selected' : ''}>🛑 Danger</option>
+        </select>
+        <input type="text" class="form-control" value="${message}" placeholder="Message de l'alerte...">
+        <button type="button" class="btn btn-icon btn-danger" onclick="document.getElementById('${alertId}').remove()">🗑️</button>
+    `;
+    container.appendChild(alertDiv);
+}
+
         // Dans Admin/index.html (section <script>)
-        async function handleCreateTemplate(e) {
-            e.preventDefault();
+      // DANS admin/index.html (remplacez votre fonction handleCreateTemplate)
 
-            const amenities = Array.from(
-                document.querySelectorAll('input[name="amenity"]:checked')
-            ).map((cb) => cb.value);
-            const tripType = document.getElementById("template-trip-type").value;
+async function handleCreateTemplate(e) {
+    e.preventDefault();
 
-            const stops = Array.from(document.querySelectorAll(".stop-item")).map(
-                (stopDiv) => ({
-                    city: stopDiv.querySelector(".stop-city").value,
-                    arrivalTime: stopDiv.querySelector(".stop-arrival").value,
-                    departureTime: stopDiv.querySelector(".stop-departure").value,
-                    duration: stopDiv.querySelector(".stop-duration").value,
-                })
-            );
+    // --- Récupération des données existantes (inchangée) ---
+    const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(cb => cb.value);
+    const tripType = document.getElementById("template-trip-type").value;
 
-            // ✅ RÉCUPÉRER LES CORRESPONDANCES AVEC LES NOUVEAUX CHAMPS
-            const connections = Array.from(
-                document.querySelectorAll(".connection-item")
-            ).map((connDiv) => ({
-                at: connDiv.querySelector(".conn-city").value,
-                arrivalTime: connDiv.querySelector(".conn-arrival").value,
-                waitTime: connDiv.querySelector(".conn-wait").value,
-                nextDeparture: connDiv.querySelector(".conn-next-departure").value, // Ajouté
-                nextCompany: connDiv.querySelector(".conn-next-company").value, // Ajouté
-                nextBusNumber: connDiv.querySelector(".conn-next-bus-number").value, // Ajouté
-            }));
+    const stops = Array.from(document.querySelectorAll(".stop-item")).map(stopDiv => ({
+        city: stopDiv.querySelector(".stop-city").value,
+        arrivalTime: stopDiv.querySelector(".stop-arrival").value,
+        departureTime: stopDiv.querySelector(".stop-departure").value,
+        duration: stopDiv.querySelector(".stop-duration").value,
+    }));
 
-            const newTemplate = {
-                from: document.getElementById("template-from").value.trim(),
-                // ✅ AJOUTER CETTE LIGNE
-                departureLocation: document.getElementById('template-departure-location').value.trim(),
+    const connections = Array.from(document.querySelectorAll(".connection-item")).map(connDiv => ({
+        at: connDiv.querySelector(".conn-city").value,
+        arrivalTime: connDiv.querySelector(".conn-arrival").value,
+        waitTime: connDiv.querySelector(".conn-wait").value,
+        nextDeparture: connDiv.querySelector(".conn-next-departure").value,
+        nextCompany: connDiv.querySelector(".conn-next-company").value,
+        nextBusNumber: connDiv.querySelector(".conn-next-bus-number").value,
+    }));
+    
+    // ========================================================
+    // ✅ DÉBUT DE LA MISE À JOUR : Récupération des alertes
+    // ========================================================
+    const alerts = Array.from(document.querySelectorAll('#alerts-container .alert-field-item')).map(div => {
+        return {
+            type: div.querySelector('select').value,
+            message: div.querySelector('input[type="text"]').value.trim()
+        };
+    }).filter(alert => alert.message); // On ne sauvegarde que les alertes qui ont un message
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
 
-                to: document.getElementById("template-to").value.trim(),
+    const newTemplate = {
+        from: document.getElementById("template-from").value.trim(),
+        departureLocation: document.getElementById('template-departure-location').value.trim(),
+        to: document.getElementById("template-to").value.trim(),
+        arrivalLocation: document.getElementById('template-arrival-location').value.trim(),
+        company: document.getElementById("template-company").value.trim(),
+        price: parseInt(document.getElementById("template-price").value),
+        distance: parseInt(document.getElementById("template-distance").value),
+        departure: document.getElementById("template-departure").value,
+        arrival: document.getElementById("template-arrival").value,
+        jurisdiction: document.getElementById("template-jurisdiction").value,
+        amenities: amenities,
+        tripType: tripType,
+        stops: stops,
+        connections: connections,
+        breaks: stops.length, // Ce champ est probablement redondant si vous avez `stops.length`
+        
+        alerts: alerts, // On ajoute le tableau d'alertes à l'objet envoyé
 
-                // ✅ AJOUTER CETTE LIGNE
-                arrivalLocation: document.getElementById('template-arrival-location').value.trim(),
+        // Données des bagages (inchangées)
+        standardBaggageIncluded: document.getElementById("standard-baggage-included").value,
+        standardBaggageMax: document.getElementById("standard-baggage-max").value,
+        standardBaggagePrice: document.getElementById("standard-baggage-price").value,
+        oversizedBaggageMax: document.getElementById("oversized-baggage-max").value,
+        oversizedBaggagePrice: document.getElementById("oversized-baggage-price").value,
+    };
 
-                company: document.getElementById("template-company").value.trim(),
-                price: parseInt(document.getElementById("template-price").value),
-                distance: parseInt(document.getElementById("template-distance").value), // ✅ NOUVELLE LIGNE
-                departure: document.getElementById("template-departure").value,
-                arrival: document.getElementById("template-arrival").value,
-                jurisdiction: document.getElementById("template-jurisdiction").value,
+    const data = await apiCall("/admin/route-templates", "POST", newTemplate);
 
-                amenities: amenities,
-                tripType: tripType,
-                stops: stops,
-                connections: connections,
-                breaks: stops.length,
-
-                // ✅ ENVOYER LES DONNÉES BRUTES DES BAGAGES
-                standardBaggageIncluded: document.getElementById(
-                    "standard-baggage-included"
-                ).value,
-                standardBaggageMax: document.getElementById("standard-baggage-max")
-                    .value,
-                standardBaggagePrice: document.getElementById(
-                    "standard-baggage-price"
-                ).value,
-                oversizedBaggageMax: document.getElementById("oversized-baggage-max")
-                    .value,
-                oversizedBaggagePrice: document.getElementById(
-                    "oversized-baggage-price"
-                ).value,
-            };
-
-            const data = await apiCall(
-                "/admin/route-templates",
-                "POST",
-                newTemplate
-            );
-
-            if (data) {
-                showNotification("Modèle créé avec succès", "success");
-                e.target.reset();
-                document.getElementById("stops-container").innerHTML = "";
-                document.getElementById("connections-container").innerHTML = "";
-                toggleTripOptions();
-                loadAllTemplates();
-            }
-        }
+    if (data && data.success) {
+        showNotification("Modèle créé avec succès", "success");
+        e.target.reset();
+        document.getElementById("stops-container").innerHTML = "";
+        document.getElementById("connections-container").innerHTML = "";
+        // On vide aussi le conteneur des alertes
+        document.getElementById("alerts-container").innerHTML = ""; 
+        toggleTripOptions();
+        loadAllTemplates();
+    }
+}
         // DANS Admin/index.html, REMPLACEZ la fonction handleDeleteTemplate par celle-ci
 
         async function handleDeleteTemplate(templateId, templateName) {
