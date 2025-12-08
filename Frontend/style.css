@@ -6005,3 +6005,75 @@ body.pwa-installed .container {
     background-color: #25D366; /* Vert WhatsApp */
     color: white;
 }
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   ✨ BOUTON PARTAGER - DESIGN AFRICAIN MODERNE
+   ============================================ */
+
+/* Style de base pour tous les .btn-modern (si vous ne l'avez pas déjà) */
+.btn-modern {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px; /* Complètement arrondi pour un look moderne */
+    font-weight: 700;
+    text-decoration: none;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden; /* Important pour l'effet de fond */
+    position: relative; /* Nécessaire pour le pseudo-élément */
+}
+
+/* Style spécifique pour le bouton PARTAGER */
+.btn-modern.btn-share {
+    background-color: var(--color-surface); /* Fond sombre */
+    border-color: var(--color-accent); /* Bordure cyan */
+    color: var(--color-accent); /* Texte et icône en cyan */
+}
+
+/* Le pseudo-élément qui contient le motif africain */
+.btn-modern.btn-share::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Votre motif zèbre ou un autre */
+    background-image: url('./assets/patterns/zebra-pattern.svg');
+    background-size: 80px;
+    
+    opacity: 0.1; /* Très discret au repos */
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 0;
+}
+
+/* L'icône et le texte sont placés par-dessus le motif */
+.btn-modern.btn-share .btn-icon,
+.btn-modern.btn-share .btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- EFFET AU SURVOL (HOVER) --- */
+
+.btn-modern.btn-share:hover {
+    background-color: var(--color-accent); /* Le fond devient cyan */
+    color: var(--color-background); /* Le texte et l'icône deviennent sombres */
+    box-shadow: 0 5px 20px rgba(0, 217, 255, 0.25); /* Lueur cyan */
+    transform: translateY(-3px); /* Léger décalage vers le haut */
+}
+
+/* Le motif devient plus visible et bouge au survol */
+.btn-modern.btn-share:hover::before {
+    opacity: 0.25;
+    transform: scale(1.2) rotate(-10deg);
+}
