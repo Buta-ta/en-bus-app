@@ -3845,12 +3845,12 @@ function addAlertField(type = 'info', message = '') {
     alertDiv.style.marginBottom = '10px';
 
     alertDiv.innerHTML = `
-        <select class="form-control" style="flex: 0 0 150px;">
+        <select class="form-control alert-type" style="flex: 0 0 150px;">
             <option value="info" ${type === 'info' ? 'selected' : ''}>ℹ️ Info</option>
             <option value="warning" ${type === 'warning' ? 'selected' : ''}>⚠️ Avertissement</option>
             <option value="danger" ${type === 'danger' ? 'selected' : ''}>🛑 Danger</option>
         </select>
-        <input type="text" class="form-control" value="${message}" placeholder="Message de l'alerte...">
+        <input type="text" class="form-control  alert-type" value="${message}" placeholder="Message de l'alerte...">
         <button type="button" class="btn btn-icon btn-danger" onclick="document.getElementById('${alertId}').remove()">🗑️</button>
     `;
     container.appendChild(alertDiv);
@@ -3885,12 +3885,17 @@ async function handleCreateTemplate(e) {
     // ========================================================
     // ✅ DÉBUT DE LA MISE À JOUR : Récupération des alertes
     // ========================================================
+        
+    // On donne des classes uniques aux inputs des alertes pour éviter les conflits
     const alerts = Array.from(document.querySelectorAll('#alerts-container .alert-field-item')).map(div => {
+        const typeSelect = div.querySelector('.alert-type');
+        const messageInput = div.querySelector('.alert-message');
         return {
-            type: div.querySelector('select').value,
-            message: div.querySelector('input[type="text"]').value.trim()
+            type: typeSelect ? typeSelect.value : 'info',
+            message: messageInput ? messageInput.value.trim() : ''
         };
-    }).filter(alert => alert.message); // On ne sauvegarde que les alertes qui ont un message
+    }).filter(alert => alert.message);
+ // On ne sauvegarde que les alertes qui ont un message
     // ========================================================
     // ✅ FIN DE LA MISE À JOUR
     // ========================================================
