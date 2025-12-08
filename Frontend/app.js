@@ -973,14 +973,19 @@ async function reverseGeocode(lat, lon) {
 
 
 
+// DANS app.js (remplacez votre fonction processPosition)
 
 async function processPosition(positionPromise) {
     const geolocateBtn = document.getElementById('geolocate-btn');
+    const lang = getLanguage(); // On récupère la langue pour les traductions
+    const translation = translations[lang] || translations.fr;
+
     if(geolocateBtn) {
         geolocateBtn.classList.add('loading');
         geolocateBtn.disabled = true;
     }
-    Utils.showToast("Recherche de votre position...", "info");
+    // On utilise la clé de traduction
+    Utils.showToast(translation.geolocation_searching, "info");
 
     try {
         const position = await positionPromise;
@@ -991,21 +996,45 @@ async function processPosition(positionPromise) {
 
         if (rawCityName) {
             const cleanedCityName = rawCityName.replace(/\s*\(.*\)\s*/g, '').trim();
-            const originSelect = document.getElementById('origin');
-            const matchingOption = [...originSelect.options].find(opt => opt.value.toLowerCase() === cleanedCityName.toLowerCase());
+            console.log(`🧼 Nom de ville nettoyé : "${cleanedCityName}"`);
 
-            if (matchingOption) {
-                originSelect.value = matchingOption.value;
-                Utils.showToast(`Ville trouvée : ${matchingOption.value}`, "success");
-            } else {
-                Utils.showToast(`Ville proche trouvée (${cleanedCityName}), mais non desservie.`, "warning");
+            // ========================================================
+            // ✅ DÉBUT DE LA CORRECTION : Logique de recherche et de remplissage
+            // ========================================================
+
+            // 1. On cible le bon input de texte
+            const originInput = document.getElementById('origin-input');
+            if (!originInput) {
+                console.error("Erreur critique : L'input #origin-input est introuvable.");
+                return;
             }
+
+            // 2. On cherche dans notre tableau de données 'allDestinations'
+            // qui a été chargé au démarrage de l'application.
+            const matchingDestination = allDestinations.find(dest => dest.name.toLowerCase() === cleanedCityName.toLowerCase());
+
+            if (matchingDestination) {
+                // Si on trouve une correspondance, on remplit la valeur de l'input
+                originInput.value = matchingDestination.name;
+                // On utilise la clé de traduction pour le message de succès
+                Utils.showToast(translation.geolocation_city_found(matchingDestination.name), "success");
+            } else {
+                // Si aucune correspondance, on affiche l'alerte
+                Utils.showToast(translation.geolocation_city_not_served(cleanedCityName), "warning");
+            }
+            
+            // ========================================================
+            // ✅ FIN DE LA CORRECTION
+            // ========================================================
         }
     } catch (error) {
-        let errorMessage = "Impossible d'obtenir votre position.";
-        if (error.code === 1) errorMessage = "Vous avez refusé la permission de géolocalisation.";
-        else if (error.code === 2) errorMessage = "Position non disponible (vérifiez votre GPS/réseau).";
-        else if (error.code === 3) errorMessage = "La recherche de position a pris trop de temps.";
+        // La gestion d'erreur reste la même, mais on s'assure qu'elle est traduite
+        let errorMessage = error.message || translation.geolocation_generic_error;
+        if (error.code) {
+            if (error.code === 1) errorMessage = translation.geolocation_permission_denied;
+            else if (error.code === 2) errorMessage = translation.geolocation_position_unavailable;
+            else if (error.code === 3) errorMessage = translation.geolocation_timeout;
+        }
         console.error("❌ Erreur de géolocalisation:", error);
         Utils.showToast(errorMessage, "error");
     } finally {
@@ -1015,7 +1044,6 @@ async function processPosition(positionPromise) {
         }
     }
 }
-
 // Fonction qui utilise le plugin Capacitor
 function getPositionWithPlugin(Geolocation) {
     const positionPromise = Geolocation.getCurrentPosition();
