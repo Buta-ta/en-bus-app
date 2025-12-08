@@ -1254,78 +1254,65 @@ function stopAgencySpecificCountdown() {
 // ✅ On ajoute 'onOpen' à la liste des paramètres déstructurés
 // DANS app.js
 
+// DANS app.js
+
 function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-primary' }) {
     return new Promise((resolve) => {
-        console.log("   -> [DIAG] Dans showCustomConfirm : Création de la modale en mémoire...");
-
         const modalId = `modal-${Date.now()}`;
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
         wrapper.className = 'custom-modal-overlay';
         
-        wrapper.innerHTML = `
-            <div class="custom-modal-card">
-                <div class="custom-modal-header">
-                    <div class="custom-modal-icon">${icon}</div>
-                    <h3>${title}</h3>
-                </div>
-                <div class="custom-modal-body">
-                    ${message}
-                </div>
-                <div class="custom-modal-footer">
-                    ${cancelText ? `<button id="btn-cancel-${modalId}" class="btn btn-secondary">${cancelText}</button>` : ''}
-                    <button id="btn-confirm-${modalId}" class="btn ${confirmClass}">${confirmText}</button>
-                </div>
-            </div>
-        `;
+        // ... (votre code pour générer le innerHTML est correct) ...
+        wrapper.innerHTML = `...`;
 
-        console.log("   -> [DIAG] Modale créée. Ajout au DOM...");
         document.body.appendChild(wrapper);
-        console.log("   -> [DIAG] Modale ajoutée au DOM.");
 
-        // --- Logique des boutons ---
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION D'ANIMATION
+        // ========================================================
+
+        // On attend que le navigateur ait une chance de "voir" la modale
+        // avant de lancer l'animation d'apparition.
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                wrapper.classList.add('visible');
+            }, 10); // Un minuscule délai pour la robustesse
+        });
+
+        const cleanup = (result) => {
+            // On lance l'animation de disparition
+            wrapper.classList.remove('visible');
+            
+            // On attend la fin de l'animation avant de supprimer l'élément et de résoudre la promesse
+            setTimeout(() => {
+                wrapper.remove();
+                resolve(result);
+            }, 300); // 300ms correspond à la durée de notre transition CSS
+        };
+
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+
         const btnConfirm = document.getElementById(`btn-confirm-${modalId}`);
         const btnCancel = document.getElementById(`btn-cancel-${modalId}`);
 
-        if (!btnConfirm) {
-            console.error("   -> [DIAG] ERREUR CRITIQUE : Le bouton de confirmation n'a pas été trouvé dans le DOM !");
-            // On ferme tout pour éviter un blocage
-            wrapper.remove();
-            resolve(false); // On considère que l'opération a échoué
-            return;
-        }
-
-        const cleanup = () => {
-            console.log("   -> [DIAG] Nettoyage et suppression de la modale du DOM.");
-            wrapper.remove();
-        };
-
         btnConfirm.onclick = () => {
-            console.log("   -> [DIAG] Bouton 'Confirmer' cliqué.");
-            cleanup();
-            resolve(true);
+            cleanup(true); // On passe le résultat à cleanup
         };
         
         if (btnCancel) {
             btnCancel.onclick = () => {
-                console.log("   -> [DIAG] Bouton 'Annuler' cliqué.");
-                cleanup();
-                resolve(false);
+                cleanup(false); // On passe le résultat à cleanup
             };
         }
-
-        // --- Exécution de la fonction onOpen ---
+        
+        // La logique onOpen reste la même
         if (onOpen && typeof onOpen === 'function') {
-            console.log("   -> [DIAG] Tentative d'exécution de la fonction onOpen...");
             try {
                 onOpen();
-            } catch (e) {
-                console.error("   -> [DIAG] ERREUR CRITIQUE lors de l'exécution de onOpen :", e);
-                cleanup();
-                resolve(false); // On considère que l'opération a échoué
-            }
-        } else {
-            console.log("   -> [DIAG] Aucune fonction onOpen n'a été fournie.");
+            } catch (e) { console.error("Erreur dans onOpen:", e); }
         }
     });
 }
