@@ -543,8 +543,10 @@ app.get("/api/route-templates", async (req, res) => {
 
 // DANS server.js (remplacez entièrement votre route /api/search)
 
+// DANS server.js (remplacez entièrement votre route /api/search)
+
 app.get("/api/search", async (req, res) => {
-     let { from, to, date } = req.query;
+    let { from, to, date } = req.query;
     if (!from || !to || !date) {
         return res.status(400).json({ error: "Paramètres manquants" });
     }
@@ -553,19 +555,26 @@ app.get("/api/search", async (req, res) => {
         const fromCity = from.trim();
         const toCity = to.trim();
 
-        // --- 1. On récupère tous les trajets du jour ---
+        // --- 1. On récupère tous les trajets programmés pour la date demandée ---
         const allTripsForTheDay = await tripsCollection.find({ date: date }).toArray();
 
-        // --- 2. Filtrage pour trouver les trajets valides (directs ou segments) ---
+        // --- 2. Filtrage en JavaScript pour trouver les trajets valides ---
         const validTrips = allTripsForTheDay.filter(trip => {
             if (!trip.route) return false;
-            const stopCities = (trip.route.stops || []).map(stop => stop && stop.city).filter(Boolean);
-            const connectionCities = (trip.route.connections || []).map(conn => conn && conn.at).filter(Boolean);
+
+            const stopCities = (trip.route.stops || []).map(stop => stop && typeof stop.city === 'string' ? stop.city : null).filter(Boolean);
+            const connectionCities = (trip.route.connections || []).map(conn => conn && typeof conn.at === 'string' ? conn.at : null).filter(Boolean);
             const fullPath = [...new Set([trip.route.from, ...stopCities, ...connectionCities, trip.route.to])];
-            if (!fullPath.every(city => typeof city === 'string')) return false;
+
+            if (!fullPath.every(city => typeof city === 'string')) {
+                console.warn(`[WARN] Trajet ${trip._id} ignoré, parcours invalide.`);
+                return false;
+            }
+
             const pathInLower = fullPath.map(city => city.toLowerCase());
             const fromIndex = pathInLower.indexOf(fromCity.toLowerCase());
             const toIndex = pathInLower.indexOf(toCity.toLowerCase());
+            
             return fromIndex !== -1 && toIndex !== -1 && fromIndex < toIndex;
         });
 
@@ -583,19 +592,12 @@ app.get("/api/search", async (req, res) => {
         
         // --- 4. Formatage des résultats OU recherche d'alternatives ---
         if (availableTrips.length > 0) {
-            
-            // ========================================================
-            // ✅ CORRECTION PRINCIPALE ICI
-            // ========================================================
             const calculateDuration = (start, end, daysOffset = 0) => {
                 if (!start || !end) return "N/A";
                 const [h1, m1] = start.split(':').map(Number);
                 const [h2, m2] = end.split(':').map(Number);
                 let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-                
-                // On ajoute 24h (1440 minutes) pour chaque jour de décalage
                 diffMinutes += daysOffset * 1440;
-
                 const hours = Math.floor(diffMinutes / 60);
                 const minutes = diffMinutes % 60;
                 return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
@@ -606,43 +608,40 @@ app.get("/api/search", async (req, res) => {
                 
                 return {
                     id: trip._id.toString(),
+                    // On passe l'objet route ENTIER pour inclure la juridiction
+                    route: trip.route,
+                    
+                    // On garde les champs de premier niveau pour compatibilité
                     from: trip.route.from,
                     to: trip.route.to,
                     company: trip.route.company,
                     price: trip.route.price,
-                    // On passe bien le 'arrivalDaysOffset' à la fonction de calcul
-                    duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival, trip.arrivalDaysOffset || 0),
                     departure: trip.route.departure,
                     arrival: trip.route.arrival,
                     amenities: trip.route.amenities || [],
-                    tripType: trip.route.tripType || "direct",
-                    stops: trip.route.stops || [],
-                    connections: trip.route.connections || [],
-                    departureLocation: trip.route.departureLocation || null,
-                    arrivalLocation: trip.route.arrivalLocation || null,
-                    trackerId: trip.busIdentifier || trip.route.trackerId || null,
+                    
+                    // On calcule la durée en passant le décalage
+                    duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival, trip.arrivalDaysOffset || 0),
+                    
+                    // Le reste des informations du trajet
                     availableSeats: trip.seats.filter(s => s.status === "available").length,
                     isNightTrip: trip.isNightTrip || false,
                     arrivalDaysOffset: trip.arrivalDaysOffset || 0,
                     totalSeats: trip.seats.length,
                     date: trip.date,
                     busIdentifier: trip.busIdentifier,
-                    baggageOptions: trip.route.baggageOptions,
                     highlightBadge: trip.highlightBadge || null,
+                    
+                    // Infos sur le segment
                     isSegment: isSegment,
                     segmentFrom: fromCity,
                     segmentTo: toCity
                 };
             });
-
-            if (results[0]) {
-                console.log("[DIAG /api/search] Premier résultat envoyé au client:", JSON.stringify(results[0], null, 2));
-            }
-
             return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
         
         } else {
-            // --- 5. Si aucun résultat, on cherche des alternatives ---
+            // --- 5. Si aucun résultat, on cherche des alternatives sur 7 jours ---
             console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives sur 7 jours...`);
             const searchPromises = [];
 
@@ -650,8 +649,7 @@ app.get("/api/search", async (req, res) => {
                 const alternativeDate = new Date(date);
                 alternativeDate.setUTCDate(alternativeDate.getUTCDate() + i);
                 const alternativeDateString = alternativeDate.toISOString().split('T')[0];
-                
-                // On prépare une promesse pour chaque recherche
+
                 const promise = tripsCollection.find({
                     date: alternativeDateString
                 }).toArray().then(allTripsForThatDay => {
