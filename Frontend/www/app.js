@@ -2710,6 +2710,7 @@ async function initApp() {
         setupMobileFilterToggle();
         setupSocialLinks();
         loadAllDestinations();
+        setupNotificationListeners(); 
         // ✅ AJOUTER CES DEUX LIGNES
         setupAutocomplete('origin-input', 'origin-suggestions');
         setupAutocomplete('destination-input', 'destination-suggestions');
@@ -3914,28 +3915,22 @@ function setupAmenitiesFilters() {
 
 // DANS app.js (remplacez votre fonction searchBuses)
 
+// DANS app.js, REMPLACEZ votre fonction searchBuses par celle-ci
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
 
-    // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION
-    // ========================================================
-    // On réinitialise les filtres en mode "silencieux" (sans toast)
-    // pour garantir que chaque nouvelle recherche part d'un état propre.
     if (typeof resetFilters === 'function') {
-        resetFilters(true); 
+        resetFilters(true); // Réinitialise les filtres en mode silencieux
     }
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
     
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
 
-        const origin = document.getElementById("origin-input").value;
-        const destination = document.getElementById("destination-input").value;
+        const origin = document.getElementById("origin-input").value.trim();
+        const destination = document.getElementById("destination-input").value.trim();
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
         
@@ -3944,6 +3939,7 @@ window.searchBuses = async function() {
             returnDate = departureDate;
         }
 
+        // --- Validations des entrées ---
         if (!origin) {
             Utils.showToast(translation.error_search_missing_origin, 'error');
             return;
@@ -3956,7 +3952,7 @@ window.searchBuses = async function() {
             Utils.showToast(translation.error_search_missing_date, 'error');
             return;
         }
-        if (origin === destination) {
+        if (origin.toLowerCase() === destination.toLowerCase()) {
             Utils.showToast(translation.error_same_origin_destination, 'error');
             return;
         }
@@ -3967,7 +3963,38 @@ window.searchBuses = async function() {
             tripType 
         };
 
-        Utils.showToast(translation.info_searching, 'info');
+        // ========================================================
+        // ✅ AMÉLIORATION : AFFICHAGE DES SQUELETTES DE CHARGEMENT
+        // ========================================================
+
+        // On affiche la page de résultats immédiatement
+        showPage("results"); 
+        
+        const resultsList = document.getElementById("results-list");
+        const summary = document.getElementById("search-summary");
+
+        // On affiche un résumé temporaire et les squelettes
+        if (summary) summary.innerHTML = `<div class="skeleton-line" style="height: 20px; width: 70%; margin: 0 auto;"></div>`;
+        if (resultsList) {
+            let skeletonHTML = '';
+            for (let i = 0; i < 4; i++) { // On affiche 4 squelettes pour un effet plus réaliste
+                skeletonHTML += `
+                    <div class="bus-card-skeleton">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div class="skeleton-line title" style="width: 200px;"></div>
+                                <div class="skeleton-line text" style="width: 250px;"></div>
+                                <div class="skeleton-line text-short" style="width: 150px;"></div>
+                            </div>
+                            <div class="skeleton-line button" style="height: 48px; width: 120px;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            resultsList.innerHTML = skeletonHTML;
+        }
+        // ========================================================
+        
         console.log("3️⃣ Envoi de la requête API...");
         
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
@@ -3979,41 +4006,35 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
-console.log("5️⃣ Données JSON parsées:", data);
+        console.log("5️⃣ Données JSON parsées:", data);
 
-// ========================================================
-// ✅ MISE À JOUR DE LA LOGIQUE DE GESTION DE LA RÉPONSE
-// ========================================================
-if (data.success) {
-    appState.currentResults = data.results;
+        if (data.success) {
+            appState.currentResults = data.results;
 
-    // Si on a des résultats directs, on les affiche.
-    if (data.results && data.results.length > 0) {
-        displayResults(data.results);
-    } 
-    // Sinon, si on a des alternatives, on les affiche.
-    else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
-        displayAlternativeTrips(data.alternativeTrips);
-    } 
-    // Sinon, c'est qu'il n'y a vraiment rien.
-    else {
-        displayResults([]); // Affiche le message "Aucun trajet"
-    }
-} else {
-    // Gestion d'erreur
-    appState.currentResults = [];
-    displayResults([]);
-    throw new Error(data.error || "Données invalides.");
-}
-
-showPage("results");
+            if (data.results && data.results.length > 0) {
+                // `displayResults` va maintenant remplacer les squelettes par les vrais résultats
+                displayResults(data.results);
+            } else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
+                displayAlternativeTrips(data.alternativeTrips);
+            } else {
+                displayResults([]); // Affiche le message "Aucun trajet"
+            }
+        } else {
+            appState.currentResults = [];
+            displayResults([]);
+            throw new Error(data.error || "Données invalides.");
+        }
 
     } catch (error) {
+        // En cas d'erreur, on s'assure de nettoyer la page de résultats
+        const resultsList = document.getElementById("results-list");
+        if (resultsList) {
+            resultsList.innerHTML = `<div class="no-results error"><h3>${error.message || translation.error_generic}</h3><p>Veuillez réessayer.</p></div>`;
+        }
         console.error('❌ Erreur critique dans searchBuses:', error);
         Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
-
 
 // DANS app.js (ajoutez cette nouvelle fonction)
 
@@ -6250,6 +6271,8 @@ async function displayConfirmation(reservation) {
         Utils.showToast("Erreur d'affichage.", 'error');
     }
 }
+// DANS app.js, REMPLACEZ votre fonction displayReservations par celle-ci
+
 async function displayReservations() {
     const listContainer = document.getElementById("reservations-list");
     if (!listContainer) return;
@@ -6257,6 +6280,7 @@ async function displayReservations() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     
+    // Étape 1 : Afficher un état de chargement
     listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings || 'Chargement...'}</div>`;
 
     const pageTitle = document.querySelector("#reservations-page .page-header h2");
@@ -6264,76 +6288,89 @@ async function displayReservations() {
         pageTitle.textContent = translation.my_bookings_title;
     }
 
-    let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-    
-    if (history.length === 0) {
-        listContainer.innerHTML = `
-            <div class="empty-state-container">
-                <div class="bus-animation">
-                    <div class="bus-body">
-                        <div class="bus-window"></div>
-                        <div class="bus-light"></div>
-                    </div>
-                    <div class="road"></div>
-                </div>
-                <h3 class="empty-title">${translation.my_bookings_none_title}</h3>
-                <p class="empty-desc">${translation.my_bookings_none_desc}</p>
-                <button class="btn btn-primary btn-pulse" onclick="showPage('home')">
-                    ${translation.button_new_booking} ➜
-                </button>
-            </div>`;
-        return;
-    }
-
     try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${history.join(',')}`);
-        const data = await response.json();
-        
-        if (!data.success || !Array.isArray(data.reservations)) {
-            throw new Error("Réponse API invalide pour les réservations.");
+        const allBookingNumbers = new Set();
+        let allReservations = [];
+
+        // Étape 2 : Récupérer les réservations depuis l'historique LOCAL (localStorage)
+        const localHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
+        localHistory.forEach(bn => allBookingNumbers.add(bn));
+
+        // Étape 3 : Si l'utilisateur est connecté, récupérer les réservations depuis son COMPTE
+        const token = localStorage.getItem('enbus_usertoken');
+        if (currentUser && token) {
+            console.log("👤 Utilisateur connecté. Récupération des réservations du compte via /api/user/reservations...");
+            const response = await fetch(`${API_CONFIG.baseUrl}/api/user/reservations`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (data.success && data.reservations) {
+                console.log(`☁️ ${data.reservations.length} réservation(s) récupérée(s) depuis le backend.`);
+                data.reservations.forEach(res => {
+                    allBookingNumbers.add(res.bookingNumber); // Ajoute les numéros de réservation du compte au Set
+                });
+            } else {
+                console.warn("⚠️ Impossible de récupérer les réservations du compte, affichage des réservations locales uniquement.");
+            }
         }
 
-        if (data.reservations.length === 0) {
-            // ==============================================================
-            // ✅ DÉBUT DE LA MODIFICATION POUR LA TRADUCTION
-            // ==============================================================
+        const uniqueBookingNumbers = Array.from(allBookingNumbers);
+
+        // Étape 4 : Si AUCUNE réservation n'a été trouvée (ni en local, ni sur le compte)
+        if (uniqueBookingNumbers.length === 0) {
             listContainer.innerHTML = `
                 <div class="empty-state-container">
-                    <div class="not-found-animation">
-                        <div class="magnifying-glass"></div>
-                        <div class="ticket-icon">🎟️</div>
-                        <div class="question-mark">?</div>
+                    <div class="bus-animation">
+                        <div class="bus-body"><div class="bus-window"></div><div class="bus-light"></div></div>
+                        <div class="road"></div>
                     </div>
-                    
-                    <h3 class="empty-title">${translation.not_found_title}</h3>
-                    <p class="empty-desc">
-                        ${translation.not_found_desc}
-                    </p>
-                    
-                    <button class="btn btn-primary" onclick="showPage('home')">
-                        ${translation.button_plan_new_trip}
-                    </button>
+                    <h3 class="empty-title">${translation.my_bookings_none_title}</h3>
+                    <p class="empty-desc">${translation.my_bookings_none_desc}</p>
+                    <button class="btn btn-primary btn-pulse" onclick="showPage('home')">${translation.button_new_booking} ➜</button>
                 </div>`;
-            // ==============================================================
-            // ✅ FIN DE LA MODIFICATION
-            // ==============================================================
             return;
         }
 
+        // Étape 5 : Récupérer les détails complets pour TOUS les numéros de réservation uniques
+        console.log(`🔍 Récupération des détails pour ${uniqueBookingNumbers.length} réservation(s) unique(s).`);
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${uniqueBookingNumbers.join(',')}`);
+        const data = await response.json();
+        
+        if (!data.success || !Array.isArray(data.reservations)) {
+            throw new Error("Réponse API invalide pour les détails des réservations.");
+        }
+        
+        allReservations = data.reservations;
+
+        // Étape 6 : Gérer les cas où les réservations locales n'existent plus sur le serveur
+        if (allReservations.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state-container">
+                    <div class="not-found-animation"><div class="magnifying-glass"></div><div class="ticket-icon">🎟️</div><div class="question-mark">?</div></div>
+                    <h3 class="empty-title">${translation.not_found_title}</h3>
+                    <p class="empty-desc">${translation.not_found_desc}</p>
+                    <button class="btn btn-primary" onclick="showPage('home')">${translation.button_plan_new_trip}</button>
+                </div>`;
+            return;
+        }
+        
+        // Étape 7 : Synchroniser l'historique local avec les données du serveur (pour les cas de report)
         let historyChanged = false;
-        const currentHistory = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
-        data.reservations.forEach(r => {
-            if (r.replacementBookingNumber && !currentHistory.includes(r.replacementBookingNumber)) {
-                currentHistory.push(r.replacementBookingNumber);
+        const currentHistorySet = new Set(JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || []);
+        allReservations.forEach(r => {
+            if (r.replacementBookingNumber && !currentHistorySet.has(r.replacementBookingNumber)) {
+                currentHistorySet.add(r.replacementBookingNumber);
                 historyChanged = true;
             }
         });
         if (historyChanged) {
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(currentHistory));
-            return displayReservations();
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(Array.from(currentHistorySet)));
+            // On relance la fonction pour s'assurer que le nouveau billet de report est bien affiché
+            return displayReservations(); 
         }
 
-        listContainer.innerHTML = data.reservations
+        // Étape 8 : Afficher les cartes de réservation (VOTRE CODE DE RENDU, INCHANGÉ)
+        listContainer.innerHTML = allReservations
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(res => {
                 const isConfirmed = res.status === 'Confirmé';
@@ -6358,11 +6395,7 @@ async function displayReservations() {
                         if (res.status === 'Annulé') statusText = 'Cancelled';
                         if (res.status === 'Expiré') statusText = 'Expired';
                     }
-                    if (typeof translation.status_cancelled === 'function') {
-                        statusHTML = `<span style="color: #f44336;">${translation.status_cancelled(statusText)}</span>`;
-                    } else {
-                        statusHTML = `<span style="color: #f44336;">${statusText}</span>`;
-                    }
+                    statusHTML = `<span style="color: #f44336;">${(translation.status_cancelled || (() => statusText))(statusText)}</span>`;
                 } else {
                     statusHTML = `<span style="color: #9e9e9e;">${res.status}</span>`;
                 }
@@ -6395,21 +6428,14 @@ async function displayReservations() {
                 }
                 
                 const formattedDate = Utils.formatDate(res.date, lang);
-                const dateTimeString = (typeof translation.date_at_time === 'function')
-                    ? translation.date_at_time(formattedDate, res.route.departure)
-                    : `${formattedDate} à ${res.route.departure}`;
+                const dateTimeString = (translation.date_at_time || ((d, t) => `${d} à ${t}`))(formattedDate, res.route.departure);
 
                 let liveStatusHTML = '';
                 if (res.liveStatus && res.status === 'Confirmé') {
                     const statusClass = res.liveStatus.status.toLowerCase().replace(/_/g, '-');
                     const icon = getLiveStatusIcon(res.liveStatus.status);
                     const text = getLiveStatusText(res.liveStatus, translation);
-                    liveStatusHTML = `
-                        <div class="trip-status-line ${statusClass}">
-                            ${icon}
-                            <span>${text}</span>
-                        </div>
-                    `;
+                    liveStatusHTML = `<div class="trip-status-line ${statusClass}">${icon}<span>${text}</span></div>`;
                 }
 
                 return `
@@ -6423,7 +6449,7 @@ async function displayReservations() {
                             <h4>${res.route.from} → ${res.route.to}</h4>
                             <p>${dateTimeString}</p>
                             ${liveStatusHTML}
-                            <p style="margin-top: ${liveStatusHTML ? '12px' : '0'};">${translation.passenger_count(res.passengers.length)} - Total: ${res.totalPrice}</p>
+                            <p style="margin-top: ${liveStatusHTML ? '12px' : '0'};">${(translation.passenger_count || (c => `${c} passager(s)`))(res.passengers.length)} - Total: ${res.totalPrice}</p>
                         </div>
                         <div class="res-pwa-actions">${actionsButtons}</div>
                     </div>
@@ -6432,10 +6458,9 @@ async function displayReservations() {
 
     } catch (error) {
         console.error("Erreur affichage réservations:", error);
-        listContainer.innerHTML = `<div class="no-results error"><h3>Erreur de chargement.</h3></div>`;
+        listContainer.innerHTML = `<div class="no-results error"><h3>${translation.error_loading_bookings || 'Erreur de chargement.'}</h3></div>`;
     }
 }
-
 
 
 // ============================================
@@ -6704,6 +6729,207 @@ window.selectReportTrip = async function(tripId, bookingNumber, currentReportCou
         Utils.showToast(error.message, 'error');
     }
 };
+
+
+
+
+// DANS app.js, à ajouter avec vos autres fonctions de setup
+
+/**
+ * Met en place tous les écouteurs d'événements pour les notifications Push.
+ * Cette fonction ne doit être appelée qu'une seule fois au démarrage de l'application,
+ * de préférence dans initApp() ou une fonction similaire.
+ */
+function setupNotificationListeners() {
+    // On ne fait rien si on n'est pas sur une plateforme native (Android/iOS)
+    if (!window.Capacitor?.isNativePlatform()) {
+        console.log("Mode Web, les écouteurs de notifications Push ne sont pas activés.");
+        return;
+    }
+
+    // On s'assure que le plugin PushNotifications est disponible
+    const { PushNotifications, LocalNotifications } = Capacitor.Plugins;
+    if (!PushNotifications) {
+        console.warn("⚠️ Le plugin PushNotifications n'est pas disponible.");
+        return;
+    }
+
+    console.log("🔔 Initialisation des écouteurs de notifications Push...");
+
+    // --- 1. Écouteur pour la réception du token FCM ---
+    // Se déclenche lorsque l'appareil obtient (ou rafraîchit) son token de Firebase.
+    PushNotifications.addListener('registration', (token) => {
+        console.log("🔑 Token FCM reçu de l'appareil:", token.value);
+        // On le sauvegarde dans le localStorage pour pouvoir l'utiliser plus tard
+        localStorage.setItem('fcm_token', token.value);
+    });
+
+    // --- 2. Écouteur pour les erreurs d'enregistrement ---
+    PushNotifications.addListener('registrationError', (error) => {
+        console.error("❌ Erreur lors de l'enregistrement pour les Push Notifications:", error);
+    });
+
+    // --- 3. Écouteur pour la réception d'une notification PENDANT que l'app est ouverte ---
+    // Par défaut, quand l'app est au premier plan, la notification n'apparaît pas dans la barre de statut.
+    // On utilise ce listener pour la forcer à s'afficher en créant une notification locale.
+    PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+        console.log("📩 Notification Push reçue pendant que l'app est ouverte:", notification);
+
+        try {
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: Math.floor(Math.random() * 100000), // ID unique
+                    title: notification.title || 'En-Bus',
+                    body: notification.body || 'Vous avez un nouveau message.',
+                    schedule: { at: new Date(Date.now() + 500) }, // Afficher dans 0.5s
+                    sound: 'default', // Son par défaut de l'appareil
+                    channelId: 'reminders', // Canal créé lors de l'initialisation
+                    extra: notification.data, // On passe les données (page, tripId, etc.)
+                    smallIcon: 'ic_notification', // Nom de votre icône de notification (sans extension)
+                }]
+            });
+            console.log("-> Notification locale créée pour un affichage immédiat.");
+        } catch (e) {
+            console.warn("⚠️ Erreur lors de la création de la notification locale:", e);
+        }
+    });
+
+    // --- 4. Écouteur pour l'ACTION de l'utilisateur (CLIC sur la notification) ---
+    // C'est le listener le plus important pour la navigation.
+    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        console.log("👆 Action sur une notification Push:", action);
+        
+        // Les données personnalisées que nous avons envoyées depuis le backend se trouvent ici :
+        const data = action.notification.data;
+
+        if (!data) {
+            console.warn("La notification ne contient pas de données 'data' pour la navigation.");
+            return;
+        }
+
+        // --- Logique de redirection en fonction des données reçues ---
+
+        // Cas n°1 : C'est une demande de notation
+        if (data.page === 'rate-trip' && data.tripId) {
+            console.log(`-> Redirection vers la page de notation pour le voyage: ${data.tripId}`);
+            // On s'assure que la fonction existe avant de l'appeler
+            if (typeof showRatingPage === 'function') {
+                showRatingPage(data.tripId, data.bookingNumber);
+            } else {
+                console.error("La fonction showRatingPage() n'est pas définie.");
+            }
+        }
+        // Cas n°2 : C'est une alerte générale ou un billet à consulter
+        else if (data.page === 'reservations' || data.bookingNumber) {
+            console.log(`-> Redirection vers la page "Mes réservations".`);
+            // On affiche la page des réservations, qui va se rafraîchir d'elle-même.
+            showPage('reservations');
+        }
+        // (Futur) Cas n°3 : C'est une promo
+        else if (data.page === 'promo') {
+            console.log(`-> Redirection vers la page des promotions.`);
+            // showPage('promotions'); // Exemple
+        }
+        // Cas par défaut : On ne fait rien de spécial
+        else {
+            console.log("-> Aucune action de navigation spécifique définie pour cette notification.");
+        }
+    });
+}
+
+
+
+
+
+
+
+
+// 2. Afficher la page et la pré-remplir
+function showRatingPage(tripId, bookingNumber) {
+    // Remplir les champs cachés
+    document.getElementById('rating-trip-id').value = tripId;
+    document.getElementById('rating-booking-number').value = bookingNumber;
+
+    // TODO: Vous pourriez faire un appel API pour récupérer les détails du trajet (from, to)
+    // et les afficher dans #rating-trip-info pour un meilleur contexte.
+
+    // Afficher la page
+    showPage('rating');
+    setupStarRating();
+    
+    const form = document.getElementById('rating-form');
+    // On s'assure de n'avoir qu'un seul écouteur
+    form.removeEventListener('submit', handleRatingSubmit); 
+    form.addEventListener('submit', handleRatingSubmit);
+}
+
+// 3. Rendre les étoiles interactives
+function setupStarRating() {
+    const ratings = document.querySelectorAll('.star-rating');
+    ratings.forEach(rating => {
+        const stars = rating.querySelectorAll('.star');
+        rating.addEventListener('click', e => {
+            if (e.target.classList.contains('star')) {
+                const value = parseInt(e.target.dataset.value);
+                // Mettre à jour l'état visuel
+                stars.forEach(star => {
+                    star.classList.toggle('selected', parseInt(star.dataset.value) <= value);
+                });
+                // Stocker la valeur (par exemple dans un data-attribute sur le parent)
+                rating.dataset.ratingValue = value;
+            }
+        });
+    });
+}
+
+// 4. Gérer la soumission du formulaire
+async function handleRatingSubmit(event) {
+    event.preventDefault();
+    
+    const overallRating = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
+    if (!overallRating) {
+        Utils.showToast("Veuillez donner une note globale.", "warning");
+        return;
+    }
+
+    const reviewData = {
+        tripId: document.getElementById('rating-trip-id').value,
+        bookingNumber: document.getElementById('rating-booking-number').value,
+        rating: {
+            overall: parseInt(overallRating),
+            punctuality: parseInt(document.querySelector('.star-rating[data-category="punctuality"]').dataset.ratingValue) || null,
+            driver: parseInt(document.querySelector('.star-rating[data-category="driver"]').dataset.ratingValue) || null,
+            comfort: parseInt(document.querySelector('.star-rating[data-category="comfort"]').dataset.ratingValue) || null,
+        },
+        comment: document.getElementById('rating-comment').value.trim()
+    };
+    
+    try {
+        const token = localStorage.getItem('enbus_usertoken');
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(reviewData)
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        
+        Utils.showToast(result.message, 'success');
+        showPage('reservations'); // Rediriger l'utilisateur vers ses réservations
+
+    } catch (error) {
+        Utils.showToast(error.message, 'error');
+    }
+}
+
+
+
+
+
 
 // ============================================
 // 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT

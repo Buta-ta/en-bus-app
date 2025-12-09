@@ -1177,6 +1177,81 @@
 
       </div>
     </div>
+
+
+
+
+
+
+
+
+
+    <!-- DANS LE BODY DE index.html (client) -->
+
+<!-- ============================================
+     ⭐ PAGE DE NOTATION
+     ============================================ -->
+<div id="rating-page" class="page">
+    <div class="page-header">
+        <h2 data-i18n="rating_page_title">Notez votre voyage</h2>
+        <p id="rating-trip-info" data-i18n="rating_page_subtitle">Partagez votre expérience</p>
+    </div>
+
+    <form id="rating-form" class="content-card">
+        <input type="hidden" id="rating-trip-id">
+        <input type="hidden" id="rating-booking-number">
+
+        <!-- Note Globale (Obligatoire) -->
+        <div class="rating-group">
+            <label data-i18n="rating_label_overall">Note globale</label>
+            <div class="star-rating" data-category="overall">
+                <span class="star" data-value="1">☆</span>
+                <span class="star" data-value="2">☆</span>
+                <span class="star" data-value="3">☆</span>
+                <span class="star" data-value="4">☆</span>
+                <span class="star" data-value="5">☆</span>
+            </div>
+        </div>
+
+        <!-- Autres notes (Optionnel) -->
+        <div class="rating-group">
+            <label data-i18n="rating_label_punctuality">Ponctualité</label>
+            <div class="star-rating" data-category="punctuality">
+                <!-- ... 5 étoiles ... -->
+            </div>
+        </div>
+        <div class="rating-group">
+            <label data-i18n="rating_label_driver">Chauffeur</label>
+            <div class="star-rating" data-category="driver">
+                <!-- ... 5 étoiles ... -->
+            </div>
+        </div>
+        <div class="rating-group">
+            <label data-i18n="rating_label_comfort">Confort & Propreté</label>
+            <div class="star-rating" data-category="comfort">
+                <!-- ... 5 étoiles ... -->
+            </div>
+        </div>
+        
+        <!-- Commentaire -->
+        <div class="form-group">
+            <label for="rating-comment" data-i18n="rating_label_comment">Votre commentaire (optionnel)</label>
+            <textarea id="rating-comment" class="form-control" rows="4" placeholder="Ex: Chauffeur prudent, mais le bus est arrivé avec 15 minutes de retard..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Envoyer mon avis</button>
+    </form>
+</div>
+
+<!-- Ajoutez ce CSS -->
+<style>
+.star-rating { display: flex; font-size: 2.5rem; color: #ccc; cursor: pointer; }
+.star-rating .star { transition: color 0.2s; }
+.star-rating .star:hover, .star-rating .star.hover { color: #ffc107; }
+.star-rating .star.selected { color: #ff9800; }
+.rating-group { margin-bottom: 1.5rem; }
+.rating-group label { font-weight: 600; display: block; margin-bottom: 0.5rem; }
+</style>
   </main>
 
   <footer class="footer">
