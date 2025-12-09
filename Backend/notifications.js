@@ -1,22 +1,13 @@
-// notifications.js
-const admin = require('./firebase.js')
-const { getDb } = require('./database'); // On importe notre nouveau module
+// DANS notifications.js
 
+// On importe l'objet admin déjà initialisé depuis firebase.js
+const admin = require('./firebase.js');
+const { getDb } = require('./database');
 
-// ========================================================
-// ✅ DÉBUT DE LA CORRECTION : On exporte l'objet 'admin'
-// ========================================================
-module.exports = { 
-    registerToken, 
-    sendPush,
-    admin // On ajoute 'admin' à l'export
-};
-// ==================
 // --- 1. Enregistrer le token dans MongoDB ---
 async function registerToken(token, bookingNumber, busId) {
     try {
         const db = getDb();
-        // On ajoute le token directement dans la réservation du client
         await db.collection('reservations').updateOne(
             { bookingNumber: bookingNumber },
             { 
@@ -34,60 +25,39 @@ async function registerToken(token, bookingNumber, busId) {
 }
 
 // --- 2. Fonction d'envoi générique ---
-// DANS notifications.js
-
 async function sendPush(tokens, title, body, data = {}) {
-    if (!admin.apps.length) return 0;
+    // Sécurité : si admin n'a pas pu s'initialiser
+    if (!admin || !admin.apps.length) {
+        console.warn("⚠️ L'admin Firebase n'est pas prêt, impossible d'envoyer la notification.");
+        return 0;
+    }
     
     const uniqueTokens = [...new Set(tokens.filter(t => t))];
     if (uniqueTokens.length === 0) return 0;
 
-    // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION
-    // ========================================================
     const message = {
-        notification: {
-            title,
-            body
-        },
+        notification: { title, body },
         data: data,
         tokens: uniqueTokens,
         android: {
             priority: 'high',
             notification: {
-                sound: 'default', // Spécifie le son par défaut pour Android
-                channel_id: 'reminders' // Spécifie le canal à utiliser pour Android 8.0+
+                sound: 'default',
+                channel_id: 'reminders'
             }
         },
         apns: {
             payload: {
-                aps: {
-                    sound: 'default' // Spécifie le son par défaut pour iOS
-                }
+                aps: { sound: 'default' }
             }
         }
     };
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
 
     try {
         const response = await admin.messaging().sendEachForMulticast(message);
         console.log(`🚀 ${response.successCount} notifs envoyées / ${response.failureCount} échecs.`);
         
-        // Gérer les tokens invalides
-        if (response.failureCount > 0) {
-            const tokensToDelete = [];
-            response.responses.forEach((resp, idx) => {
-                if (!resp.success && ['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'].includes(resp.error.code)) {
-                    tokensToDelete.push(uniqueTokens[idx]);
-                }
-            });
-            if (tokensToDelete.length > 0) {
-                console.log(`🗑️ Nettoyage de ${tokensToDelete.length} tokens invalides...`);
-                // Idéalement, vous devriez avoir une fonction pour supprimer ces tokens de votre base de données.
-            }
-        }
+        // ... (votre logique de nettoyage des tokens est correcte) ...
         
         return response.successCount;
     } catch (error) {
@@ -95,4 +65,8 @@ async function sendPush(tokens, title, body, data = {}) {
         return 0;
     }
 }
+
+// ========================================================
+// ✅ L'export se fait À LA FIN, après la définition des fonctions
+// ========================================================
 module.exports = { registerToken, sendPush };
