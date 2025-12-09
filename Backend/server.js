@@ -995,6 +995,40 @@ app.get("/api/reservations/:bookingNumber/can-report", async (req, res) => {
 });
 
 
+
+
+// DANS server.js
+
+// NOUVELLE ROUTE : Récupérer les réservations d'un utilisateur authentifié
+app.get("/api/user/reservations", authenticateToken, async (req, res) => {
+    try {
+        // L'ID de l'utilisateur est dans req.user grâce au middleware authenticateToken
+        const userId = req.user.userId;
+
+        // On cherche l'utilisateur dans la base de données pour obtenir son email ou téléphone
+        const user = await crewCollection.findOne({ _id: new ObjectId(userId) });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable." });
+        }
+        
+        // On récupère toutes les réservations où l'un des passagers a l'email OU le téléphone de l'utilisateur.
+        // C'est une manière robuste de lier les réservations.
+        const userReservations = await reservationsCollection.find({
+            $or: [
+                { "passengers.email": user.email },
+                { "passengers.phone": user.phone } // Si vous stockez le téléphone de l'utilisateur
+            ]
+        }).sort({ createdAt: -1 }).toArray();
+
+        res.json({ success: true, reservations: userReservations });
+
+    } catch (error) {
+        console.error("❌ Erreur récupération des réservations utilisateur:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
 // ============================================
 // --- ROUTE PUBLIQUE POUR LES DESTINATIONS ---
 // ============================================
