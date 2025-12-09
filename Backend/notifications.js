@@ -23,6 +23,15 @@ if (serviceAccount.project_id && serviceAccount.private_key) {
     console.warn("⚠️ Firebase credentials manquants");
 }
 
+// ========================================================
+// ✅ DÉBUT DE LA CORRECTION : On exporte l'objet 'admin'
+// ========================================================
+module.exports = { 
+    registerToken, 
+    sendPush,
+    admin // On ajoute 'admin' à l'export
+};
+// ==================
 // --- 1. Enregistrer le token dans MongoDB ---
 async function registerToken(token, bookingNumber, busId) {
     try {
