@@ -1433,6 +1433,89 @@ app.post(
   }
 );
 
+
+
+
+// DANS server.js
+
+// ========================================================
+// ✅ NOUVELLE ROUTE POUR LE LOGIN AVEC GOOGLE
+// ========================================================
+app.post("/api/auth/google-signin", async (req, res) => {
+    // On récupère le token d'identité Google envoyé par le client dans l'en-tête
+    const idToken = req.headers.authorization?.split('Bearer ')[1];
+
+    if (!idToken) {
+        return res.status(401).json({ error: "Token d'identité manquant." });
+    }
+
+    try {
+        // --- 1. Vérification du token d'identité avec Firebase Admin ---
+        // Firebase va vérifier si ce token est authentique et non expiré.
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const { uid, name, email, picture } = decodedToken;
+        
+        console.log(`✅ Token Google valide pour l'utilisateur: ${email}`);
+
+        // --- 2. Chercher si l'utilisateur existe déjà dans notre DB ---
+        let user = await crewCollection.findOne({ email: email });
+
+        // --- 3. Si l'utilisateur n'existe pas, on le crée ---
+        if (!user) {
+            console.log(`✨ Nouvel utilisateur. Création du profil pour ${email}...`);
+            const newUser = {
+                name: name,
+                email: email,
+                username: email, // On peut utiliser l'email comme nom d'utilisateur unique
+                profilePicture: picture || null,
+                role: 'Client', // On lui assigne le rôle 'Client'
+                status: 'Actif',
+                permissions: [ // Permissions de base pour un client
+                    'view_reservations' 
+                ], 
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                // On ne met pas de mot de passe car l'authentification est gérée par Google
+            };
+
+            const result = await crewCollection.insertOne(newUser);
+            // On récupère l'utilisateur fraîchement créé pour avoir son _id
+            user = await crewCollection.findOne({ _id: result.insertedId });
+        } else {
+            console.log(`👋 Utilisateur existant trouvé pour ${email}.`);
+            // On pourrait mettre à jour son nom ou sa photo de profil ici si on le souhaite
+        }
+        
+        // --- 4. Créer notre propre token JWT pour notre application ---
+        // Ce token contient les informations de notre propre système (rôle, permissions...).
+        const tokenPayload = {
+            userId: user._id,
+            username: user.username,
+            role: user.role,
+            permissions: user.permissions || []
+        };
+        
+        const appToken = jwt.sign(
+            tokenPayload,
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+        );
+
+        // --- 5. Envoyer notre token à l'application cliente ---
+        res.json({ success: true, token: appToken });
+
+    } catch (error) {
+        console.error("❌ Erreur de validation du token Google:", error);
+        // Si le token est invalide ou expiré, Firebase lèvera une erreur.
+        res.status(403).json({ error: "Token Google invalide ou expiré." });
+    }
+});
+
+
+
+
+
+
 app.get("/api/admin/verify", authenticateToken, (req, res) =>
   res.json({ valid: true, user: req.user })
 );
