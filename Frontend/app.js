@@ -91,23 +91,52 @@ let appRules = {
 
 
 // DANS app.js
-// DANS app.js
 
 async function signInWithGoogle() {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    try {
-        // ... (votre logique de connexion) ...
 
+    try {
+        const result = await auth.signInWithPopup(googleProvider);
+        const user = result.user;
+        
+        const idToken = await user.getIdToken();
+        
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Échec de la validation du compte sur notre serveur.");
+        }
+
+        // ========================================================
+        // ✅ DÉBUT DE LA CORRECTION
+        // ========================================================
+        
+        // On déclare 'appData' en lisant la réponse JSON AVANT de l'utiliser.
+        const appData = await response.json();
+        
+        // Maintenant, on peut vérifier le contenu de 'appData' sans erreur.
         if (appData.success && appData.token) {
             localStorage.setItem('enbus_usertoken', appData.token);
             handleAuthStateChanged(user);
-            // ✅ On utilise la clé de traduction
             Utils.showToast(translation.toast_login_success, "success");
+        } else {
+            // Si le backend renvoie success: false
+            throw new Error(appData.error || "Le serveur a refusé la connexion.");
         }
+
+        // ========================================================
+        // ✅ FIN DE LA CORRECTION
+        // ========================================================
+
     } catch (error) {
         console.error("❌ Erreur de connexion Google:", error);
-        // ✅ On utilise la clé de traduction
         Utils.showToast(translation.toast_login_failed, "error");
     }
 }
