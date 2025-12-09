@@ -12,7 +12,20 @@
           "package_name": "com.enbus.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "518160239652-h057fgm1difpamfe3b7oj1d920nmftbh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.enbus.app",
+            "certificate_hash": "20c6629f898c33cfdb8d6ef08d5ac2086bfd3298"
+          }
+        },
+        {
+          "client_id": "518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyARwGNEQmaRWzQ72-0CMutQqxQvIJvL0JY"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

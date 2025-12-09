@@ -5,15 +5,14 @@ const config: CapacitorConfig = {
   appName: 'En-Bus',
   webDir: 'www',
 
-  // Section pour activer le débogage et le live-reload
   server: {
     androidScheme: 'https',
   },
+  
   android: {
     webContentsDebuggingEnabled: true
   },
   
-  // Votre configuration de plugins existante est correcte
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -24,10 +23,15 @@ const config: CapacitorConfig = {
       showSpinner: true,
       androidSpinnerStyle: "large",
       spinnerColor: "#73d700"
-    }
+    },
+    
+    // Ajout Google Sign-In
+    SocialLogin: {
+      google: {
+        webClientId: '332941537623-5bobgclb5e6q32v7f9didht92oreof2m.apps.googleusercontent.com', // ⬅️ Remplace par ton vrai Client ID
+      },
+    },
   },
-
-  // LE BLOC "resources" A ÉTÉ SUPPRIMÉ CAR IL EST INVALIDE
 };
 
 export default config;

@@ -55,12 +55,12 @@ const CONFIG = {
 
 // Collez l'objet firebaseConfig que vous avez récupéré à l'étape 1
 const firebaseConfig = {
-  apiKey: "VOTRE_API_KEY",
-  authDomain: "VOTRE_AUTH_DOMAIN",
-  projectId: "VOTRE_PROJECT_ID",
-  storageBucket: "VOTRE_STORAGE_BUCKET",
-  messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-  appId: "VOTRE_APP_ID"
+  apiKey: "AIzaSyD-JrXsi5pMyb2qsR2XVxZ7gagmsdyawSk",
+  authDomain: "en-bus-app.firebaseapp.com",
+  projectId: "en-bus-app",
+  storageBucket: "en-bus-app.firebasestorage.app",
+  messagingSenderId: "518160239652",
+  appId: "1:518160239652:web:e00017bec1bb8034af5cb1",
 };
 
 // On initialise Firebase
@@ -90,82 +90,181 @@ let appRules = {
 // ============================================
 
 
-// DANS app.js
 
-async function signInWithGoogle() {
-    try {
-        const result = await auth.signInWithPopup(googleProvider);
-        const user = result.user;
-        
-        // On envoie le token d'identité de Google à notre backend
-        const idToken = await user.getIdToken();
-        
-        // Appel à une nouvelle route backend que nous créerons à l'étape 3
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}` // On envoie le token Google
-            }
-        });
+// =============================================
+// GOOGLE AUTH NATIF
+// =============================================
 
-        if (!response.ok) {
-            throw new Error("Échec de la validation du compte sur notre serveur.");
-        }
+let isNativePlatform = false;
+let googleAuthReady = false;
 
-        const appData = await response.json();
-        
-        // Notre backend nous renvoie notre propre token JWT
-        if (appData.success && appData.token) {
-            localStorage.setItem('enbus_usertoken', appData.token); // On sauvegarde notre token
-            handleAuthStateChanged(user); // Met à jour l'interface
-            Utils.showToast("Connexion réussie !", "success");
-        }
-
-    } catch (error) {
-        console.error("❌ Erreur de connexion Google:", error);
-        Utils.showToast("La connexion a échoué.", "error");
-    }
+// Vérifie si on est sur mobile natif
+if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+  isNativePlatform = true;
 }
 
-/**
- * Gère la déconnexion de l'utilisateur
- */
+// Initialisation Google Auth pour mobile
+async function initGoogleAuth() {
+  if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+    try {
+      await window.Capacitor.Plugins.SocialLogin.initialize({
+        google: {
+          webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', // ⬅️ Utilise celui-ci (client_type: 3)
+        },
+      });
+      googleAuthReady = true;
+      console.log('✅ Google Auth initialisé');
+    } catch (error) {
+      console.error('❌ Erreur init Google Auth:', error);
+    }
+  }
+}
+
+// Appelle l'initialisation
+initGoogleAuth();
+
+async function signInWithGoogle() {
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+
+  try {
+    let idToken;
+    let userInfo;
+
+    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+      
+      if (!googleAuthReady) {
+        console.log('⏳ Initialisation Google Auth...');
+        await initGoogleAuth();
+      }
+      
+      console.log('📱 Connexion native Google...');
+      
+      const result = await window.Capacitor.Plugins.SocialLogin.login({
+        provider: 'google',
+        options: {}
+      });
+      
+      // ⬅️ Ajoute ces logs
+      console.log('✅ Résultat complet:', JSON.stringify(result, null, 2));
+      console.log('✅ result.result:', JSON.stringify(result.result, null, 2));
+      
+      idToken = result.result.idToken;
+      console.log('✅ idToken:', idToken);
+      
+      userInfo = {
+        displayName: result.result.name || result.result.displayName,
+        email: result.result.email,
+        uid: result.result.id
+      };
+      console.log('✅ userInfo:', JSON.stringify(userInfo, null, 2));
+      
+    } else {
+      console.log('🌐 Connexion web Google...');
+      const result = await auth.signInWithPopup(googleProvider);
+      const user = result.user;
+      idToken = await user.getIdToken();
+      userInfo = user;
+    }
+
+    console.log('📤 Envoi au backend...');
+    
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
+
+    console.log('📥 Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Erreur backend:', errorText);
+      throw new Error("Échec de la validation du compte sur notre serveur.");
+    }
+
+    const appData = await response.json();
+    console.log('📥 appData:', JSON.stringify(appData, null, 2));
+
+    if (appData.success && appData.token) {
+      localStorage.setItem('enbus_usertoken', appData.token);
+      handleAuthStateChanged(userInfo);
+      Utils.showToast(translation.toast_login_success, "success");
+    } else {
+      throw new Error(appData.error || "Le serveur a refusé la connexion.");
+    }
+
+  } catch (error) {
+    // ⬅️ Log détaillé de l'erreur
+    console.error("❌ Erreur de connexion Google:", error);
+    console.error("❌ Error message:", error.message);
+    console.error("❌ Error stack:", error.stack);
+    Utils.showToast(translation.toast_login_failed, "error");
+  }
+}
+
 async function signOut() {
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+
+  try {
+    // Déconnexion Firebase (web)
     await auth.signOut();
+    
+    // Déconnexion native (mobile)
+    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+      await window.Capacitor.Plugins.SocialLogin.logout({ provider: 'google' });
+    }
+    
     localStorage.removeItem('enbus_usertoken');
     currentUser = null;
     updateAuthUI(null);
-    Utils.showToast("Vous avez été déconnecté.", "info");
+    Utils.showToast(translation.toast_logout_success, "info");
+    
+  } catch (error) {
+    console.error("❌ Erreur déconnexion:", error);
+  }
 }
-
 /**
  * Met à jour l'interface en fonction de l'état de connexion
  */
+// DANS app.js (remplacez votre fonction updateAuthUI)
+
 function updateAuthUI(user) {
     const desktopBtn = document.getElementById('auth-button-desktop');
     const mobileLink = document.getElementById('auth-button-mobile');
+
+    // On récupère les traductions au début
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     
     if (user) {
         // Utilisateur connecté
-        const welcomeMessage = `Bonjour, ${user.displayName.split(' ')[0]}`;
+        // On utilise la clé de traduction pour le message d'accueil
+        const welcomeMessage = translation.auth_welcome_message(user.displayName.split(' ')[0]);
+        
         if (desktopBtn) {
-            desktopBtn.textContent = 'Déconnexion';
+            // On utilise la clé de traduction pour le bouton
+            desktopBtn.textContent = translation.auth_logout_button;
             desktopBtn.onclick = signOut;
         }
         if (mobileLink) {
             mobileLink.innerHTML = `<span>${welcomeMessage}</span>`;
-            // On pourrait ajouter un sous-menu pour 'Mon Compte' / 'Déconnexion' ici
+            // On peut aussi changer l'action pour déconnecter
             mobileLink.onclick = signOut; 
         }
     } else {
         // Utilisateur déconnecté
         if (desktopBtn) {
-            desktopBtn.textContent = 'Se connecter';
+            // On utilise la clé de traduction pour le bouton
+            desktopBtn.textContent = translation.auth_login_button;
             desktopBtn.onclick = signInWithGoogle;
         }
         if (mobileLink) {
-            mobileLink.innerHTML = '<span>G | Se connecter</span>';
+            // On utilise la clé de traduction pour le lien mobile
+            mobileLink.innerHTML = `<span>${translation.auth_login_google}</span>`;
             mobileLink.onclick = signInWithGoogle;
         }
     }

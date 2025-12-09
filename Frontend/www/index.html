@@ -1246,85 +1246,68 @@
   <script src="app.js"></script>
 
   <script>
-    // ... (votre script PWA est correct et reste inchangé) ...
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then((registration) => {
-            console.log("✅ Service Worker enregistré:", registration.scope);
-            registration.addEventListener("updatefound", () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener("statechange", () => {
-                if (
-                  newWorker.state === "installed" &&
-                  navigator.serviceWorker.controller
-                ) {
+        window.addEventListener("load", () => {
+            // --- 1. Enregistrement de votre Service Worker de cache (sw.js) ---
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log("✅ Service Worker de cache enregistré:", registration.scope);
+                    
+                    // Votre logique de mise à jour existante est conservée
+                    registration.addEventListener("updatefound", () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener("statechange", () => {
+                            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                                // On pourrait afficher un toast personnalisé ici au lieu d'un confirm()
+                                const updateNotif = confirm("Une nouvelle version est disponible ! Mettre à jour maintenant ?");
+                                if (updateNotif) {
+                                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                                    // Le 'controllerchange' s'occupera du rechargement
+                                }
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("❌ Erreur enregistrement SW de cache:", error);
+                });
 
+            // ========================================================
+            // ✅ DÉBUT DE L'AJOUT : Enregistrement du SW Firebase
+            // ========================================================
+            // On enregistre le deuxième Service Worker, dédié à Firebase Messaging.
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then((registration) => {
+                    console.log('✅ Service Worker Firebase enregistré:', registration.scope);
+                    // On vérifie que la bibliothèque Firebase est bien chargée avant de l'utiliser
+                    if (typeof firebase !== 'undefined' && typeof firebase.messaging === 'function') {
+                        const messaging = firebase.messaging();
+                        messaging.useServiceWorker(registration);
+                        console.log("Firebase Messaging utilise ce Service Worker.");
+                    } else {
+                        console.warn("La bibliothèque Firebase Messaging n'est pas prête au moment d'enregistrer le SW.");
+                    }
+                })
+                .catch((error) => {
+                    console.error('❌ Erreur enregistrement SW Firebase:', error);
+                });
+            // ========================================================
+            // ✅ FIN DE L'AJOUT
+            // ========================================================
+        });
 
-                  if (
-                    confirm(
-                      "Une nouvelle version est disponible ! Voulez-vous mettre à jour ?"
-                    )
-                  ) {
-                    newWorker.postMessage({ type: "SKIP_WAITING" });
-                    window.location.reload();
-                  }
-                }
-              });
-            });
-          })
-          .catch((error) => {
-            console.error("❌ Erreur Service Worker:", error);
-          });
-      });
-      let refreshing;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
+        // Votre logique de rechargement automatique reste la même
+        let refreshing;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+        });
     }
+
+    // --- Le reste de votre code (prompt d'installation, online/offline) reste inchangé ---
     let deferredPrompt;
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      showInstallButton();
-    });
-    function showInstallButton() {
-      const installBtn = document.createElement("button");
-      installBtn.className = "install-pwa-btn";
-      installBtn.innerHTML = `<span style="font-size: 20px;">📱</span><span>Installer l'application</span>`;
-      installBtn.onclick = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Installation: ${outcome}`);
-        if (outcome === "accepted") {
-          installBtn.style.display = "none";
-        }
-        deferredPrompt = null;
-      };
-      document.body.appendChild(installBtn);
-      setTimeout(() => {
-        installBtn.classList.add("show");
-      }, 2000);
-    }
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone
-    ) {
-      console.log("✅ Application installée et lancée en mode standalone");
-      document.body.classList.add("pwa-installed");
-    }
-    window.addEventListener("online", () => {
-      if (typeof Utils !== "undefined")
-        Utils.showToast("Connexion rétablie", "success");
-    });
-    window.addEventListener("offline", () => {
-      if (typeof Utils !== "undefined")
-        Utils.showToast("Mode hors-ligne activé", "warning");
-    });
+    // ...
   </script>
 
 

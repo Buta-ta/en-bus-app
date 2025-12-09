@@ -4,4 +4,5 @@
     <string name="title_activity_main">En-Bus</string>
     <string name="package_name">com.enbus.app</string>
     <string name="custom_url_scheme">com.enbus.app</string>
+    <string name="server_client_id">332941537623-dh6f2ev7nh17h3500vvk4355vmrr1e7t.apps.googleusercontent.com</string>
 </resources>

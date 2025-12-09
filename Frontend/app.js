@@ -90,67 +90,125 @@ let appRules = {
 // ============================================
 
 
-// DANS app.js
 
-async function signInWithGoogle() {
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+// =============================================
+// GOOGLE AUTH NATIF
+// =============================================
 
-    try {
-        const result = await auth.signInWithPopup(googleProvider);
-        const user = result.user;
-        
-        const idToken = await user.getIdToken();
-        
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            }
-        });
+let isNativePlatform = false;
 
-        if (!response.ok) {
-            throw new Error("Échec de la validation du compte sur notre serveur.");
-        }
-
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION
-        // ========================================================
-        
-        // On déclare 'appData' en lisant la réponse JSON AVANT de l'utiliser.
-        const appData = await response.json();
-        
-        // Maintenant, on peut vérifier le contenu de 'appData' sans erreur.
-        if (appData.success && appData.token) {
-            localStorage.setItem('enbus_usertoken', appData.token);
-            handleAuthStateChanged(user);
-            Utils.showToast(translation.toast_login_success, "success");
-        } else {
-            // Si le backend renvoie success: false
-            throw new Error(appData.error || "Le serveur a refusé la connexion.");
-        }
-
-        // ========================================================
-        // ✅ FIN DE LA CORRECTION
-        // ========================================================
-
-    } catch (error) {
-        console.error("❌ Erreur de connexion Google:", error);
-        Utils.showToast(translation.toast_login_failed, "error");
-    }
+// Vérifie si on est sur mobile natif
+if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+  isNativePlatform = true;
 }
 
-async function signOut() {
-    const lang = getLanguage();
-    const translation = translations[lang] || translations.fr;
+// Initialisation Google Auth pour mobile
+async function initGoogleAuth() {
+  if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+    try {
+      await window.Capacitor.Plugins.SocialLogin.initialize({
+        google: {
+          webClientId: 'TON_WEB_CLIENT_ID.apps.googleusercontent.com', // ⬅️ Remplace par ton vrai Client ID
+        },
+      });
+      console.log('✅ Google Auth initialisé');
+    } catch (error) {
+      console.error('❌ Erreur init Google Auth:', error);
+    }
+  }
+}
 
+// Appelle l'initialisation
+initGoogleAuth();
+
+async function signInWithGoogle() {
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+
+  try {
+    let idToken;
+    let userInfo;
+
+    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+      // ✅ Mobile natif (Android/iOS)
+      console.log('📱 Connexion native Google...');
+      
+      const result = await window.Capacitor.Plugins.SocialLogin.login({
+        provider: 'google',
+        options: {}  // ⬅️ Sans scopes
+      });
+      
+      console.log('Google Sign-In result:', result);
+      
+      // Récupère le token et les infos
+      idToken = result.result.idToken;
+      userInfo = {
+        displayName: result.result.name || result.result.displayName,
+        email: result.result.email,
+        uid: result.result.id
+      };
+      
+    } else {
+      // ✅ Web (navigateur) - utilise Firebase popup
+      console.log('🌐 Connexion web Google...');
+      
+      const result = await auth.signInWithPopup(googleProvider);
+      const user = result.user;
+      idToken = await user.getIdToken();
+      userInfo = user;
+    }
+
+    // Envoie le token à ton backend
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Échec de la validation du compte sur notre serveur.");
+    }
+
+    const appData = await response.json();
+
+    if (appData.success && appData.token) {
+      localStorage.setItem('enbus_usertoken', appData.token);
+      handleAuthStateChanged(userInfo);
+      Utils.showToast(translation.toast_login_success, "success");
+    } else {
+      throw new Error(appData.error || "Le serveur a refusé la connexion.");
+    }
+
+  } catch (error) {
+    console.error("❌ Erreur de connexion Google:", error);
+    Utils.showToast(translation.toast_login_failed, "error");
+  }
+}
+
+
+async function signOut() {
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+
+  try {
+    // Déconnexion Firebase (web)
     await auth.signOut();
+    
+    // Déconnexion native (mobile)
+    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+      await window.Capacitor.Plugins.SocialLogin.logout({ provider: 'google' });
+    }
+    
     localStorage.removeItem('enbus_usertoken');
     currentUser = null;
     updateAuthUI(null);
-    // ✅ On utilise la clé de traduction
     Utils.showToast(translation.toast_logout_success, "info");
+    
+  } catch (error) {
+    console.error("❌ Erreur déconnexion:", error);
+  }
 }
 /**
  * Met à jour l'interface en fonction de l'état de connexion
