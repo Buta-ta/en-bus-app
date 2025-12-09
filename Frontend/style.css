@@ -6200,3 +6200,82 @@ body.pwa-installed .container {
 .alert-item.info { color: var(--color-text-secondary); }
 .alert-item.warning { color: #ffa726; font-weight: 600; }
 .alert-item.danger { color: #ef5350; font-weight: 700; }
+
+
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 DROPDOWN NAVBAR - VERSION CORRIGÉE
+   ============================================ */
+
+/* Conteneur principal */
+.nav-dropdown {
+    position: relative;
+}
+
+/* Le menu déroulant lui-même. CACHÉ PAR DÉFAUT. */
+.nav-dropdown .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-surface); /* Couleur de fond opaque */
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    padding: 0.5rem;
+    min-width: 180px;
+    z-index: 1100;
+}
+
+/* Les liens À L'INTÉRIEUR du menu déroulant */
+.nav-dropdown .dropdown-item {
+    display: block !important; /* Force l'affichage en bloc, une ligne par lien */
+    width: 100%;
+    padding: 0.75rem 1rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    white-space: nowrap; /* Empêche le texte de passer à la ligne */
+}
+
+.nav-dropdown .dropdown-item:hover {
+    background-color: var(--color-accent);
+    color: var(--color-background);
+}
+
+/* --- Comportement au survol --- */
+
+/* Quand on survole le conteneur .nav-dropdown, on affiche le menu .dropdown-menu */
+.nav-dropdown:hover .dropdown-menu {
+    display: block;
+    animation: fadeInDown 0.3s ease-out forwards;
+}
+
+/* La petite flèche qui tourne */
+.dropdown-toggle span {
+    font-size: 0.7em;
+    margin-left: 4px;
+    transition: transform 0.3s ease;
+    display: inline-block; /* Nécessaire pour que la transformation fonctionne */
+}
+.nav-dropdown:hover .dropdown-toggle span {
+    transform: rotate(180deg);
+}
+
+/* Animation d'apparition */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
