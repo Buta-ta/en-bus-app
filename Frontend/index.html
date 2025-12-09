@@ -250,8 +250,21 @@
         <div class="nav-links desktop-links">
           <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
           <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-          <a href="#" onclick="showPage('about')" data-i18n="nav_about">À propos</a>
-          <a href="#" onclick="showPage('contact')" data-i18n="nav_contact">Contact</a>
+           <!-- ============================================ -->
+    <!-- ✅ DÉBUT DU NOUVEAU MENU DÉROULANT            -->
+    <!-- ============================================ -->
+    <div class="nav-dropdown">
+        <a href="#" class="nav-link dropdown-toggle">
+            Plus <span>▼</span>
+        </a>
+        <div class="dropdown-menu">
+            <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
+            <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
+        </div>
+    </div>
+    <!-- ============================================ -->
+    <!-- ✅ FIN DU NOUVEAU MENU DÉROULANT              -->
+    <!-- ============================================ -->
         </div>
         <div class="nav-actions">
           <!-- ✅ Bouton de connexion/déconnexion -->
