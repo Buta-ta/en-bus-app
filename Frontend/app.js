@@ -55,12 +55,12 @@ const CONFIG = {
 
 // Collez l'objet firebaseConfig que vous avez récupéré à l'étape 1
 const firebaseConfig = {
-  apiKey: "AIzaSyDCSxCAZzUCF7nJ4HgRvXIx9_8UbOXn5L4",
-  authDomain: "en-bus--account.firebaseapp.com",
-  projectId: "en-bus--account",
-  storageBucket: "en-bus--account.firebasestorage.app",
-  messagingSenderId: "670151587200",
-  appId: "1:670151587200:web:cbe341448059647e03fd65",
+  apiKey: "AIzaSyD-JrXsi5pMyb2qsR2XVxZ7gagmsdyawSk",
+  authDomain: "en-bus-app.firebaseapp.com",
+  projectId: "en-bus-app",
+  storageBucket: "en-bus-app.firebasestorage.app",
+  messagingSenderId: "518160239652",
+  appId: "1:518160239652:web:e00017bec1bb8034af5cb1",
 };
 
 // On initialise Firebase
