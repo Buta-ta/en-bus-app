@@ -92,6 +92,73 @@ const loginLimiter = rateLimit({
 app.use("/api/", generalLimiter);
 
 
+
+
+if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true") {
+  
+  // Tâche pour les réservations expirées (votre code existant)
+  // cron.schedule("*/5 * * * *", async () => { ... });
+
+  // NOUVELLE TÂCHE : Envoyer des demandes de notation
+  // S'exécute toutes les heures, à la 30ème minute (ex: 10h30, 11h30...)
+  cron.schedule('30 * * * *', async () => {
+    console.log('⏰ CRON: Recherche de voyages terminés pour demandes de notation...');
+    
+    try {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000);
+
+      // 1. Trouver les voyages dont le statut est "ARRIVED" et qui ont été mis à jour il y a entre 1 et 2 heures
+      const recentlyFinishedTrips = await tripsCollection.find({
+        "liveStatus.status": "ARRIVED",
+        "liveStatus.lastUpdated": { $gte: twoHoursAgo, $lt: oneHourAgo },
+        "reviewNotificationSent": { $ne: true } // Ne pas renvoyer si déjà fait
+      }).toArray();
+
+      if (recentlyFinishedTrips.length === 0) {
+        console.log('-> Aucun voyage terminé récemment à notifier.');
+        return;
+      }
+
+      console.log(`-> ${recentlyFinishedTrips.length} voyage(s) trouvé(s) à notifier.`);
+
+      for (const trip of recentlyFinishedTrips) {
+        // 2. Trouver les réservations confirmées pour ce voyage qui ont un token FCM
+        const reservationsToNotify = await reservationsCollection.find({
+          "route.id": trip._id.toString(),
+          "status": "Confirmé",
+          "fcmToken": { $exists: true, $ne: null }
+        }).toArray();
+
+        if (reservationsToNotify.length > 0) {
+          const tokens = reservationsToNotify.map(r => r.fcmToken);
+          const title = "Comment était votre voyage ?"; // TODO: Mettre en plusieurs langues
+          const body = `Notez votre trajet ${trip.route.from} → ${trip.route.to} pour aider la communauté !`;
+          
+          // La donnée 'page' dira à l'app quoi faire au clic
+          const data = { 
+            page: 'rate-trip', 
+            tripId: trip._id.toString(),
+            bookingNumber: reservationsToNotify[0].bookingNumber // On envoie un bookingNumber pour référence
+          }; 
+
+          await sendPush(tokens, title, body, data);
+
+          // 3. Marquer le voyage comme "notifié" pour ne pas le refaire
+          await tripsCollection.updateOne(
+            { _id: trip._id },
+            { $set: { reviewNotificationSent: true } }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erreur dans le CRON de notation:", error);
+    }
+  });
+
+  console.log("✅ Cron jobs activés (y compris pour la notation).");
+}
+
 // ============================================
 // ✅ ROUTE DE TEST (À PLACER ICI TEMPORAIREMENT)
 // ============================================
@@ -2378,6 +2445,24 @@ app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, re
     }
 });
 
+
+// DANS server.js (ajoutez-le avec les autres routes GET publiques)
+
+app.get("/api/trips/:tripId/reviews", async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const reviews = await db.collection('reviews').find({ tripId }).sort({ createdAt: -1 }).toArray();
+        // Calculer la note moyenne
+        let averageRating = 0;
+        if (reviews.length > 0) {
+            const total = reviews.reduce((sum, r) => sum + r.rating.overall, 0);
+            averageRating = total / reviews.length;
+        }
+        res.json({ success: true, reviews, averageRating, count: reviews.length });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 // Route pour METTRE À JOUR les paramètres
 // DANS server.js
 
@@ -2810,6 +2895,59 @@ app.post("/api/admin/report-requests/:bookingNumber/reject", authenticateToken, 
     }
 });
 
+
+
+
+// DANS server.js (ajoutez-le avec les autres routes POST/PATCH)
+
+// NOUVELLE ROUTE : Soumettre un avis
+app.post("/api/reviews", authenticateToken, [
+    body('tripId').isMongoId(),
+    body('bookingNumber').isString(),
+    body('rating.overall').isInt({ min: 1, max: 5 }),
+    body('rating.punctuality').optional().isInt({ min: 1, max: 5 }),
+    body('rating.driver').optional().isInt({ min: 1, max: 5 }),
+    body('rating.comfort').optional().isInt({ min: 1, max: 5 }),
+    body('comment').optional().isString().trim().isLength({ max: 500 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: "Données invalides." });
+    }
+
+    try {
+        const { tripId, bookingNumber, rating, comment } = req.body;
+        const userId = req.user.userId;
+        const userName = req.user.username; // On le récupère du token
+
+        // Vérifier si l'utilisateur a déjà noté ce voyage
+        const existingReview = await db.collection('reviews').findOne({ tripId, userId });
+        if (existingReview) {
+            return res.status(409).json({ error: "Vous avez déjà noté ce voyage." });
+        }
+
+        const newReview = {
+            tripId,
+            bookingNumber,
+            userId,
+            userName,
+            rating,
+            comment: comment || null,
+            createdAt: new Date()
+        };
+
+        await db.collection('reviews').insertOne(newReview);
+        
+        // OPTIONNEL MAIS RECOMMANDÉ : Mettre à jour la note moyenne du trajet
+        // (Nécessite de calculer la moyenne de tous les avis pour ce trajet)
+
+        res.status(201).json({ success: true, message: "Merci pour votre avis !" });
+
+    } catch (error) {
+        console.error("❌ Erreur lors de la soumission de l'avis:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 // Routes de mise à jour PATCH
 
