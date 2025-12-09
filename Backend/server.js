@@ -1455,59 +1455,91 @@ app.post(
 // ========================================================
 // ✅ REMPLACEZ VOTRE ANCIENNE ROUTE PAR CELLE-CI
 // ========================================================
+
+// =======================================================================
+// ✅ REMPLACEZ ENTIÈREMENT LA ROUTE PAR CETTE VERSION UNIVERSELLE
+// =======================================================================
 app.post("/api/auth/google-signin", async (req, res) => {
-    // On récupère le token d'identité Google envoyé par le client
     const idToken = req.headers.authorization?.split('Bearer ')[1];
 
     if (!idToken) {
         return res.status(401).json({ error: "Token d'identité manquant." });
     }
 
-    try {
-        // --- 1. VÉRIFICATION DU TOKEN AVEC LA LIBRAIRIE OFFICIELLE DE GOOGLE ---
-        // C'est cette étape qui résout le problème d'audience.
-        const ticket = await client.verifyIdToken({
-            idToken: idToken,
-            audience: process.env.GOOGLE_WEB_CLIENT_ID, // On vérifie que le token a été émis pour notre application.
-        });
-        
-        const payload = ticket.getPayload();
-        const { name, email, picture, sub: googleId } = payload; // 'sub' est l'ID unique de l'utilisateur Google
-        
-        // Si on arrive ici, le token est valide et nous avons les informations.
-        console.log(`✅ Token Google vérifié avec succès via google-auth-library pour: ${email}`);
+    let decodedTokenPayload;
 
-        // --- 2. Chercher si l'utilisateur existe déjà dans notre DB ---
+    try {
+        // --- MÉTHODE 1 : On essaie de valider avec FIREBASE ADMIN (pour le WEB) ---
+        console.log("METHODE 1: Tentative de validation avec Firebase Admin (cas Web)...");
+        decodedTokenPayload = await admin.auth().verifyIdToken(idToken);
+        console.log("✅ Token validé par Firebase Admin.");
+
+    } catch (firebaseError) {
+        // Si ça échoue, ce n'est pas grave, on essaie la deuxième méthode
+        console.warn("⚠️ Échec validation Firebase Admin, on essaie avec Google Auth Library (cas Natif)...");
+        
+        try {
+            // --- MÉTHODE 2 : On essaie de valider avec GOOGLE AUTH LIBRARY (pour le NATIF) ---
+            const ticket = await client.verifyIdToken({
+                idToken: idToken,
+                audience: process.env.GOOGLE_WEB_CLIENT_ID,
+            });
+            const payload = ticket.getPayload();
+            // On reformate le payload pour qu'il ressemble à celui de Firebase
+            decodedTokenPayload = {
+                name: payload.name,
+                email: payload.email,
+                picture: payload.picture,
+                uid: payload.sub // 'sub' devient 'uid'
+            };
+            console.log("✅ Token validé par Google Auth Library.");
+
+        } catch (googleError) {
+            // Si les deux méthodes échouent, le token est vraiment invalide.
+            console.error("❌ Échec des DEUX méthodes de validation de token.");
+            console.error("Erreur Firebase:", firebaseError.message);
+            console.error("Erreur Google Lib:", googleError.message);
+            return res.status(403).json({ error: "Token Google invalide, expiré ou audience incorrecte." });
+        }
+    }
+
+    // --- Si on arrive ici, le token a été validé par l'une des deux méthodes ---
+    try {
+        const { name, email, picture, uid } = decodedTokenPayload;
+
+        if (!email) {
+            return res.status(400).json({ error: "L'email est manquant dans le token." });
+        }
+        
+        console.log(`Utilisateur authentifié : ${email}`);
+
+        // Le reste de la logique (création/recherche utilisateur, création token JWT) est inchangé
         let user = await crewCollection.findOne({ email: email });
 
-        // --- 3. Si l'utilisateur n'existe pas, on le crée ---
         if (!user) {
-            console.log(`✨ Nouvel utilisateur. Création du profil pour ${email}...`);
+            console.log(`✨ Nouvel utilisateur: ${email}`);
             const newUser = {
-                googleId: googleId, // On stocke l'ID Google pour référence future
+                googleId: uid,
                 name: name,
                 email: email,
-                username: email, // On utilise l'email comme nom d'utilisateur unique par défaut
+                username: email,
                 profilePicture: picture || null,
                 role: 'Client',
                 status: 'Actif',
-                permissions: ['view_reservations'], // Permissions minimales pour un client
+                permissions: ['view_reservations'],
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
-
             const result = await crewCollection.insertOne(newUser);
             user = await crewCollection.findOne({ _id: result.insertedId });
         } else {
-            console.log(`👋 Utilisateur existant trouvé pour ${email}. Mise à jour des infos.`);
-            // C'est une bonne pratique de mettre à jour le nom et la photo au cas où ils auraient changé sur Google.
+            console.log(`👋 Utilisateur existant: ${email}`);
             await crewCollection.updateOne(
                 { _id: user._id },
-                { $set: { name: name, profilePicture: picture, updatedAt: new Date(), googleId: googleId } }
+                { $set: { name: name, profilePicture: picture, updatedAt: new Date(), googleId: uid } }
             );
         }
         
-        // --- 4. Créer notre propre token JWT pour notre application ---
         const tokenPayload = {
             userId: user._id,
             username: user.username,
@@ -1521,13 +1553,11 @@ app.post("/api/auth/google-signin", async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
         );
 
-        // --- 5. Envoyer notre token à l'application cliente ---
         res.json({ success: true, token: appToken });
 
-    } catch (error) {
-        // Cette erreur sera levée par `client.verifyIdToken` si le token est invalide.
-        console.error("❌ Erreur de validation du token Google (google-auth-library):", error.message);
-        res.status(403).json({ error: "Token Google invalide, expiré ou audience incorrecte." });
+    } catch (dbError) {
+        console.error("❌ Erreur lors de la gestion de l'utilisateur en base de données:", dbError);
+        res.status(500).json({ error: "Erreur serveur lors de la finalisation de la connexion." });
     }
 });
 
