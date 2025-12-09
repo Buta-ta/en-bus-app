@@ -122,6 +122,10 @@ async function initGoogleAuth() {
 
 // Appelle l'initialisation
 initGoogleAuth();
+// DANS app.js, REMPLACEZ votre fonction signInWithGoogle
+// DANS app.js, REMPLACEZ ENTIÈREMENT votre fonction signInWithGoogle
+
+// DANS app.js, REMPLACEZ ENCORE une fois votre fonction signInWithGoogle
 
 async function signInWithGoogle() {
   const lang = getLanguage();
@@ -132,34 +136,56 @@ async function signInWithGoogle() {
     let userInfo;
 
     if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
-      
-      if (!googleAuthReady) {
-        console.log('⏳ Initialisation Google Auth...');
-        await initGoogleAuth();
-      }
-      
+      // --- Partie NATIVE ---
       console.log('📱 Connexion native Google...');
       
-      const result = await window.Capacitor.Plugins.SocialLogin.login({
-        provider: 'google',
-        options: {}
-      });
+      // Initialisation (inchangé)
+      if (!googleAuthReady) {
+        await initGoogleAuth();
+        if (!googleAuthReady) throw new Error("Init Google Auth a échoué.");
+      }
       
-      // ⬅️ Ajoute ces logs
-      console.log('✅ Résultat complet:', JSON.stringify(result, null, 2));
-      console.log('✅ result.result:', JSON.stringify(result.result, null, 2));
-      
+      const result = await window.Capacitor.Plugins.SocialLogin.login({ provider: 'google' });
       idToken = result.result.idToken;
-      console.log('✅ idToken:', idToken);
+      const accessToken = result.result.accessToken;
+
+      if (!accessToken) throw new Error("L'accessToken Google est manquant.");
       
-      userInfo = {
-        displayName: result.result.name || result.result.displayName,
-        email: result.result.email,
-        uid: result.result.id
+      // ========================================================
+      // ✅ LA CORRECTION EST ICI : ON UTILISE CapacitorHttp
+      // ========================================================
+      console.log("🔍 Récupération du profil via @capacitor/http...");
+      
+      const { Http } = Capacitor.Plugins;
+      
+      const options = {
+        url: 'https://www.googleapis.com/oauth2/v1/userinfo',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        params: { 'alt': 'json' } // Les paramètres sont séparés
       };
-      console.log('✅ userInfo:', JSON.stringify(userInfo, null, 2));
+
+      // On utilise Http.get() qui retourne directement les données parsées
+      const profileResponse = await Http.get(options);
       
+      // La réponse du plugin est directement l'objet JSON (pas besoin de .json())
+      const profileData = profileResponse.data; 
+
+      if (!profileData || !profileData.email) {
+        throw new Error("Les données du profil Google sont incomplètes.");
+      }
+
+      console.log("✅ Profil utilisateur récupéré:", JSON.stringify(profileData, null, 2));
+
+      userInfo = {
+        displayName: profileData.name,
+        email: profileData.email,
+        uid: profileData.id
+      };
+      
+      // ========================================================
+
     } else {
+      // --- Partie WEB (inchangée) ---
       console.log('🌐 Connexion web Google...');
       const result = await auth.signInWithPopup(googleProvider);
       const user = result.user;
@@ -167,8 +193,13 @@ async function signInWithGoogle() {
       userInfo = user;
     }
 
-    console.log('📤 Envoi au backend...');
-    
+    // --- Le reste du flux vers votre backend est inchangé ---
+    if (!userInfo || !userInfo.email) {
+        throw new Error("Impossible de récupérer l'adresse email du profil Google.");
+    }
+
+    console.log(`✅ Infos prêtes: ${userInfo.email}. Envoi au backend...`);
+
     const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
       method: 'POST',
       headers: {
@@ -177,17 +208,13 @@ async function signInWithGoogle() {
       }
     });
 
-    console.log('📥 Response status:', response.status);
-
+    // ... (le reste de la fonction est identique)
+    const responseBody = await response.text();
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erreur backend:', errorText);
-      throw new Error("Échec de la validation du compte sur notre serveur.");
+        console.error(`❌ Backend a rejeté:`, responseBody);
+        throw new Error("Échec validation serveur.");
     }
-
-    const appData = await response.json();
-    console.log('📥 appData:', JSON.stringify(appData, null, 2));
-
+    const appData = JSON.parse(responseBody);
     if (appData.success && appData.token) {
       localStorage.setItem('enbus_usertoken', appData.token);
       handleAuthStateChanged(userInfo);
@@ -197,10 +224,7 @@ async function signInWithGoogle() {
     }
 
   } catch (error) {
-    // ⬅️ Log détaillé de l'erreur
-    console.error("❌ Erreur de connexion Google:", error);
-    console.error("❌ Error message:", error.message);
-    console.error("❌ Error stack:", error.stack);
+    console.error("❌ Erreur globale de connexion Google:", error, error.message);
     Utils.showToast(translation.toast_login_failed, "error");
   }
 }
