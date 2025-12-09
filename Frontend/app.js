@@ -47,6 +47,29 @@ const CONFIG = {
     DEFAULT_CHILD_DISCOUNT_PERCENTAGE: 50,
 };
 
+
+
+// ============================================
+// 🔥 INITIALISATION DE FIREBASE
+// ============================================
+
+// Collez l'objet firebaseConfig que vous avez récupéré à l'étape 1
+const firebaseConfig = {
+  apiKey: "VOTRE_API_KEY",
+  authDomain: "VOTRE_AUTH_DOMAIN",
+  projectId: "VOTRE_PROJECT_ID",
+  storageBucket: "VOTRE_STORAGE_BUCKET",
+  messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+  appId: "VOTRE_APP_ID"
+};
+
+// On initialise Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+// Variable globale pour stocker l'état de l'utilisateur connecté
+let currentUser = null;
 // ========================================================
 // ✅ NOUVEL OBJET POUR LES RÈGLES DYNAMIQUES
 // ========================================================
@@ -65,6 +88,126 @@ let appRules = {
 // ============================================
 // DONNÉES DE L'APPLICATION
 // ============================================
+
+
+// DANS app.js
+
+async function signInWithGoogle() {
+    try {
+        const result = await auth.signInWithPopup(googleProvider);
+        const user = result.user;
+        
+        // On envoie le token d'identité de Google à notre backend
+        const idToken = await user.getIdToken();
+        
+        // Appel à une nouvelle route backend que nous créerons à l'étape 3
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}` // On envoie le token Google
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Échec de la validation du compte sur notre serveur.");
+        }
+
+        const appData = await response.json();
+        
+        // Notre backend nous renvoie notre propre token JWT
+        if (appData.success && appData.token) {
+            localStorage.setItem('enbus_usertoken', appData.token); // On sauvegarde notre token
+            handleAuthStateChanged(user); // Met à jour l'interface
+            Utils.showToast("Connexion réussie !", "success");
+        }
+
+    } catch (error) {
+        console.error("❌ Erreur de connexion Google:", error);
+        Utils.showToast("La connexion a échoué.", "error");
+    }
+}
+
+/**
+ * Gère la déconnexion de l'utilisateur
+ */
+async function signOut() {
+    await auth.signOut();
+    localStorage.removeItem('enbus_usertoken');
+    currentUser = null;
+    updateAuthUI(null);
+    Utils.showToast("Vous avez été déconnecté.", "info");
+}
+
+/**
+ * Met à jour l'interface en fonction de l'état de connexion
+ */
+function updateAuthUI(user) {
+    const desktopBtn = document.getElementById('auth-button-desktop');
+    const mobileLink = document.getElementById('auth-button-mobile');
+    
+    if (user) {
+        // Utilisateur connecté
+        const welcomeMessage = `Bonjour, ${user.displayName.split(' ')[0]}`;
+        if (desktopBtn) {
+            desktopBtn.textContent = 'Déconnexion';
+            desktopBtn.onclick = signOut;
+        }
+        if (mobileLink) {
+            mobileLink.innerHTML = `<span>${welcomeMessage}</span>`;
+            // On pourrait ajouter un sous-menu pour 'Mon Compte' / 'Déconnexion' ici
+            mobileLink.onclick = signOut; 
+        }
+    } else {
+        // Utilisateur déconnecté
+        if (desktopBtn) {
+            desktopBtn.textContent = 'Se connecter';
+            desktopBtn.onclick = signInWithGoogle;
+        }
+        if (mobileLink) {
+            mobileLink.innerHTML = '<span>G | Se connecter</span>';
+            mobileLink.onclick = signInWithGoogle;
+        }
+    }
+}
+
+/**
+ * Écoute les changements d'état d'authentification de Firebase
+ */
+function handleAuthStateChanged(user) {
+    if (user) {
+        console.log("✅ Utilisateur Firebase connecté:", user.displayName);
+        currentUser = {
+            name: user.displayName,
+            email: user.email,
+            uid: user.uid
+        };
+    } else {
+        console.log("ℹ️ Aucun utilisateur Firebase connecté.");
+        currentUser = null;
+    }
+    updateAuthUI(user);
+    // On pourrait rafraîchir la page des réservations ici
+    if (document.getElementById('reservations-page').classList.contains('active')) {
+        displayReservations();
+    }
+}
+
+// Lancer l'écouteur au démarrage de l'application
+auth.onAuthStateChanged(handleAuthStateChanged);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ============================================

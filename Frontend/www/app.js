@@ -4586,42 +4586,74 @@ function displayResults(results, isReturn = false) {
         // ✅ FIN DU NOUVEAU BLOC
         // ========================================================
         
+            // ========================================================
+    // ✅ NOUVELLE LOGIQUE POUR AFFICHER LES ALERTES
+    // ========================================================
+  let alertsHTML = '';
+if (route.route.alerts && route.route.alerts.length > 0) {
+    const alertIcons = { info: 'ℹ️', warning: '⚠️', danger: '🛑' };
+      // ========================================================
+    // ✅ DÉBUT DE LA CORRECTION : Structure HTML simplifiée
+    // ========================================================
+    alertsHTML = `
+        <div class="bus-card-alerts">
+            ${route.route.alerts.map(alert => {
+                // On met l'icône et le message DANS LA MÊME BALISE
+                return `
+                    <div class="alert-item ${alert.type}">
+                        ${alertIcons[alert.type] || 'ℹ️'} ${alert.message}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    // ========================================================
+    // ✅ FIN DE LA CORRECTION
+    // ========================================================
+}
 
-
-
-
-
-
+// ========================================================
+// ✅ DÉBUT DE LA NOUVELLE STRUCTURE HTML
+// ========================================================
+return `
+    <div class="bus-card">
+        ${badgeHTML}
+        <div class="bus-card-wrapper">
             
-        return `
-            <div class="bus-card">
-                ${badgeHTML}
-                <div class="bus-card-wrapper">
-                    <div class="bus-card-main">
-                     ${tripTitleHTML}
-                        <div class="bus-card-time">
-                            <span>${route.departure}</span>
-                            <div class="bus-card-duration">
-                                <span>→</span><br>
-                                ${route.duration || 'N/A'}
-                            </div>
-                            ${arrivalDisplay}
-                        </div>
-                        ${departureLocationHTML}
-                        <div class="bus-card-company">${route.company}</div>
-                        ${tripDetailsHTML}
-                        <div class="bus-card-details">
-                            <div class="bus-amenities">${amenitiesHTML}</div>
-                            <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
-                        </div>
+            <!-- On remet tout dans une seule colonne principale -->
+            <div class="bus-card-main">
+                ${tripTitleHTML}
+                <div class="bus-card-time">
+                    <span>${route.departure}</span>
+                    <div class="bus-card-duration">
+                        <span>→</span><br>
+                        ${route.duration || 'N/A'}
                     </div>
-                    <div class="bus-card-pricing">
-                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                        <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
-                    </div>
+                    ${arrivalDisplay}
                 </div>
+                ${departureLocationHTML}
+                <div class="bus-card-company">${route.company}</div>
+                ${tripDetailsHTML}
+                <div class="bus-card-details">
+                    <div class="bus-amenities">${amenitiesHTML}</div>
+                    <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
+                </div>
+                <!-- On remet les alertes ici, à la fin de la colonne principale -->
+                ${alertsHTML} 
             </div>
-        `;
+
+            <!-- La partie prix et bouton est séparée comme avant -->
+            <div class="bus-card-pricing">
+                <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
+            </div>
+
+        </div>
+    </div>
+`;
+    // ========================================================
+    // ✅ FIN DE LA MISE À JOUR
+    // ========================================================
     }).join("");
 
     // --- 9. Mise à jour de la légende ---

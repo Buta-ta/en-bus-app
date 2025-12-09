@@ -6172,3 +6172,31 @@ body.pwa-installed .container {
     font-style: italic;
     color: var(--primary); /* Vert pour mettre en avant "Populaire" */
 }
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* DANS index.html, dans la balise <style> */
+
+.bus-card-alerts {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--color-border);
+    /* On utilise flexbox pour empiler les alertes verticalement */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Espace entre chaque ligne d'alerte */
+}
+
+.alert-item {
+    /* Plus besoin de flexbox ici, c'est juste un bloc de texte */
+    font-size: 0.85rem;
+    text-align: left;
+    line-height: 1.4; /* Améliore la lisibilité si le texte passe à la ligne */
+}
+
+/* Les couleurs restent les mêmes */
+.alert-item.info { color: var(--color-text-secondary); }
+.alert-item.warning { color: #ffa726; font-weight: 600; }
+.alert-item.danger { color: #ef5350; font-weight: 700; }
