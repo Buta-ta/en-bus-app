@@ -12,6 +12,10 @@ const { ObjectId } = require("mongodb");
 const { connectToDb, getDb } = require('./database'); 
 // On déstructure l'objet pour récupérer toutes les fonctions ET l'objet admin
 const { registerToken, sendPush } = require('./notifications');// 
+// --- Imports (à ajouter en haut de votre fichier avec les autres) ---
+const { OAuth2Client } = require('google-auth-library');
+
+// ... autres imports ...
 const admin = require('./firebase.js');
 const cron = require("node-cron");
 const { Resend } = require("resend");
@@ -22,6 +26,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 const html_pdf = require('html-pdf-node'); // ✅ AJOUTER CETTE LIGNE
+
+// --- Client OAuth2 (à créer une seule fois, après vos imports) ---
+// La variable d'environnement doit être ajoutée sur Render.
+const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
+
 
 // ✅ AJOUTEZ CES LIGNES ICI
 const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
@@ -1443,8 +1452,11 @@ app.post(
 // ========================================================
 // ✅ NOUVELLE ROUTE POUR LE LOGIN AVEC GOOGLE
 // ========================================================
+// ========================================================
+// ✅ REMPLACEZ VOTRE ANCIENNE ROUTE PAR CELLE-CI
+// ========================================================
 app.post("/api/auth/google-signin", async (req, res) => {
-    // On récupère le token d'identité Google envoyé par le client dans l'en-tête
+    // On récupère le token d'identité Google envoyé par le client
     const idToken = req.headers.authorization?.split('Bearer ')[1];
 
     if (!idToken) {
@@ -1452,12 +1464,18 @@ app.post("/api/auth/google-signin", async (req, res) => {
     }
 
     try {
-        // --- 1. Vérification du token d'identité avec Firebase Admin ---
-        // Firebase va vérifier si ce token est authentique et non expiré.
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const { uid, name, email, picture } = decodedToken;
+        // --- 1. VÉRIFICATION DU TOKEN AVEC LA LIBRAIRIE OFFICIELLE DE GOOGLE ---
+        // C'est cette étape qui résout le problème d'audience.
+        const ticket = await client.verifyIdToken({
+            idToken: idToken,
+            audience: process.env.GOOGLE_WEB_CLIENT_ID, // On vérifie que le token a été émis pour notre application.
+        });
         
-        console.log(`✅ Token Google valide pour l'utilisateur: ${email}`);
+        const payload = ticket.getPayload();
+        const { name, email, picture, sub: googleId } = payload; // 'sub' est l'ID unique de l'utilisateur Google
+        
+        // Si on arrive ici, le token est valide et nous avons les informations.
+        console.log(`✅ Token Google vérifié avec succès via google-auth-library pour: ${email}`);
 
         // --- 2. Chercher si l'utilisateur existe déjà dans notre DB ---
         let user = await crewCollection.findOne({ email: email });
@@ -1466,30 +1484,30 @@ app.post("/api/auth/google-signin", async (req, res) => {
         if (!user) {
             console.log(`✨ Nouvel utilisateur. Création du profil pour ${email}...`);
             const newUser = {
+                googleId: googleId, // On stocke l'ID Google pour référence future
                 name: name,
                 email: email,
-                username: email, // On peut utiliser l'email comme nom d'utilisateur unique
+                username: email, // On utilise l'email comme nom d'utilisateur unique par défaut
                 profilePicture: picture || null,
-                role: 'Client', // On lui assigne le rôle 'Client'
+                role: 'Client',
                 status: 'Actif',
-                permissions: [ // Permissions de base pour un client
-                    'view_reservations' 
-                ], 
+                permissions: ['view_reservations'], // Permissions minimales pour un client
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                // On ne met pas de mot de passe car l'authentification est gérée par Google
             };
 
             const result = await crewCollection.insertOne(newUser);
-            // On récupère l'utilisateur fraîchement créé pour avoir son _id
             user = await crewCollection.findOne({ _id: result.insertedId });
         } else {
-            console.log(`👋 Utilisateur existant trouvé pour ${email}.`);
-            // On pourrait mettre à jour son nom ou sa photo de profil ici si on le souhaite
+            console.log(`👋 Utilisateur existant trouvé pour ${email}. Mise à jour des infos.`);
+            // C'est une bonne pratique de mettre à jour le nom et la photo au cas où ils auraient changé sur Google.
+            await crewCollection.updateOne(
+                { _id: user._id },
+                { $set: { name: name, profilePicture: picture, updatedAt: new Date(), googleId: googleId } }
+            );
         }
         
         // --- 4. Créer notre propre token JWT pour notre application ---
-        // Ce token contient les informations de notre propre système (rôle, permissions...).
         const tokenPayload = {
             userId: user._id,
             username: user.username,
@@ -1507,9 +1525,9 @@ app.post("/api/auth/google-signin", async (req, res) => {
         res.json({ success: true, token: appToken });
 
     } catch (error) {
-        console.error("❌ Erreur de validation du token Google:", error);
-        // Si le token est invalide ou expiré, Firebase lèvera une erreur.
-        res.status(403).json({ error: "Token Google invalide ou expiré." });
+        // Cette erreur sera levée par `client.verifyIdToken` si le token est invalide.
+        console.error("❌ Erreur de validation du token Google (google-auth-library):", error.message);
+        res.status(403).json({ error: "Token Google invalide, expiré ou audience incorrecte." });
     }
 });
 
