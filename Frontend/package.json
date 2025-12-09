@@ -17,17 +17,18 @@
     "@capacitor/core": "^7.4.4"
   },
   "dependencies": {
+    "@capacitor-community/http": "latest",
     "@capacitor-firebase/analytics": "^7.4.0",
     "@capacitor/app": "^7.1.0",
     "@capacitor/browser": "^7.0.2",
     "@capacitor/filesystem": "^7.1.5",
     "@capacitor/geolocation": "^7.1.6",
-    "@capacitor/http": "^0.0.2",
     "@capacitor/keyboard": "^7.0.3",
     "@capacitor/local-notifications": "^7.0.3",
     "@capacitor/push-notifications": "^7.0.3",
     "@capacitor/share": "^7.0.2",
+    "@capacitor/splash-screen": "^7.0.0",
     "@capgo/capacitor-social-login": "^7.20.0",
-    "google-auth-library": "^10.5.0"
+    "google-auth-library": "^9.11.0"
   }
 }

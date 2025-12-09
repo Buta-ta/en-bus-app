@@ -96,6 +96,7 @@ let appRules = {
 // =============================================
 
 let isNativePlatform = false;
+let googleAuthReady = false;
 
 // Vérifie si on est sur mobile natif
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -103,35 +104,28 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
 }
 
 // Initialisation Google Auth pour mobile
-// DANS app.js, REMPLACEZ votre fonction initGoogleAuth
-
 async function initGoogleAuth() {
   if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
     try {
-      console.log("🚀 Tentative d'initialisation de Google Auth avec scopes...");
-      
       await window.Capacitor.Plugins.SocialLogin.initialize({
         google: {
-          // L'ID client web, comme avant
-          webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', 
-          
-          // ✅ LA PARTIE CRUCIALE EST ICI : On demande les scopes à l'initialisation
-          scopes: ['profile', 'email']
+          webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', // ⬅️ Utilise celui-ci (client_type: 3)
         },
       });
-
       googleAuthReady = true;
-      console.log('✅ Google Auth initialisé avec succès (avec scopes).');
+      console.log('✅ Google Auth initialisé');
     } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation de Google Auth:', error);
+      console.error('❌ Erreur init Google Auth:', error);
     }
   }
 }
 
 // Appelle l'initialisation
 initGoogleAuth();
-
 // DANS app.js, REMPLACEZ votre fonction signInWithGoogle
+
+// DANS app.js, REMPLACEZ ENTIÈREMENT votre fonction signInWithGoogle
+// DANS app.js, REMPLACEZ ENTIÈREMENT votre fonction signInWithGoogle
 
 async function signInWithGoogle() {
   const lang = getLanguage();
@@ -142,53 +136,62 @@ async function signInWithGoogle() {
     let userInfo;
 
     if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
-      // ✅ Mobile natif (Android/iOS)
+      // --- Partie NATIVE ---
       console.log('📱 Connexion native Google...');
-
-      // S'assurer que le plugin est initialisé avant de l'utiliser
       if (!googleAuthReady) {
-        console.log("⏳ Plugin non prêt, initialisation en cours...");
-        await initGoogleAuth(); // On attend que ce soit fait
-        if (!googleAuthReady) { // Si ça a encore échoué
-            throw new Error("Impossible d'initialiser le service de connexion Google.");
-        }
+        await initGoogleAuth();
+        if (!googleAuthReady) throw new Error("Init Google Auth a échoué.");
       }
       
-      // L'appel login n'a plus besoin des options de scope ici
-      const result = await window.Capacitor.Plugins.SocialLogin.login({
-        provider: 'google'
-      });
+      const result = await window.Capacitor.Plugins.SocialLogin.login({ provider: 'google' });
       
-      console.log('✅ Résultat Google Sign-In:', JSON.stringify(result, null, 2));
+      // =======================================================================
+      // ✅ EXTRACTION FINALE BASÉE SUR LES LOGS DE DÉBOGAGE
+      // =======================================================================
+      const loginData = result.result;
+      if (!loginData) {
+          throw new Error("La réponse du plugin ne contient pas de sous-objet 'result'.");
+      }
       
-      // Récupère le token et les infos
-      // On s'attend maintenant à ce que 'result.result.email' soit rempli
-      idToken = result.result.idToken;
+      // Extraction de l'idToken
+      idToken = loginData.idToken;
+
+      // Extraction des informations de profil
+      const profileData = loginData.profile;
+      
+      if (typeof idToken !== 'string' || !idToken) {
+          throw new Error("L'idToken est manquant ou invalide dans la réponse.");
+      }
+      if (!profileData || typeof profileData.email !== 'string' || !profileData.email) {
+          throw new Error("Les données de profil (surtout l'email) sont manquantes.");
+      }
+      
+      console.log("🔑 idToken et 👤 Profil extraits avec succès !");
+
+      // On construit notre objet userInfo directement
       userInfo = {
-        displayName: result.result.name || result.result.displayName,
-        email: result.result.email,
-        uid: result.result.id
+        displayName: profileData.name,
+        email: profileData.email,
+        uid: profileData.id
       };
+      // =======================================================================
       
     } else {
-      // ✅ Web (navigateur) - utilise Firebase popup (inchangé)
+      // --- Partie WEB (inchangée) ---
       console.log('🌐 Connexion web Google...');
-      const result = await auth.signInWithPopup(googleProvider);
-      const user = result.user;
+      const webResult = await auth.signInWithPopup(googleProvider);
+      const user = webResult.user;
       idToken = await user.getIdToken();
       userInfo = user;
     }
 
-    // Sécurité : si l'email n'est toujours pas là, c'est qu'il y a un problème
+    // --- Le reste du flux vers votre backend est inchangé et fonctionnera ---
     if (!userInfo || !userInfo.email) {
-        console.error("❌ Les informations de l'utilisateur (surtout l'email) sont manquantes après l'authentification Google.");
-        throw new Error("Impossible de récupérer les informations du profil Google.");
+        throw new Error("Impossible de récupérer l'adresse email de l'utilisateur.");
     }
 
-    console.log(`✅ Infos utilisateur récupérées: ${userInfo.email}`);
-
-    // Envoie le token à ton backend (inchangé)
-    console.log("📤 Envoi du token au backend...");
+    console.log(`🚀 Infos utilisateur prêtes: ${userInfo.email}. Envoi au backend...`);
+    
     const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
       method: 'POST',
       headers: {
@@ -197,16 +200,13 @@ async function signInWithGoogle() {
       }
     });
 
-    console.log(`📥 Réponse du backend reçue avec le statut: ${response.status}`);
     const responseBody = await response.text();
-
     if (!response.ok) {
         console.error(`❌ Le backend a rejeté la requête:`, responseBody);
-        throw new Error("Échec de la validation du compte sur notre serveur.");
+        throw new Error("Échec de la validation du compte sur le serveur.");
     }
 
     const appData = JSON.parse(responseBody);
-
     if (appData.success && appData.token) {
       localStorage.setItem('enbus_usertoken', appData.token);
       handleAuthStateChanged(userInfo);
@@ -216,10 +216,12 @@ async function signInWithGoogle() {
     }
 
   } catch (error) {
-    console.error("❌ Erreur globale de connexion Google:", error);
+    console.error("❌ Erreur globale de connexion Google:", error.message);
     Utils.showToast(translation.toast_login_failed, "error");
   }
 }
+
+
 
 async function signOut() {
   const lang = getLanguage();
@@ -243,9 +245,6 @@ async function signOut() {
     console.error("❌ Erreur déconnexion:", error);
   }
 }
-/**
- * Met à jour l'interface en fonction de l'état de connexion
- */
 // DANS app.js (remplacez votre fonction updateAuthUI)
 
 function updateAuthUI(user) {
@@ -285,6 +284,10 @@ function updateAuthUI(user) {
         }
     }
 }
+
+
+
+
 
 /**
  * Écoute les changements d'état d'authentification de Firebase
