@@ -2710,6 +2710,7 @@ async function initApp() {
         setupMobileFilterToggle();
         setupSocialLinks();
         loadAllDestinations();
+        setupNotificationListeners(); 
         // ✅ AJOUTER CES DEUX LIGNES
         setupAutocomplete('origin-input', 'origin-suggestions');
         setupAutocomplete('destination-input', 'destination-suggestions');
@@ -6728,6 +6729,207 @@ window.selectReportTrip = async function(tripId, bookingNumber, currentReportCou
         Utils.showToast(error.message, 'error');
     }
 };
+
+
+
+
+// DANS app.js, à ajouter avec vos autres fonctions de setup
+
+/**
+ * Met en place tous les écouteurs d'événements pour les notifications Push.
+ * Cette fonction ne doit être appelée qu'une seule fois au démarrage de l'application,
+ * de préférence dans initApp() ou une fonction similaire.
+ */
+function setupNotificationListeners() {
+    // On ne fait rien si on n'est pas sur une plateforme native (Android/iOS)
+    if (!window.Capacitor?.isNativePlatform()) {
+        console.log("Mode Web, les écouteurs de notifications Push ne sont pas activés.");
+        return;
+    }
+
+    // On s'assure que le plugin PushNotifications est disponible
+    const { PushNotifications, LocalNotifications } = Capacitor.Plugins;
+    if (!PushNotifications) {
+        console.warn("⚠️ Le plugin PushNotifications n'est pas disponible.");
+        return;
+    }
+
+    console.log("🔔 Initialisation des écouteurs de notifications Push...");
+
+    // --- 1. Écouteur pour la réception du token FCM ---
+    // Se déclenche lorsque l'appareil obtient (ou rafraîchit) son token de Firebase.
+    PushNotifications.addListener('registration', (token) => {
+        console.log("🔑 Token FCM reçu de l'appareil:", token.value);
+        // On le sauvegarde dans le localStorage pour pouvoir l'utiliser plus tard
+        localStorage.setItem('fcm_token', token.value);
+    });
+
+    // --- 2. Écouteur pour les erreurs d'enregistrement ---
+    PushNotifications.addListener('registrationError', (error) => {
+        console.error("❌ Erreur lors de l'enregistrement pour les Push Notifications:", error);
+    });
+
+    // --- 3. Écouteur pour la réception d'une notification PENDANT que l'app est ouverte ---
+    // Par défaut, quand l'app est au premier plan, la notification n'apparaît pas dans la barre de statut.
+    // On utilise ce listener pour la forcer à s'afficher en créant une notification locale.
+    PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+        console.log("📩 Notification Push reçue pendant que l'app est ouverte:", notification);
+
+        try {
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: Math.floor(Math.random() * 100000), // ID unique
+                    title: notification.title || 'En-Bus',
+                    body: notification.body || 'Vous avez un nouveau message.',
+                    schedule: { at: new Date(Date.now() + 500) }, // Afficher dans 0.5s
+                    sound: 'default', // Son par défaut de l'appareil
+                    channelId: 'reminders', // Canal créé lors de l'initialisation
+                    extra: notification.data, // On passe les données (page, tripId, etc.)
+                    smallIcon: 'ic_notification', // Nom de votre icône de notification (sans extension)
+                }]
+            });
+            console.log("-> Notification locale créée pour un affichage immédiat.");
+        } catch (e) {
+            console.warn("⚠️ Erreur lors de la création de la notification locale:", e);
+        }
+    });
+
+    // --- 4. Écouteur pour l'ACTION de l'utilisateur (CLIC sur la notification) ---
+    // C'est le listener le plus important pour la navigation.
+    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        console.log("👆 Action sur une notification Push:", action);
+        
+        // Les données personnalisées que nous avons envoyées depuis le backend se trouvent ici :
+        const data = action.notification.data;
+
+        if (!data) {
+            console.warn("La notification ne contient pas de données 'data' pour la navigation.");
+            return;
+        }
+
+        // --- Logique de redirection en fonction des données reçues ---
+
+        // Cas n°1 : C'est une demande de notation
+        if (data.page === 'rate-trip' && data.tripId) {
+            console.log(`-> Redirection vers la page de notation pour le voyage: ${data.tripId}`);
+            // On s'assure que la fonction existe avant de l'appeler
+            if (typeof showRatingPage === 'function') {
+                showRatingPage(data.tripId, data.bookingNumber);
+            } else {
+                console.error("La fonction showRatingPage() n'est pas définie.");
+            }
+        }
+        // Cas n°2 : C'est une alerte générale ou un billet à consulter
+        else if (data.page === 'reservations' || data.bookingNumber) {
+            console.log(`-> Redirection vers la page "Mes réservations".`);
+            // On affiche la page des réservations, qui va se rafraîchir d'elle-même.
+            showPage('reservations');
+        }
+        // (Futur) Cas n°3 : C'est une promo
+        else if (data.page === 'promo') {
+            console.log(`-> Redirection vers la page des promotions.`);
+            // showPage('promotions'); // Exemple
+        }
+        // Cas par défaut : On ne fait rien de spécial
+        else {
+            console.log("-> Aucune action de navigation spécifique définie pour cette notification.");
+        }
+    });
+}
+
+
+
+
+
+
+
+
+// 2. Afficher la page et la pré-remplir
+function showRatingPage(tripId, bookingNumber) {
+    // Remplir les champs cachés
+    document.getElementById('rating-trip-id').value = tripId;
+    document.getElementById('rating-booking-number').value = bookingNumber;
+
+    // TODO: Vous pourriez faire un appel API pour récupérer les détails du trajet (from, to)
+    // et les afficher dans #rating-trip-info pour un meilleur contexte.
+
+    // Afficher la page
+    showPage('rating');
+    setupStarRating();
+    
+    const form = document.getElementById('rating-form');
+    // On s'assure de n'avoir qu'un seul écouteur
+    form.removeEventListener('submit', handleRatingSubmit); 
+    form.addEventListener('submit', handleRatingSubmit);
+}
+
+// 3. Rendre les étoiles interactives
+function setupStarRating() {
+    const ratings = document.querySelectorAll('.star-rating');
+    ratings.forEach(rating => {
+        const stars = rating.querySelectorAll('.star');
+        rating.addEventListener('click', e => {
+            if (e.target.classList.contains('star')) {
+                const value = parseInt(e.target.dataset.value);
+                // Mettre à jour l'état visuel
+                stars.forEach(star => {
+                    star.classList.toggle('selected', parseInt(star.dataset.value) <= value);
+                });
+                // Stocker la valeur (par exemple dans un data-attribute sur le parent)
+                rating.dataset.ratingValue = value;
+            }
+        });
+    });
+}
+
+// 4. Gérer la soumission du formulaire
+async function handleRatingSubmit(event) {
+    event.preventDefault();
+    
+    const overallRating = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
+    if (!overallRating) {
+        Utils.showToast("Veuillez donner une note globale.", "warning");
+        return;
+    }
+
+    const reviewData = {
+        tripId: document.getElementById('rating-trip-id').value,
+        bookingNumber: document.getElementById('rating-booking-number').value,
+        rating: {
+            overall: parseInt(overallRating),
+            punctuality: parseInt(document.querySelector('.star-rating[data-category="punctuality"]').dataset.ratingValue) || null,
+            driver: parseInt(document.querySelector('.star-rating[data-category="driver"]').dataset.ratingValue) || null,
+            comfort: parseInt(document.querySelector('.star-rating[data-category="comfort"]').dataset.ratingValue) || null,
+        },
+        comment: document.getElementById('rating-comment').value.trim()
+    };
+    
+    try {
+        const token = localStorage.getItem('enbus_usertoken');
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(reviewData)
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        
+        Utils.showToast(result.message, 'success');
+        showPage('reservations'); // Rediriger l'utilisateur vers ses réservations
+
+    } catch (error) {
+        Utils.showToast(error.message, 'error');
+    }
+}
+
+
+
+
+
 
 // ============================================
 // 📊 AFFICHAGE DU RÉCAPITULATIF DU REPORT
