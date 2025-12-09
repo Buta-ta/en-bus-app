@@ -11,7 +11,7 @@ async function registerToken(token, bookingNumber, busId) {
         await db.collection('reservations').updateOne(
             { bookingNumber: bookingNumber },
             { 
-                $set: { 
+                $set: {   
                     fcmToken: token, 
                     busId: busId || null,
                     lastTokenUpdate: new Date()
