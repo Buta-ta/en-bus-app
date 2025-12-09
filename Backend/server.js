@@ -11,7 +11,8 @@ const { Server } = require("socket.io");
 const { ObjectId } = require("mongodb"); 
 const { connectToDb, getDb } = require('./database'); 
 // On déstructure l'objet pour récupérer toutes les fonctions ET l'objet admin
-const { registerToken, sendPush, admin } = require('./notifications'); // 
+const { registerToken, sendPush } = require('./notifications');// 
+const admin = require('./firebase.js');
 const cron = require("node-cron");
 const { Resend } = require("resend");
 const rateLimit = require("express-rate-limit");
