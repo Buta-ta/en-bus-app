@@ -250,22 +250,29 @@
         <div class="nav-links desktop-links">
           <a href="#" onclick="showPage('home')" data-i18n="nav_home">Accueil</a>
           <a href="#" onclick="showPage('reservations')" data-i18n="nav_my_bookings">Mes Réservations</a>
-           <!-- ============================================ -->
-    <!-- ✅ DÉBUT DU NOUVEAU MENU DÉROULANT            -->
-    <!-- ============================================ -->
-    <div class="nav-dropdown">
-        <a href="#" class="nav-link dropdown-toggle">
-            Plus <span>▼</span>
-        </a>
-        <div class="dropdown-menu">
-            <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À propos</a>
-            <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('contact')" data-i18n="nav_contact">Contact</a>
+
+          <!-- ========================================================= -->
+          <!-- ON REMPLACE LES LIENS "À propos" et "Contact" PAR CE BLOC -->
+          <!-- ========================================================= -->
+          <div class="nav-dropdown">
+            <!-- Le lien visible "Plus" -->
+            <a href="#" class="nav-link dropdown-toggle">
+              <span data-i18n="nav_more">Plus</span> <span>▼</span>
+            </a>
+
+            <!-- Le menu caché qui apparaît au survol -->
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('about')" data-i18n="nav_about">À
+                propos</a>
+              <a href="#" class="dropdown-item" onclick="closeMenuAndShowPage('contact')"
+                data-i18n="nav_contact">Contact</a>
+            </div>
+          </div>
+          <!-- ========================================================= -->
+
         </div>
-    </div>
-    <!-- ============================================ -->
-    <!-- ✅ FIN DU NOUVEAU MENU DÉROULANT              -->
-    <!-- ============================================ -->
-        </div>
+
+
         <div class="nav-actions">
           <!-- ✅ Bouton de connexion/déconnexion -->
           <button id="auth-button-desktop" class="btn btn-secondary">
