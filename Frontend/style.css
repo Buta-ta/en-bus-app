@@ -6279,3 +6279,33 @@ body.pwa-installed .container {
         transform: translateX(-50%) translateY(0);
     }
 }
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 AJUSTEMENTS NAVBAR
+   ============================================ */
+
+/*
+ * 1. Correction de la taille du texte pour "Plus"
+ */
+.dropdown-toggle {
+    /* On s'assure qu'il se comporte comme les autres nav-link */
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-toggle span:first-child { /* Cible le mot "Plus" */
+    font-size: inherit; /* Fait hériter la taille de son parent .nav-link */
+    font-weight: inherit; /* Fait hériter le poids de son parent .nav-link */
+}
+
+/*
+ * 2. Création d'une version plus petite du bouton
+ */
+.btn.btn-sm {
+    padding: 0.5rem 1rem; /* Padding vertical et horizontal réduit */
+    font-size: 0.875rem;  /* Taille de police légèrement plus petite */
+    font-weight: 600;     /* Un peu moins gras que les boutons principaux */
+}
