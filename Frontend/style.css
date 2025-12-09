@@ -6349,34 +6349,70 @@ body.pwa-installed .container {
 
 
 
-/* DANS index.html (client) ou votre CSS */
+/* ============================================
+   ✨ SQUELETTES DE CHARGEMENT
+   ============================================ */
 
+/* Conteneur principal d'un squelette de carte */
 .bus-card-skeleton {
-  background-color: var(--color-surface);
+  background-color: var(--color-surface); /* Utilise la couleur de fond de vos cartes */
   border-radius: var(--radius-lg);
   padding: var(--space-24);
   margin-bottom: 1rem;
   border: 1px solid var(--color-border);
-  opacity: 0.7;
+  overflow: hidden; /* Important pour l'effet de brillance */
+  position: relative; /* Nécessaire pour le pseudo-élément de brillance */
 }
 
+/* Ligne de base pour un élément de squelette (un bloc gris) */
 .skeleton-line {
-  background-color: var(--color-surface-dark);
+  background-color: var(--color-surface-dark); /* Une couleur légèrement plus foncée */
   border-radius: var(--radius-base);
-  animation: skeleton-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  margin-bottom: 1rem; /* Espace entre les lignes */
 }
 
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+/* Tailles spécifiques pour simuler la mise en page de la vraie carte */
+.skeleton-line.title {
+  height: 24px;
+  width: 60%;
+}
+.skeleton-line.text {
+  height: 16px;
+  width: 80%;
+  margin-bottom: 0.75rem;
+}
+.skeleton-line.text-short {
+  height: 16px;
+  width: 40%;
+}
+.skeleton-line.button {
+  height: 48px;
+  width: 120px;
+  margin-left: auto; /* Aligne le bouton à droite */
+  margin-bottom: 0;
 }
 
-/* On définit les tailles des différentes lignes du squelette */
-.skeleton-line.title { height: 24px; width: 60%; margin-bottom: 1rem; }
-.skeleton-line.text { height: 16px; width: 80%; margin-bottom: 0.5rem; }
-.skeleton-line.text-short { height: 16px; width: 40%; }
-.skeleton-line.button { height: 48px; width: 120px; margin-left: auto; }
+/* Animation de "brillance" qui passe sur les squelettes */
+.bus-card-skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 255, 255, 0.2) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
