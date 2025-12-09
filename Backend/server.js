@@ -3216,6 +3216,8 @@ app.patch("/api/admin/settings/report", authenticateToken, [
 // ============================================
 
 // --- D. Routes d'action spécifiques (PATCH) ---
+// DANS server.js
+
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED', 'MAINTENANCE']),
     body('delayMinutes').if(body('status').equals('DELAYED')).isInt({ min: 1 }).withMessage('Le retard doit être un nombre positif.'),
@@ -3250,48 +3252,53 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         }
 
         // ==========================================================
-        // ✅ BLOC DE MISE À JOUR DES STATS (PLACÉ AU BON ENDROIT)
+        // BLOC DE MISE À JOUR DES STATS DE L'ÉQUIPAGE
         // ==========================================================
         if (status === 'ARRIVED') {
-            console.log(`🏁 Voyage ${tripId} marqué "Arrivé". Tentative de mise à jour des stats...`);
+            console.log(`🏁 Voyage ${tripId} marqué "Arrivé". Tentative de mise à jour des stats du personnel...`);
             
             const trip = await tripsCollection.findOne({ _id: new ObjectId(tripId) });
             const distance = trip?.route?.distance;
             const crew = trip?.crew;
 
-            if (!distance) console.log(`   -> ⚠️ Distance non trouvée pour ce voyage.`);
-            if (!crew || (!crew.drivers && !crew.controllers)) console.log(`   -> ⚠️ Équipage non trouvé pour ce voyage.`);
-
+            // On vérifie qu'on a bien une distance et un équipage assigné
             if (distance && crew && (crew.drivers || crew.controllers)) {
                 const crewMembers = [...(crew.drivers || []), ...(crew.controllers || [])];
 
                 if (crewMembers.length > 0) {
                     const crewIds = crewMembers
                         .map(member => member.id)
-                        .filter(id => id && ObjectId.isValid(id))
+                        .filter(id => id && ObjectId.isValid(id)) // Filtre les ID invalides
                         .map(id => new ObjectId(id));
                     
                     console.log(`   -> IDs de l'équipage à mettre à jour:`, crewIds);
                     
                     if (crewIds.length > 0) {
-                        const updateResult = await dbClient.db("en-bus-db").collection('crew').updateMany(
+                        // ==========================================================
+                        // ✅ CORRECTION APPLIQUÉE ICI
+                        // ==========================================================
+                        // On récupère l'instance de la base de données via la fonction getDb()
+                        const db = getDb(); 
+                        // On exécute la mise à jour sur la collection 'crew'
+                        const updateResult = await db.collection('crew').updateMany(
                             { _id: { $in: crewIds } },
                             { $inc: { totalTrips: 1, totalKm: distance } }
                         );
+                        // ==========================================================
+                        
                         console.log(`   -> ✅ Succès ! ${updateResult.modifiedCount} membre(s) d'équipage mis à jour.`);
                     }
                 }
             } else {
-                console.log('   -> ❌ Mise à jour des stats ignorée (données manquantes).');
+                console.log('   -> ⚠️ Mise à jour des stats ignorée (distance ou équipage manquant).');
             }
         }
-        // ==========================================================
 
         console.log(`📢 Statut du voyage ${tripId} mis à jour : ${status}`);
         res.json({ success: true, message: `Statut du voyage mis à jour : ${status}` });
 
     } catch (error) {
-        console.error("❌ Erreur mise à jour statut voyage:", error);
+        console.error("❌ Erreur lors de la mise à jour du statut du voyage:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
