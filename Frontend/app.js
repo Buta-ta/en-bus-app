@@ -3914,28 +3914,22 @@ function setupAmenitiesFilters() {
 
 // DANS app.js (remplacez votre fonction searchBuses)
 
+// DANS app.js, REMPLACEZ votre fonction searchBuses par celle-ci
+
 window.searchBuses = async function() {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
 
-    // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION
-    // ========================================================
-    // On réinitialise les filtres en mode "silencieux" (sans toast)
-    // pour garantir que chaque nouvelle recherche part d'un état propre.
     if (typeof resetFilters === 'function') {
-        resetFilters(true); 
+        resetFilters(true); // Réinitialise les filtres en mode silencieux
     }
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
     
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
 
-        const origin = document.getElementById("origin-input").value;
-        const destination = document.getElementById("destination-input").value;
+        const origin = document.getElementById("origin-input").value.trim();
+        const destination = document.getElementById("destination-input").value.trim();
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
         
@@ -3944,6 +3938,7 @@ window.searchBuses = async function() {
             returnDate = departureDate;
         }
 
+        // --- Validations des entrées ---
         if (!origin) {
             Utils.showToast(translation.error_search_missing_origin, 'error');
             return;
@@ -3956,7 +3951,7 @@ window.searchBuses = async function() {
             Utils.showToast(translation.error_search_missing_date, 'error');
             return;
         }
-        if (origin === destination) {
+        if (origin.toLowerCase() === destination.toLowerCase()) {
             Utils.showToast(translation.error_same_origin_destination, 'error');
             return;
         }
@@ -3967,7 +3962,38 @@ window.searchBuses = async function() {
             tripType 
         };
 
-        Utils.showToast(translation.info_searching, 'info');
+        // ========================================================
+        // ✅ AMÉLIORATION : AFFICHAGE DES SQUELETTES DE CHARGEMENT
+        // ========================================================
+
+        // On affiche la page de résultats immédiatement
+        showPage("results"); 
+        
+        const resultsList = document.getElementById("results-list");
+        const summary = document.getElementById("search-summary");
+
+        // On affiche un résumé temporaire et les squelettes
+        if (summary) summary.innerHTML = `<div class="skeleton-line" style="height: 20px; width: 70%; margin: 0 auto;"></div>`;
+        if (resultsList) {
+            let skeletonHTML = '';
+            for (let i = 0; i < 4; i++) { // On affiche 4 squelettes pour un effet plus réaliste
+                skeletonHTML += `
+                    <div class="bus-card-skeleton">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div class="skeleton-line title" style="width: 200px;"></div>
+                                <div class="skeleton-line text" style="width: 250px;"></div>
+                                <div class="skeleton-line text-short" style="width: 150px;"></div>
+                            </div>
+                            <div class="skeleton-line button" style="height: 48px; width: 120px;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            resultsList.innerHTML = skeletonHTML;
+        }
+        // ========================================================
+        
         console.log("3️⃣ Envoi de la requête API...");
         
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
@@ -3979,41 +4005,35 @@ window.searchBuses = async function() {
         }
         
         const data = await response.json();
-console.log("5️⃣ Données JSON parsées:", data);
+        console.log("5️⃣ Données JSON parsées:", data);
 
-// ========================================================
-// ✅ MISE À JOUR DE LA LOGIQUE DE GESTION DE LA RÉPONSE
-// ========================================================
-if (data.success) {
-    appState.currentResults = data.results;
+        if (data.success) {
+            appState.currentResults = data.results;
 
-    // Si on a des résultats directs, on les affiche.
-    if (data.results && data.results.length > 0) {
-        displayResults(data.results);
-    } 
-    // Sinon, si on a des alternatives, on les affiche.
-    else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
-        displayAlternativeTrips(data.alternativeTrips);
-    } 
-    // Sinon, c'est qu'il n'y a vraiment rien.
-    else {
-        displayResults([]); // Affiche le message "Aucun trajet"
-    }
-} else {
-    // Gestion d'erreur
-    appState.currentResults = [];
-    displayResults([]);
-    throw new Error(data.error || "Données invalides.");
-}
-
-showPage("results");
+            if (data.results && data.results.length > 0) {
+                // `displayResults` va maintenant remplacer les squelettes par les vrais résultats
+                displayResults(data.results);
+            } else if (data.alternativeTrips && data.alternativeTrips.length > 0) {
+                displayAlternativeTrips(data.alternativeTrips);
+            } else {
+                displayResults([]); // Affiche le message "Aucun trajet"
+            }
+        } else {
+            appState.currentResults = [];
+            displayResults([]);
+            throw new Error(data.error || "Données invalides.");
+        }
 
     } catch (error) {
+        // En cas d'erreur, on s'assure de nettoyer la page de résultats
+        const resultsList = document.getElementById("results-list");
+        if (resultsList) {
+            resultsList.innerHTML = `<div class="no-results error"><h3>${error.message || translation.error_generic}</h3><p>Veuillez réessayer.</p></div>`;
+        }
         console.error('❌ Erreur critique dans searchBuses:', error);
         Utils.showToast(error.message || (translation.error_generic || "Une erreur est survenue."), 'error');
     }
 }
-
 
 // DANS app.js (ajoutez cette nouvelle fonction)
 

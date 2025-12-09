@@ -6346,3 +6346,37 @@ body.pwa-installed .container {
         display: flex; /* ou 'block' si vous préférez */
     }
 }
+
+
+
+/* DANS index.html (client) ou votre CSS */
+
+.bus-card-skeleton {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24);
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  opacity: 0.7;
+}
+
+.skeleton-line {
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-base);
+  animation: skeleton-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* On définit les tailles des différentes lignes du squelette */
+.skeleton-line.title { height: 24px; width: 60%; margin-bottom: 1rem; }
+.skeleton-line.text { height: 16px; width: 80%; margin-bottom: 0.5rem; }
+.skeleton-line.text-short { height: 16px; width: 40%; }
+.skeleton-line.button { height: 48px; width: 120px; margin-left: auto; }
