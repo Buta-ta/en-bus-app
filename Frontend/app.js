@@ -91,81 +91,76 @@ let appRules = {
 
 
 // DANS app.js
+// DANS app.js
 
 async function signInWithGoogle() {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     try {
-        const result = await auth.signInWithPopup(googleProvider);
-        const user = result.user;
-        
-        // On envoie le token d'identité de Google à notre backend
-        const idToken = await user.getIdToken();
-        
-        // Appel à une nouvelle route backend que nous créerons à l'étape 3
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}` // On envoie le token Google
-            }
-        });
+        // ... (votre logique de connexion) ...
 
-        if (!response.ok) {
-            throw new Error("Échec de la validation du compte sur notre serveur.");
-        }
-
-        const appData = await response.json();
-        
-        // Notre backend nous renvoie notre propre token JWT
         if (appData.success && appData.token) {
-            localStorage.setItem('enbus_usertoken', appData.token); // On sauvegarde notre token
-            handleAuthStateChanged(user); // Met à jour l'interface
-            Utils.showToast("Connexion réussie !", "success");
+            localStorage.setItem('enbus_usertoken', appData.token);
+            handleAuthStateChanged(user);
+            // ✅ On utilise la clé de traduction
+            Utils.showToast(translation.toast_login_success, "success");
         }
-
     } catch (error) {
         console.error("❌ Erreur de connexion Google:", error);
-        Utils.showToast("La connexion a échoué.", "error");
+        // ✅ On utilise la clé de traduction
+        Utils.showToast(translation.toast_login_failed, "error");
     }
 }
 
-/**
- * Gère la déconnexion de l'utilisateur
- */
 async function signOut() {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
     await auth.signOut();
     localStorage.removeItem('enbus_usertoken');
     currentUser = null;
     updateAuthUI(null);
-    Utils.showToast("Vous avez été déconnecté.", "info");
+    // ✅ On utilise la clé de traduction
+    Utils.showToast(translation.toast_logout_success, "info");
 }
-
 /**
  * Met à jour l'interface en fonction de l'état de connexion
  */
+// DANS app.js (remplacez votre fonction updateAuthUI)
+
 function updateAuthUI(user) {
     const desktopBtn = document.getElementById('auth-button-desktop');
     const mobileLink = document.getElementById('auth-button-mobile');
+
+    // On récupère les traductions au début
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
     
     if (user) {
         // Utilisateur connecté
-        const welcomeMessage = `Bonjour, ${user.displayName.split(' ')[0]}`;
+        // On utilise la clé de traduction pour le message d'accueil
+        const welcomeMessage = translation.auth_welcome_message(user.displayName.split(' ')[0]);
+        
         if (desktopBtn) {
-            desktopBtn.textContent = 'Déconnexion';
+            // On utilise la clé de traduction pour le bouton
+            desktopBtn.textContent = translation.auth_logout_button;
             desktopBtn.onclick = signOut;
         }
         if (mobileLink) {
             mobileLink.innerHTML = `<span>${welcomeMessage}</span>`;
-            // On pourrait ajouter un sous-menu pour 'Mon Compte' / 'Déconnexion' ici
+            // On peut aussi changer l'action pour déconnecter
             mobileLink.onclick = signOut; 
         }
     } else {
         // Utilisateur déconnecté
         if (desktopBtn) {
-            desktopBtn.textContent = 'Se connecter';
+            // On utilise la clé de traduction pour le bouton
+            desktopBtn.textContent = translation.auth_login_button;
             desktopBtn.onclick = signInWithGoogle;
         }
         if (mobileLink) {
-            mobileLink.innerHTML = '<span>G | Se connecter</span>';
+            // On utilise la clé de traduction pour le lien mobile
+            mobileLink.innerHTML = `<span>${translation.auth_login_google}</span>`;
             mobileLink.onclick = signInWithGoogle;
         }
     }

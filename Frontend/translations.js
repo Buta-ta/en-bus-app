@@ -656,6 +656,18 @@ const translations = {
 
      search_city_placeholder: "Tapez une ville...",
 
+      // ============================================
+    // ✅ CLÉS POUR L'AUTHENTIFICATION
+    // ============================================
+    auth_login_button: "Se connecter",
+    auth_logout_button: "Déconnexion",
+    auth_login_google: "G | Se connecter",
+    auth_welcome_message: (name) => `Bonjour, ${name}`,
+    toast_login_success: "Connexion réussie !",
+    toast_login_failed: "La connexion a échoué.",
+    toast_logout_success: "Vous avez été déconnecté.",
+    // ============================================
+
     },
 
 
@@ -1309,6 +1321,18 @@ const translations = {
     geolocation_reverse_geocode_error: "Could not translate coordinates to a city name.",
 
     search_city_placeholder: "Type a city...",
+
+    // ============================================
+    // ✅ KEYS FOR AUTHENTICATION
+    // ============================================
+    auth_login_button: "Sign In",
+    auth_logout_button: "Sign Out",
+    auth_login_google: "G | Sign In",
+    auth_welcome_message: (name) => `Hi, ${name}`,
+    toast_login_success: "Login successful!",
+    toast_login_failed: "Login failed.",
+    toast_logout_success: "You have been signed out.",
+    // ============================================
   },
      
 
