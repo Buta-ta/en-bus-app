@@ -6310,3 +6310,41 @@ body.pwa-installed .container {
     font-size: 0.875rem;  /* Taille de police légèrement plus petite */
     font-weight: 600;     /* Un peu moins gras que les boutons principaux */
 }
+
+
+
+/* DANS index.html, dans la balise <style> */
+
+/* ============================================
+   🎨 GESTION RESPONSIVE SPÉCIFIQUE À VOTRE NAVBAR
+   ============================================ */
+
+/*
+ * Par défaut (sur les écrans plus grands que 768px),
+ * le bouton hamburger est caché.
+ */
+.hamburger {
+    display: none;
+}
+
+
+/* 
+ * Lorsque la largeur de l'écran est de 768px ou moins...
+ */
+@media (max-width: 768px) {
+
+    /* 1. On cache les liens de navigation du bureau */
+    .nav-links {
+        display: none;
+    }
+
+    /* 2. On cache le groupe d'actions du bureau (langues et connexion) */
+    .nav-actions {
+        display: none;
+    }
+
+    /* 3. On fait apparaître le bouton hamburger */
+    .hamburger {
+        display: flex; /* ou 'block' si vous préférez */
+    }
+}

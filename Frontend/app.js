@@ -55,12 +55,12 @@ const CONFIG = {
 
 // Collez l'objet firebaseConfig que vous avez récupéré à l'étape 1
 const firebaseConfig = {
-  apiKey: "VOTRE_API_KEY",
-  authDomain: "VOTRE_AUTH_DOMAIN",
-  projectId: "VOTRE_PROJECT_ID",
-  storageBucket: "VOTRE_STORAGE_BUCKET",
-  messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-  appId: "VOTRE_APP_ID"
+  apiKey: "AIzaSyDCSxCAZzUCF7nJ4HgRvXIx9_8UbOXn5L4",
+  authDomain: "en-bus--account.firebaseapp.com",
+  projectId: "en-bus--account",
+  storageBucket: "en-bus--account.firebasestorage.app",
+  messagingSenderId: "670151587200",
+  appId: "1:670151587200:web:cbe341448059647e03fd65",
 };
 
 // On initialise Firebase
