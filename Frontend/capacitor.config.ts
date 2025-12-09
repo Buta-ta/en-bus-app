@@ -28,7 +28,7 @@ const config: CapacitorConfig = {
     // Ajout Google Sign-In
     SocialLogin: {
       google: {
-        webClientId: '332941537623-5bobgclb5e6q32v7f9didht92oreof2m.apps.googleusercontent.com', // ⬅️ Remplace par ton vrai Client ID
+        webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', // ⬅️ Remplace par ton vrai Client ID
       },
     },
   },
