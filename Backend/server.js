@@ -94,70 +94,77 @@ app.use("/api/", generalLimiter);
 
 
 
-if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true") {
+if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true") 
   
   // Tâche pour les réservations expirées (votre code existant)
   // cron.schedule("*/5 * * * *", async () => { ... });
 
-  // NOUVELLE TÂCHE : Envoyer des demandes de notation
-  // S'exécute toutes les heures, à la 30ème minute (ex: 10h30, 11h30...)
-  cron.schedule('30 * * * *', async () => {
+// DANS server.js, remplacez votre cron.schedule pour la notation
+
+// DANS server.js, remplacez votre cron.schedule pour la notation
+
+cron.schedule('*/15 * * * *', async () => { // On le fait tourner toutes les 15 minutes pour être plus réactif
     console.log('⏰ CRON: Recherche de voyages terminés pour demandes de notation...');
     
     try {
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000);
+        const aDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // On regarde les voyages terminés sur les dernières 24h
 
-      // 1. Trouver les voyages dont le statut est "ARRIVED" et qui ont été mis à jour il y a entre 1 et 2 heures
-      const recentlyFinishedTrips = await tripsCollection.find({
-        "liveStatus.status": "ARRIVED",
-        "liveStatus.lastUpdated": { $gte: twoHoursAgo, $lt: oneHourAgo },
-        "reviewNotificationSent": { $ne: true } // Ne pas renvoyer si déjà fait
-      }).toArray();
-
-      if (recentlyFinishedTrips.length === 0) {
-        console.log('-> Aucun voyage terminé récemment à notifier.');
-        return;
-      }
-
-      console.log(`-> ${recentlyFinishedTrips.length} voyage(s) trouvé(s) à notifier.`);
-
-      for (const trip of recentlyFinishedTrips) {
-        // 2. Trouver les réservations confirmées pour ce voyage qui ont un token FCM
-        const reservationsToNotify = await reservationsCollection.find({
-          "route.id": trip._id.toString(),
-          "status": "Confirmé",
-          "fcmToken": { $exists: true, $ne: null }
+        // 1. Trouver les voyages terminés récemment qui n'ont PAS ENCORE été notifiés
+        const tripsToNotify = await tripsCollection.find({
+            "liveStatus.status": "ARRIVED",
+            "liveStatus.lastUpdated": { $gte: aDayAgo },   // Arrivé dans les dernières 24h
+            "reviewNotificationSent": { $ne: true }       // N'a pas déjà été notifié
         }).toArray();
 
-        if (reservationsToNotify.length > 0) {
-          const tokens = reservationsToNotify.map(r => r.fcmToken);
-          const title = "Comment était votre voyage ?"; // TODO: Mettre en plusieurs langues
-          const body = `Notez votre trajet ${trip.route.from} → ${trip.route.to} pour aider la communauté !`;
-          
-          // La donnée 'page' dira à l'app quoi faire au clic
-          const data = { 
-            page: 'rate-trip', 
-            tripId: trip._id.toString(),
-            bookingNumber: reservationsToNotify[0].bookingNumber // On envoie un bookingNumber pour référence
-          }; 
-
-          await sendPush(tokens, title, body, data);
-
-          // 3. Marquer le voyage comme "notifié" pour ne pas le refaire
-          await tripsCollection.updateOne(
-            { _id: trip._id },
-            { $set: { reviewNotificationSent: true } }
-          );
+        if (tripsToNotify.length === 0) {
+            console.log('-> Aucun nouveau voyage terminé trouvé à notifier.');
+            return;
         }
-      }
-    } catch (error) {
-      console.error("❌ Erreur dans le CRON de notation:", error);
-    }
-  });
 
-  console.log("✅ Cron jobs activés (y compris pour la notation).");
-}
+        console.log(`-> ${tripsToNotify.length} voyage(s) trouvé(s) à notifier.`);
+
+        for (const trip of tripsToNotify) {
+            // 2. Trouver les réservations confirmées pour ce voyage avec un token FCM
+            const reservations = await reservationsCollection.find({
+                "route.id": trip._id.toString(),
+                "status": "Confirmé",
+                "fcmToken": { $exists: true, $ne: null }
+            }).toArray();
+
+            if (reservations.length > 0) {
+                const tokens = reservations.map(r => r.fcmToken);
+                // TODO: Traduire ces messages
+                const title = "Comment était votre voyage ?";
+                const body = `Notez votre trajet ${trip.route.from} → ${trip.route.to} pour aider la communauté !`;
+                
+                // On passe le tripId ET un bookingNumber en référence
+                const data = { 
+                    page: 'rate-trip', 
+                    tripId: trip._id.toString(),
+                    bookingNumber: reservations[0].bookingNumber 
+                }; 
+
+                await sendPush(tokens, title, body, data);
+
+                // 3. Marquer le voyage comme "notifié" pour ne pas le refaire
+                await tripsCollection.updateOne(
+                    { _id: trip._id },
+                    { $set: { reviewNotificationSent: true } }
+                );
+                console.log(`-> Notifications de notation envoyées pour le voyage ${trip._id}`);
+            } else {
+                // S'il n'y a personne à notifier, on marque quand même le voyage pour ne pas le revérifier inutilement
+                await tripsCollection.updateOne(
+                    { _id: trip._id },
+                    { $set: { reviewNotificationSent: true, notificationSkipped: true } }
+                );
+                console.log(`-> Voyage ${trip._id} marqué, mais aucun client à notifier.`);
+            }
+        }
+    } catch (error) {
+        console.error("❌ Erreur dans le CRON de notation:", error);
+    }
+});
 
 // ============================================
 // ✅ ROUTE DE TEST (À PLACER ICI TEMPORAIREMENT)
@@ -3217,6 +3224,9 @@ app.patch("/api/admin/settings/report", authenticateToken, [
 
 // --- D. Routes d'action spécifiques (PATCH) ---
 // DANS server.js
+/* The above code is defining a PATCH route in an Express application for updating the status of a trip
+with a specific tripId. The route is accessible at "/api/admin/trips/:tripId/status" and is used for
+making updates to the status of a trip identified by the tripId parameter. */
 
 app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
     body('status').isIn(['ON_TIME', 'DELAYED', 'CANCELLED', 'ARRIVED', 'MAINTENANCE']),
