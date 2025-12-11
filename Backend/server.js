@@ -2904,10 +2904,7 @@ app.post("/api/admin/report-requests/:bookingNumber/reject", authenticateToken, 
 
 
 
-
-// DANS server.js (ajoutez-le avec les autres routes POST/PATCH)
-
-// NOUVELLE ROUTE : Soumettre un avis
+// NOUVELLE ROUTE : Soumettre un avis (VERSION CORRIGÉE)
 app.post("/api/reviews", authenticateToken, [
     body('tripId').isMongoId(),
     body('bookingNumber').isString(),
@@ -2925,10 +2922,16 @@ app.post("/api/reviews", authenticateToken, [
     try {
         const { tripId, bookingNumber, rating, comment } = req.body;
         const userId = req.user.userId;
-        const userName = req.user.username; // On le récupère du token
+        const userName = req.user.username;
+        
+        // ==========================================================
+        // ✅ CORRECTION APPLIQUÉE ICI
+        // ==========================================================
+        const db = getDb(); // On récupère l'instance de la DB
+        const reviewsCollection = db.collection('reviews'); // On cible la collection
 
         // Vérifier si l'utilisateur a déjà noté ce voyage
-        const existingReview = await db.collection('reviews').findOne({ tripId, userId });
+        const existingReview = await reviewsCollection.findOne({ tripId, userId });
         if (existingReview) {
             return res.status(409).json({ error: "Vous avez déjà noté ce voyage." });
         }
@@ -2943,10 +2946,11 @@ app.post("/api/reviews", authenticateToken, [
             createdAt: new Date()
         };
 
-        await db.collection('reviews').insertOne(newReview);
+        // On utilise notre variable de collection
+        await reviewsCollection.insertOne(newReview);
+        // ==========================================================
         
-        // OPTIONNEL MAIS RECOMMANDÉ : Mettre à jour la note moyenne du trajet
-        // (Nécessite de calculer la moyenne de tous les avis pour ce trajet)
+        // TODO (Optionnel) : Mettre à jour la note moyenne du voyage dans la collection 'trips'
 
         res.status(201).json({ success: true, message: "Merci pour votre avis !" });
 
@@ -2955,7 +2959,6 @@ app.post("/api/reviews", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 // Routes de mise à jour PATCH
 
 
