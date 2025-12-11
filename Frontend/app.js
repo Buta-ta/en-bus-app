@@ -6883,29 +6883,59 @@ function setupStarRating() {
 }
 
 // 4. Gérer la soumission du formulaire
+// DANS app.js, remplacez entièrement handleRatingSubmit
+
 async function handleRatingSubmit(event) {
     event.preventDefault();
     
-    const overallRating = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
-    if (!overallRating) {
+    // On désactive le bouton pour éviter les double-clics
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    // Récupération de la note globale (obligatoire)
+    const overallRatingValue = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
+    if (!overallRatingValue) {
         Utils.showToast("Veuillez donner une note globale.", "warning");
+        submitButton.disabled = false; // On réactive le bouton
         return;
     }
+
+    // =======================================================================
+    // ✅ CORRECTION : Construction dynamique de l'objet 'rating'
+    // =======================================================================
+    
+    const rating = {
+        overall: parseInt(overallRatingValue)
+    };
+
+    // Fonction pour ajouter une note si elle existe
+    const addOptionalRating = (category) => {
+        const value = document.querySelector(`.star-rating[data-category="${category}"]`).dataset.ratingValue;
+        if (value) { // On ajoute la clé SEULEMENT si une valeur a été définie
+            rating[category] = parseInt(value);
+        }
+    };
+
+    addOptionalRating('punctuality');
+    addOptionalRating('driver');
+    addOptionalRating('comfort');
+    // =======================================================================
 
     const reviewData = {
         tripId: document.getElementById('rating-trip-id').value,
         bookingNumber: document.getElementById('rating-booking-number').value,
-        rating: {
-            overall: parseInt(overallRating),
-            punctuality: parseInt(document.querySelector('.star-rating[data-category="punctuality"]').dataset.ratingValue) || null,
-            driver: parseInt(document.querySelector('.star-rating[data-category="driver"]').dataset.ratingValue) || null,
-            comfort: parseInt(document.querySelector('.star-rating[data-category="comfort"]').dataset.ratingValue) || null,
-        },
+        rating: rating, // On utilise notre objet 'rating' fraîchement construit
         comment: document.getElementById('rating-comment').value.trim()
     };
     
+    console.log("📤 Envoi des données de l'avis au backend :", JSON.stringify(reviewData, null, 2));
+
     try {
         const token = localStorage.getItem('enbus_usertoken');
+        if (!token) {
+            throw new Error("Utilisateur non connecté. Impossible d'envoyer l'avis.");
+        }
+
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reviews`, {
             method: 'POST',
             headers: {
@@ -6916,17 +6946,20 @@ async function handleRatingSubmit(event) {
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error);
+        if (!response.ok) {
+            // On affiche l'erreur spécifique renvoyée par le serveur
+            throw new Error(result.error || "Une erreur est survenue lors de l'envoi.");
+        }
         
         Utils.showToast(result.message, 'success');
         showPage('reservations'); // Rediriger l'utilisateur vers ses réservations
 
     } catch (error) {
         Utils.showToast(error.message, 'error');
+    } finally {
+        submitButton.disabled = false; // On réactive le bouton à la fin, quoi qu'il arrive
     }
 }
-
-
 
 
 
