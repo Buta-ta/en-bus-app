@@ -7258,6 +7258,43 @@ if (window.Capacitor?.isNativePlatform()) {
 
 
 
+
+/**
+ * Fonction de DÉBOGAGE pour tester manuellement l'ouverture de la page de notation.
+ * À appeler depuis la console du navigateur.
+ * Exemple d'appel : testRatingPage('ID_DU_VOYAGE', 'NUMERO_DE_RESERVATION')
+ */
+window.testRatingPage = function(tripId, bookingNumber) {
+    if (!tripId || !bookingNumber) {
+        console.error("Veuillez fournir un tripId et un bookingNumber valides.");
+        alert("Veuillez fournir un tripId et un bookingNumber valides.");
+        return;
+    }
+    
+    console.log(`🚀 DÉBOGAGE : Forçage de l'ouverture de la page de notation...`);
+    console.log(`   -> Trip ID: ${tripId}`);
+    console.log(`   -> Booking Number: ${bookingNumber}`);
+    
+    // On s'assure que l'utilisateur est connecté, car la soumission d'un avis le requiert.
+    if (!currentUser) {
+        alert("Veuillez vous connecter avec un compte Google avant de tester la notation.");
+        // Optionnel : on pourrait même déclencher la connexion ici
+        // signInWithGoogle(); 
+        return;
+    }
+
+    // On appelle directement la fonction qui affiche la page
+    if (typeof showRatingPage === 'function') {
+        showRatingPage(tripId, bookingNumber);
+        console.log("✅ Page de notation affichée.");
+    } else {
+        console.error("La fonction showRatingPage() n'est pas définie. Assurez-vous qu'elle est bien dans app.js.");
+    }
+}
+
+
+
+
 // DANS app.js
 
 // DANS app.js
