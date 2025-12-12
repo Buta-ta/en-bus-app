@@ -6842,27 +6842,6 @@ function setupNotificationListeners() {
 
 
 
-
-
-// 2. Afficher la page et la pré-remplir
-function showRatingPage(tripId, bookingNumber) {
-    // Remplir les champs cachés
-    document.getElementById('rating-trip-id').value = tripId;
-    document.getElementById('rating-booking-number').value = bookingNumber;
-
-    // TODO: Vous pourriez faire un appel API pour récupérer les détails du trajet (from, to)
-    // et les afficher dans #rating-trip-info pour un meilleur contexte.
-
-    // Afficher la page
-    showPage('rating');
-    setupStarRating();
-    
-    const form = document.getElementById('rating-form');
-    // On s'assure de n'avoir qu'un seul écouteur
-    form.removeEventListener('submit', handleRatingSubmit); 
-    form.addEventListener('submit', handleRatingSubmit);
-}
-
 // 3. Rendre les étoiles interactives
 function setupStarRating() {
     const ratings = document.querySelectorAll('.star-rating');
@@ -6885,46 +6864,103 @@ function setupStarRating() {
 // 4. Gérer la soumission du formulaire
 // DANS app.js, remplacez entièrement handleRatingSubmit
 
-async function handleRatingSubmit(event) {
-    event.preventDefault();
-    
-    // On désactive le bouton pour éviter les double-clics
-    const submitButton = event.target.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
+// DANS app.js
 
-    // Récupération de la note globale (obligatoire)
+/**
+ * Affiche la page de notation et la pré-remplit avec les informations nécessaires.
+ * @param {string} tripId - L'ID du voyage à noter.
+ * @param {string} bookingNumber - Le numéro de la réservation correspondante.
+ */
+function showRatingPage(tripId, bookingNumber) {
+    // Remplir les champs cachés qui seront envoyés avec le formulaire
+    document.getElementById('rating-trip-id').value = tripId;
+    document.getElementById('rating-booking-number').value = bookingNumber;
+
+    // --- Traduction des éléments de la page ---
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    const commentTextarea = document.getElementById('rating-comment');
+    
+    // On met à jour le placeholder du champ de commentaire avec la bonne langue
+    if (commentTextarea) {
+        commentTextarea.placeholder = translation.rating_comment_placeholder || "Décrivez votre expérience...";
+    }
+    
+    // On réinitialise le formulaire (effacer les anciens commentaires et étoiles)
+    const form = document.getElementById('rating-form');
+    if (form) form.reset();
+    document.querySelectorAll('.star-rating').forEach(rating => {
+        rating.dataset.ratingValue = '';
+        rating.querySelectorAll('.star').forEach(star => star.classList.remove('selected'));
+    });
+
+
+    // TODO: Vous pourriez faire un appel API ici pour récupérer les détails du trajet (from, to)
+    // et les afficher dans #rating-trip-info pour un meilleur contexte pour l'utilisateur.
+
+
+    // Afficher la page et initialiser l'interactivité des étoiles
+    showPage('rating');
+    if (typeof setupStarRating === 'function') {
+        setupStarRating();
+    } else {
+        console.error("La fonction setupStarRating() est manquante.");
+    }
+    
+    // On s'assure qu'il n'y a qu'un seul écouteur d'événement sur le formulaire
+    // pour éviter les soumissions multiples.
+    if (form) {
+        form.removeEventListener('submit', handleRatingSubmit); 
+        form.addEventListener('submit', handleRatingSubmit);
+    }
+}
+
+
+/**
+ * Gère la soumission du formulaire de notation.
+ * @param {Event} event - L'événement de soumission du formulaire.
+ */
+async function handleRatingSubmit(event) {
+    event.preventDefault(); // Empêche la page de se recharger
+    
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true; // Désactive le bouton pour éviter les double-clics
+
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+    
+    // Récupération de la note globale (qui est obligatoire)
     const overallRatingValue = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
     if (!overallRatingValue) {
-        Utils.showToast("Veuillez donner une note globale.", "warning");
-        submitButton.disabled = false; // On réactive le bouton
+        Utils.showToast(translation.rating_toast_must_rate, "warning");
+        submitButton.disabled = false; // On réactive le bouton si la validation échoue
         return;
     }
 
-    // =======================================================================
-    // ✅ CORRECTION : Construction dynamique de l'objet 'rating'
-    // =======================================================================
-    
+    // --- Construction dynamique de l'objet 'rating' ---
     const rating = {
         overall: parseInt(overallRatingValue)
     };
 
-    // Fonction pour ajouter une note si elle existe
+    // Fonction interne pour ajouter les notes optionnelles si elles ont été données
     const addOptionalRating = (category) => {
-        const value = document.querySelector(`.star-rating[data-category="${category}"]`).dataset.ratingValue;
-        if (value) { // On ajoute la clé SEULEMENT si une valeur a été définie
+        const value = document.querySelector(`.star-rating[data-category="${category}"]`)?.dataset.ratingValue;
+        if (value) { // La clé n'est ajoutée que si une note a été cliquée
             rating[category] = parseInt(value);
         }
     };
 
+    // On récupère les notes pour chaque catégorie
     addOptionalRating('punctuality');
     addOptionalRating('driver');
+    addOptionalRating('controller'); // ✅ NOTE DU CONTRÔLEUR INCLUSE ICI
     addOptionalRating('comfort');
-    // =======================================================================
 
+    // --- Préparation des données complètes à envoyer ---
     const reviewData = {
         tripId: document.getElementById('rating-trip-id').value,
         bookingNumber: document.getElementById('rating-booking-number').value,
-        rating: rating, // On utilise notre objet 'rating' fraîchement construit
+        rating: rating,
         comment: document.getElementById('rating-comment').value.trim()
     };
     
@@ -6933,6 +6969,7 @@ async function handleRatingSubmit(event) {
     try {
         const token = localStorage.getItem('enbus_usertoken');
         if (!token) {
+            // Ce cas ne devrait pas arriver si on teste en étant connecté, mais c'est une bonne sécurité
             throw new Error("Utilisateur non connecté. Impossible d'envoyer l'avis.");
         }
 
@@ -6947,21 +6984,19 @@ async function handleRatingSubmit(event) {
 
         const result = await response.json();
         if (!response.ok) {
-            // On affiche l'erreur spécifique renvoyée par le serveur
+            // Affiche l'erreur spécifique renvoyée par le serveur (ex: "Vous avez déjà noté ce voyage.")
             throw new Error(result.error || "Une erreur est survenue lors de l'envoi.");
         }
         
         Utils.showToast(result.message, 'success');
-        showPage('reservations'); // Rediriger l'utilisateur vers ses réservations
+        showPage('reservations'); // Redirige l'utilisateur vers la liste de ses réservations après succès
 
     } catch (error) {
         Utils.showToast(error.message, 'error');
     } finally {
-        submitButton.disabled = false; // On réactive le bouton à la fin, quoi qu'il arrive
+        submitButton.disabled = false; // On réactive le bouton à la fin, que la requête ait réussi ou échoué
     }
 }
-
-
 
 
 // ============================================

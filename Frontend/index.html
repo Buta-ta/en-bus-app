@@ -1188,13 +1188,13 @@
 
     <!-- DANS LE BODY DE index.html (client) -->
 
-<!-- ============================================
-     ⭐ PAGE DE NOTATION
+ <!-- ============================================
+     ⭐ PAGE DE NOTATION (Mise à jour)
      ============================================ -->
 <div id="rating-page" class="page">
     <div class="page-header">
         <h2 data-i18n="rating_page_title">Notez votre voyage</h2>
-        <p id="rating-trip-info" data-i18n="rating_page_subtitle">Partagez votre expérience</p>
+        <p id="rating-trip-info" data-i18n="rating_page_subtitle">Partagez votre expérience pour aider la communauté</p>
     </div>
 
     <form id="rating-form" class="content-card">
@@ -1205,41 +1205,53 @@
         <div class="rating-group">
             <label data-i18n="rating_label_overall">Note globale</label>
             <div class="star-rating" data-category="overall">
-                <span class="star" data-value="1">☆</span>
-                <span class="star" data-value="2">☆</span>
-                <span class="star" data-value="3">☆</span>
-                <span class="star" data-value="4">☆</span>
-                <span class="star" data-value="5">☆</span>
+                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
             </div>
         </div>
 
-        <!-- Autres notes (Optionnel) -->
+        <!-- Ponctualité -->
         <div class="rating-group">
             <label data-i18n="rating_label_punctuality">Ponctualité</label>
             <div class="star-rating" data-category="punctuality">
-                <!-- ... 5 étoiles ... -->
+                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
             </div>
         </div>
+
+        <!-- Chauffeur -->
         <div class="rating-group">
-            <label data-i18n="rating_label_driver">Chauffeur</label>
+            <label data-i18n="rating_label_driver">Chauffeur (amabilité, conduite)</label>
             <div class="star-rating" data-category="driver">
-                <!-- ... 5 étoiles ... -->
+                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
             </div>
         </div>
+        
+        <!-- ======================================================== -->
+        <!-- ✅ BLOC AJOUTÉ POUR LA NOTE DU CONTRÔLEUR -->
+        <!-- ======================================================== -->
         <div class="rating-group">
-            <label data-i18n="rating_label_comfort">Confort & Propreté</label>
+            <label data-i18n="rating_label_controller">Contrôleur (accueil, service)</label>
+            <div class="star-rating" data-category="controller">
+                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
+            </div>
+        </div>
+        <!-- ======================================================== -->
+
+        <!-- Confort -->
+        <div class="rating-group">
+            <label data-i18n="rating_label_comfort">Confort & Propreté du bus</label>
             <div class="star-rating" data-category="comfort">
-                <!-- ... 5 étoiles ... -->
+                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
             </div>
         </div>
         
         <!-- Commentaire -->
         <div class="form-group">
             <label for="rating-comment" data-i18n="rating_label_comment">Votre commentaire (optionnel)</label>
-            <textarea id="rating-comment" class="form-control" rows="4" placeholder="Ex: Chauffeur prudent, mais le bus est arrivé avec 15 minutes de retard..."></textarea>
+            <textarea id="rating-comment" class="form-control" rows="4"></textarea>
         </div>
 
-        <button type="submit" class="btn btn-primary">Envoyer mon avis</button>
+        <!-- Bouton de soumission -->
+        <button type="submit" class="btn btn-primary" data-i18n="rating_submit_button">Envoyer mon avis</button>
     </form>
 </div>
 
