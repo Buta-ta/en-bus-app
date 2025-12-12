@@ -666,6 +666,22 @@ const translations = {
     toast_login_success: "Connexion réussie !",
     toast_login_failed: "La connexion a échoué.",
     toast_logout_success: "Vous avez été déconnecté.",
+
+
+        // --- Page de Notation ---
+    rating_page_title: "Notez votre voyage",
+    rating_page_subtitle: "Partagez votre expérience pour aider la communauté",
+    rating_label_overall: "Note globale",
+    rating_label_punctuality: "Ponctualité",
+    rating_label_driver: "Chauffeur (amabilité, conduite)",
+    rating_label_comfort: "Confort & Propreté du bus",
+    rating_label_comment: "Votre commentaire (optionnel)",
+    rating_comment_placeholder: "Ex: Chauffeur prudent, mais le bus est arrivé avec 15 minutes de retard...",
+    rating_submit_button: "Envoyer mon avis",
+    rating_toast_must_rate: "Veuillez donner une note globale.",
+    derniere_cle_existante: "Sa valeur",
+    rating_label_controller: "Contrôleur (accueil, service)",
+
     // ============================================
 
     },
@@ -1332,6 +1348,22 @@ const translations = {
     toast_login_success: "Login successful!",
     toast_login_failed: "Login failed.",
     toast_logout_success: "You have been signed out.",
+
+        // --- Rating Page ---
+    rating_page_title: "Rate Your Trip",
+    rating_page_subtitle: "Share your experience to help the community",
+    rating_label_overall: "Overall Rating",
+    rating_label_punctuality: "Punctuality",
+    rating_label_driver: "Driver (friendliness, driving)",
+    rating_label_comfort: "Bus Comfort & Cleanliness",
+    rating_label_comment: "Your comment (optional)",
+    rating_comment_placeholder: "Ex: The driver was safe, but the bus arrived 15 minutes late...",
+    rating_submit_button: "Submit My Review",
+    rating_toast_must_rate: "Please provide an overall rating.",
+
+    last_existing_key: "Its value",
+    rating_label_controller: "Controller (welcome, service)", 
+
     // ============================================
   },
      
