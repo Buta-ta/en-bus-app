@@ -3592,35 +3592,53 @@ async function loadAllDestinations() {
 
 // Remplacez votre ancienne fonction par celle-ci
 
+// DANS app.js
+
 async function populatePopularDestinations() {
     const grid = document.getElementById("popular-destinations-grid");
     if (!grid) return;
 
-    // On met un état de chargement
-    grid.innerHTML = `<div class="loading-spinner">${(translations[getLanguage()] || translations.fr).info_loading_popular || 'Chargement...'}</div>`;
+    // --- 1. AFFICHER LES SQUELETTES DE CHARGEMENT ---
+    // On génère le HTML pour 4 cartes squelettes.
+    let skeletonHTML = '';
+    for (let i = 0; i < 4; i++) {
+        skeletonHTML += `
+            <div class="destination-card-skeleton">
+                <div class="skeleton-line" style="width: 70%;"></div>
+                <div class="skeleton-line short"></div>
+            </div>
+        `;
+    }
+    // On insère les squelettes dans la grille. L'animation CSS se déclenche automatiquement.
+    grid.innerHTML = skeletonHTML;
 
     try {
-        // 1. On appelle la nouvelle route API publique
+        // --- 2. FAIRE L'APPEL API ---
         const response = await fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`);
+        
+        // On vérifie si la réponse réseau est OK avant de continuer
+        if (!response.ok) {
+            throw new Error(`Le serveur a répondu avec le statut : ${response.status}`);
+        }
+        
         const data = await response.json();
 
+        // --- 3. GÉRER LA RÉPONSE ---
+        // Si la réponse du backend indique un échec, ou si la liste est vide, on nettoie la grille.
         if (!data.success || !data.destinations || data.destinations.length === 0) {
-            grid.innerHTML = ''; // On n'affiche rien si aucun trajet n'est populaire
+            grid.innerHTML = ''; // Ne rien afficher est mieux qu'un message d'erreur ici.
+            console.log("ℹ️ Aucune destination populaire à afficher.");
             return;
         }
         
         const destinations = data.destinations;
-
-        // 2. On récupère les traductions (comme avant)
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
         
-        // 3. On génère le HTML avec les données de l'API
+        // On génère le HTML des vraies cartes, qui va remplacer les squelettes.
         grid.innerHTML = destinations.map(route => {
             const formattedPrice = Utils.formatPrice(route.price);
-            const priceText = (typeof translation.destination_price_from === 'function')
-                ? translation.destination_price_from(formattedPrice)
-                : `À partir de ${formattedPrice} FCFA`;
+            const priceText = (translation.destination_price_from || (p => `À partir de ${p} FCFA`))(formattedPrice);
 
             return `
                 <div class="destination-card" onclick="showDetailedSearch({ from: '${route.from}', to: '${route.to}' })">
@@ -3631,8 +3649,20 @@ async function populatePopularDestinations() {
         }).join("");
 
     } catch (error) {
-        console.error("❌ Erreur chargement destinations populaires:", error);
-        grid.innerHTML = `<p style="text-align: center; color: var(--color-text-secondary);">Erreur de chargement.</p>`;
+        console.error("❌ Erreur lors du chargement des destinations populaires:", error);
+        
+        // --- 4. AFFICHER LE MESSAGE D'ERREUR ANIMÉ ---
+        const lang = getLanguage();
+        const translation = translations[lang] || translations.fr;
+
+        // On remplace les squelettes par un message d'erreur visuel.
+        grid.innerHTML = `
+            <div class="destinations-error-state">
+                <span class="error-icon">🔌</span>
+                <h4>${translation.error_loading_title || "Erreur de connexion"}</h4>
+                <p>${translation.error_loading_desc || "Impossible de récupérer les destinations pour le moment."}</p>
+            </div>
+        `;
     }
 }
 window.searchFromPopular = function(from, to) {
