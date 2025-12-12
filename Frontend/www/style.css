@@ -6416,3 +6416,81 @@ body.pwa-installed .container {
     transform: translateX(100%);
   }
 }
+
+
+
+/* ============================================
+   🎨 ÉTATS DE CHARGEMENT & ERREUR - DESTINATIONS
+   ============================================ */
+
+/* Style pour une carte squelette de destination */
+.destination-card-skeleton {
+  padding: 1.25rem 1.5rem;
+  background-color: var(--color-surface); /* Couleur de fond de carte */
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.destination-card-skeleton .skeleton-line {
+  background-color: var(--color-surface-dark); /* Ligne grise foncée */
+  border-radius: var(--radius-base);
+  height: 20px;
+  margin-bottom: 0.75rem;
+}
+
+.destination-card-skeleton .skeleton-line.short {
+  height: 16px;
+  width: 50%;
+}
+
+/* Animation de brillance (réutilisée depuis les squelettes de recherche) */
+.destination-card-skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 255, 255, 0.2) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 2s infinite; /* On réutilise la même animation */
+}
+
+
+/* Style pour le message d'erreur visuel */
+.destinations-error-state {
+  grid-column: 1 / -1; /* Prend toute la largeur de la grille */
+  text-align: center;
+  padding: 3rem 1rem;
+  background-color: rgba(244, 67, 54, 0.05); /* Fond rouge très léger */
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+}
+
+.destinations-error-state .error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+  animation: bounce-error 1s ease-in-out;
+}
+
+@keyframes bounce-error {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+
+.destinations-error-state h4 {
+  font-size: 1.2rem;
+  color: #f44336; /* Rouge pour le titre de l'erreur */
+  margin-bottom: 0.5rem;
+}
