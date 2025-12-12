@@ -2911,6 +2911,7 @@ app.post("/api/reviews", authenticateToken, [
     body('rating.overall').isInt({ min: 1, max: 5 }),
     body('rating.punctuality').optional().isInt({ min: 1, max: 5 }),
     body('rating.driver').optional().isInt({ min: 1, max: 5 }),
+    body('rating.controller').optional().isInt({ min: 1, max: 5 }),
     body('rating.comfort').optional().isInt({ min: 1, max: 5 }),
     body('comment').optional().isString().trim().isLength({ max: 500 })
 ], async (req, res) => {
