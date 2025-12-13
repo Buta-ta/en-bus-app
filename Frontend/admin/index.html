@@ -7587,6 +7587,7 @@ async function openAgencyModal(agencyId = null) {
     if (isEditing) {
         agency = allAgencies.find(a => a._id === agencyId) || {};
     }
+    
 
     // On affiche la modale principale ('details-modal')
     const modalTitle = document.getElementById("modal-title");
