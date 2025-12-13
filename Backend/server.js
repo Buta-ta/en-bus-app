@@ -191,9 +191,10 @@ let reservationsCollection,
   systemSettingsCollection,
   destinationsCollection, // ✅ METS UNE VIRGULE ICI
   crewCollection; // ✅ Maintenant elle fait partie du `let`
+  agenciesCollection; 
 
 
-
+  
 
 
 
@@ -2453,6 +2454,30 @@ app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, re
 });
 
 
+
+// DANS server.js (par exemple, avec les routes GET admin)
+
+// --- GESTION DES AGENCES ---
+
+// [GET] Lister toutes les agences pour l'admin
+app.get("/api/admin/agencies", authenticateToken, async (req, res) => {
+    try {
+        // On récupère toutes les agences, triées par ville puis par nom
+        const agencies = await agenciesCollection.find({}).sort({ city: 1, name: 1 }).toArray();
+        
+        // Pour chaque agence, on compte le nombre d'employés qui lui sont affectés
+        for (const agency of agencies) {
+            agency.employeeCount = await crewCollection.countDocuments({ agencyId: agency._id });
+        }
+        
+        res.json({ success: true, agencies });
+    } catch (error) {
+        console.error("❌ Erreur lors de la récupération des agences:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
 // DANS server.js (ajoutez-le avec les autres routes GET publiques)
 
 app.get("/api/trips/:tripId/reviews", async (req, res) => {
@@ -2960,6 +2985,58 @@ app.post("/api/reviews", authenticateToken, [
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
+
+
+// DANS server.js (avec les routes POST admin)
+
+// [POST] Créer une nouvelle agence
+app.post("/api/admin/agencies", authenticateToken, [
+    body('name').notEmpty().withMessage("Le nom de l'agence est requis."),
+    body('city').notEmpty().withMessage("La ville est requise."),
+    body('address').notEmpty().withMessage("L'adresse est requise."),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
+    try {
+        const { name, city, address, phone, openingHours, managerId, coords } = req.body;
+
+        // On vérifie si une agence avec le même nom existe déjà
+        const existingAgency = await agenciesCollection.findOne({ name });
+        if (existingAgency) {
+            return res.status(409).json({ error: "Une agence avec ce nom existe déjà." });
+        }
+
+        const newAgency = {
+            name,
+            city,
+            address,
+            phone: phone || null,
+            openingHours: openingHours || null,
+            coords: coords || null,
+            managerId: managerId ? new ObjectId(managerId) : null,
+            status: "active",
+            createdAt: new Date(),
+            createdBy: req.user.username
+        };
+
+        await agenciesCollection.insertOne(newAgency);
+        res.status(201).json({ success: true, message: "Agence créée avec succès." });
+
+    } catch (error) {
+        console.error("❌ Erreur lors de la création de l'agence:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
+
+
+
+
+
 // Routes de mise à jour PATCH
 
 
@@ -3408,6 +3485,52 @@ app.patch("/api/admin/trips/:tripId/crew", authenticateToken, async (req, res) =
 
 
 
+
+// DANS server.js (avec les routes PATCH admin)
+
+// [PATCH] Affecter ou détacher une agence pour un employé
+app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
+    // L'agencyId est optionnel (pour pouvoir détacher un employé)
+    body('agencyId').optional({ nullable: true }).isMongoId().withMessage("ID d'agence invalide"),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+    
+    const { crewId } = req.params;
+    const { agencyId } = req.body;
+
+    try {
+        let agencyName = null;
+        let finalAgencyId = null;
+
+        // Si un agencyId est fourni, on l'affecte
+        if (agencyId) {
+            const agency = await agenciesCollection.findOne({ _id: new ObjectId(agencyId) });
+            if (!agency) {
+                return res.status(404).json({ error: "Agence introuvable." });
+            }
+            agencyName = agency.city; // ou agency.name, selon ce que vous voulez stocker
+            finalAgencyId = agency._id;
+        }
+
+        // Mise à jour de l'employé. Si agencyId est null, les champs seront supprimés ou mis à null.
+        await crewCollection.updateOne(
+            { _id: new ObjectId(crewId) },
+            { $set: { agencyId: finalAgencyId, agencyName: agencyName } }
+        );
+
+        res.json({ success: true, message: "Affectation de l'employé mise à jour." });
+        
+    } catch (error) {
+        console.error("❌ Erreur lors de l'affectation de l'employé:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
+
 // --- E. Routes de suppression (DELETE) ---
 
 app.delete("/api/admin/route-templates/:id", authenticateToken, async (req, res) => {
@@ -3813,6 +3936,9 @@ const PORT = process.env.PORT || 3000;
     systemSettingsCollection = db.collection("system_settings");
     positionsCollection = db.collection("positions");
     crewCollection = db.collection("crew");
+    agenciesCollection = db.collection("agencies"); // ✅ AJOUTEZ CETTE LIGNE
+    console.log("✅ Collections MongoDB assignées aux variables globales.");
+    
     
     console.log("✅ Collections MongoDB assignées aux variables globales.");
 
