@@ -7529,16 +7529,129 @@ function renderAgenciesTable(agencies) {
  * Ouvre la modale pour créer ou modifier une agence.
  * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
  */
-function openAgencyModal(agencyId = null) {
-    if (agencyId) {
-        console.log("Ouverture de la modale pour MODIFIER l'agence :", agencyId);
-        // TODO: Logique de modification
-        alert("Fonctionnalité 'Modifier l'agence' à implémenter.");
-    } else {
-        console.log("Ouverture de la modale pour CRÉER une agence.");
-        // TODO: Logique de création
-        alert("Fonctionnalité 'Créer une agence' à implémenter.");
+// DANS admin/app.js, REMPLACEZ la fonction openAgencyModal
+
+/**
+ * Ouvre la modale pour créer ou modifier une agence.
+ * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+ */
+async function openAgencyModal(agencyId = null) {
+    const isEditing = agencyId !== null;
+    const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
+    
+    // On récupère les managers disponibles pour le menu déroulant
+    let managers = [];
+    if (allCrewMembers.length === 0) {
+        // Si la liste du personnel n'est pas chargée, on la charge
+        const crewData = await apiCall('/admin/crew');
+        if (crewData && crewData.success) allCrewMembers = crewData.crew;
     }
+    managers = allCrewMembers.filter(m => m.role === 'Manager d\'Agence');
+
+    const managerOptions = managers.map(m => `<option value="${m._id}">${m.name}</option>`).join('');
+
+    // On pré-remplit les champs si on est en mode édition
+    let agency = {};
+    if (isEditing) {
+        agency = allAgencies.find(a => a._id === agencyId) || {};
+    }
+
+    // On affiche la modale principale ('details-modal')
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
+
+    modalTitle.textContent = modalTitleText;
+    modalBody.innerHTML = `
+        <form id="agency-form">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="form-group">
+                    <label for="agency-name" class="form-label">Nom de l'agence</label>
+                    <input type="text" id="agency-name" class="form-control" required value="${agency.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="agency-city" class="form-label">Ville</label>
+                    <input type="text" id="agency-city" class="form-control" required value="${agency.city || ''}">
+                </div>
+                <div class="form-group form-group-full">
+                    <label for="agency-address" class="form-label">Adresse complète</label>
+                    <input type="text" id="agency-address" class="form-control" required value="${agency.address || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="agency-phone" class="form-label">Téléphone</label>
+                    <input type="tel" id="agency-phone" class="form-control" value="${agency.phone || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="agency-hours" class="form-label">Horaires d'ouverture</label>
+                    <input type="text" id="agency-hours" class="form-control" value="${agency.openingHours || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="agency-manager" class="form-label">Manager de l'agence</label>
+                    <select id="agency-manager" class="form-control">
+                        <option value="">-- Aucun manager --</option>
+                        ${managerOptions}
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="agency-status" class="form-label">Statut</label>
+                    <select id="agency-status" class="form-control">
+                        <option value="active" ${agency.status === 'active' ? 'selected' : ''}>Actif</option>
+                        <option value="inactive" ${agency.status === 'inactive' ? 'selected' : ''}>Inactif</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 1.5rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            </div>
+        </form>
+    `;
+    
+    // On sélectionne le bon manager si on est en mode édition
+    if (isEditing && agency.managerId) {
+        document.getElementById('agency-manager').value = agency.managerId;
+    }
+
+    // On attache l'écouteur de soumission au formulaire
+    document.getElementById('agency-form').addEventListener('submit', (e) => {
+        handleAgencySubmit(e, agencyId);
+    });
+
+    document.getElementById('details-modal').classList.add('active');
+}
+
+/**
+ * Gère la soumission du formulaire de création/modification d'agence.
+ */
+async function handleAgencySubmit(event, agencyId) {
+    event.preventDefault();
+    const isEditing = agencyId !== null;
+
+    const agencyData = {
+        name: document.getElementById('agency-name').value,
+        city: document.getElementById('agency-city').value,
+        address: document.getElementById('agency-address').value,
+        phone: document.getElementById('agency-phone').value,
+        openingHours: document.getElementById('agency-hours').value,
+        managerId: document.getElementById('agency-manager').value || null,
+        status: document.getElementById('agency-status').value
+    };
+
+    let response;
+    if (isEditing) {
+        // Logique de mise à jour (à créer)
+        // response = await apiCall(`/admin/agencies/${agencyId}`, 'PATCH', agencyData);
+        alert("Logique de PATCH à implémenter pour la modification.");
+    } else {
+        // Logique de création (déjà créée côté backend)
+        response = await apiCall('/admin/agencies', 'POST', agencyData);
+    }
+
+    if (response && response.success) {
+        showNotification(isEditing ? "Agence modifiée avec succès !" : "Agence créée avec succès !", 'success');
+        closeModal();
+        loadAllAgencies(); // On rafraîchit la liste
+    }
+    // La gestion d'erreur est déjà dans apiCall()
 }
 
 /**
