@@ -7581,37 +7581,39 @@ function renderAgenciesTable(agencies) {
 /**
  * Ouvre la modale pour créer ou modifier une agence.
  */
+/**
+ * Ouvre la modale pour créer ou modifier une agence.
+ */
 async function openAgencyModal(agencyId = null) {
     const isEditing = agencyId !== null;
     const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
     
     // 1. SÉCURITÉ : On s'assure que la liste du personnel est chargée
     if (!allCrewMembers || allCrewMembers.length === 0) {
-        console.log("⚠️ Liste personnel vide, chargement en cours...");
         await loadAllCrew();
     }
 
-    // 2. DÉBOGAGE : Voir ce qu'on a en mémoire
-    console.log("👥 Personnel total:", allCrewMembers);
-    
-    // 3. FILTRE ÉLARGI : On accepte Manager, Manager d'Agence, ET Super Admin
+    // =========================================================================
+    // ✅ LA CORRECTION EST ICI : On accepte plusieurs types de rôles
+    // =========================================================================
     const managers = allCrewMembers.filter(m => 
         (m.role === 'Manager' || m.role === "Manager d'Agence" || m.role === 'Super Admin') 
         && m.status === 'Actif'
     );
+    // =========================================================================
 
-    console.log("✅ Managers éligibles trouvés:", managers);
-
-    if (managers.length === 0) {
-        showNotification("Aucun manager actif trouvé. Créez-en un dans l'onglet Personnel.", "warning");
+    // On génère les options HTML
+    let managerOptions = '<option value="">-- Aucun manager --</option>';
+    
+    if (managers.length > 0) {
+        managerOptions += managers.map(m => 
+            `<option value="${m._id}">${m.name} (${m.role})</option>`
+        ).join('');
+    } else {
+        console.warn("⚠️ Aucun manager éligible trouvé.");
     }
 
-    // 4. Génération des options du Select
-    const managerOptions = managers.map(m => 
-        `<option value="${m._id}">${m.name} (${m.role})</option>`
-    ).join('');
-
-    // 5. Récupération des données si édition
+    // 2. Récupération des données si édition
     let agency = {};
     if (isEditing) {
         agency = allAgencies.find(a => a._id === agencyId) || {};
@@ -7647,10 +7649,11 @@ async function openAgencyModal(agencyId = null) {
                 <div class="form-group">
                     <label for="agency-manager" class="form-label">Manager de l'agence</label>
                     <select id="agency-manager" class="form-control">
-                        <option value="">-- Aucun manager --</option>
                         ${managerOptions}
                     </select>
-                    <small style="color: #666; font-size: 0.8em;">Seuls les Managers et Super Admin actifs apparaissent ici.</small>
+                    <small style="color: #888; font-size: 0.8em; margin-top: 4px; display: block;">
+                        Liste des Managers et Super Admins actifs.
+                    </small>
                 </div>
                  <div class="form-group">
                     <label for="agency-status" class="form-label">Statut</label>
@@ -7669,7 +7672,6 @@ async function openAgencyModal(agencyId = null) {
     
     // Sélectionner le manager actuel si on édite
     if (isEditing && agency.managerId) {
-        // Petit délai pour laisser le DOM se mettre à jour
         setTimeout(() => {
             const select = document.getElementById('agency-manager');
             if (select) select.value = agency.managerId;
