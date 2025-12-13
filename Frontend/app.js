@@ -90,7 +90,10 @@ let appRules = {
 // ============================================
 
 
-
+const ALL_PERMISSIONS = {
+    // ... vos autres permissions
+    manage_agencies: "Gérer les agences" 
+};
 // =============================================
 // GOOGLE AUTH NATIF
 // =============================================
