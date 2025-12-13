@@ -7572,22 +7572,40 @@ function renderAgenciesTable(agencies) {
  * Ouvre la modale pour créer ou modifier une agence.
  * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
  */
+// DANS admin/app.js
+
+/**
+ * Ouvre la modale pour créer ou modifier une agence.
+ * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+ */
 async function openAgencyModal(agencyId = null) {
     const isEditing = agencyId !== null;
     const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
     
+    // ==========================================================
+    // ✅ DÉBUT DU BLOC DE DÉBOGAGE
+    // ==========================================================
+    console.log("--- DÉBOGAGE MODALE AGENCE ---");
+    
+    // LOG 1 : Affiche le contenu complet de la variable globale `allCrewMembers`
+    console.log("1. Contenu de 'allCrewMembers' au moment de l'ouverture :", allCrewMembers);
 
-        // ✅ SIMPLIFICATION : On peut maintenant utiliser `allCrewMembers` en toute confiance.
+    // LOG 2 : On applique le filtre et on stocke le résultat pour l'analyser
     const managers = allCrewMembers.filter(m => m.role === 'Manager d\'Agence' && m.status === 'Actif');
-    const managerOptions = managers.map(m => `<option value="${m._id}">${m.name} (${m.matricule})</option>`).join('');
+    console.log("2. Résultat du filtre (rôle='Manager d\'Agence' ET statut='Actif') :", managers);
 
+    // LOG 3 : On génère le HTML des options à partir du résultat du filtre
+    const managerOptions = managers.map(m => `<option value="${m._id}">${m.name} (${m.matricule || 'N/A'})</option>`).join('');
+    console.log("3. HTML <option> généré pour le select :", managerOptions);
+    
+    console.log("--- FIN DU DÉBOGAGE ---");
+    // ==========================================================
 
     // On pré-remplit les champs si on est en mode édition
     let agency = {};
     if (isEditing) {
         agency = allAgencies.find(a => a._id === agencyId) || {};
     }
-    
 
     // On affiche la modale principale ('details-modal')
     const modalTitle = document.getElementById("modal-title");
@@ -7651,7 +7669,6 @@ async function openAgencyModal(agencyId = null) {
 
     document.getElementById('details-modal').classList.add('active');
 }
-
 /**
  * Gère la soumission du formulaire de création/modification d'agence.
  */
