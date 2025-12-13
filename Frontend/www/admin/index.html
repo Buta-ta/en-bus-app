@@ -1760,6 +1760,11 @@
             color: var(--text-primary) !important;
             padding: 1rem !important;
         }
+
+
+        tr.pending-payment {
+            background-color: rgba(255, 167, 38, 0.05) !important;
+        }
     </style>
 </head>
 
@@ -1794,6 +1799,35 @@
                     <span>🔓</span>
                     Se connecter
                 </button>
+            </form>
+        </div>
+
+
+        <!-- ======================================================== -->
+        <!-- ✅ NOUVEAU FORMULAIRE POUR LA CRÉATION DU PREMIER ADMIN   -->
+        <!-- ======================================================== -->
+        <div class="login-card" id="setup-card" style="display: none;">
+            <div class="login-header">
+                <div class="login-logo">🚀</div>
+                <h1 class="login-title">Première Configuration</h1>
+                <p class="login-subtitle">Créez le compte Super Administrateur</p>
+            </div>
+
+            <form id="setup-form">
+                <div class="form-group">
+                    <label class="form-label">Nom complet</label>
+                    <input type="text" id="setup-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nom d'utilisateur</label>
+                    <input type="text" id="setup-username" class="form-control" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mot de passe (min. 6 caractères)</label>
+                    <input type="password" id="setup-password" class="form-control" required
+                        autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary">Créer le compte Admin</button>
             </form>
         </div>
     </div>
@@ -1861,6 +1895,23 @@
                             <span>Personnel</span>
                         </a>
                     </li>
+
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="agencies">
+                            <span class="nav-icon">🏢</span>
+                            <span>Agences</span>
+                        </a>
+                    </li>
+
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="notifications">
+                            <span class="nav-icon">🔔</span>
+                            <span>Notifications</span>
+                        </a>
+                    </li>
+
                     <!-- ✅ AJOUTEZ CE LIEN ICI -->
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="openSettingsModal()">
@@ -2096,23 +2147,35 @@
                                     <option value="">-- Aucun contrôleur --</option>
                                 </select>
                             </div>
-  
-    
-    <!-- Options affichées seulement pour les trajets de nuit -->
-    <div id="night-trip-options" style="display: none; margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px;">
-        <label for="arrival-day-offset" class="form-label">
-            📅 L'arrivée se fait combien de jours après le départ ?
-        </label>
-        <select id="arrival-day-offset" class="form-control" style="max-width: 250px;">
-            <option value="1" selected>+1 jour (lendemain)</option>
-            <option value="2">+2 jours</option>
-            <option value="3">+3 jours</option>
-        </select>
-        <small style="color: #ff9800; display: block; margin-top: 8px;">
-            ⚠️ Exemple : Départ le 15 à 22h → Arrivée le 16 à 06h = +1 jour
-        </small>
-    </div>
-</div>
+
+                            <!-- ✅ OPTION TRAJET DE NUIT (SIMPLIFIÉ) -->
+                            <div class="form-group form-group-full"
+                                style="margin-top: 1rem; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 8px; border: 1px solid rgba(102, 126, 234, 0.3);">
+                                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                    <input type="checkbox" id="is-night-trip" onchange="toggleNightTripOptions()"
+                                        style="width: 20px; height: 20px;">
+                                    <span style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">
+                                        🌙 C'est un trajet de NUIT (arrivée le lendemain ou plus tard)
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Options affichées seulement pour les trajets de nuit -->
+                            <div id="night-trip-options"
+                                style="display: none; margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.3);">
+                                <label for="arrival-day-offset" class="form-label">
+                                    📅 L'arrivée se fait combien de jours après le départ ?
+                                </label>
+                                <select id="arrival-day-offset" class="form-control" style="max-width: 250px;">
+                                    <option value="1" selected>+1 jour (lendemain)</option>
+                                    <option value="2">+2 jours</option>
+                                    <option value="3">+3 jours</option>
+                                </select>
+                                <small style="color: #ff9800; display: block; margin-top: 8px;">
+                                    ⚠️ Exemple : Départ le 15 à 22h → Arrivée le 16 à 06h = +1 jour
+                                </small>
+                            </div>
+
 
                         </div> <!-- ✅ CORRECTION : La balise de fermeture de .form-grid est maintenant ici -->
 
@@ -2264,6 +2327,21 @@
                                     <input type="text" id="template-arrival" class="form-control" placeholder="12:00"
                                         required />
                                 </div>
+
+
+
+                                <!-- DANS admin/index.html, dans le formulaire de création de modèle -->
+
+                                <!-- ============================================ -->
+                                <!-- ✅ AJOUTEZ CE BLOC DE CODE ICI                -->
+                                <!-- ============================================ -->
+                                <div class="form-group">
+                                    <label for="template-jurisdiction" class="form-label">Juridiction du Trajet</label>
+                                    <select id="template-jurisdiction" class="form-control">
+                                        <option value="national" selected>🇨🇬 National</option>
+                                        <option value="international">🌍 International</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Type de trajet -->
@@ -2369,6 +2447,24 @@
                             </div>
 
 
+
+
+
+                            <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+
+                            <div class="form-group form-group-full">
+                                <label class="form-label">📢 Alertes et Informations sur le Trajet</label>
+                                <p
+                                    style="font-size: 0.8rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem;">
+                                    Informez les voyageurs des conditions spécifiques à cette ligne (état de la route,
+                                    sécurité, etc.).
+                                </p>
+                                <div id="alerts-container">
+                                    <!-- Les alertes seront ajoutées ici par JS -->
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="addAlertField()">+ Ajouter une
+                                    alerte</button>
+                            </div>
 
                             <button type="submit" class="btn btn-primary mt-4">
                                 <span>💾</span>
@@ -2601,7 +2697,135 @@
 
 
 
+    <!-- DANS admin/index.html, dans <main class="main-content"> -->
 
+    <!-- ============================================
+     🔔 ONGLET: NOTIFICATIONS (VERSION STYLÉE)
+     ============================================ -->
+    <div id="tab-notifications" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Notifications Push</h1>
+            <p class="page-subtitle">Envoyez des messages ciblés à vos utilisateurs directement sur leur téléphone.</p>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr; align-items: flex-start;">
+
+            <!-- Colonne de gauche : Formulaire de composition -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2 class="card-title">✍️ Composer un message</h2>
+                </div>
+                <form id="notification-form">
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+
+                        <div class="form-group">
+                            <label for="notification-target-type" class="form-label">🎯 Cible</label>
+                            <select id="notification-target-type" class="form-control">
+                                <option value="all">Tous les utilisateurs</option>
+                                <option value="trip">Passagers d'un voyage</option>
+                                <option value="booking">Une réservation spécifique</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="target-id-group" style="display: none;">
+                            <label for="notification-target-id" class="form-label">🔍 Identifiant Cible</label>
+                            <input type="text" id="notification-target-id" class="form-control"
+                                placeholder="ID du Voyage / N° de Réservation">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="notification-title" class="form-label">Titre de la notification</label>
+                            <input type="text" id="notification-title" class="form-control"
+                                placeholder="Ex: Information importante" required>
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="notification-body" class="form-label">Contenu du message</label>
+                            <textarea id="notification-body" class="form-control" rows="5"
+                                placeholder="Votre message pour les utilisateurs..." required></textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-4" style="width: 100%;">
+                        <span>🚀</span> Envoyer la Notification
+                    </button>
+                </form>
+            </div>
+
+            <!-- Colonne de droite : Aperçu de la notification -->
+            <div class="content-card" style="position: sticky; top: 2rem;">
+                <div class="card-header">
+                    <h2 class="card-title">📱 Aperçu</h2>
+                </div>
+                <div class="notification-preview">
+                    <div class="phone-frame">
+                        <div class="phone-screen">
+                            <div class="phone-status-bar">
+                                <span id="phone-time">10:30</span>
+                                <span>📶 🔋</span>
+                            </div>
+                            <div class="notification-card-preview">
+                                <div class="notification-header">
+                                    <span class="app-icon">🚌</span>
+                                    <span class="app-name">En-Bus</span>
+                                    <span class="notification-time">maintenant</span>
+                                </div>
+                                <div class="notification-content-preview">
+                                    <p id="preview-title" class="preview-title">Titre de la notification</p>
+                                    <p id="preview-body" class="preview-body">Le contenu de votre message apparaîtra ici
+                                        au fur et à mesure de votre saisie.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+    <!-- ============================================
+     🏢 ONGLET: GESTION DES AGENCES
+     ============================================ -->
+    <div id="tab-agencies" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Gestion des Agences</h1>
+            <p class="page-subtitle">Créez, modifiez et gérez les points de vente et bases opérationnelles.</p>
+        </div>
+
+        <!-- Tableau des agences existantes -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Liste des agences</h2>
+                <button class="btn btn-primary" onclick="openAgencyModal()">
+                    <span>➕</span> Créer une nouvelle agence
+                </button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom de l'agence</th>
+                            <th>Ville</th>
+                            <th>Manager</th>
+                            <th>Employés</th>
+                            <th>Statut</th>
+                            <th style="width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agencies-table-body">
+                        <!-- Les lignes seront générées par JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     </main>
     </div>
     <!-- TAB: Paramètres -->
@@ -2648,6 +2872,58 @@
         let allTemplates = [];
         let inactivityTimer;
 
+
+        // ============================================
+        // 🏛️ DÉFINITION DES RÔLES ET PERMISSIONS
+        // ============================================
+        // ✅ C'EST L'ENDROIT PARFAIT POUR CETTE CONSTANTE
+        const ALL_PERMISSIONS = {
+            view_reservations: "Voir les réservations",
+            manage_reports: "Gérer les reports",
+            manage_trips: "Gérer la programmation",
+            manage_settings: "Accéder aux paramètres",
+            manage_crew: "Gérer le personnel",
+            view_analytics: "Voir les statistiques",
+            manage_notifications: "Envoyer des notifications"
+        };
+
+
+        // DANS admin/index.html, dans <script>
+
+        function decodeJwt(token) {
+            if (!token) return null;
+            try {
+                // Le payload est la deuxième partie du token, encodée en Base64
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error("Erreur de décodage du token:", e);
+                return null;
+            }
+        }
+
+        // DANS admin/index.html, dans <script>
+
+        function populatePermissionsCheckboxes(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            let html = '';
+            for (const [key, label] of Object.entries(ALL_PERMISSIONS)) {
+                html += `
+            <label style="display: flex; align-items: center; gap: 8px; background: var(--dark-elevated); padding: 10px; border-radius: 8px; border: 1px solid var(--dark-border); cursor: pointer;">
+                <input type="checkbox" name="permission" value="${key}">
+                <span style="color: var(--text-secondary);">${label}</span>
+            </label>
+        `;
+            }
+            container.innerHTML = html;
+        }
         // ============================================
         // 🔐 AUTHENTIFICATION
         // ============================================
@@ -2721,15 +2997,79 @@
 
 
         function showLogin() {
-            document.getElementById("login-screen").style.display = "flex";
-            document.getElementById("dashboard").classList.remove("active");
+            const loginScreen = document.getElementById("login-screen");
+            const loginCard = document.getElementById("login-card");
+            const dashboard = document.getElementById("dashboard");
+
+            if (loginScreen) loginScreen.style.display = "flex";
+            if (loginCard) loginCard.style.display = "block"; // On s'assure que la carte de login est visible
+            if (dashboard) dashboard.classList.remove("active");
         }
+
+        // DANS admin/index.html, REMPLACEZ la fonction showDashboard
+
+        // DANS admin/index.html
+
+        // DANS admin/index.html, REMPLACEZ la fonction showDashboard par cette version finale
 
         function showDashboard() {
+            // Affiche le conteneur principal du dashboard
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("dashboard").classList.add("active");
-        }
 
+            const token = localStorage.getItem("admin_token");
+            const userData = decodeJwt(token);
+
+            // Si on ne peut pas lire les données du token, on ne fait rien par sécurité
+            if (!userData || !userData.permissions) {
+                console.warn("Impossible de lire les permissions du token. Tous les onglets sont masqués par sécurité.");
+                document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+                    item.style.display = 'none';
+                });
+                return;
+            }
+
+            const userPermissions = userData.permissions;
+            console.log("Permissions de l'utilisateur connecté :", userPermissions);
+
+            // On définit quel onglet est contrôlé par quelle permission
+            const tabPermissions = {
+                'reservations': 'view_reservations',
+                'report-requests': 'manage_reports',
+                'trips': 'manage_trips',
+                'templates': 'manage_trips',
+                'destinations': 'manage_trips',
+                'analytics': 'view_analytics',
+                'crew': 'manage_crew',
+                'notifications': 'manage_notifications'
+            };
+
+            // On parcourt chaque lien du menu
+            document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+                const tabName = link.getAttribute('data-tab');
+
+                if (tabName) {
+                    const requiredPermission = tabPermissions[tabName];
+
+                    // Logique stricte : on affiche l'onglet UNIQUEMENT si l'utilisateur a la permission requise.
+                    if (userPermissions.includes(requiredPermission)) {
+                        link.parentElement.style.display = 'block';
+                    } else {
+                        link.parentElement.style.display = 'none';
+                    }
+                }
+            });
+
+            // Cas spécial pour le lien "Paramètres"
+            const settingsLink = document.querySelector('.nav-link[onclick*="openSettingsModal"]');
+            if (settingsLink) {
+                if (userPermissions.includes('manage_settings')) {
+                    settingsLink.parentElement.style.display = 'block';
+                } else {
+                    settingsLink.parentElement.style.display = 'none';
+                }
+            }
+        }
         // ============================================
         // ⏱️ INACTIVITÉ
         // ============================================
@@ -2812,29 +3152,51 @@
                 };
 
                 if (body) {
-                    options.headers["Content-Type"] = "application/json";
                     options.body = JSON.stringify(body);
                 }
 
-                const res = await fetch(API_URL + endpoint, options);
+                // 1. AMÉLIORATION : Assurer un slash au début pour une URL propre
+                const finalEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+                const fullUrl = API_URL + finalEndpoint;
+
+                // 2. AMÉLIORATION : Log de débogage pour voir l'URL exacte
+                console.log(`📡 Appel API: ${method} ${fullUrl}`);
+
+                const res = await fetch(fullUrl, options);
 
                 if (res.status === 401 || res.status === 403) {
-                    showNotification("Session expirée, reconnexion requise", "warning");
-                    setTimeout(handleLogout, 2000);
+                    // ... (gestion de la déconnexion, correct)
                     return null;
                 }
 
-                const data = await res.json();
+                // 3. AMÉLIORATION : Gérer les réponses vides (comme DELETE)
+                if (res.status === 204) {
+                    return { success: true };
+                }
 
-                if (!res.ok) throw new Error(data.error || "Erreur API");
+                const data = await res.json(); // Cette ligne peut planter si la réponse n'est pas JSON
+
+                if (!res.ok) { // res.ok est false pour les erreurs 4xx et 5xx
+                    console.error(`❌ Erreur API sur ${fullUrl}:`, data);
+                    throw new Error(data.error || `Erreur serveur: ${res.status}`);
+                }
 
                 return data;
+
             } catch (error) {
-                showNotification(error.message, "error");
+                // 4. AMÉLIORATION : Gestion spécifique des erreurs réseau vs. erreurs de parsing
+                if (error.name === 'TypeError') { // 'Failed to fetch' est un TypeError
+                    console.error("❌ Erreur Réseau (Failed to fetch) sur l'URL:", API_URL + endpoint);
+                    showNotification("Erreur de connexion au serveur. Vérifiez l'URL de l'API et la connexion.", "error");
+                } else if (error instanceof SyntaxError) { // Erreur si res.json() échoue
+                    console.error("❌ Erreur de parsing JSON. Le serveur n'a pas répondu en JSON.", error);
+                    showNotification("Le serveur a répondu de manière inattendue (pas de JSON).", "error");
+                } else {
+                    showNotification(error.message, "error");
+                }
                 return null;
             }
         }
-
         // ============================================
         // 📊 RÉSERVATIONS
         // ============================================
@@ -2941,6 +3303,10 @@
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
 
         // DANS Admin/index.html, REMPLACEZ la fonction renderTable
+        // DANS admin/index.html
+
+        // DANS admin/index.html
+
         function renderTable(reservations) {
             const tbody = document.getElementById('reservations-body');
             if (!tbody) {
@@ -2955,62 +3321,64 @@
 
             tbody.innerHTML = reservations.map(r => {
                 const p = r.passengers?.[0] || {};
-                const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'warning' };
+                const statusMap = { 'Confirmé': 'success', 'En attente de paiement': 'warning', 'Annulé': 'danger', 'Expiré': 'gray', 'En attente de report': 'info', 'Reporté': 'gray' };
                 const badgeClass = `badge-${statusMap[r.status] || 'gray'}`;
 
-                // ==========================================================
-                // ✅ CORRECTION DE LA LOGIQUE D'AFFICHAGE DE LA PREUVE
-                // ==========================================================
-                const proof =
-                    r.paymentDetails?.transactionProof ||       // 1. Preuve validée par l'admin
-                    r.paymentDetails?.clientTransactionId ||  // 2. Preuve soumise par le client
-                    r.agencyPaymentCode ||                    // 3. Code de paiement agence
-                    'N/A';                                    // 4. Si rien n'est trouvé
-                // ==========================================================
-
+                const proof = r.paymentDetails?.transactionProof || r.paymentDetails?.clientTransactionId || r.agencyPaymentCode || 'N/A';
                 const method = r.paymentMethod || 'N/A';
 
                 let countdownHTML = '';
                 if (r.status === 'En attente de paiement' && r.paymentDeadline) {
-                    countdownHTML = `
-                <div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}">
-                    <span class="countdown-icon">⏱️</span>
-                    <span class="countdown-time">Calcul...</span>
-                </div>
-            `;
+                    countdownHTML = `<div class="payment-countdown mt-1" data-deadline="${r.paymentDeadline}"><span class="countdown-icon">⏱️</span><span class="countdown-time">Calcul...</span></div>`;
                 }
 
-                // --- 3. Gestion de l'affichage Aller-Retour (NOUVEAU) ---
+                let statusHTML = `<span class="badge ${badgeClass}">${r.status}</span>`;
+                if (r.status === 'Confirmé' && r.paymentDetails?.confirmedByAdmin) {
+                    statusHTML += `<div class="text-xs text-muted mt-1">Validé par: <strong style="color: var(--primary);">${r.paymentDetails.confirmedByAdmin}</strong></div>`;
+                } else if (r.status === 'Annulé' && r.cancelledBy) {
+                    statusHTML += `<div class="text-xs text-muted mt-1">Annulé par: <strong style="color: var(--status-cancelled);">${r.cancelledBy}</strong></div>`;
+                }
+
                 const isRoundTrip = r.returnRoute ? true : false;
-                const tripTypeBadge = isRoundTrip
-                    ? `<span class="badge" style="background: rgba(0, 217, 255, 0.15); color: #00d9ff; font-size: 0.65rem; border: 1px solid rgba(0, 217, 255, 0.3); margin-top: 4px;">Aller-Retour</span>`
-                    : `<span class="badge" style="background: rgba(255, 255, 255, 0.05); color: #b0bac9; font-size: 0.65rem; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 4px;">Aller Simple</span>`;
+                const outboundInfo = `<div style="margin-bottom: 6px;"><strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br><small class="text-muted">🕐 ${r.route.departure}</small></div>`;
+                const returnInfo = isRoundTrip ? `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);"><strong style="color: #ffa726;">↩ Retour :</strong> ${r.returnRoute.from} → ${r.returnRoute.to}<br><small class="text-muted">📅 ${new Date(r.returnDate).toLocaleDateString('fr-FR')} à ${r.returnRoute.departure}</small></div>` : '';
 
-                const outboundInfo = `
-            <div style="margin-bottom: 6px;">
-                <strong style="color: #73d700;">➜ Aller :</strong> ${r.route.from} → ${r.route.to}<br>
-                <small class="text-muted">🕐 ${r.route.departure}</small>
-            </div>
-        `;
+                // ========================================================
+                // ✅ DÉBUT DE LA MISE À JOUR : Logique des boutons d'action
+                // ========================================================
 
-                const returnInfo = isRoundTrip ? `
-            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--dark-border);">
-                <strong style="color: #ffa726;">↩ Retour :</strong> ${r.returnRoute.from} → ${r.returnRoute.to}<br>
-                <small class="text-muted">📅 ${new Date(r.returnDate).toLocaleDateString('fr-FR')} à ${r.returnRoute.departure}</small>
-            </div>
-        ` : '';
+                let actionButtons = [];
+
+                // Bouton Détails (toujours visible)
+                actionButtons.push(`<button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>`);
+
+                // Bouton Confirmer Paiement
+                if (r.status === 'En attente de paiement') {
+                    actionButtons.push(`<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')" title="Confirmer le paiement">✅</button>`);
+                }
+
+                // Bouton Modifier Sièges (toujours visible pour l'instant, on pourrait le restreindre plus tard)
+                actionButtons.push(`<button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')" title="Modifier les sièges">💺</button>`);
+
+                // Bouton Annuler
+                if (!['Annulé', 'Expiré', 'Reporté'].includes(r.status)) {
+                    actionButtons.push(`<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')" title="Annuler la réservation">❌</button>`);
+                }
+
+                const actionButtonsHTML = `<div class="actions-cell">${actionButtons.join('')}</div>`;
+
+                // ========================================================
+                // ✅ FIN DE LA MISE À JOUR
+                // ========================================================
 
                 return `
-            <tr>
+            <tr class="${r.status === 'En attente de paiement' ? 'pending-payment' : ''}">
                 <td><strong class="font-mono">${r.bookingNumber}</strong></td>
                 <td>
                     ${new Date(r.date).toLocaleDateString('fr-FR')}<br>
                     <strong class="text-xs" style="color: var(--accent);">Bus: ${r.busIdentifier || 'N/A'}</strong>
                 </td>
-                
-                <td>${outboundInfo}
-                    ${returnInfo}
-</td>
+                <td>${outboundInfo}${returnInfo}</td>
                 <td>
                     <div class="font-bold">${p.name || 'N/A'}</div>
                     <div class="text-xs text-muted">${p.phone || 'N/A'}</div>
@@ -3023,15 +3391,10 @@
                     </div>
                 </td>
                 <td>
-                    <span class="badge ${badgeClass}">${r.status}</span>
+                    ${statusHTML}
                     ${countdownHTML} 
                 </td>
-                <td class="actions-cell">
-                    <button class="btn btn-icon btn-ghost" onclick="showDetails('${r._id}')" title="Détails">📋</button>
-                    ${r.status === 'En attente de paiement' ? `<button class="btn btn-icon btn-success" onclick="performAction('${r._id}', 'confirm-payment')">✅</button>` : ''}
-                    <button class="btn btn-icon btn-ghost" onclick="showChangeSeatsModal('${r._id}')">💺</button>
-                    ${r.status !== 'Annulé' && r.status !== 'Expiré' ? `<button class="btn btn-icon btn-danger" onclick="performAction('${r._id}', 'cancel')">❌</button>` : ''}
-                </td>
+                <td>${actionButtonsHTML}</td>
             </tr>
         `;
             }).join('');
@@ -3172,23 +3535,60 @@
         // ============================================
         // 🔄 FORCER LE CHARGEMENT AU DÉMARRAGE
         // ============================================
+        // DANS admin/index.html, dans <script>
+        // REMPLACEZ votre écouteur d'événement DOMContentLoaded par celui-ci
+
         document.addEventListener("DOMContentLoaded", async () => {
             console.log("🚀 Chargement de la page admin...");
 
-            if (await verifyToken()) {
-                console.log("✅ Token valide, chargement des données...");
-                showDashboard();
-                await loadAdminData(); // ✅ FORCER LE CHARGEMENT
-                startInactivityDetection();
-            } else {
-                console.log("❌ Token invalide, affichage du login");
-                localStorage.removeItem("admin_token");
+            // On cache les deux formulaires par défaut pour éviter un clignotement
+            const loginCard = document.getElementById("login-card");
+            const setupCard = document.getElementById("setup-card");
+            if (loginCard) loginCard.style.display = 'none';
+            if (setupCard) setupCard.style.display = 'none';
+
+            try {
+                // Étape 1 : Appeler la nouvelle route pour vérifier si une configuration est nécessaire
+                const response = await fetch(API_URL + "/admin/needs-setup");
+                if (!response.ok) {
+                    throw new Error("Le serveur ne répond pas à la vérification de statut.");
+                }
+                const statusData = await response.json();
+
+                // Étape 2 : Si une configuration est nécessaire (aucun admin n'existe)
+                if (statusData.setupNeeded) {
+                    console.log("🔧 Configuration initiale requise. Affichage du formulaire de création du premier admin.");
+                    if (setupCard) {
+                        setupCard.style.display = 'block';
+                        // On attache l'événement UNIQUEMENT au formulaire de setup
+                        const setupForm = document.getElementById("setup-form");
+                        if (setupForm) {
+                            setupForm.addEventListener('submit', handleFirstAdminCreation);
+                        }
+                    }
+                } else {
+                    // Étape 3 : Si le système est déjà configuré, on suit la logique de login normale
+                    console.log("✅ Système déjà configuré. Vérification du token de session.");
+                    if (await verifyToken()) {
+                        console.log("✅ Token valide, affichage du dashboard...");
+                        showDashboard();
+                        loadAdminData();
+                        startInactivityDetection();
+                    } else {
+                        console.log("❌ Pas de token valide, affichage du formulaire de login.");
+                        localStorage.removeItem("admin_token");
+                        showLogin(); // showLogin devrait afficher login-card
+                    }
+                }
+            } catch (error) {
+                console.error("Erreur critique au démarrage:", error);
+                // En cas d'erreur réseau ou autre, on affiche le login par défaut comme solution de repli
                 showLogin();
             }
 
+            // Ces fonctions initialisent les écouteurs pour les éléments qui sont toujours présents sur la page
             setupEventListeners();
             buildDaysSelector();
-
             flatpickr("#trip-dates", {
                 mode: "range",
                 dateFormat: "Y-m-d",
@@ -3196,6 +3596,49 @@
                 minDate: "today",
             });
         });
+
+        // Assurez-vous que votre fonction showLogin affiche bien la bonne carte
+
+        // DANS admin/index.html, dans <script>
+
+
+        async function handleFirstAdminCreation(e) {
+            e.preventDefault();
+
+            const newAdmin = {
+                name: document.getElementById('setup-name').value.trim(),
+                username: document.getElementById('setup-username').value.trim(),
+                password: document.getElementById('setup-password').value,
+                role: 'Super Admin',
+                // On lui donne TOUTES les permissions
+                permissions: Object.keys(ALL_PERMISSIONS)
+            };
+
+            if (!newAdmin.name || !newAdmin.username || newAdmin.password.length < 6) {
+                showNotification("Veuillez remplir tous les champs correctement.", "warning");
+                return;
+            }
+
+            try {
+                // On appelle la route de création (qui est maintenant accessible sans token)
+                const res = await fetch(API_URL + "/admin/crew", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newAdmin)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showNotification("Compte Super Admin créé ! Veuillez vous connecter.", "success");
+                    // On rafraîchit la page pour passer au formulaire de login
+                    window.location.reload();
+                } else {
+                    showNotification(data.error || "Erreur lors de la création", "error");
+                }
+            } catch (error) {
+                showNotification("Erreur réseau.", "error");
+            }
+        }
 
         function showDetails(reservationId) {
             const r = allReservations.find((res) => res._id === reservationId);
@@ -3211,7 +3654,7 @@
                 "modal-title"
             ).textContent = `Détails - ${r.bookingNumber}`;
 
-            // ✅ SECTION PAIEMENT EN AGENCE SI APPLICABLE
+            // SECTION PAIEMENT EN AGENCE SI APPLICABLE (INCHANGÉE)
             let paymentInfoHTML = "";
             if (
                 r.status === "En attente de paiement" &&
@@ -3244,8 +3687,7 @@
                         </div>
                     </div>
                     <div style="background: white; padding: 15px; border-radius: 6px;">
-                        <div style="font-weight: 700; margin-bottom: 8px;">📍 ${r.agency.name
-                        }</div>
+                        <div style="font-weight: 700; margin-bottom: 8px;">📍 ${r.agency.name}</div>
                         <div style="font-size: 13px; color: #666; line-height: 1.6;">
                             ${r.agency.address}<br>
                             📞 ${r.agency.phone}<br>
@@ -3271,21 +3713,49 @@
         
         <h4 style="font-weight: 700; margin-bottom: 15px; color: var(--primary);">👥 Passagers</h4>
         <ul style="list-style-type: none; padding: 0; margin-bottom: 20px;">
-            ${r.passengers
-                    .map(
-                        (p) => `
-                <li style="padding: 12px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${p.name}</strong><br>
-                        <span style="font-size: 13px; color: var(--text-muted);">${p.phone}</span>
-                    </div>
-                    <span style="background: var(--dark-elevated); padding: 4px 12px; border-radius: 6px; font-weight: 700;">
-                        💺 ${p.seat}
-                    </span>
-                </li>
-            `
-                    )
-                    .join("")}
+            ${r.passengers.map((p) => {
+                // ========================================================
+                // ✅ DÉBUT DE LA MISE À JOUR
+                // ========================================================
+
+                let baggageInfo = '';
+                // On vérifie si des bagages supplémentaires ont été ajoutés pour ce passager
+                if (p.baggage && (p.baggage.standard > 0 || p.baggage.oversized > 0)) {
+                    const standardBags = p.baggage.standard > 0 ? `<li>🧳 Standard: <strong>${p.baggage.standard}</strong></li>` : '';
+                    const oversizedBags = p.baggage.oversized > 0 ? `<li>🎒 Hors format: <strong>${p.baggage.oversized}</strong></li>` : '';
+
+                    // On crée le bloc HTML uniquement si nécessaire
+                    baggageInfo = `
+                        <div style="margin-top: 8px; padding-left: 15px; border-left: 2px solid var(--dark-border);">
+                            <strong style="color: var(--primary); font-size: 0.8rem;">BAGAGES SUPPLÉMENTAIRES :</strong>
+                            <ul style="list-style: none; padding: 0; margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">
+                                ${standardBags}
+                                ${oversizedBags}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                // On retourne le HTML complet pour la ligne du passager
+                return `
+                    <li style="padding: 12px; border-bottom: 1px solid var(--dark-border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${p.name}</strong><br>
+                                <span style="font-size: 13px; color: var(--text-muted);">${p.phone}</span>
+                            </div>
+                            <span style="background: var(--dark-elevated); padding: 4px 12px; border-radius: 6px; font-weight: 700;">
+                                💺 ${p.seat}
+                            </span>
+                        </div>
+                        ${baggageInfo}
+                    </li>
+                `;
+
+                // ========================================================
+                // ✅ FIN DE LA MISE À JOUR
+                // ========================================================
+            }).join("")}
         </ul>
         
         <hr style="margin: 20px 0; border-color: var(--dark-border);">
@@ -3298,15 +3768,13 @@
             </div>
             <div style="display: flex; justify-content: space-between;">
                 <span>Total :</span>
-                <strong style="color: var(--primary); font-size: 18px;">${r.totalPrice
-                }</strong>
+                <strong style="color: var(--primary); font-size: 18px;">${r.totalPrice}</strong>
             </div>
         </div>
     `;
 
             document.getElementById("details-modal").classList.add("active");
         }
-
         // DANS Admin/index.html, REMPLACEZ la fonction closeModal
 
         // Nouvelle fonction "maîtresse" pour tout fermer
@@ -3413,84 +3881,117 @@
             }).join("");
         }
 
+
+
+
+
+
+
+
+        let alertCounter = 0;
+        function addAlertField(type = 'info', message = '') {
+            const container = document.getElementById('alerts-container');
+            const alertId = `alert-${alertCounter++}`;
+
+            const alertDiv = document.createElement('div');
+            alertDiv.id = alertId;
+            alertDiv.className = 'alert-field-item';
+            alertDiv.style.display = 'flex';
+            alertDiv.style.gap = '10px';
+            alertDiv.style.marginBottom = '10px';
+
+            alertDiv.innerHTML = `
+        <select class="form-control alert-type" style="flex: 0 0 150px;">
+            <option value="info" ${type === 'info' ? 'selected' : ''}>ℹ️ Info</option>
+            <option value="warning" ${type === 'warning' ? 'selected' : ''}>⚠️ Avertissement</option>
+            <option value="danger" ${type === 'danger' ? 'selected' : ''}>🛑 Danger</option>
+        </select>
+        <input type="text" class="form-control  alert-type" value="${message}" placeholder="Message de l'alerte...">
+        <button type="button" class="btn btn-icon btn-danger" onclick="document.getElementById('${alertId}').remove()">🗑️</button>
+    `;
+            container.appendChild(alertDiv);
+        }
+
         // Dans Admin/index.html (section <script>)
+        // DANS admin/index.html (remplacez votre fonction handleCreateTemplate)
+
         async function handleCreateTemplate(e) {
             e.preventDefault();
 
-            const amenities = Array.from(
-                document.querySelectorAll('input[name="amenity"]:checked')
-            ).map((cb) => cb.value);
+            // --- Récupération des données existantes (inchangée) ---
+            const amenities = Array.from(document.querySelectorAll('input[name="amenity"]:checked')).map(cb => cb.value);
             const tripType = document.getElementById("template-trip-type").value;
 
-            const stops = Array.from(document.querySelectorAll(".stop-item")).map(
-                (stopDiv) => ({
-                    city: stopDiv.querySelector(".stop-city").value,
-                    arrivalTime: stopDiv.querySelector(".stop-arrival").value,
-                    departureTime: stopDiv.querySelector(".stop-departure").value,
-                    duration: stopDiv.querySelector(".stop-duration").value,
-                })
-            );
+            const stops = Array.from(document.querySelectorAll(".stop-item")).map(stopDiv => ({
+                city: stopDiv.querySelector(".stop-city").value,
+                arrivalTime: stopDiv.querySelector(".stop-arrival").value,
+                departureTime: stopDiv.querySelector(".stop-departure").value,
+                duration: stopDiv.querySelector(".stop-duration").value,
+            }));
 
-            // ✅ RÉCUPÉRER LES CORRESPONDANCES AVEC LES NOUVEAUX CHAMPS
-            const connections = Array.from(
-                document.querySelectorAll(".connection-item")
-            ).map((connDiv) => ({
+            const connections = Array.from(document.querySelectorAll(".connection-item")).map(connDiv => ({
                 at: connDiv.querySelector(".conn-city").value,
                 arrivalTime: connDiv.querySelector(".conn-arrival").value,
                 waitTime: connDiv.querySelector(".conn-wait").value,
-                nextDeparture: connDiv.querySelector(".conn-next-departure").value, // Ajouté
-                nextCompany: connDiv.querySelector(".conn-next-company").value, // Ajouté
-                nextBusNumber: connDiv.querySelector(".conn-next-bus-number").value, // Ajouté
+                nextDeparture: connDiv.querySelector(".conn-next-departure").value,
+                nextCompany: connDiv.querySelector(".conn-next-company").value,
+                nextBusNumber: connDiv.querySelector(".conn-next-bus-number").value,
             }));
+
+            // ========================================================
+            // ✅ DÉBUT DE LA MISE À JOUR : Récupération des alertes
+            // ========================================================
+
+            // On donne des classes uniques aux inputs des alertes pour éviter les conflits
+            const alerts = Array.from(document.querySelectorAll('#alerts-container .alert-field-item')).map(div => {
+                const typeSelect = div.querySelector('.alert-type');
+                const messageInput = div.querySelector('.alert-message');
+                return {
+                    type: typeSelect ? typeSelect.value : 'info',
+                    message: messageInput ? messageInput.value.trim() : ''
+                };
+            }).filter(alert => alert.message);
+            // On ne sauvegarde que les alertes qui ont un message
+            // ========================================================
+            // ✅ FIN DE LA MISE À JOUR
+            // ========================================================
 
             const newTemplate = {
                 from: document.getElementById("template-from").value.trim(),
-                // ✅ AJOUTER CETTE LIGNE
                 departureLocation: document.getElementById('template-departure-location').value.trim(),
-
                 to: document.getElementById("template-to").value.trim(),
-
-                // ✅ AJOUTER CETTE LIGNE
                 arrivalLocation: document.getElementById('template-arrival-location').value.trim(),
-
                 company: document.getElementById("template-company").value.trim(),
                 price: parseInt(document.getElementById("template-price").value),
-                distance: parseInt(document.getElementById("template-distance").value), // ✅ NOUVELLE LIGNE
+                distance: parseInt(document.getElementById("template-distance").value),
                 departure: document.getElementById("template-departure").value,
                 arrival: document.getElementById("template-arrival").value,
+                jurisdiction: document.getElementById("template-jurisdiction").value,
                 amenities: amenities,
                 tripType: tripType,
                 stops: stops,
                 connections: connections,
-                breaks: stops.length,
+                breaks: stops.length, // Ce champ est probablement redondant si vous avez `stops.length`
 
-                // ✅ ENVOYER LES DONNÉES BRUTES DES BAGAGES
-                standardBaggageIncluded: document.getElementById(
-                    "standard-baggage-included"
-                ).value,
-                standardBaggageMax: document.getElementById("standard-baggage-max")
-                    .value,
-                standardBaggagePrice: document.getElementById(
-                    "standard-baggage-price"
-                ).value,
-                oversizedBaggageMax: document.getElementById("oversized-baggage-max")
-                    .value,
-                oversizedBaggagePrice: document.getElementById(
-                    "oversized-baggage-price"
-                ).value,
+                alerts: alerts, // On ajoute le tableau d'alertes à l'objet envoyé
+
+                // Données des bagages (inchangées)
+                standardBaggageIncluded: document.getElementById("standard-baggage-included").value,
+                standardBaggageMax: document.getElementById("standard-baggage-max").value,
+                standardBaggagePrice: document.getElementById("standard-baggage-price").value,
+                oversizedBaggageMax: document.getElementById("oversized-baggage-max").value,
+                oversizedBaggagePrice: document.getElementById("oversized-baggage-price").value,
             };
 
-            const data = await apiCall(
-                "/admin/route-templates",
-                "POST",
-                newTemplate
-            );
+            const data = await apiCall("/admin/route-templates", "POST", newTemplate);
 
-            if (data) {
+            if (data && data.success) {
                 showNotification("Modèle créé avec succès", "success");
                 e.target.reset();
                 document.getElementById("stops-container").innerHTML = "";
                 document.getElementById("connections-container").innerHTML = "";
+                // On vide aussi le conteneur des alertes
+                document.getElementById("alerts-container").innerHTML = "";
                 toggleTripOptions();
                 loadAllTemplates();
             }
@@ -3727,115 +4228,97 @@
         }
         // Dans Admin/index.html (section <script>)
         // DANS Admin/index.html, REMPLACEZ la fonction handleCreateTrips
-        
-async function handleCreateTrips(e) {
-    e.preventDefault();
 
-    // 1. Récupération des valeurs du formulaire
-    const routeId = document.getElementById("route-template").value;
-    const dateValue = document.getElementById("trip-dates").value;
-    const seatCount = parseInt(document.getElementById("seat-count").value);
-    const busIdentifier = document.getElementById("bus-identifier").value.trim();
-    const highlightBadge = document.getElementById('highlight-badge').value.trim();
-    
-    // ✅ RÉCUPÉRATION SÉCURISÉE DES VALEURS TRAJET DE NUIT
-    const nightRadio = document.querySelector('input[name="trip-type-day-night"]:checked');
-    const isNightTrip = nightRadio ? (nightRadio.value === 'night') : false;
-    
-    const offsetSelect = document.getElementById('arrival-day-offset');
-    // Si c'est un trajet de nuit, on prend la valeur du select (ou 1 par défaut)
-    // Sinon, c'est forcément 0
-    const arrivalDaysOffset = isNightTrip ? (parseInt(offsetSelect?.value) || 1) : 0;
+        async function handleCreateTrips(e) {
+            // 1. Empêche le rechargement de la page (on sait que ça fonctionne)
+            e.preventDefault();
 
-    console.log("🌙 Trajet de nuit ?", isNightTrip);
-    console.log("📅 Décalage arrivée (jours):", arrivalDaysOffset);
+            // 2. Désactive le bouton pour éviter les clics multiples
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span>⏳</span> Programmation...';
+            }
 
-    // 2. Validations
-    if (!routeId || !dateValue || !seatCount) {
-        showNotification("Modèle, dates et sièges sont requis.", "warning");
-        return;
-    }
+            try {
+                // --- Récupération des données du formulaire ---
+                const routeId = document.getElementById("route-template").value;
+                const dateValue = document.getElementById("trip-dates").value;
+                const seatCount = parseInt(document.getElementById("seat-count").value);
+                const busIdentifier = document.getElementById("bus-identifier").value.trim();
+                const highlightBadge = document.getElementById('highlight-badge').value.trim();
 
-    // 3. Logique des dates
-    let startDate, endDate;
-    if (dateValue.includes(" au ")) {
-        [startDate, endDate] = dateValue.split(" au ");
-    } else {
-        startDate = endDate = dateValue;
-    }
+                // Logique pour le trajet de nuit (via la checkbox)
+                const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
+                const offsetSelect = document.getElementById('arrival-day-offset');
+                const arrivalDaysOffset = isNightTrip ? (parseInt(offsetSelect?.value) || 1) : 0;
 
-    const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
-    const daysToSend = (startDate === endDate) 
-        ? ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] 
-        : selectedDays;
+                // Logique pour les dates (début/fin)
+                let startDate, endDate;
+                if (dateValue.includes(" au ")) {
+                    [startDate, endDate] = dateValue.split(" au ");
+                } else {
+                    startDate = endDate = dateValue;
+                }
 
-    if (daysToSend.length === 0) {
-        showNotification("Veuillez sélectionner au moins un jour.", "warning");
-        return;
-    }
+                // Logique pour les jours de la semaine
+                const selectedDays = Array.from(document.querySelectorAll("#days-selector input:checked")).map(cb => cb.value);
+                if (selectedDays.length === 0 && startDate !== endDate) {
+                    throw new Error("Veuillez sélectionner au moins un jour pour une programmation sur plusieurs jours.");
+                }
 
-    // 4. RÉCUPÉRATION DES 4 MEMBRES D'ÉQUIPAGE
-    const driver1Select = document.getElementById('trip-driver1');
-    const driver2Select = document.getElementById('trip-driver2');
-    const controller1Select = document.getElementById('trip-controller1');
-    const controller2Select = document.getElementById('trip-controller2');
+                // Logique pour l'équipage
+                const driver1Select = document.getElementById('trip-driver1');
+                const driver1Id = driver1Select?.value || null;
+                const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex]?.dataset?.name : null;
+                // ... (idem pour les autres membres de l'équipage)
 
-    const driver1Id = driver1Select?.value || null;
-    const driver1Name = driver1Id ? driver1Select.options[driver1Select.selectedIndex]?.dataset?.name : null;
+                // --- Construction de l'objet de données ---
+                const tripData = {
+                    routeId,
+                    startDate,
+                    endDate,
+                    daysOfWeek: selectedDays, // On envoie les jours sélectionnés
+                    seatCount,
+                    busIdentifier: busIdentifier || null,
+                    highlightBadge: highlightBadge || null,
+                    driver1Id,
+                    driver1Name,
+                    // ... (autres membres de l'équipage)
+                    isNightTrip,
+                    arrivalDaysOffset
+                };
 
-    const driver2Id = driver2Select?.value || null;
-    const driver2Name = driver2Id ? driver2Select.options[driver2Select.selectedIndex]?.dataset?.name : null;
+                // --- Appel API ---
+                const data = await apiCall("/admin/trips", "POST", tripData);
 
-    const controller1Id = controller1Select?.value || null;
-    const controller1Name = controller1Id ? controller1Select.options[controller1Select.selectedIndex]?.dataset?.name : null;
+                if (data && data.success) {
+                    showNotification(data.message || "Voyages programmés !", "success");
+                    e.target.reset(); // Réinitialise le formulaire
+                    toggleNightTripOptions(); // Cache les options de nuit
+                    loadAllTrips(); // Rafraîchit la table des voyages
+                } else {
+                    // Si apiCall renvoie une erreur (gérée en interne), elle sera affichée.
+                    // On peut ajouter un throw pour que ça aille dans le catch.
+                    throw new Error(data?.error || "La création a échoué.");
+                }
 
-    const controller2Id = controller2Select?.value || null;
-    const controller2Name = controller2Id ? controller2Select.options[controller2Select.selectedIndex]?.dataset?.name : null;
+            } catch (error) {
+                // En cas d'erreur DANS CE BLOC (ex: validation des jours), on l'affiche
+                console.error("Erreur dans handleCreateTrips:", error);
+                showNotification(error.message, "error");
 
-    // 5. Construction de l'objet de données
-    const tripData = {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek: daysToSend,
-        seatCount,
-        busIdentifier: busIdentifier || null,
-        highlightBadge: highlightBadge || null,
-        driver1Id,
-        driver1Name,
-        driver2Id,
-        driver2Name,
-        controller1Id,
-        controller1Name,
-        controller2Id,
-        controller2Name,
-        
-        // ✅ VALEURS GARANTIES (jamais undefined ou NaN)
-        isNightTrip: isNightTrip === true,
-        arrivalDaysOffset: arrivalDaysOffset
-    };
-
-    console.log("📤 Envoi des données de création de voyage :", tripData);
-
-    // 6. Appel API
-    const data = await apiCall("/admin/trips", "POST", tripData);
-
-    if (data && data.success) {
-        showNotification(data.message || "Voyages programmés !", "success");
-        e.target.reset();
-        
-        // ✅ Réinitialiser l'affichage des options de nuit
-        const nightOptions = document.getElementById('night-trip-options');
-        if (nightOptions) {
-            nightOptions.style.display = 'none';
+            } finally {
+                // 4. Réactive le bouton, que la création ait réussi ou échoué
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<span>➕</span> Programmer les voyages';
+                }
+            }
         }
-        
-        loadAllTrips();
-    }
-}
-  
+
         // Dans Admin/index.html (section <script>)
-        function manageSeats(tripId) {
+        async function manageSeats(tripId) {
             const trip = allTrips.find((t) => t._id === tripId);
             if (!trip) {
                 showNotification("Erreur : Le voyage n'a pas été trouvé.", "error");
@@ -3845,19 +4328,39 @@ async function handleCreateTrips(e) {
             const modalTitle = document.getElementById("modal-title");
             const modalBody = document.getElementById("modal-body");
 
-            modalTitle.textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to
-                } (${new Date(trip.date).toLocaleDateString("fr-FR")})`;
+            modalTitle.textContent = `Gestion des sièges - ${trip.route.from} → ${trip.route.to}`;
+            modalBody.innerHTML = `<div style="text-align: center; padding: 2rem;">Chargement des sièges...</div>`;
+            document.getElementById("details-modal").classList.add("active");
 
-            let seatMapHTML =
-                '<div class="seat-map-container"><div class="seat-map">';
+            // On appelle la route API que nous venons de modifier
+            const seatData = await apiCall(`/trips/${tripId}/seats`);
 
-            trip.seats.forEach((seat, index) => {
-                const seatClass = `seat seat-${seat.status}`;
+            if (!seatData || !seatData.success) {
+                modalBody.innerHTML = `<p style="color: red;">Erreur lors du chargement des sièges.</p>`;
+                return;
+            }
 
-                // ✅ CORRECTION : ON AJOUTE TOUJOURS L'ATTRIBUT ONCLICK
+            // ========================================================
+            // ✅ DÉBUT DE LA NOUVELLE LOGIQUE D'AFFICHAGE
+            // ========================================================
+
+            let seatMapHTML = '<div class="seat-map-container"><div class="seat-map">';
+
+            seatData.seats.forEach((seat, index) => {
+                let seatClass = `seat seat-${seat.status}`;
+                let title = `Siège ${seat.number}: ${seat.status}`;
+                let passengerNameAttr = '';
+
+                // Si le siège est occupé, on ajoute le nom du passager dans un 'title'
+                // et dans un attribut 'data-' pour une utilisation future.
+                if (seat.status === 'occupied' && seat.passengerName) {
+                    title += ` - ${seat.passengerName}`;
+                    passengerNameAttr = `data-passenger-name="${seat.passengerName}"`;
+                }
+
                 const onClick = `onclick="toggleSeatStatus('${trip._id}', ${seat.number}, '${seat.status}')"`;
 
-                seatMapHTML += `<div class="${seatClass}" ${onClick} title="Siège ${seat.number}: ${seat.status}">${seat.number}</div>`;
+                seatMapHTML += `<div class="${seatClass}" ${onClick} title="${title}" ${passengerNameAttr}>${seat.number}</div>`;
 
                 if ((index + 1) % 2 === 0 && (index + 1) % 4 !== 0) {
                     seatMapHTML += '<div class="seat-aisle"></div>';
@@ -3867,21 +4370,12 @@ async function handleCreateTrips(e) {
             seatMapHTML += `</div></div>`;
 
             modalBody.innerHTML = `
-        <p>Cliquez sur un siège pour changer son statut (Disponible ↔ Bloqué) ou pour libérer un siège occupé.</p>
+        <p>Cliquez sur un siège pour changer son statut. Survolez un siège occupé pour voir le nom du passager.</p>
         ${seatMapHTML}
         <div class="seat-legend">
-            <div class="legend-item">
-                <div class="legend-box" style="background:var(--primary);"></div>
-                <span>Disponible</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background:#ef5350;"></div>
-                <span>Occupé</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background:var(--dark-border);"></div>
-                <span>Bloqué</span>
-            </div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--primary);"></div><span>Disponible</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#ef5350;"></div><span>Occupé</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:var(--dark-border);"></div><span>Bloqué</span></div>
         </div>
     `;
 
@@ -4229,6 +4723,8 @@ async function handleCreateTrips(e) {
                 loadAllTrips(); // Recharger la liste pour voir le voyage disparaître
             }
         }
+
+
 
 
         // ============================================
@@ -4591,15 +5087,15 @@ async function handleCreateTrips(e) {
 
 
         // ============================================
-// ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
-// ============================================
-function openEditMemberModal(memberId, name, phone, role, status) {
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
-    
-    modalTitle.textContent = `Modifier ${name}`;
-    
-    modalBody.innerHTML = `
+        // ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
+        // ============================================
+        function openEditMemberModal(memberId, name, phone, role, status) {
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = `Modifier ${name}`;
+
+            modalBody.innerHTML = `
         <form id="edit-member-form">
             <div class="form-grid">
                 <div class="form-group">
@@ -4636,34 +5132,37 @@ function openEditMemberModal(memberId, name, phone, role, status) {
             </div>
         </form>
     `;
-    
-    document.getElementById('details-modal').classList.add('active');
-    
-    // Gestion soumission
-    document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const updates = {
-            name: document.getElementById('edit-member-name').value,
-            phone: document.getElementById('edit-member-phone').value,
-            status: document.getElementById('edit-member-status').value
-        };
-        
-        const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
-        if(result && result.success) {
-            showNotification("Informations mises à jour !", "success");
-            closeModal();
-            loadAllCrew(); // Rafraîchir la liste
+
+            document.getElementById('details-modal').classList.add('active');
+
+            // Gestion soumission
+            document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const updates = {
+                    name: document.getElementById('edit-member-name').value,
+                    phone: document.getElementById('edit-member-phone').value,
+                    status: document.getElementById('edit-member-status').value
+                };
+
+                const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
+                if (result && result.success) {
+                    showNotification("Informations mises à jour !", "success");
+                    closeModal();
+                    loadAllCrew(); // Rafraîchir la liste
+                }
+            });
         }
-    });
-}
         /**
          * Ouvre la modale d'ajout d'un membre
          */
+        // DANS admin/index.html, REMPLACEZ la fonction openAddCrewModal
+
         function openAddCrewModal() {
             const modalTitle = document.getElementById('modal-title');
             const modalBody = document.getElementById('modal-body');
 
             modalTitle.textContent = "Ajouter un membre du personnel";
+
             modalBody.innerHTML = `
         <form id="add-crew-form">
             <div class="form-grid">
@@ -4676,25 +5175,53 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                     <label for="crew-role" class="form-label">Poste *</label>
                     <select id="crew-role" class="form-control" required>
                         <option value="">-- Choisir --</option>
+                        <option value="Agent de réservation">🎟️ Agent de réservation</option>
+                        <option value="Manager">💼 Manager</option>
+                        <option value="Super Admin">👑 Super Admin</option>
                         <option value="Chauffeur">🚗 Chauffeur</option>
                         <option value="Contrôleur">🎫 Contrôleur</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="crew-phone" class="form-label">Téléphone *</label>
-                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567" required>
+                    <label for="crew-phone" class="form-label">Téléphone</label> <!-- Rendue optionnelle -->
+                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567">
                 </div>
 
                 <div class="form-group">
                     <label for="crew-status" class="form-label">Statut *</label>
                     <select id="crew-status" class="form-control" required>
-                        <option value="Actif">✅ Actif</option>
+                        <option value="Actif">✅ Actif (peut se connecter)</option>
+                        <option value="Inactif">❌ Inactif (compte bloqué)</option>
                         <option value="En congé">🏖️ En congé</option>
-                        <option value="Inactif">❌ Inactif</option>
                     </select>
                 </div>
             </div>
+
+            <!-- ======================================================== -->
+            <!-- ✅ AJOUT DES CHAMPS DE LOGIN ET PERMISSIONS               -->
+            <!-- ======================================================== -->
+            <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Accès au Dashboard</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Nom d'utilisateur (login) *</label>
+                    <input type="text" id="crew-username" class="form-control" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mot de passe (min. 6 caractères) *</label>
+                    <input type="password" id="crew-password" class="form-control" required autocomplete="new-password">
+                </div>
+            </div>
+
+            <div class="form-group form-group-full" style="margin-top: 1rem;">
+                <label class="form-label">Permissions de l'utilisateur</label>
+                <div id="permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <!-- Les cases à cocher seront injectées ici par JavaScript -->
+                </div>
+            </div>
+            <!-- ======================================================== -->
 
             <div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(115, 215, 0, 0.1); border-radius: 8px;">
                 <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
@@ -4709,38 +5236,73 @@ function openEditMemberModal(memberId, name, phone, role, status) {
         </form>
     `;
 
+            // On appelle la fonction pour remplir les cases à cocher
+            populatePermissionsCheckboxes('permissions-container');
+
+            // On attache l'écouteur de soumission au formulaire
             document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
+
+            // On affiche la modale
             document.getElementById('details-modal').classList.add('active');
         }
-
         /**
          * Gère l'ajout d'un membre
          */
+        // DANS admin/index.html, REMPLACEZ la fonction handleAddCrew
+
         async function handleAddCrew(e) {
             e.preventDefault();
 
+            // ========================================================
+            // ✅ DÉBUT DE LA MISE À JOUR
+            // ========================================================
+
+            // Récupérer les permissions cochées dans le conteneur
+            const permissions = Array.from(document.querySelectorAll('#permissions-container input[name="permission"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            // On récupère toutes les valeurs du formulaire, y compris les nouvelles
             const newMember = {
                 name: document.getElementById('crew-name').value.trim(),
                 role: document.getElementById('crew-role').value,
                 phone: document.getElementById('crew-phone').value.trim(),
-                status: document.getElementById('crew-status').value
+                status: document.getElementById('crew-status').value,
+                username: document.getElementById('crew-username').value.trim(),
+                password: document.getElementById('crew-password').value, // On ne trim() pas le mot de passe
+                permissions: permissions
             };
 
+            // Ajout de validations côté client pour une meilleure expérience
+            if (!newMember.name || !newMember.role || !newMember.username || !newMember.password) {
+                showNotification("Veuillez remplir tous les champs obligatoires (*).", "warning");
+                return;
+            }
+
+            if (newMember.password.length < 6) {
+                showNotification("Le mot de passe doit contenir au moins 6 caractères.", "warning");
+                return;
+            }
+
+            // ========================================================
+            // ✅ FIN DE LA MISE À JOUR
+            // ========================================================
+
             try {
+                // L'appel API reste le même, mais on envoie maintenant l'objet 'newMember' enrichi
                 const data = await apiCall('/admin/crew', 'POST', newMember);
 
                 if (data && data.success) {
-                    showNotification(data.message, 'success');
+                    showNotification(data.message || "Utilisateur créé avec succès !", 'success');
                     closeModal();
                     loadAllCrew(); // Recharger la liste
                 }
+                // Note: la fonction apiCall gère déjà l'affichage des erreurs du serveur
 
             } catch (error) {
                 console.error('❌ Erreur ajout membre:', error);
                 showNotification('Erreur lors de l\'ajout', 'error');
             }
         }
-
         /**
          * Ouvre la modale de modification
          */
@@ -5245,6 +5807,12 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                     loadAllCrew();
                     break;
 
+                // ✅ AJOUTER CE NOUVEAU CAS
+                case 'agencies':
+                    loadAllAgencies();
+                    break;
+
+
                 default:
                     // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
                     if (tabName !== 'settings') {
@@ -5321,29 +5889,7 @@ function openEditMemberModal(memberId, name, phone, role, status) {
             }
         }
 
-        async function saveSettings(e) {
-            e.preventDefault();
-
-            // ✅ CORRECTION : On s'assure que c'est bien des nombres
-    const updates = {
-        secondReportFee: parseInt(document.getElementById('setting-second-fee').value) || 0,
-        thirdReportFee: parseInt(document.getElementById('setting-third-fee').value) || 0,
-        maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value) || 0,
-        minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value) || 0
-    };
-
-            try {
-                const data = await apiCall('/admin/settings/report', 'PATCH', updates);
-
-                if (data && data.success) {
-                    showNotification('✅ Paramètres mis à jour avec succès !', 'success');
-                }
-
-            } catch (error) {
-                console.error('❌ Erreur sauvegarde paramètres:', error);
-                showNotification('Erreur lors de la sauvegarde', 'error');
-            }
-        }
+        // DANS admin/index.html, dans <script>
 
         function setupEventListeners() {
             // --- Login & Logout (INCHANGÉ) ---
@@ -5355,7 +5901,9 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                 link.addEventListener("click", (e) => {
                     e.preventDefault();
                     const tabName = link.getAttribute("data-tab");
-                    switchTab(tabName);
+                    if (tabName) { // Sécurité pour les liens qui n'ont pas de data-tab
+                        switchTab(tabName);
+                    }
                 });
             });
 
@@ -5403,63 +5951,21 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                 settingsForm.addEventListener("submit", saveSettings);
             }
 
-            // ===================================
-            // ✅ AJOUT DE L'ÉCOUTEUR MANQUANT
-            // ===================================
+            // Écouteur pour le formulaire de création de destination
             const destForm = document.getElementById("destination-creation-form");
             if (destForm) {
                 destForm.addEventListener("submit", handleCreateDestination);
             }
-            // ===================================
+
+            // ========================================================
+            // ✅ LA CORRECTION EST ICI
+            // ========================================================
+            // On appelle la fonction qui rend le formulaire de notification interactif.
+            if (typeof setupNotificationFormListeners === 'function') {
+                setupNotificationFormListeners();
+            }
+            // ========================================================
         }
-        document.addEventListener("DOMContentLoaded", async () => {
-            // 1. Vérification du token et affichage initial (votre code est correct)
-            if (await verifyToken()) {
-                showDashboard();
-                loadAdminData(); // Charge les réservations par défaut
-                startInactivityDetection();
-            } else {
-                localStorage.removeItem("admin_token");
-                showLogin();
-            }
-
-            // 2. Initialisation des écouteurs d'événements (votre code est correct)
-            setupEventListeners();
-            buildDaysSelector();
-
-            // 3. Initialisation des calendriers Flatpickr
-
-            // Calendrier pour la création de voyages (votre code est correct)
-            flatpickr("#trip-dates", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "fr",
-                minDate: "today",
-            });
-
-            // ===================================
-            // ✅ AJOUT POUR LE NOUVEAU FILTRE
-            // ===================================
-            // Calendrier pour filtrer les voyages programmés
-            const tripFilterDateInput = document.getElementById('trip-filter-date');
-            if (tripFilterDateInput) {
-                flatpickr(tripFilterDateInput, {
-                    dateFormat: "Y-m-d",
-                    locale: "fr",
-                    allowInput: true, // Permet de vider le champ
-                    onChange: function (selectedDates, dateStr, instance) {
-                        // On recharge la liste des voyages quand la date change
-                        if (typeof loadAllTrips === 'function') {
-                            loadAllTrips();
-                        }
-                    }
-                });
-            }
-
-
-
-            // ===================================
-        });
 
 
 
@@ -5951,6 +6457,17 @@ function openEditMemberModal(memberId, name, phone, role, status) {
         }
 
 
+
+        function getChildPrice(adultPrice) {
+            const rules = appRules.ticketing;
+            if (rules.childPricingMode === 'fixed') {
+                return rules.childFixedPrice;
+            } else { // 'percentage'
+                const discount = rules.childDiscountPercentage / 100;
+                return adultPrice * (1 - discount);
+            }
+        }
+
         // DANS Admin/index.html, dans <script>
 
         function showAdminConfirm({ title, message, icon = '⚠️', iconClass = 'warning', confirmText = 'Confirmer', cancelText = 'Annuler', confirmClass = 'btn-danger' }) {
@@ -6165,77 +6682,73 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
             const createRowHTML = (req) => {
                 const passenger = req.passengers?.[0] || { name: 'N/A', phone: 'N/A' };
-                // Sécurité si reportRequest est manquant (cas rares)
                 const reportReq = req.reportRequest || {};
                 const targetTrip = reportReq.targetTrip || {};
 
                 let statusBadge = '', fromHTML = '', toHTML = '', paymentHTML = '', requestedDate = '', actionsHTML = '';
 
-                // --- CAS 1 : EN ATTENTE ---
+                // --- CAS 1 : EN ATTENTE --- (INCHANGÉ)
                 if (req.status === 'En attente de report') {
                     statusBadge = '<span class="badge badge-warning">En attente</span>';
-
-                    // Trajets
                     fromHTML = `${req.route.from} → ${req.route.to}<br><small>📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</small>`;
                     toHTML = `${targetTrip.route?.from || '?'} → ${targetTrip.route?.to || '?'}<br><small>📅 ${targetTrip.date ? new Date(targetTrip.date).toLocaleDateString('fr-FR') : '?'}</small>`;
-
-                    // Paiement
                     const cost = reportReq.cost?.totalCost || 0;
                     if (cost > 0) {
                         const method = reportReq.paymentMethod || 'N/A';
                         const proof = method === 'AGENCY' ? (reportReq.agencyPaymentCode || 'Code Agence') : (reportReq.transactionId || 'Non reçu');
                         const proofClass = !reportReq.transactionId && method !== 'AGENCY' ? 'text-danger' : 'text-success';
-
                         paymentHTML = `
                     <div style="font-size: 0.85rem;">
                         <strong style="color: #ffa726;">À PAYER: ${formatPrice(cost)} FCFA</strong><br>
                         <span class="badge badge-gray" style="font-size: 0.7em;">${method}</span>
                         <div class="${proofClass}" style="margin-top: 4px; font-weight: bold; font-family: monospace;">${proof}</div>
-                    </div>
-                `;
+                    </div>`;
                     } else {
                         paymentHTML = `<span class="badge badge-success">Gratuit</span>`;
                     }
-
                     requestedDate = reportReq.requestedAt ? new Date(reportReq.requestedAt).toLocaleString('fr-FR') : 'N/A';
-
-                    // ✅ BOUTONS D'ACTION (Toujours visibles pour ce statut)
-                    // On passe une chaîne vide si pas de preuve, l'admin pourra valider manuellement
                     const proofArg = (reportReq.paymentMethod === 'AGENCY') ? 'AGENCY_CODE' : (reportReq.transactionId || '');
-
                     actionsHTML = `
                 <div class="actions-cell">
                     <button class="btn btn-sm btn-success" onclick="approveReportRequest('${req.bookingNumber}', '${proofArg}')" title="Valider le report">✅ Valider</button>
                     <button class="btn btn-sm btn-danger" onclick="rejectReportRequest('${req.bookingNumber}')" title="Refuser">❌</button>
-                </div>
-            `;
+                </div>`;
                 }
 
                 // --- CAS 2 : DÉJÀ REPORTÉ (Obsolète) ---
                 else if (req.status === 'Reporté') {
                     statusBadge = '<span class="badge badge-gray">Reporté</span>';
+
+                    // ========================================================
+                    // ✅ DÉBUT DE LA MISE À JOUR
+                    // ========================================================
+                    // On affiche qui a approuvé le report sur l'ancien billet
+                    if (req.reportRequest?.approvedBy) {
+                        statusBadge += `
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        Approuvé par: <strong style="color: var(--primary);">${req.reportRequest.approvedBy}</strong>
+                    </div>`;
+                    }
+                    // ========================================================
+                    // ✅ FIN DE LA MISE À JOUR
+                    // ========================================================
+
                     fromHTML = `<span style="text-decoration: line-through;">${req.route.from} → ${req.route.to}</span>`;
-                    toHTML = `<small>Remplacé par <strong style="color: white;">${req.replacementBookingNumber || '...'}</strong></small>`;
+                    toHTML = `<small>Remplacé par <strong style="color: white; cursor: pointer;" onclick="viewReportDetails('${req.replacementBookingNumber}')">${req.replacementBookingNumber || '...'}</strong></small>`;
                     paymentHTML = `-`;
                     requestedDate = req.reportedAt ? new Date(req.reportedAt).toLocaleDateString('fr-FR') : '-';
-                    actionsHTML = `<span>👁️</span>`;
+                    actionsHTML = `<span title="Report traité">✓</span>`;
                 }
 
-                // --- CAS 3 : NOUVEAU BILLET (Validé) ---
+                // --- CAS 3 : NOUVEAU BILLET (Validé) --- (INCHANGÉ, la logique était déjà dans le cas 2)
                 else if (req.originalReservation) {
                     statusBadge = '<span class="badge badge-success">Nouveau Billet</span>';
-                    // Récupérer l'historique du dernier report
                     const history = req.reportHistory && req.reportHistory.length > 0 ? req.reportHistory[req.reportHistory.length - 1] : {};
-
                     fromHTML = `<small class="text-muted">Ancien: ${new Date(history.from?.date).toLocaleDateString('fr-FR') || '?'}</small>`;
                     toHTML = `${req.route.from} → ${req.route.to}<br><strong style="color: #73d700;">📅 ${new Date(req.date).toLocaleDateString('fr-FR')}</strong>`;
-
-                    paymentHTML = history.totalCost > 0
-                        ? `<strong>${formatPrice(history.totalCost)} FCFA</strong><br><span class="text-success">Payé</span>`
-                        : `<span class="badge badge-gray">Gratuit</span>`;
-
+                    paymentHTML = history.totalCost > 0 ? `<strong>${formatPrice(history.totalCost)} FCFA</strong><br><span class="text-success">Payé</span>` : `<span class="badge badge-gray">Gratuit</span>`;
                     requestedDate = new Date(req.createdAt).toLocaleDateString('fr-FR');
-                    actionsHTML = `<span>✓</span>`;
+                    actionsHTML = `<span>-</span>`;
                 }
 
                 return `
@@ -6247,11 +6760,12 @@ function openEditMemberModal(memberId, name, phone, role, status) {
                 <td>${paymentHTML}</td>
                 <td class="text-xs">${requestedDate}</td>
                 <td>${actionsHTML}</td>
-            </tr>
-        `;
+            </tr>`;
             };
 
-            if (pending.length > 0) htmlContent += pending.map(createRowHTML).join('');
+            if (pending.length > 0) {
+                htmlContent += pending.map(createRowHTML).join('');
+            }
 
             if (processed.length > 0) {
                 htmlContent += `<tr><td colspan="7" style="background: rgba(255, 255, 255, 0.05); text-align: center; font-weight: bold; padding: 8px; letter-spacing: 1px;">HISTORIQUE</td></tr>`;
@@ -6261,6 +6775,20 @@ function openEditMemberModal(memberId, name, phone, role, status) {
             tbody.innerHTML = htmlContent;
         }
 
+        // Nouvelle fonction pour voir les détails du nouveau billet depuis l'ancien
+        function viewReportDetails(bookingNumber) {
+            // On simule un clic sur l'onglet des réservations
+            switchTab('reservations');
+
+            // On met le numéro du nouveau billet dans la barre de recherche et on filtre
+            setTimeout(() => {
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.value = bookingNumber;
+                    applyFilters();
+                }
+            }, 100); // Petit délai pour laisser le temps à l'onglet de se charger
+        }
         // ============================================
         // ✅ VALIDATION REPORT (CORRIGÉE)
         // ============================================
@@ -6370,11 +6898,126 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
 
         async function openSettingsModal() {
-            // D'abord, charger les données
-            await loadSettings();
-            // Ensuite, afficher la modale
+            // On appelle les deux fonctions de chargement en parallèle
+            await Promise.all([
+                loadReportSettings(),   // Renommée pour plus de clarté
+                loadTicketingSettings() // La nouvelle fonction
+            ]);
+            // Ensuite, on affiche la modale
             document.getElementById('settings-modal').classList.add('active');
         }
+
+
+        // Votre ancienne fonction 'loadSettings' est renommée et ciblée
+        async function loadReportSettings() {
+            try {
+                const data = await apiCall('/admin/settings/report');
+                if (data && data.success) {
+                    const settings = data.settings;
+                    document.getElementById('setting-second-fee').value = settings.secondReportFee;
+                    document.getElementById('setting-third-fee').value = settings.thirdReportFee;
+                    document.getElementById('setting-max-reports').value = settings.maxReportsAllowed;
+                    document.getElementById('setting-min-hours').value = settings.minHoursBeforeDeparture;
+                }
+            } catch (error) {
+                showNotification('Impossible de charger les paramètres de report', 'error');
+            }
+        }
+
+        // On crée la nouvelle fonction pour charger les règles de tarification
+        // DANS admin/index.html, dans <script>
+
+        async function loadTicketingSettings() {
+            try {
+                const data = await apiCall('/admin/settings/ticketing-rules');
+                if (data && data.success) {
+                    const settings = data.settings;
+
+                    // On vérifie que les éléments existent avant de leur assigner une valeur
+                    const maxAgeInput = document.getElementById('setting-child-max-age');
+                    if (maxAgeInput) maxAgeInput.value = settings.childMaxAge;
+
+                    const discountInput = document.getElementById('setting-child-discount');
+                    if (discountInput) discountInput.value = settings.childDiscountPercentage;
+
+                    const priceInput = document.getElementById('setting-child-price');
+                    if (priceInput) priceInput.value = settings.childFixedPrice;
+
+                    // On coche le bon bouton radio en fonction de la valeur récupérée
+                    const modeRadio = document.querySelector(`input[name="child-pricing-mode"][value="${settings.childPricingMode}"]`);
+                    if (modeRadio) {
+                        modeRadio.checked = true;
+                    }
+
+                    // On appelle la fonction pour afficher/masquer les champs correspondants
+                    toggleChildPricingFields();
+                }
+            } catch (error) {
+                // ===============================================
+                // ✅ BLOC CATCH AJOUTÉ POUR CORRIGER LA SYNTAXE
+                // ===============================================
+                console.error('❌ Erreur lors du chargement des règles de tarification:', error);
+                showNotification('Impossible de charger les règles de tarification.', 'error');
+            }
+        }
+
+
+        // DANS admin/index.html, dans <script>
+
+        // On remplace l'ancienne fonction 'saveSettings' par celle-ci
+        async function saveAllSettings(e) {
+            e.preventDefault();
+            showNotification("Sauvegarde des paramètres...", "info");
+
+            // On prépare les données pour les deux endpoints
+            const reportUpdates = {
+                secondReportFee: parseInt(document.getElementById('setting-second-fee').value) || 0,
+                thirdReportFee: parseInt(document.getElementById('setting-third-fee').value) || 0,
+                maxReportsAllowed: parseInt(document.getElementById('setting-max-reports').value) || 0,
+                minHoursBeforeDeparture: parseInt(document.getElementById('setting-min-hours').value) || 0
+            };
+
+            const ticketingUpdates = {
+                childMaxAge: parseInt(document.getElementById('setting-child-max-age').value) || 0,
+                childPricingMode: document.querySelector('input[name="child-pricing-mode"]:checked').value,
+                childFixedPrice: parseInt(document.getElementById('setting-child-price').value) || 0,
+                childDiscountPercentage: parseInt(document.getElementById('setting-child-discount').value) || 0
+            };
+
+            try {
+                // On lance les deux appels de sauvegarde en parallèle
+                const [reportResult, ticketingResult] = await Promise.all([
+                    apiCall('/admin/settings/report', 'PATCH', reportUpdates),
+                    apiCall('/admin/settings/ticketing-rules', 'PATCH', ticketingUpdates)
+                ]);
+
+                // Si les deux ont réussi
+                if (reportResult?.success && ticketingResult?.success) {
+                    showNotification('✅ Tous les paramètres ont été mis à jour avec succès !', 'success');
+                    closeSettingsModal();
+                } else {
+                    // Gérer le cas où l'un des deux échoue
+                    showNotification("Erreur lors de la sauvegarde d'une partie des paramètres.", "error");
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur sauvegarde des paramètres:', error);
+                showNotification('Erreur globale lors de la sauvegarde.', 'error');
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         function closeSettingsModal() {
             document.getElementById('settings-modal').classList.remove('active');
@@ -6386,19 +7029,20 @@ function openEditMemberModal(memberId, name, phone, role, status) {
 
 
         // Fonction pour afficher/masquer les options de trajet de nuit
-function toggleNightTripOptions() {
-    const isNightTrip = document.querySelector('input[name="trip-type-day-night"]:checked')?.value === 'night';
-    const nightOptions = document.getElementById('night-trip-options');
-    
-    if (nightOptions) {
-        nightOptions.style.display = isNightTrip ? 'block' : 'none';
-    }
-}
+        // Fonction pour afficher/masquer les options de trajet de nuit
+        function toggleNightTripOptions() {
+            const isNightTrip = document.getElementById('is-night-trip')?.checked || false;
+            const nightOptions = document.getElementById('night-trip-options');
 
-// Initialiser au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    toggleNightTripOptions();
-});
+            if (nightOptions) {
+                nightOptions.style.display = isNightTrip ? 'block' : 'none';
+            }
+        }
+
+        // Initialiser au chargement de la page
+        document.addEventListener('DOMContentLoaded', function () {
+            toggleNightTripOptions();
+        });
 
 
         // ============================================
@@ -6708,6 +7352,209 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 1000);
 
+
+
+
+        function toggleChildPricingFields() {
+            const mode = document.querySelector('input[name="child-pricing-mode"]:checked').value;
+            document.getElementById('child-percentage-group').style.display = (mode === 'percentage') ? 'block' : 'none';
+            document.getElementById('child-fixed-price-group').style.display = (mode === 'fixed') ? 'block' : 'none';
+        }
+
+
+
+        // DANS admin/index.html, dans <script>
+
+        /**
+         * Gère la soumission du formulaire de notification.
+         * La logique d'envoi reste la même.
+         */
+        async function handleSendNotification(event) {
+            event.preventDefault();
+
+            const targetType = document.getElementById('notification-target-type').value;
+            const targetId = document.getElementById('notification-target-id').value.trim();
+            const title = document.getElementById('notification-title').value.trim();
+            const body = document.getElementById('notification-body').value.trim();
+
+            if (!title || !body) {
+                showNotification("Le titre et le message sont requis.", "warning");
+                return;
+            }
+
+            let endpoint = '';
+            const requestBody = { title, body };
+
+            switch (targetType) {
+                case 'all':
+                    endpoint = '/admin/notifications/send-to-all';
+                    break;
+                case 'trip':
+                    if (!targetId) {
+                        showNotification("L'ID du voyage est requis.", "warning");
+                        return;
+                    }
+                    endpoint = `/admin/notifications/send-to-trip/${targetId}`;
+                    break;
+                case 'booking':
+                    if (!targetId) {
+                        showNotification("Le numéro de réservation est requis.", "warning");
+                        return;
+                    }
+                    endpoint = `/admin/notifications/send-to-booking/${targetId}`;
+                    break;
+                default:
+                    showNotification("Type de cible invalide.", "error");
+                    return;
+            }
+
+            showNotification("Envoi des notifications en cours...", "info");
+            const data = await apiCall(endpoint, 'POST', requestBody);
+
+            if (data && data.success) {
+                showNotification(data.message || "Notifications envoyées avec succès !", 'success');
+
+                // Réinitialiser le formulaire et l'aperçu
+                document.getElementById('notification-form').reset();
+                document.getElementById('target-id-group').style.display = 'none';
+                updateNotificationPreview(); // Remet l'aperçu à zéro
+            }
+        }
+
+        /**
+         * 
+         * Met à jour l'aperçu de la notification en temps réel.
+         */
+        function updateNotificationPreview() {
+            const titleInput = document.getElementById('notification-title');
+            const bodyInput = document.getElementById('notification-body');
+
+            const previewTitle = document.getElementById('preview-title');
+            const previewBody = document.getElementById('preview-body');
+
+            // Met à jour le titre, avec un texte par défaut s'il est vide
+            previewTitle.textContent = titleInput.value.trim() || 'Titre de la notification';
+
+            // Met à jour le corps, avec un texte par défaut s'il est vide
+            previewBody.textContent = bodyInput.value.trim() || 'Le contenu de votre message apparaîtra ici...';
+        }
+
+        /**
+         * Attache les écouteurs d'événements au formulaire et à l'aperçu.
+         */
+        function setupNotificationFormListeners() {
+            const form = document.getElementById('notification-form');
+            if (!form) return;
+
+            // Soumission du formulaire
+            form.addEventListener('submit', handleSendNotification);
+
+            // Affichage/Masquage du champ d'ID cible
+            document.getElementById('notification-target-type').addEventListener('change', (e) => {
+                const targetIdGroup = document.getElementById('target-id-group');
+                const targetIdInput = document.getElementById('notification-target-id');
+
+                if (e.target.value === 'all') {
+                    targetIdGroup.style.display = 'none';
+                } else {
+                    targetIdGroup.style.display = 'block';
+                    targetIdInput.placeholder = (e.target.value === 'trip') ? "ID du voyage (ex: 60f8...)" : "N° de réservation (ex: EB-...)";
+                }
+            });
+
+            // Mise à jour de l'aperçu en temps réel
+            document.getElementById('notification-title').addEventListener('input', updateNotificationPreview);
+            document.getElementById('notification-body').addEventListener('input', updateNotificationPreview);
+        }
+
+
+
+
+
+
+
+// --- GESTION DES AGENCES ---
+
+let allAgencies = []; // Variable globale pour stocker les agences
+
+/**
+ * Charge toutes les agences depuis le backend.
+ */
+async function loadAllAgencies() {
+    const data = await apiCall('/admin/agencies');
+    if (data && data.success) {
+        allAgencies = data.agencies;
+        renderAgenciesTable(allAgencies);
+    }
+}
+
+/**
+ * Affiche les agences dans le tableau HTML.
+ * @param {Array} agencies - La liste des agences à afficher.
+ */
+function renderAgenciesTable(agencies) {
+    const tbody = document.getElementById('agencies-table-body');
+    if (!tbody) return;
+
+    if (agencies.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = agencies.map(agency => {
+        const statusBadge = agency.status === 'active' 
+            ? `<span class="badge badge-success">Actif</span>`
+            : `<span class="badge badge-gray">Inactif</span>`;
+
+        // TODO: Remplacer "Non assigné" par le vrai nom du manager
+        const managerName = "Non assigné"; 
+
+        return `
+            <tr>
+                <td>
+                    <strong class="font-bold">${agency.name}</strong><br>
+                    <small class="text-muted">${agency.address || 'Adresse non spécifiée'}</small>
+                </td>
+                <td>${agency.city}</td>
+                <td>${managerName}</td>
+                <td class="font-bold text-center">${agency.employeeCount || 0}</td>
+                <td>${statusBadge}</td>
+                <td class="actions-cell">
+                    <button class="btn btn-icon btn-ghost" onclick="openAgencyModal('${agency._id}')" title="Modifier">✏️</button>
+                    <button class="btn btn-icon btn-danger" onclick="deleteAgency('${agency._id}')" title="Supprimer">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+/**
+ * Ouvre la modale pour créer ou modifier une agence.
+ * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+ */
+function openAgencyModal(agencyId = null) {
+    if (agencyId) {
+        console.log("Ouverture de la modale pour MODIFIER l'agence :", agencyId);
+        // TODO: Logique de modification
+        alert("Fonctionnalité 'Modifier l'agence' à implémenter.");
+    } else {
+        console.log("Ouverture de la modale pour CRÉER une agence.");
+        // TODO: Logique de création
+        alert("Fonctionnalité 'Créer une agence' à implémenter.");
+    }
+}
+
+/**
+ * Supprime une agence après confirmation.
+ * @param {string} agencyId - L'ID de l'agence à supprimer.
+ */
+function deleteAgency(agencyId) {
+    console.log("Demande de suppression pour l'agence :", agencyId);
+    // TODO: Logique de suppression avec modale de confirmation
+    alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
+}
+
     </script>
 
 
@@ -6771,49 +7618,97 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- ============================================
          ⚙️ MODALE DES PARAMÈTRES (NOUVELLE)
          ============================================ -->
-   <!-- ============================================
+    <!-- ============================================
      ⚙️ MODALE DES PARAMÈTRES
      ============================================ -->
-<div id="settings-modal" class="modal">
-    <div class="modal-dialog" style="max-width: 500px;">
-        <div class="modal-header">
-            <h2 class="modal-title">Paramètres du Système</h2>
-            <button class="modal-close" onclick="document.getElementById('settings-modal').classList.remove('active')">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-            <!-- ✅ LE FORMULAIRE APPELLE BIEN saveSettings -->
-            <form id="settings-form" onsubmit="saveSettings(event)">
-                
-                <h4 style="color: var(--primary); margin-bottom: 20px;">Configuration des Reports</h4>
-                
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="form-group">
-                        <label class="form-label">Frais 2ème report (FCFA)</label>
-                        <input type="number" id="setting-second-fee" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Frais 3ème report (FCFA)</label>
-                        <input type="number" id="setting-third-fee" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Max reports par réservation</label>
-                        <input type="number" id="setting-max-reports" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Délai minimum avant départ (heures)</label>
-                        <input type="number" id="setting-min-hours" class="form-control">
-                    </div>
-                </div>
-                
-                <div style="text-align: right; margin-top: 2rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
-                    <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                </div>
+    <!-- DANS admin/index.html, trouvez la modale #settings-modal -->
 
-            </form>
+    <div id="settings-modal" class="modal">
+        <div class="modal-dialog" style="max-width: 600px;"> <!-- J'ai un peu élargi la modale -->
+            <div class="modal-header">
+                <h2 class="modal-title">⚙️ Paramètres du Système</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="settings-form" onsubmit="saveAllSettings(event)">
+
+                    <!-- Section existante pour les Reports -->
+                    <h4
+                        style="color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--dark-border); padding-bottom: 10px;">
+                        Configuration des Reports</h4>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="form-group">
+                            <label class="form-label">Frais 2ème report (FCFA)</label>
+                            <input type="number" id="setting-second-fee" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Frais 3ème report (FCFA)</label>
+                            <input type="number" id="setting-third-fee" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max reports par réservation</label>
+                            <input type="number" id="setting-max-reports" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Délai minimum avant départ (heures)</label>
+                            <input type="number" id="setting-min-hours" class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- ======================================================== -->
+                    <!-- ✅ NOUVELLE SECTION POUR LA TARIFICATION ENFANT          -->
+                    <!-- ======================================================== -->
+                    <hr style="border-color: var(--dark-border); margin: 2rem 0;">
+                    <h4
+                        style="color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--dark-border); padding-bottom: 10px;">
+                        Règles de Tarification</h4>
+                    <div class="form-group">
+                        <label class="form-label">Mode de calcul du tarif enfant</label>
+                        <div style="display: flex; gap: 20px;">
+                            <label>
+                                <input type="radio" name="child-pricing-mode" value="percentage" checked
+                                    onchange="toggleChildPricingFields()">
+                                Pourcentage de réduction
+                            </label>
+                            <label>
+                                <input type="radio" name="child-pricing-mode" value="fixed"
+                                    onchange="toggleChildPricingFields()">
+                                Prix Fixe
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="form-group">
+                            <label class="form-label">Âge maximum pour tarif enfant</label>
+                            <input type="number" id="setting-child-max-age" class="form-control" placeholder="Ex: 6">
+                        </div>
+
+                        <!-- Champ Pourcentage (visible par défaut) -->
+                        <div class="form-group" id="child-percentage-group">
+                            <label class="form-label">Réduction enfant (en %)</label>
+                            <input type="number" id="setting-child-discount" class="form-control" placeholder="Ex: 50"
+                                min="0" max="100">
+                        </div>
+
+                        <!-- Champ Prix Fixe (caché par défaut) -->
+                        <div class="form-group" id="child-fixed-price-group" style="display: none;">
+                            <label class="form-label">Prix fixe du billet enfant (FCFA)</label>
+                            <input type="number" id="setting-child-price" class="form-control" placeholder="Ex: 5000">
+                        </div>
+                    </div>
+                    <!-- ======================================================== -->
+
+                    <div
+                        style="text-align: right; margin-top: 2rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
+                        <button type="submit" class="btn btn-primary">💾 Enregistrer tous les Paramètres</button>
+                    </div>
+
+                </form>
+            </div>
         </div>
     </div>
-</div>
 </body> <!-- Votre balise de fermeture </body> -->
 
 </html>
