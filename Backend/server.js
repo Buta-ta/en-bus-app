@@ -2460,14 +2460,16 @@ app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, re
 // --- GESTION DES AGENCES ---
 
 // [GET] Lister toutes les agences pour l'admin
+// DANS server.js
+
+// [GET] Lister toutes les agences pour l'admin
 app.get("/api/admin/agencies", authenticateToken, async (req, res) => {
     try {
-        // On récupère toutes les agences, triées par ville puis par nom
-        const agencies = await agenciesCollection.find({}).sort({ city: 1, name: 1 }).toArray();
+        const db = getDb(); // On récupère l'instance de la DB
+        const agencies = await db.collection('agencies').find({}).sort({ city: 1, name: 1 }).toArray();
         
-        // Pour chaque agence, on compte le nombre d'employés qui lui sont affectés
         for (const agency of agencies) {
-            agency.employeeCount = await crewCollection.countDocuments({ agencyId: agency._id });
+            agency.employeeCount = await db.collection('crew').countDocuments({ agencyId: agency._id });
         }
         
         res.json({ success: true, agencies });
@@ -2476,7 +2478,6 @@ app.get("/api/admin/agencies", authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 
 // DANS server.js (ajoutez-le avec les autres routes GET publiques)
 
@@ -2990,10 +2991,13 @@ app.post("/api/reviews", authenticateToken, [
 // DANS server.js (avec les routes POST admin)
 
 // [POST] Créer une nouvelle agence
+// DANS server.js
+
 app.post("/api/admin/agencies", authenticateToken, [
     body('name').notEmpty().withMessage("Le nom de l'agence est requis."),
     body('city').notEmpty().withMessage("La ville est requise."),
     body('address').notEmpty().withMessage("L'adresse est requise."),
+    body('managerId').optional({ nullable: true }).isMongoId().withMessage("L'ID du manager est invalide."),
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3002,8 +3006,12 @@ app.post("/api/admin/agencies", authenticateToken, [
 
     try {
         const { name, city, address, phone, openingHours, managerId, coords } = req.body;
+        
+        // On récupère l'instance de la DB
+        const db = getDb(); 
+        const agenciesCollection = db.collection('agencies');
 
-        // On vérifie si une agence avec le même nom existe déjà
+        // On vérifie si une agence avec le même nom existe déjà pour éviter les doublons
         const existingAgency = await agenciesCollection.findOne({ name });
         if (existingAgency) {
             return res.status(409).json({ error: "Une agence avec ce nom existe déjà." });
@@ -3023,6 +3031,7 @@ app.post("/api/admin/agencies", authenticateToken, [
         };
 
         await agenciesCollection.insertOne(newAgency);
+        
         res.status(201).json({ success: true, message: "Agence créée avec succès." });
 
     } catch (error) {
@@ -3490,7 +3499,7 @@ app.patch("/api/admin/trips/:tripId/crew", authenticateToken, async (req, res) =
 
 // [PATCH] Affecter ou détacher une agence pour un employé
 app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
-    // L'agencyId est optionnel (pour pouvoir détacher un employé)
+    // L'agencyId est optionnel (nullable: true) pour permettre la désaffectation (envoyer null)
     body('agencyId').optional({ nullable: true }).isMongoId().withMessage("ID d'agence invalide"),
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -3501,25 +3510,38 @@ app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
     const { crewId } = req.params;
     const { agencyId } = req.body;
 
+    // Vérification de l'ID de l'employé
+    if (!ObjectId.isValid(crewId)) {
+        return res.status(400).json({ error: "ID d'employé invalide." });
+    }
+
     try {
         let agencyName = null;
         let finalAgencyId = null;
+        
+        // On récupère l'instance de la DB
+        const db = getDb();
 
-        // Si un agencyId est fourni, on l'affecte
+        // Si un ID d'agence est fourni, on va chercher ses détails
         if (agencyId) {
-            const agency = await agenciesCollection.findOne({ _id: new ObjectId(agencyId) });
+            const agency = await db.collection('agencies').findOne({ _id: new ObjectId(agencyId) });
             if (!agency) {
                 return res.status(404).json({ error: "Agence introuvable." });
             }
-            agencyName = agency.city; // ou agency.name, selon ce que vous voulez stocker
+            agencyName = agency.city; // ou agency.name, c'est un choix de design
             finalAgencyId = agency._id;
         }
 
-        // Mise à jour de l'employé. Si agencyId est null, les champs seront supprimés ou mis à null.
-        await crewCollection.updateOne(
+        // On met à jour le document de l'employé
+        // Si agencyId est null, les champs seront mis à null (ou supprimés avec $unset)
+        const result = await db.collection('crew').updateOne(
             { _id: new ObjectId(crewId) },
             { $set: { agencyId: finalAgencyId, agencyName: agencyName } }
         );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Employé introuvable." });
+        }
 
         res.json({ success: true, message: "Affectation de l'employé mise à jour." });
         
