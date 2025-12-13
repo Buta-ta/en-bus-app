@@ -1,5 +1,5 @@
 // database.js
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb"); // ✅ Assurez-vous que ObjectId est importé
 
 let dbInstance = null;
 
@@ -15,12 +15,12 @@ async function connectToDb() {
     // --- ON DÉPLACE LA LOGIQUE D'INITIALISATION ICI ---
     console.log("🚀 Initialisation de la base de données...");
 
-    // Création des index
+    // Création des index (inchangé)
     await dbInstance.collection("trips").createIndex({ date: 1, "route.from": 1, "route.to": 1 });
     await dbInstance.collection("destinations").createIndex({ name: 1 });
     console.log("   -> Index assurés.");
 
-    // Initialisation des paramètres
+    // Initialisation des paramètres (inchangé)
     const existingSettings = await dbInstance.collection("system_settings").findOne({ key: "reportSettings" });
     if (!existingSettings) {
       await dbInstance.collection("system_settings").insertOne({
@@ -39,7 +39,7 @@ async function connectToDb() {
       console.log("   -> Paramètres de report initialisés.");
     }
 
-    // Peuplement initial des villes
+    // Peuplement initial des villes (inchangé)
     const destinationsCount = await dbInstance.collection("destinations").countDocuments();
     if (destinationsCount === 0) {
       console.log("   -> Peuplement initial des destinations...");
@@ -51,10 +51,62 @@ async function connectToDb() {
       await dbInstance.collection("destinations").insertMany(initialCities);
       console.log(`   -> ${initialCities.length} destinations ajoutées.`);
     }
+
+    // ==========================================================
+    // ✅ NOUVEAU BLOC : INITIALISATION DE LA COLLECTION 'agencies'
+    // ==========================================================
+    console.log("   -> Vérification de la collection 'agencies'...");
+    const agenciesCollection = dbInstance.collection("agencies");
+    const agenciesCount = await agenciesCollection.countDocuments();
+
+    // Si la collection 'agencies' est vide, on la peuple avec des données de départ.
+    if (agenciesCount === 0) {
+        console.log("   -> Collection 'agencies' vide. Peuplement initial...");
+        
+        const initialAgencies = [
+            {
+                name: "Agence Principale de Ouenzé",
+                city: "Brazzaville",
+                address: "123 Avenue des Plateaux, Ouenzé, Brazzaville",
+                phone: "+242 06 123 4567",
+                coords: { lat: -4.25, lon: 15.28 },
+                openingHours: "Lun-Sam: 07h-19h, Dim: 08h-14h",
+                managerId: null,
+                status: "active",
+                createdAt: new Date()
+            },
+            {
+                name: "Agence du Grand Marché",
+                city: "Pointe-Noire",
+                address: "Avenue Charles de Gaulle, en face du Grand Marché",
+                phone: "+242 05 765 4321",
+                coords: { lat: -4.78, lon: 11.86 },
+                openingHours: "Lun-Sam: 07h-18h",
+                managerId: null,
+                status: "active",
+                createdAt: new Date()
+            },
+            {
+                name: "Agence de la Gare Routière",
+                city: "Dolisie",
+                address: "Près de la gare routière principale",
+                phone: "+242 04 555 8899",
+                coords: { lat: -4.20, lon: 12.67 },
+                openingHours: "Lun-Sam: 08h-17h",
+                managerId: null,
+                status: "active",
+                createdAt: new Date()
+            }
+        ];
+
+        await agenciesCollection.insertMany(initialAgencies);
+        console.log(`   -> ✅ ${initialAgencies.length} agences initiales créées.`);
+    } else {
+        console.log("   -> Collection 'agencies' déjà existante. Aucune action requise.");
+    }
+    // ==========================================================
     
     console.log("✅ Initialisation de la DB terminée.");
-    // ----------------------------------------------------
-
     return dbInstance;
   } catch (error) {
     console.error("❌ Erreur de connexion ou d'initialisation DB:", error);
