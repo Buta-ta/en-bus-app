@@ -5727,95 +5727,107 @@ function showDashboard() {
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
-        // DANS Admin/index.
+      
 
-        function switchTab(tabName) {
-            console.log(`🚀 DEMANDE DE CHANGEMENT D'ONGLET VERS : ${tabName}`);
+      
+// Remplacez votre fonction switchTab par cette version async
 
-            // 1. Désactiver tous les onglets
-            const allTabs = document.querySelectorAll('.tab-content');
-            allTabs.forEach(tab => {
-                tab.classList.remove('active');
-                tab.style.display = 'none';
-            });
+async function switchTab(tabName) {
+    console.log(`🚀 Changement d'onglet vers : ${tabName}`);
 
-            // 2. Désactiver tous les liens
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    // --- 1. Gestion de l'UI (inchangé) ---
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-            // 3. Activer le bon lien
-            // On doit aussi gérer le cas de la modale "Paramètres" qui n'a pas de data-tab
-            const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-                console.log(`✅ Lien activé pour : ${tabName}`);
-            }
+    const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
 
-            // 4. Activer le bon onglet
-            const activeTab = document.getElementById(`tab-${tabName}`);
-            if (activeTab) {
-                activeTab.classList.add('active');
-                activeTab.style.display = 'block';
-                console.log(`✅ Onglet activé et affiché : tab-${tabName}`);
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.display = 'block';
+    } else {
+        console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas.`);
+        return;
+    }
+
+    // --- 2. Arrêt des timers si nécessaire (inchangé) ---
+    if (tabName !== 'reservations') {
+        stopCountdownUpdates();
+    }
+
+    // ==========================================================
+    // ✅ DÉBUT DE LA LOGIQUE DE PRÉ-CHARGEMENT
+    // ==========================================================
+    
+    // On crée une liste de promesses pour les données à charger en arrière-plan.
+    const dataPromises = [];
+    
+    // On identifie les onglets qui dépendent de la liste du personnel.
+    const crewDependentTabs = ['trips', 'agencies', 'crew'];
+
+    // Si on navigue vers l'un de ces onglets, on s'assure que la liste du personnel est chargée.
+    if (crewDependentTabs.includes(tabName)) {
+        // `loadAllCrewIfNeeded` ne fera l'appel API que si la liste est vide.
+        dataPromises.push(loadAllCrewIfNeeded()); 
+    }
+
+    // On attend que toutes les données nécessaires en arrière-plan soient prêtes.
+    // Dans ce cas, on attend juste que la liste du personnel soit chargée si nécessaire.
+    await Promise.all(dataPromises);
+    
+    // ==========================================================
+    // ✅ FIN DE LA LOGIQUE DE PRÉ-CHARGEMENT
+    // ==========================================================
+
+    // --- 3. Chargement des données spécifiques à l'onglet ---
+    // Ce code s'exécute maintenant AVEC la certitude que les données pré-chargées sont disponibles.
+    switch (tabName) {
+        case 'reservations':
+            loadAdminData();
+            break;
+        case 'report-requests':
+            loadReportRequests();
+            break;
+        case 'trips':
+            // La liste du personnel est déjà prête, on peut maintenant charger le reste.
+            await loadAllTemplates(); // On attend que les templates soient là
+            populateCrewSelects(); // On peut peupler les selects du formulaire
+            loadAllTrips();        // On charge les voyages
+            break;
+        case 'templates':
+            loadAllTemplates();
+            break;
+        case 'destinations':
+            loadAllDestinations();
+            break;
+        case 'analytics':
+            loadBusList();
+            break;
+        case 'crew':
+            // La liste a déjà été chargée par `loadAllCrewIfNeeded`, 
+            // il suffit d'appliquer les filtres et d'afficher.
+            if (typeof filterCrew === 'function') {
+                filterCrew(); 
             } else {
-                // Ce n'est pas une erreur critique si l'onglet n'existe pas (cas de la modale)
-                console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas. Aucune vue à afficher.`);
-                return;
+                loadAllCrew(); // Fallback si la fonction de filtrage n'existe pas
             }
-
-            // 5. Charger les données correspondantes
-            if (tabName !== 'reservations') {
-                stopCountdownUpdates();
+            break;
+        case 'agencies':
+            // La liste du personnel est prête pour la modale, on peut charger les agences.
+            loadAllAgencies();
+            break;
+        default:
+            if (tabName !== 'settings') {
+                console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
             }
-
-            switch (tabName) {
-                case 'reservations':
-                    loadAdminData();
-                    break;
-                case 'report-requests':
-                    loadReportRequests();
-                    break;
-                case 'trips':
-                    loadAllTemplates().then(() => {
-                        // Ensuite, on charge la liste des voyages
-                        loadAllTrips();
-                        // ET on remplit les selects du personnel en même temps
-                        populateCrewSelects();
-                    });
-
-                    break;
-                case 'templates':
-                    loadAllTemplates();
-                    break;
-
-                // ===================================
-                // ✅ LE CAS MANQUANT EST ICI
-                // ===================================
-                case 'destinations':
-                    loadAllDestinations();
-                    break;
-
-                // ✅ NOUVEAU CAS POUR ANALYTICS
-                case 'analytics':
-                    loadBusList();
-                    break;
-
-                case 'crew':
-                    loadAllCrew();
-                    break;
-
-                // ✅ AJOUTER CE NOUVEAU CAS
-                case 'agencies':
-                    loadAllAgencies();
-                    break;
-
-
-                default:
-                    // Ne fait rien pour 'settings' car il ouvre une modale, pas un onglet.
-                    if (tabName !== 'settings') {
-                        console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
-                    }
-            }
-        }
+    }
+}
         // ============================================
         // 🎯 INITIALISATION
         // ============================================
@@ -5844,6 +5856,31 @@ function showDashboard() {
                 .join("");
         }
 
+
+        // DANS admin/app.js
+
+/**
+ * Charge la liste complète du personnel depuis l'API, mais seulement si elle n'est pas déjà chargée.
+ * C'est une fonction clé pour optimiser les chargements.
+ */
+async function loadAllCrewIfNeeded() {
+    if (allCrewMembers && allCrewMembers.length > 0) {
+        console.log("-> La liste du personnel est déjà en mémoire. Aucune action.");
+        return; // On ne fait rien si les données sont déjà là
+    }
+    
+    console.log("-> Chargement de la liste complète du personnel en arrière-plan...");
+    const data = await apiCall('/admin/crew');
+    if (data && data.success) {
+        allCrewMembers = data.crew;
+        console.log(`-> ✅ ${allCrewMembers.length} membres du personnel chargés en mémoire.`);
+        
+        // Optionnel : Mettre à jour les statistiques si elles sont visibles
+        if (typeof displayCrewStats === 'function' && data.stats) {
+            displayCrewStats(data.stats);
+        }
+    }
+}
         // ============================================
         // 🎯 INITIALISATION & ÉVÉNEMENTS
         // ============================================
@@ -7539,16 +7576,11 @@ async function openAgencyModal(agencyId = null) {
     const isEditing = agencyId !== null;
     const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
     
-    // On récupère les managers disponibles pour le menu déroulant
-    let managers = [];
-    if (allCrewMembers.length === 0) {
-        // Si la liste du personnel n'est pas chargée, on la charge
-        const crewData = await apiCall('/admin/crew');
-        if (crewData && crewData.success) allCrewMembers = crewData.crew;
-    }
-    managers = allCrewMembers.filter(m => m.role === 'Manager d\'Agence');
 
-    const managerOptions = managers.map(m => `<option value="${m._id}">${m.name}</option>`).join('');
+        // ✅ SIMPLIFICATION : On peut maintenant utiliser `allCrewMembers` en toute confiance.
+    const managers = allCrewMembers.filter(m => m.role === 'Manager d\'Agence' && m.status === 'Actif');
+    const managerOptions = managers.map(m => `<option value="${m._id}">${m.name} (${m.matricule})</option>`).join('');
+
 
     // On pré-remplit les champs si on est en mode édition
     let agency = {};
