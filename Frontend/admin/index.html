@@ -7574,7 +7574,7 @@ async function openEditMemberModal(memberId) {
     // Affiche un petit loader ou un état vide par défaut
     container.innerHTML = '<div style="color: #888; font-style: italic;">Chargement des revenus...</div>';
 
-    const data = await apiCall('/api/admin/analytics/revenue-by-agency');
+    const data = await apiCall('/admin/analytics/revenue-by-agency');
     
     if (data && data.success && data.stats.length > 0) {
         container.innerHTML = data.stats.map(stat => `
