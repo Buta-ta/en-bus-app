@@ -7980,6 +7980,8 @@
 
         async function loadSchedule() {
             console.log("📅 Chargement du planning...");
+                // ✅ AJOUTER CETTE LIGNE
+    await populateScheduleAgencyFilter();
 
             // 1. Initialisation date (comme avant)
             const weekInput = document.getElementById('schedule-week-picker');
@@ -8206,11 +8208,31 @@
 
     if (!confirmed) return;
 
-    const result = await apiCall(`/api/admin/schedules/${scheduleId}`, 'DELETE');
+    const result = await apiCall(`/admin/schedules/${scheduleId}`, 'DELETE');
     if (result && result.success) {
         showNotification("Créneau supprimé.", "success");
         loadSchedule();
     }
+}
+
+
+
+// Fonction pour remplir le filtre d'agence du planning
+async function populateScheduleAgencyFilter() {
+    const select = document.getElementById('schedule-filter-agency');
+    if (!select) return;
+
+    // Si les agences ne sont pas chargées, on les charge
+    if (!allAgencies || allAgencies.length === 0) {
+        await loadAllAgencies();
+    }
+
+    let html = '<option value="">Toutes les agences</option>';
+    allAgencies.forEach(ag => {
+        html += `<option value="${ag._id}">${ag.city} - ${ag.name}</option>`;
+    });
+    
+    select.innerHTML = html;
 }
         // --- GESTION DES AGENCES ---
 
