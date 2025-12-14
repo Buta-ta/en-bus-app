@@ -1509,18 +1509,28 @@ app.get("/api/admin/needs-setup", async (req, res) => {
 
 
 // [GET] Récupérer les stats de présence pour une période (semaine)
+// [GET] Récupérer les stats de présence pour une période (semaine)
 app.get("/api/admin/attendance/week-stats", authenticateToken, async (req, res) => {
     try {
-        const { start, end } = req.query; // YYYY-MM-DD
+        const { start, end } = req.query;
+        if (!start || !end) {
+            return res.status(400).json({ error: "Les dates de début et de fin sont requises." });
+        }
+
         const db = getDb();
 
         const stats = await db.collection('attendance').aggregate([
-            { $match: { date: { $gte: start, $lte: end } } },
+            // 1. Filtrer les pointages dans la plage de dates
+            { $match: { 
+                date: { $gte: start, $lte: end },
+                status: 'completed' // On ne compte que les journées terminées
+            } },
+            // 2. Regrouper par employé
             {
                 $group: {
-                    _id: "$crewId", // Regrouper par employé
-                    totalWorkMinutes: { $sum: "$durationMinutes" }, // Sommer les minutes travaillées
-                    totalBreakMinutes: { $sum: "$totalBreakMinutes" } // Sommer les pauses
+                    _id: "$crewId", // L'ID de l'employé
+                    totalWorkMinutes: { $sum: "$durationMinutes" }, // Somme des minutes travaillées
+                    totalBreakMinutes: { $sum: "$totalBreakMinutes" } // Somme des pauses
                 }
             }
         ]).toArray();
@@ -1528,6 +1538,7 @@ app.get("/api/admin/attendance/week-stats", authenticateToken, async (req, res) 
         res.json({ success: true, stats });
 
     } catch (error) {
+        console.error("Erreur stats hebdo:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
