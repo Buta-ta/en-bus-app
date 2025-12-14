@@ -6515,7 +6515,7 @@
                     description: document.getElementById('incident-desc').value,
                     priority: document.getElementById('incident-priority').value,
                 };
-                const result = await apiCall('/api/admin/maintenance', 'POST', payload);
+               const result = await apiCall('/admin/maintenance', 'POST', payload);
                 if (result && result.success) {
                     showNotification("Incident signalé.", "success");
                     closeModal();
