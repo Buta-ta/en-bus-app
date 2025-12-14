@@ -1770,6 +1770,38 @@
         tr.pending-payment {
             background-color: rgba(255, 167, 38, 0.05) !important;
         }
+
+
+        .schedule-cell {
+    min-width: 120px;
+    height: 80px;
+    vertical-align: top;
+    padding: 5px;
+    border: 1px solid var(--dark-border);
+    position: relative;
+}
+.schedule-item {
+    background: var(--dark-elevated);
+    border-left: 3px solid var(--primary);
+    padding: 4px;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.schedule-item.type-Voyage { border-color: #00d9ff; background: rgba(0, 217, 255, 0.1); }
+.schedule-item.type-Repos { border-color: #78909c; background: rgba(120, 144, 156, 0.1); }
+.schedule-item.type-Congé { border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
+
+.schedule-add-btn {
+    opacity: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.schedule-cell:hover .schedule-add-btn { opacity: 1; }
     </style>
 </head>
 
@@ -1907,6 +1939,13 @@
                             <span>Personnel</span>
                         </a>
                     </li>
+
+                    <li class="nav-item">
+    <a href="#" class="nav-link" data-tab="schedule">
+        <span class="nav-icon">📅</span>
+        <span>Planning</span>
+    </a>
+</li>
 
 
                     <li class="nav-item">
@@ -2848,33 +2887,61 @@
 
 
 
-
-    <!-- ONGLET: PRÉSENCES -->
+<!-- ONGLET: PRÉSENCES -->
 <div id="tab-attendance" class="tab-content">
+    
+    <!-- 1. En-tête -->
     <div class="page-header">
         <h1 class="page-title">Suivi des Présences</h1>
         <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
     </div>
 
+    <!-- 2. Statistiques (Votre bloc actuel) -->
     <div class="stats-grid" id="attendance-stats">
-        <!-- Stats remplies par JS -->
         <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Présents Actuellement</span><div class="stat-icon success">🟢</div></div>
+            <div class="stat-header">
+                <span class="stat-label">Présents Actuellement</span>
+                <div class="stat-icon success">🟢</div>
+            </div>
             <div class="stat-value" id="stat-present-now">-</div>
         </div>
         <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Journée Terminée</span><div class="stat-icon primary">🏁</div></div>
+            <div class="stat-header">
+                <span class="stat-label">Journée Terminée</span>
+                <div class="stat-icon primary">🏁</div>
+            </div>
             <div class="stat-value" id="stat-completed-today">-</div>
         </div>
     </div>
 
+    <!-- 3. Carte Principale (Scanner + Tableau) -->
     <div class="content-card">
-        <div class="card-header" style="display: flex; justify-content: space-between;">
-            <h2 class="card-title">Scanner de Pointage</h2>
-            <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer/Désactiver Caméra</button>
-        </div>
         
-        <!-- Zone du scanner (Cachée par défaut) -->
+        <!-- Header de la carte -->
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="card-title">Borne de Pointage</h2>
+            <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer Caméra</button>
+        </div>
+
+        <!-- ✅ SÉLECTEUR D'INTENTION (Placé ici) -->
+        <div class="scan-mode-selector" style="display: flex; gap: 15px; margin: 20px 0; justify-content: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid var(--dark-border);">
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="auto" checked>
+                <span style="font-weight: bold; margin-left: 5px; color: var(--accent);">🤖 Auto / Arrivée</span>
+            </label>
+            
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="break">
+                <span style="font-weight: bold; margin-left: 5px; color: #ff9800;">☕ Pause / Reprise</span>
+            </label>
+            
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="exit">
+                <span style="font-weight: bold; margin-left: 5px; color: #ef5350;">🏁 Fin de journée</span>
+            </label>
+        </div>
+
+        <!-- Zone du scanner -->
         <div id="scanner-container" style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
             <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
             <div id="scan-result-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
@@ -2882,6 +2949,7 @@
             </div>
         </div>
 
+        <!-- Tableau des logs -->
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -2890,11 +2958,48 @@
                         <th>Employé</th>
                         <th>Rôle</th>
                         <th>Agence</th>
-                        <th>Action</th>
-                        <th>Durée</th>
+                        <th>Statut</th> <!-- Renommé pour clarté -->
+                        <th>Temps de travail</th>
                     </tr>
                 </thead>
                 <tbody id="attendance-table-body">
+                    <!-- Rempli par JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="tab-schedule" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Emploi du Temps</h1>
+        <div class="filters">
+            <input type="week" id="schedule-week-picker" class="form-control" onchange="loadSchedule()">
+            <select id="schedule-filter-agency" class="form-control" onchange="loadSchedule()">
+                <!-- Rempli par JS -->
+            </select>
+        </div>
+    </div>
+
+    <!-- Grille de Planning (Style Gantt simplifié) -->
+    <div class="content-card">
+        <div class="schedule-grid-container" style="overflow-x: auto;">
+            <table class="table schedule-table">
+                <thead>
+                    <tr>
+                        <th>Employé</th>
+                        <th>Lun</th>
+                        <th>Mar</th>
+                        <th>Mer</th>
+                        <th>Jeu</th>
+                        <th>Ven</th>
+                        <th>Sam</th>
+                        <th>Dim</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
                     <!-- Rempli par JS -->
                 </tbody>
             </table>
@@ -7401,6 +7506,11 @@ async function viewCrewDetails(memberId) {
 
 
 
+
+
+
+
+
         // ============================================
         // 🏙️ GESTION DES DESTINATIONS (COMPLET AVEC EDIT)
         // ============================================
@@ -7801,6 +7911,93 @@ async function viewCrewDetails(memberId) {
             </div>
         `;
     }
+}
+
+
+
+
+// DANS LE SCRIPT
+
+async function loadSchedule() {
+    // 1. Calculer les dates de la semaine sélectionnée
+    const weekInput = document.getElementById('schedule-week-picker');
+    if (!weekInput.value) {
+        // Par défaut : semaine en cours
+        const now = new Date();
+        const weekNum = getWeekNumber(now); // Fonction utilitaire à créer
+        weekInput.value = `${now.getFullYear()}-W${weekNum}`;
+    }
+    
+    const [year, week] = weekInput.value.split('-W');
+    const startOfWeek = getDateOfISOWeek(week, year);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+    const startStr = startOfWeek.toISOString().split('T')[0];
+    const endStr = endOfWeek.toISOString().split('T')[0];
+
+    // 2. Appel API
+    const data = await apiCall(`/admin/schedules?start=${startStr}&end=${endStr}`);
+    
+    // 3. Rendu (Logique complexe de grille)
+    renderScheduleGrid(data.schedules, startOfWeek);
+}
+
+function renderScheduleGrid(schedules, startOfWeek) {
+    const tbody = document.getElementById('schedule-body');
+    tbody.innerHTML = '';
+
+    // On groupe par employé
+    // Pour simplifier, on itère sur 'allCrewMembers' (qu'on a déjà en mémoire)
+    allCrewMembers.forEach(member => {
+        let rowHTML = `<tr><td><strong>${member.name}</strong><br><small>${member.role}</small></td>`;
+        
+        // Pour chaque jour de la semaine (0 à 6)
+        for(let i=0; i<7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(currentDay.getDate() + i);
+            const dateStr = currentDay.toISOString().split('T')[0];
+
+            // Trouver les créneaux de ce jour pour cet employé
+            const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
+            
+            let cellContent = '';
+            items.forEach(item => {
+                cellContent += `
+                    <div class="schedule-item type-${item.type}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
+                        <strong>${item.startTime} - ${item.endTime}</strong><br>
+                        ${item.type === 'Voyage' ? '🚌' : ''} ${item.note || item.type}
+                    </div>
+                `;
+            });
+
+            // Bouton + (invisible sauf hover)
+            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${dateStr}')">+</div>`;
+
+            rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
+        }
+        rowHTML += '</tr>';
+        tbody.innerHTML += rowHTML;
+    });
+}
+
+// Fonction utilitaire Date (Standard ISO)
+function getDateOfISOWeek(w, y) {
+    var simple = new Date(y, 0, 1 + (w - 1) * 7);
+    var dow = simple.getDay();
+    var ISOweekStart = simple;
+    if (dow <= 4)
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+    return ISOweekStart;
+}
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return weekNo;
 }
 
 
