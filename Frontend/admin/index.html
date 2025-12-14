@@ -6499,7 +6499,7 @@
 
 
 
-        async function openMaintenanceDetailsModal(reportId) {
+async function openMaintenanceDetailsModal(reportId) {
     const report = allMaintenanceReports.find(r => r._id === reportId);
     if (!report) return;
 
@@ -6510,11 +6510,15 @@
     const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
     const technicians = allCrewMembers.filter(m => techRoles.includes(m.role) && m.status === 'Actif');
     
+    // --- ✅ MODIFICATION ICI ---
     let techOptions = '<option value="">-- Non assigné --</option>';
     technicians.forEach(tech => {
         const isSelected = report.assignedTo && report.assignedTo === tech._id ? 'selected' : '';
-        techOptions += `<option value="${tech._id}" ${isSelected}>${tech.name} (${tech.role})</option>`;
+        // On ajoute l'agence à côté du nom
+        const agencyInfo = tech.agencyName || 'Siège'; 
+        techOptions += `<option value="${tech._id}" ${isSelected}>${tech.name} (${agencyInfo})</option>`;
     });
+    // -------------------------
 
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
@@ -6529,7 +6533,7 @@
             </div>
             <p style="margin: 4px 0 0 0; color: var(--text-secondary); white-space: pre-wrap;">${c.text}</p>
         </li>
-    `).reverse().join(''); // .reverse() pour voir les plus récents en premier
+    `).reverse().join('');
 
     modalBody.innerHTML = `
         <form id="update-maintenance-form">
@@ -6562,7 +6566,7 @@
 
             <div class="form-group">
                 <label>Ajouter un commentaire</label>
-                <textarea id="maintenance-comment" class="form-control" rows="2" placeholder="Ex: Pièce commandée, test OK..."></textarea>
+                <textarea id="maintenance-comment" class="form-control" rows="2" placeholder="Ex: Pièce changée, test OK..."></textarea>
             </div>
 
             <div style="text-align: right; margin-top: 1rem;">
@@ -6583,9 +6587,7 @@
 
         if (!payload.comment) delete payload.comment;
 
-       // ...
-const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload);
-// ...
+        const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload);
         if (result && result.success) {
             showNotification("Rapport mis à jour.", "success");
             closeModal();
@@ -6593,7 +6595,6 @@ const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload)
         }
     });
 }
-
         function openReportIncidentModal() {
             const modalTitle = document.getElementById('modal-title');
             const modalBody = document.getElementById('modal-body');
