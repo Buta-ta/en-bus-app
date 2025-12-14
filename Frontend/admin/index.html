@@ -6443,17 +6443,14 @@
 
         // --- Fonctions de Maintenance ---
 
-      async function loadMaintenanceReports() {
-    // 1. S'assurer que la liste du personnel est disponible
+ async function loadMaintenanceReports() {
     if (!allCrewMembers || allCrewMembers.length === 0) {
         await loadAllCrew();
     }
 
-    // 2. Charger les rapports de maintenance
     const data = await apiCall('/admin/maintenance');
     if (!data || !data.success) return;
     
-    // On met à jour la variable globale
     allMaintenanceReports = data.reports;
 
     const tbody = document.getElementById('maintenance-table-body');
@@ -6471,17 +6468,24 @@
         if (report.status === 'En cours') statusBadge = 'badge-warning';
         if (report.status === 'Terminé') statusBadge = 'badge-success';
 
-        // ✅ RECHERCHE SÉCURISÉE DU NOM DU TECHNICIEN
-        let assignedToName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+        // ============================================
+        // ✅ CORRECTION ICI
+        // ============================================
+        let assignedToDisplay = '<span style="color: #666; font-style: italic;">Non assigné</span>';
         
-        // On cherche le nom via l'ID stocké dans `assignedToName` ou `assignedTo`
+        // On utilise d'abord le nom stocké dans le rapport de maintenance s'il existe
         if (report.assignedToName) {
-            assignedToName = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
-        } else if (report.assignedTo) {
-            // Fallback si le nom n'a pas été stocké, on cherche dans la liste
-            const tech = allCrewMembers.find(m => m._id === report.assignedTo);
-            assignedToName = tech ? `<strong style="color: var(--primary);">${tech.name}</strong>` : '<span style="color: #ef5350;">Technicien introuvable</span>';
+            assignedToDisplay = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
+            
+            // On cherche l'agence de cette personne
+            if (allCrewMembers.length > 0) {
+                const tech = allCrewMembers.find(m => m._id === report.assignedTo);
+                if (tech && tech.agencyName) {
+                    assignedToDisplay += `<div style="font-size: 0.8em; color: var(--accent);">📍 ${tech.agencyName}</div>`;
+                }
+            }
         }
+        // ============================================
 
         return `
             <tr>
@@ -6489,15 +6493,13 @@
                 <td>${report.description}</td>
                 <td><span class="badge ${priorityBadge}">${report.priority}</span></td>
                 <td><span class="badge ${statusBadge}">${report.status}</span></td>
-                <td>${assignedToName}</td>
+                <td>${assignedToDisplay}</td> <!-- On affiche le HTML généré -->
                 <td>${new Date(report.reportedAt).toLocaleDateString('fr-FR')}</td>
                 <td><button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button></td>
             </tr>
         `;
     }).join('');
 }
-
-
 
 async function openMaintenanceDetailsModal(reportId) {
     const report = allMaintenanceReports.find(r => r._id === reportId);
