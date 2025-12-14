@@ -1868,12 +1868,13 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 
 // [GET] Récupérer les présences du jour (Tableau de bord)
 // [GET] Récupérer les présences du jour ET les anomalies
+// [GET] Récupérer les présences du jour ET les anomalies (COMPLET)
 app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayStr = today.toISOString().split('T')[0];
-        const now = new Date(); // Heure actuelle pour comparer
+        const now = new Date(); 
 
         const db = getDb();
 
@@ -1883,45 +1884,49 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
             .sort({ checkIn: -1 })
             .toArray();
 
-        // 2. Récupérer le planning du jour (Ceux qui DOIVENT travailler)
-        // On exclut 'Repos' et 'Congé'
+        // 2. Récupérer le planning du jour
         const schedules = await db.collection('schedules').find({
             date: todayStr,
             type: { $nin: ['Repos', 'Congé'] }
         }).toArray();
 
-        // 3. Analyse des anomalies
+        // 3. ENRICHISSEMENT DES RECORDS (C'est ce qui manquait)
+        const enrichedRecords = records.map(record => {
+            const schedule = schedules.find(s => s.crewId.toString() === record.crewId.toString());
+            return {
+                ...record,
+                scheduledStart: schedule ? schedule.startTime : null,
+                scheduledEnd: schedule ? schedule.endTime : null
+            };
+        });
+
+        // 4. Analyse des anomalies
         const anomalies = [];
 
         for (const schedule of schedules) {
-            // Est-ce que cette personne a pointé ?
             const scan = records.find(r => r.crewId.toString() === schedule.crewId.toString());
             
-            // Récupérer le nom (optimisation possible avec un $lookup mais simple ici)
             const crewMember = await db.collection('crew').findOne({ _id: schedule.crewId });
             const name = crewMember ? crewMember.name : 'Inconnu';
 
-            // Heure prévue de début
             const [h, m] = schedule.startTime.split(':').map(Number);
             const scheduledStart = new Date(today);
             scheduledStart.setHours(h, m, 0, 0);
 
-            // CAS A : ABSENCE (Pas de scan alors que l'heure est passée de > 30min)
+            // ABSENCE
             if (!scan) {
-                // Si l'heure actuelle est > heure début + 30min
                 if (now > new Date(scheduledStart.getTime() + 30*60000)) {
                     anomalies.push({
                         type: 'ABSENCE',
                         crewName: name,
                         expected: schedule.startTime,
-                        message: "N'a pas pointé (Retard > 30min ou Absence)"
+                        message: "N'a pas pointé"
                     });
                 }
             } 
-            // CAS B : RETARD (A pointé, mais après l'heure)
+            // RETARD
             else {
                 const checkInTime = new Date(scan.checkIn);
-                // Marge de tolérance de 10 min
                 if (checkInTime > new Date(scheduledStart.getTime() + 10*60000)) {
                     const diffMinutes = Math.floor((checkInTime - scheduledStart) / 60000);
                     anomalies.push({
@@ -1929,20 +1934,22 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
                         crewName: name,
                         expected: schedule.startTime,
                         actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
-                        message: `Arrivé avec ${diffMinutes} min de retard`
+                        message: `${diffMinutes} min`
                     });
                 }
             }
         }
 
-        // Stats mises à jour
+        // Stats
         const stats = {
             present: records.filter(r => r.status === 'present' || r.status === 'working').length,
             completed: records.filter(r => r.status === 'completed').length,
-            anomalies: anomalies.length
+            anomalies: anomalies.length,
+            total: records.length
         };
 
-        res.json({ success: true, records, anomalies, stats });
+        // ✅ ON RENVOIE 'enrichedRecords' AU LIEU DE 'records'
+        res.json({ success: true, records: enrichedRecords, anomalies, stats });
 
     } catch (error) {
         console.error("Erreur attendance:", error);

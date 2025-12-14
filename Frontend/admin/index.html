@@ -8687,21 +8687,22 @@ async function generateBadge(memberId) {
 
         // Charger les données du jour
         // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
-        async function loadAttendanceToday() {
-            const data = await apiCall('/admin/attendance/today');
+        // Charger les données du jour (VERSION FINALE)
+async function loadAttendanceToday() {
+    const data = await apiCall('/admin/attendance/today');
 
-            if (data && data.success) {
-                // Mise à jour stats
-                document.getElementById('stat-present-now').textContent = data.stats.present;
-                document.getElementById('stat-completed-today').textContent = data.stats.completed;
+    if (data && data.success) {
+        // Mise à jour stats
+        document.getElementById('stat-present-now').textContent = data.stats.present;
+        document.getElementById('stat-completed-today').textContent = data.stats.completed;
 
-                // --- GESTION DES ANOMALIES ---
-                const alertsContainer = document.getElementById('attendance-alerts');
-                const alertsList = document.getElementById('anomalies-list');
+        // --- GESTION DES ANOMALIES ---
+        const alertsContainer = document.getElementById('attendance-alerts');
+        const alertsList = document.getElementById('anomalies-list');
 
-                if (data.anomalies && data.anomalies.length > 0) {
-                    alertsContainer.style.display = 'block';
-                    alertsList.innerHTML = data.anomalies.map(ano => `
+        if (data.anomalies && data.anomalies.length > 0) {
+            alertsContainer.style.display = 'block';
+            alertsList.innerHTML = data.anomalies.map(ano => `
                 <li style="padding: 8px 0; border-bottom: 1px solid rgba(239, 83, 80, 0.2); display: flex; justify-content: space-between;">
                     <div>
                         <strong style="color: var(--text-primary);">${ano.crewName}</strong> 
@@ -8712,50 +8713,73 @@ async function generateBadge(memberId) {
                     </div>
                 </li>
             `).join('');
+        } else {
+            alertsContainer.style.display = 'none';
+        }
+
+        // --- TABLEAU DES PRÉSENCES ---
+        const tbody = document.getElementById('attendance-table-body');
+        if (data.records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.records.map(r => {
+            const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
+
+            let statusBadge = '';
+            let actionText = '';
+
+            if (r.status === 'working' || r.status === 'present') {
+                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                actionText = `Arrivée à ${checkInTime}`;
+            }
+            else if (r.status === 'on_break') {
+                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                actionText = `Parti à ${lastAction}`;
+            }
+            else if (r.status === 'completed') {
+                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                actionText = `Départ à ${checkOutTime}`;
+            }
+
+            let durationDisplay = '-';
+            if (r.durationMinutes > 0) {
+                const h = Math.floor(r.durationMinutes / 60);
+                const m = r.durationMinutes % 60;
+                durationDisplay = `${h}h ${m}m`;
+            }
+
+            // ========================================================
+            // ✅ NOUVELLE LOGIQUE D'AFFICHAGE DE L'HEURE (AVEC PRÉVU)
+            // ========================================================
+            let timeDisplay = `<span class="font-mono" style="font-size: 1.1em;">${checkInTime}</span>`;
+    
+            if (r.scheduledStart) {
+                // On compare l'heure d'arrivée avec l'heure prévue
+                const [h, m] = r.scheduledStart.split(':');
+                const scheduledDate = new Date(r.checkIn);
+                scheduledDate.setHours(h, m, 0, 0);
+                
+                // Si retard > 5 min
+                if (new Date(r.checkIn) > new Date(scheduledDate.getTime() + 5*60000)) {
+                    timeDisplay = `<span class="font-mono" style="color: #ef5350;">${checkInTime}</span>` + 
+                                  `<div style="font-size: 0.8em; color: #ef5350; font-weight: bold;">(Retard)</div>` +
+                                  `<div style="font-size: 0.75em; color: var(--text-muted);">Prévu: ${r.scheduledStart}</div>`;
                 } else {
-                    alertsContainer.style.display = 'none';
+                    timeDisplay += `<div style="font-size: 0.75em; color: #73d700;">(À l'heure)</div>` +
+                                   `<div style="font-size: 0.75em; color: var(--text-muted);">Prévu: ${r.scheduledStart}</div>`;
                 }
+            } else {
+                timeDisplay += `<div style="font-size: 0.75em; color: var(--accent); font-style: italic;">Non planifié</div>`;
+            }
+            // ========================================================
 
-                // --- TABLEAU DES PRÉSENCES (Code existant inchangé) ---
-                const tbody = document.getElementById('attendance-table-body');
-                if (data.records.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = data.records.map(r => {
-                    // ... (votre code de mapping existant, copiez-le ici ou gardez-le) ...
-                    // Pour être sûr, je vous remets le mapping complet :
-                    const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                    const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
-
-                    let statusBadge = '';
-                    let actionText = '';
-
-                    if (r.status === 'working' || r.status === 'present') {
-                        statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
-                        actionText = `Arrivée à ${checkInTime}`;
-                    }
-                    else if (r.status === 'on_break') {
-                        statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
-                        const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-                        actionText = `Parti à ${lastAction}`;
-                    }
-                    else if (r.status === 'completed') {
-                        statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
-                        actionText = `Départ à ${checkOutTime}`;
-                    }
-
-                    let durationDisplay = '-';
-                    if (r.durationMinutes > 0) {
-                        const h = Math.floor(r.durationMinutes / 60);
-                        const m = r.durationMinutes % 60;
-                        durationDisplay = `${h}h ${m}m`;
-                    }
-
-                    return `
+            return `
                 <tr>
-                    <td class="font-mono">${checkInTime}</td>
+                    <td>${timeDisplay}</td> <!-- ✅ Nouvelle colonne Heure -->
                     <td><strong>${r.crewName}</strong></td>
                     <td>${r.crewRole}</td>
                     <td>${r.agencyId ? 'Agence' : 'Siège'}</td>
@@ -8763,9 +8787,9 @@ async function generateBadge(memberId) {
                     <td class="font-bold">${durationDisplay}</td>
                 </tr>
             `;
-                }).join('');
-            }
-        }
+        }).join('');
+    }
+}
         // Activer/Désactiver le scanner
         function toggleScanner() {
             const container = document.getElementById('scanner-container');
