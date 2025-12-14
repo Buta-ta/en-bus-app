@@ -8034,18 +8034,32 @@
             tbody.innerHTML = ''; // On vide le loader
 
             // On groupe par employé
-            allCrewMembers.forEach(member => {
-                let rowHTML = `
-             <tr>
+                // On groupe par employé
+    allCrewMembers.forEach(member => {
+        
+        // ==========================================================
+        // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
+        // ==========================================================
+        let agencyText = '';
+        if (member.agencyName) {
+            agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
+        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
+            agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
+        }
+        // ==========================================================
+
+        let rowHTML = `
+            <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <strong>${member.name}</strong>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--primary);">${member.role}</div>
-                    ${agencyText} <!-- ✅ L'agence s'affiche ici -->
+                    ${agencyText} <!-- Ici on l'utilise -->
                 </td>
         `;
-
+        
+        // ... suite de la fonction
                 // Pour chaque jour de la semaine (0 à 6)
                 for (let i = 0; i < 7; i++) {
                     const currentDay = new Date(startOfWeek);
