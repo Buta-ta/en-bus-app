@@ -5094,34 +5094,63 @@
         // ============================================
         // ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
         // ============================================
-        function openEditMemberModal(memberId, name, phone, role, status) {
-            const modalTitle = document.getElementById('modal-title');
-            const modalBody = document.getElementById('modal-body');
+       /**
+ * Ouvre la modale pour modifier un membre (Nom, Tél, Statut, Agence)
+ */
+async function openEditMemberModal(memberId) {
+    console.log("✏️ Ouverture édition membre:", memberId);
 
-            modalTitle.textContent = `Modifier ${name}`;
+    // 1. Trouver le membre dans la liste locale
+    const member = allCrewMembers.find(m => m._id === memberId);
+    
+    if (!member) {
+        showNotification("Erreur : Membre introuvable.", "error");
+        return;
+    }
 
-            modalBody.innerHTML = `
+    // 2. Charger/Préparer la liste des agences
+    // On utilise la fonction helper qu'on a créée plus tôt
+    let agencyOptions = '<option value="">-- Aucune affectation --</option>';
+    
+    // Si la liste des agences n'est pas encore chargée, on la charge
+    if (!allAgencies || allAgencies.length === 0) {
+        await loadAllAgencies();
+    }
+
+    // Génération des options du select
+    allAgencies.forEach(ag => {
+        // On sélectionne l'agence si elle correspond à celle du membre
+        const isSelected = member.agencyId && ag._id === member.agencyId ? 'selected' : '';
+        agencyOptions += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
+    });
+
+    // 3. Préparer le HTML de la modale
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = `Modifier ${member.name}`;
+
+    modalBody.innerHTML = `
         <form id="edit-member-form">
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label">Nom complet</label>
-                    <input type="text" id="edit-member-name" class="form-control" value="${name}" required>
+                    <input type="text" id="edit-member-name" class="form-control" value="${member.name}" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Téléphone</label>
-                    <input type="text" id="edit-member-phone" class="form-control" value="${phone}" required>
+                    <input type="tel" id="edit-member-phone" class="form-control" value="${member.phone || ''}" placeholder="+242...">
                 </div>
-                <div class="form-group form-group-full">
-                    <label class="form-label">Statut actuel</label>
-                    <select id="edit-member-status" class="form-control" style="font-size: 1rem;">
-                        <option value="Actif" ${status === 'Actif' ? 'selected' : ''}>✅ Actif</option>
-                        <option value="En congé" ${status === 'En congé' ? 'selected' : ''}>🏖️ En congé</option>
-                        <option value="Inactif" ${status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
+                <div class="form-group">
+                    <label class="form-label">Statut</label>
+                    <select id="edit-member-status" class="form-control">
+                        <option value="Actif" ${member.status === 'Actif' ? 'selected' : ''}>✅ Actif</option>
+                        <option value="En congé" ${member.status === 'En congé' ? 'selected' : ''}>🏖️ En congé</option>
+                        <option value="Inactif" ${member.status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
                     </select>
                 </div>
-
-
-                <!-- ✅ Champ Agence d'affectation -->
+                
+                <!-- ✅ Sélecteur d'Agence -->
                 <div class="form-group">
                     <label class="form-label">Agence d'affectation</label>
                     <select id="edit-member-agency" class="form-control">
@@ -5130,44 +5159,43 @@
                 </div>
             </div>
             
-            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <span style="font-size: 1.5rem;">${role === 'Chauffeur' ? '🚗' : '🎫'}</span>
-                    <div>
-                        <strong style="display: block; color: var(--text-primary);">${role}</strong>
-                        <small style="color: var(--text-muted);">Matricule non modifiable</small>
-                    </div>
+            <div style="margin-top: 1rem; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.2rem;">ℹ️</span>
+                <div>
+                    <strong>${member.role}</strong><br>
+                    <span class="font-mono text-muted" style="font-size: 0.85rem;">Matricule: ${member.matricule || 'N/A'}</span>
                 </div>
             </div>
 
-            <div style="text-align: right; margin-top: 1.5rem;">
+            <div style="text-align: right; margin-top: 1.5rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
             </div>
         </form>
     `;
 
-            document.getElementById('details-modal').classList.add('active');
+    document.getElementById('details-modal').classList.add('active');
 
-            // Gestion soumission
-            document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const updates = {
-                    name: document.getElementById('edit-member-name').value,
-                    phone: document.getElementById('edit-member-phone').value,
-                    status: document.getElementById('edit-member-status').value,
-                    agencyId: document.getElementById('edit-member-agency').value // ✅ On envoie la nouvelle agence
+    // 4. Gérer la soumission du formulaire
+    document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-                };
+        const updates = {
+            name: document.getElementById('edit-member-name').value.trim(),
+            phone: document.getElementById('edit-member-phone').value.trim(),
+            status: document.getElementById('edit-member-status').value,
+            agencyId: document.getElementById('edit-member-agency').value // Peut être vide
+        };
 
-                const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
-                if (result && result.success) {
-                    showNotification("Informations mises à jour !", "success");
-                    closeModal();
-                    loadAllCrew(); // Rafraîchir la liste
-                }
-            });
+        const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
+        
+        if (result && result.success) {
+            showNotification("Mise à jour réussie !", "success");
+            closeModal();
+            loadAllCrew(); // Rafraîchir le tableau pour voir les changements
         }
+    });
+}
         /**
          * Ouvre la modale d'ajout d'un membre
          */
