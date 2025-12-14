@@ -3593,6 +3593,35 @@ app.delete("/api/admin/destinations/:id", authenticateToken, async (req, res) =>
     }
 });
 
+
+// DANS server.js
+
+app.delete("/api/admin/agencies/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        const db = getDb();
+        const agencyId = new ObjectId(id);
+
+        // 1. Désaffecter tous les employés liés à cette agence (Remet leur agencyId à null)
+        await db.collection('crew').updateMany(
+            { agencyId: agencyId },
+            { $set: { agencyId: null, agencyName: null } }
+        );
+
+        // 2. Supprimer l'agence
+        const result = await db.collection('agencies').deleteOne({ _id: agencyId });
+
+        if (result.deletedCount === 0) return res.status(404).json({ error: "Agence introuvable" });
+
+        res.json({ success: true, message: "Agence supprimée." });
+
+    } catch (error) {
+        console.error("❌ Erreur suppression agence:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 // --- F. La route générique 'action' à la toute fin ---
 // --- F. La route générique 'action' à la toute fin ---
 
