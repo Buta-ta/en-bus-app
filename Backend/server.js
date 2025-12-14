@@ -1985,6 +1985,95 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
 });
 
 
+
+
+// ============================================
+// 🛠️ GESTION MAINTENANCE & INCIDENTS
+// ============================================
+
+// [GET] Récupérer tous les rapports de maintenance
+app.get("/api/admin/maintenance", authenticateToken, async (req, res) => {
+    try {
+        const db = getDb();
+        const reports = await db.collection('maintenance_reports').find({}).sort({ reportedAt: -1 }).toArray();
+        res.json({ success: true, reports });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+// [POST] Créer un nouveau rapport d'incident
+app.post("/api/admin/maintenance", authenticateToken, [
+    body('busIdentifier').notEmpty(),
+    body('description').notEmpty(),
+    body('priority').isIn(['Basse', 'Moyenne', 'Haute', 'Critique']),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+    try {
+        const { busIdentifier, description, priority } = req.body;
+        const db = getDb();
+
+        const newReport = {
+            busIdentifier,
+            description,
+            priority,
+            status: 'À faire', // 'À faire', 'En cours', 'Terminé', 'En attente de pièces'
+            reportedAt: new Date(),
+            reportedBy: req.user.username,
+            assignedTo: null, // ID du technicien
+            comments: []
+        };
+
+        // Mettre à jour le statut du bus dans la collection 'trips' (si nécessaire)
+        // Optionnel : on pourrait avoir une collection 'buses' à part
+        await db.collection('trips').updateMany(
+            { busIdentifier: busIdentifier, date: { $gte: new Date().toISOString().split('T')[0] } },
+            { $set: { "liveStatus.status": "MAINTENANCE" } }
+        );
+
+        await db.collection('maintenance_reports').insertOne(newReport);
+        res.status(201).json({ success: true, message: "Incident signalé." });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+// [PATCH] Mettre à jour un rapport (statut, technicien, commentaire)
+app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, assignedToId, comment } = req.body;
+        const db = getDb();
+
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+        
+        const updates = { $set: { updatedAt: new Date() } };
+        
+        if (status) updates.$set.status = status;
+        if (assignedToId) updates.$set.assignedTo = ObjectId.isValid(assignedToId) ? new ObjectId(assignedToId) : null;
+        if (comment) {
+            updates.$push = {
+                comments: {
+                    text: comment,
+                    author: req.user.username,
+                    date: new Date()
+                }
+            };
+        }
+
+        const result = await db.collection('maintenance_reports').updateOne({ _id: new ObjectId(id) }, updates);
+        
+        if (result.matchedCount === 0) return res.status(404).json({ error: "Rapport introuvable" });
+        
+        res.json({ success: true, message: "Rapport mis à jour." });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 // ============================================
 // 📊 ANALYTICS BUS - STATISTIQUES PAR BUS
 // ============================================
