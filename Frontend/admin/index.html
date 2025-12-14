@@ -5079,7 +5079,7 @@
                     
 
 <button class="btn btn-icon btn-ghost" 
-    onclick="openEditMemberModal('${member._id}', '${member.name}', '${member.phone}', '${member.role}', '${member.status}')" 
+    onclick="openEditMemberModal('${member._id}')" 
     title="Modifier">
     ✏️
 </button>
@@ -5119,6 +5119,15 @@
                         <option value="Inactif" ${status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
                     </select>
                 </div>
+
+
+                <!-- ✅ Champ Agence d'affectation -->
+                <div class="form-group">
+                    <label class="form-label">Agence d'affectation</label>
+                    <select id="edit-member-agency" class="form-control">
+                        ${agencyOptions}
+                    </select>
+                </div>
             </div>
             
             <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
@@ -5146,7 +5155,9 @@
                 const updates = {
                     name: document.getElementById('edit-member-name').value,
                     phone: document.getElementById('edit-member-phone').value,
-                    status: document.getElementById('edit-member-status').value
+                    status: document.getElementById('edit-member-status').value,
+                    agencyId: document.getElementById('edit-member-agency').value // ✅ On envoie la nouvelle agence
+        
                 };
 
                 const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
@@ -5162,13 +5173,16 @@
          */
         // DANS admin/index.html, REMPLACEZ la fonction openAddCrewModal
 
-        function openAddCrewModal() {
-            const modalTitle = document.getElementById('modal-title');
-            const modalBody = document.getElementById('modal-body');
+        async function openAddCrewModal() {
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
 
-            modalTitle.textContent = "Ajouter un membre du personnel";
+    modalTitle.textContent = "Ajouter un membre du personnel";
 
-            modalBody.innerHTML = `
+    // On prépare les options d'agences
+    const agencyOptions = await getAgencyOptionsHTML();
+
+    modalBody.innerHTML = `
         <form id="add-crew-form">
             <div class="form-grid">
                 <div class="form-group">
@@ -5177,70 +5191,64 @@
                 </div>
 
                 <div class="form-group">
-    <label for="crew-role" class="form-label">Poste *</label>
-    <select id="crew-role" class="form-control" required>
-        <option value="">-- Choisir --</option>
-        
-        <!-- Administration -->
-        <option value="Super Admin">👑 Super Admin</option>
-        <option value="Manager">💼 Manager Global</option>
-        <option value="Manager d'Agence">🏢 Manager d'Agence</option>
-        <option value="Agent de réservation">🎟️ Agent de réservation</option>
-        
-        <!-- Opérations (Bus) -->
-        <option value="Chauffeur">🚗 Chauffeur</option>
-        <option value="Contrôleur">🎫 Contrôleur</option>
-        
-        <!-- ✅ NOUVEAUX RÔLES TECHNIQUES -->
-        <option value="Mécanicien">🔧 Mécanicien</option>
-        <option value="Électricien">⚡ Électricien Auto</option>
-        <option value="Technicien">🛠️ Technicien Polyvalent</option>
-    </select>
-</div>
+                    <label for="crew-role" class="form-label">Poste *</label>
+                    <select id="crew-role" class="form-control" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="Chauffeur">🚗 Chauffeur</option>
+                        <option value="Contrôleur">🎫 Contrôleur</option>
+                        <option value="Mécanicien">🔧 Mécanicien</option>
+                        <option value="Électricien">⚡ Électricien Auto</option>
+                        <option value="Agent de réservation">🎟️ Agent de réservation</option>
+                        <option value="Manager">💼 Manager Global</option>
+                        <option value="Manager d'Agence">🏢 Manager d'Agence</option>
+                        <option value="Super Admin">👑 Super Admin</option>
+                    </select>
+                </div>
 
                 <div class="form-group">
-                    <label for="crew-phone" class="form-label">Téléphone</label> <!-- Rendue optionnelle -->
-                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242 06 123 4567">
+                    <label for="crew-agency" class="form-label">Agence d'affectation</label>
+                    <select id="crew-agency" class="form-control">
+                        ${agencyOptions}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="crew-phone" class="form-label">Téléphone</label>
+                    <input type="tel" id="crew-phone" class="form-control" placeholder="+242...">
                 </div>
 
                 <div class="form-group">
                     <label for="crew-status" class="form-label">Statut *</label>
                     <select id="crew-status" class="form-control" required>
-                        <option value="Actif">✅ Actif (peut se connecter)</option>
-                        <option value="Inactif">❌ Inactif (compte bloqué)</option>
-                        <option value="En congé">🏖️ En congé</option>
+                        <option value="Actif">✅ Actif</option>
+                        <option value="Inactif">❌ Inactif</option>
                     </select>
                 </div>
             </div>
 
-            <!-- ======================================================== -->
-            <!-- ✅ AJOUT DES CHAMPS DE LOGIN ET PERMISSIONS               -->
-            <!-- ======================================================== -->
-            <hr style="border-color: var(--dark-border); margin: 2rem 0;">
-            <h3 style="color: var(--primary); margin-bottom: 1rem;">Accès au Dashboard</h3>
+            <hr style="border-color: var(--dark-border); margin: 1.5rem 0;">
+            <h4 style="color: var(--primary); margin-bottom: 1rem;">Connexion (Optionnel pour Chauffeurs)</h4>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Nom d'utilisateur (login) *</label>
-                    <input type="text" id="crew-username" class="form-control" required autocomplete="off">
+                    <label class="form-label">Nom d'utilisateur</label>
+                    <input type="text" id="crew-username" class="form-control" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Mot de passe (min. 6 caractères) *</label>
-                    <input type="password" id="crew-password" class="form-control" required autocomplete="new-password">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" id="crew-password" class="form-control" autocomplete="new-password">
                 </div>
             </div>
 
             <div class="form-group form-group-full" style="margin-top: 1rem;">
-                <label class="form-label">Permissions de l'utilisateur</label>
-                <div id="permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <!-- Les cases à cocher seront injectées ici par JavaScript -->
-                </div>
+                <label class="form-label">Permissions</label>
+                <div id="permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
             </div>
-            <!-- ======================================================== -->
+
 
             <div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(115, 215, 0, 0.1); border-radius: 8px;">
                 <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
-                    💡 <strong>Info :</strong> Le matricule sera généré automatiquement (ex: CH-001, CT-001)
+                    💡 <strong>Info :</strong> Le matricule sera généré automatiquement (ex: CH-001, CT-001, TECH-001)
                 </p>
             </div>
 
@@ -5251,15 +5259,10 @@
         </form>
     `;
 
-            // On appelle la fonction pour remplir les cases à cocher
-            populatePermissionsCheckboxes('permissions-container');
-
-            // On attache l'écouteur de soumission au formulaire
-            document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
-
-            // On affiche la modale
-            document.getElementById('details-modal').classList.add('active');
-        }
+    populatePermissionsCheckboxes('permissions-container');
+    document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
+    document.getElementById('details-modal').classList.add('active');
+}
         /**
          * Gère l'ajout d'un membre
          */
@@ -5276,6 +5279,8 @@
             const permissions = Array.from(document.querySelectorAll('#permissions-container input[name="permission"]:checked'))
                 .map(checkbox => checkbox.value);
 
+            const agencyId = document.getElementById('crew-agency').value;
+
             // On récupère toutes les valeurs du formulaire, y compris les nouvelles
             const newMember = {
                 name: document.getElementById('crew-name').value.trim(),
@@ -5284,6 +5289,7 @@
                 status: document.getElementById('crew-status').value,
                 username: document.getElementById('crew-username').value.trim(),
                 password: document.getElementById('crew-password').value, // On ne trim() pas le mot de passe
+                agencyId: agencyId || null, // ✅ On l'ajoute à l'objet envoyé
                 permissions: permissions
             };
 
@@ -7807,13 +7813,25 @@
             // La gestion d'erreur est déjà dans apiCall()
         }
 
-        /**
-         * Supprime une agence après confirmation.
-         * @param {string} agencyId - L'ID de l'agence à supprimer.
-         */
-       /**
- * Supprime une agence après confirmation via la modale personnalisée.
- */
+
+ 
+
+// DANS Admin/index.html (section <script>)
+
+async function getAgencyOptionsHTML(selectedId = null) {
+    // On s'assure d'avoir les agences chargées
+    if (!allAgencies || allAgencies.length === 0) {
+        const data = await apiCall('/admin/agencies');
+        if (data && data.success) allAgencies = data.agencies;
+    }
+
+    let html = '<option value="">-- Aucune affectation --</option>';
+    allAgencies.forEach(ag => {
+        const isSelected = selectedId && ag._id === selectedId ? 'selected' : '';
+        html += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
+    });
+    return html;
+}
 async function deleteAgency(agencyId) {
     console.log("🗑️ Tentative de suppression pour l'agence :", agencyId);
 
