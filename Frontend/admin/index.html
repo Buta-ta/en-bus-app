@@ -5214,22 +5214,39 @@
 /**
  * Affiche le tableau du personnel (Avec Photo, Agence et Bouton Badge)
  */
+/**
+ * Affiche le tableau du personnel (Version Robuste)
+ */
 function renderCrewTable(crewMembers) {
     const tbody = document.getElementById('crew-body');
-    if (!tbody) return;
 
+    // 1. Vérification de sécurité
+    if (!tbody) {
+        console.error("❌ Élément 'crew-body' introuvable dans le DOM");
+        return;
+    }
+
+    // 2. Gestion liste vide
     if (!crewMembers || crewMembers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
         return;
     }
 
+    console.log(`📋 Affichage de ${crewMembers.length} membres dans le tableau.`);
+
+    // 3. Construction du HTML
     tbody.innerHTML = crewMembers.map(member => {
-        // Sécurisation des données
+        
+        // --- Sécurisation des données (Valeurs par défaut) ---
         const role = member.role || 'Inconnu';
         const name = member.name || 'Sans nom';
         const matricule = member.matricule || 'N/A';
+        const phone = member.phone || '-';
         const status = member.status || 'Inactif';
-        
+        const totalKm = member.totalKm || 0;
+        const totalTrips = member.totalTrips || 0;
+
+        // --- Badges & Icônes ---
         const statusBadges = {
             'Actif': '<span class="badge badge-success">✅ Actif</span>',
             'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
@@ -5242,6 +5259,7 @@ function renderCrewTable(crewMembers) {
             'Mécanicien': '🔧', 'Électricien': '⚡', 'Technicien': '🛠️'
         };
 
+        // --- Affichage Agence ---
         let agencyDisplay = '<span style="color: var(--text-muted); font-size: 0.85em;">-</span>';
         if (member.agencyName) {
             agencyDisplay = `<span style="color: var(--accent); font-weight: 600;">${member.agencyName}</span>`;
@@ -5249,25 +5267,29 @@ function renderCrewTable(crewMembers) {
             agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
         }
 
-        // Gestion Photo sécurisée
-        const photoHTML = (member.photo && member.photo.startsWith('data:image')) 
-            ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border);">`
-            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em;">👤</div>`;
+        // --- Affichage Photo (Avec fallback) ---
+        // On vérifie si la photo existe et si c'est une chaîne valide (base64 ou url)
+        const hasPhoto = member.photo && typeof member.photo === 'string' && member.photo.length > 50;
+        
+        const photoHTML = hasPhoto
+            ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border); margin-right: 10px;">`
+            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em; margin-right: 10px;">👤</div>`;
 
+        // --- Rendu Ligne ---
         return `
             <tr>
                 <td class="font-mono font-bold" style="color: var(--primary);">${matricule}</td>
                 <td>
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center;">
                         ${photoHTML}
                         <strong>${name}</strong>
                     </div>
                 </td>
                 <td>${roleIcons[role] || ''} ${role}</td>
                 <td>${agencyDisplay}</td>
-                <td class="text-sm">${member.phone || '-'}</td>
-                <td class="font-bold">${formatPrice(member.totalKm || 0)} km</td>
-                <td>${member.totalTrips || 0}</td>
+                <td class="text-sm">${phone}</td>
+                <td class="font-bold">${formatPrice(totalKm)} km</td>
+                <td>${totalTrips}</td>
                 <td>${statusBadges[status] || status}</td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="generateBadge('${member._id}')" title="Imprimer Badge">🪪</button>
@@ -5279,7 +5301,6 @@ function renderCrewTable(crewMembers) {
         `;
     }).join('');
 }
-
         // ============================================
         // ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
         // ============================================
@@ -8070,44 +8091,37 @@ function getWeekNumber(d) {
          * Affiche les agences dans le tableau HTML.
          */
         function renderAgenciesTable(agencies) {
-            const tbody = document.getElementById('agencies-table-body');
-            if (!tbody) return;
+    const tbody = document.getElementById('agencies-table-body');
+    if (!tbody) return;
 
-            if (!agencies || agencies.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
-                return;
+    if (!agencies || agencies.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = agencies.map(agency => {
+        const statusBadge = agency.status === 'active' 
+            ? `<span class="badge badge-success">Actif</span>`
+            : `<span class="badge badge-gray">Inactif</span>`;
+
+        let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+        
+        // Sécurisation : On vérifie que allCrewMembers existe avant de chercher dedans
+        if (agency.managerId && typeof allCrewMembers !== 'undefined') {
+            const manager = allCrewMembers.find(m => m._id === agency.managerId);
+            if (manager) {
+                managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
             }
+        }
 
-            tbody.innerHTML = agencies.map(agency => {
-                const statusBadge = agency.status === 'active'
-                    ? `<span class="badge badge-success">Actif</span>`
-                    : `<span class="badge badge-gray">Inactif</span>`;
-
-                // ============================================================
-                // ✅ CORRECTION : RECHERCHE DYNAMIQUE DU NOM DU MANAGER
-                // ============================================================
-                let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
-
-                if (agency.managerId) {
-                    // On cherche l'employé qui a cet ID dans la liste globale
-                    const manager = allCrewMembers.find(m => m._id === agency.managerId);
-                    if (manager) {
-                        managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
-                    } else {
-                        // Si l'ID existe mais qu'on ne trouve pas le membre (ex: supprimé)
-                        managerName = '<span style="color: #ef5350;">Introuvable</span>';
-                    }
-                }
-                // ============================================================
-
-                return `
+        return `
             <tr>
                 <td>
                     <strong class="font-bold">${agency.name}</strong><br>
                     <small class="text-muted">${agency.address || 'Adresse non spécifiée'}</small>
                 </td>
                 <td>${agency.city}</td>
-                <td>${managerName}</td> <!-- On affiche le nom trouvé -->
+                <td>${managerName}</td>
                 <td class="font-bold text-center">${agency.employeeCount || 0}</td>
                 <td>${statusBadge}</td>
                 <td class="actions-cell">
@@ -8116,9 +8130,8 @@ function getWeekNumber(d) {
                 </td>
             </tr>
         `;
-            }).join('');
-        }
-
+    }).join('');
+}
         /**
          * Ouvre la modale pour créer ou modifier une agence.
          * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
