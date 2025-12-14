@@ -2801,7 +2801,9 @@
             <h1 class="page-title">Gestion des Agences</h1>
             <p class="page-subtitle">Créez, modifiez et gérez les points de vente et bases opérationnelles.</p>
         </div>
-
+        <div id="agency-revenue-stats" class="stats-grid" style="margin-bottom: 30px;">
+    <!-- Sera rempli par JS -->
+</div>
         <!-- Tableau des agences existantes -->
         <div class="content-card">
             <div class="card-header">
@@ -7563,6 +7565,29 @@ async function openEditMemberModal(memberId) {
 
 
 
+        async function loadAgencyRevenue() {
+    const container = document.getElementById('agency-revenue-stats');
+    if(!container) return;
+
+    const data = await apiCall('/api/admin/analytics/revenue-by-agency');
+    
+    if (data && data.success && data.stats.length > 0) {
+        container.innerHTML = data.stats.map(stat => `
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">${stat.agencyName || 'Agence Inconnue'}</span>
+                    <div class="stat-icon success">💰</div>
+                </div>
+                <div class="stat-value">${formatPrice(stat.totalRevenue)} FCFA</div>
+                <div style="font-size: 0.9em; color: var(--text-muted); margin-top: 5px;">
+                    ${stat.count} encaissements
+                </div>
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Aucun revenu enregistré par les agences.</div>';
+    }
+}
 
 
 
