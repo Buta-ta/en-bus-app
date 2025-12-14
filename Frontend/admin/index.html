@@ -8373,6 +8373,8 @@
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
     const endStr = endOfWeek.toISOString().split('T')[0];
+
+    
     const weeklyStatsData = await apiCall(`/admin/attendance/week-stats?start=${startStr}&end=${endStr}`);
     const weeklyStats = weeklyStatsData.success ? weeklyStatsData.stats : [];
 
