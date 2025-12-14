@@ -1195,6 +1195,20 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
         res.status(500).json({ error: "Erreur serveur interne lors de la recherche." });
     }
 });
+
+
+
+// ============================================
+// 🕵️ ROUTE DE DÉBOGAGE (TEMPORAIRE)
+// ============================================
+app.get("/api/admin/debug/schedules", authenticateToken, async (req, res) => {
+    try {
+        const allSchedules = await getDb().collection('schedules').find({}).toArray();
+        res.json({ success: true, schedules: allSchedules });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
 // ============================================
 // 💰 ROUTE CALCUL COÛT REPORT (CORRIGÉE)
 // ============================================
