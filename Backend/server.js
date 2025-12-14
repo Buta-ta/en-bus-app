@@ -3037,6 +3037,10 @@ app.post(
         
         newTrips.forEach((trip, index) => {
             // Récupération de l'ID généré
+            console.log(`--- DEBUG VOYAGE ${index} ---`);
+            console.log("ID inséré:", result.insertedIds[index]);
+            console.log("Date:", trip.date);
+            console.log("Équipage Brut:", JSON.stringify(trip.crew));
             const tripId = result.insertedIds[index]; 
 
             // Calcul horaire estimé (Départ -> +8h par défaut ou durée du modèle)
