@@ -5396,6 +5396,9 @@ function previewPhoto(input) {
 /**
  * Génère et télécharge le badge d'un employé
  */
+/**
+ * Génère et télécharge le badge d'un employé (Format CR-80 optimisé)
+ */
 async function generateBadge(memberId) {
     const member = allCrewMembers.find(m => m._id === memberId);
     if (!member) return;
@@ -5403,15 +5406,16 @@ async function generateBadge(memberId) {
     showNotification("Génération du badge...", "info");
 
     const { jsPDF } = window.jspdf;
+    // Format carte de crédit : 54mm x 86mm
     const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [54, 86] // Format carte de crédit (CR-80) standard
+        format: [54, 86]
     });
 
     // --- Design du Badge ---
     
-    // Fond
+    // Fond Blanc
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, 54, 86, 'F');
     
@@ -5419,45 +5423,58 @@ async function generateBadge(memberId) {
     doc.setFillColor(115, 215, 0); 
     doc.rect(0, 0, 54, 15, 'F');
     
+    // Logo / Titre
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("EN-BUS", 27, 10, { align: "center" });
 
-    // Photo
+    // Photo (Centrée)
+    // On la place à y=20, taille 28x28 (un peu plus petit pour laisser de la place)
     if (member.photo) {
         try {
-            doc.addImage(member.photo, 'JPEG', 12, 20, 30, 30); // x, y, w, h
+            doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28); 
+            // Petit cadre autour de la photo
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(13, 20, 28, 28);
         } catch (e) { console.warn("Erreur image", e); }
     } else {
         // Cadre vide si pas de photo
         doc.setDrawColor(200, 200, 200);
-        doc.rect(12, 20, 30, 30);
+        doc.rect(13, 20, 28, 28);
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text("No Photo", 27, 35, { align: "center" });
     }
 
-    // Infos Employé
+    // Nom (Gras, Noir)
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text(member.name, 27, 55, { align: "center", maxWidth: 50 });
+    // On coupe le nom s'il est trop long pour qu'il tienne sur une ligne
+    let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
+    doc.text(displayName, 27, 54, { align: "center" });
 
+    // Rôle (Normal, Gris foncé)
+    doc.setTextColor(80, 80, 80);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(member.role.toUpperCase(), 27, 60, { align: "center" });
+    doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
     
+    // Matricule (Monospace, Noir)
+    doc.setTextColor(0, 0, 0);
     doc.setFont("courier", "bold");
-    doc.text(member.matricule || "N/A", 27, 65, { align: "center" });
+    doc.setFontSize(10);
+    doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
 
-    // QR Code
-    // Le QR contient l'ID unique de l'employé pour le scan
+    // QR Code (Ajusté en bas)
+    // ID Unique pour le scan
     const qrData = member.matricule || member._id; 
     
     try {
+        // On génère un QR code plus petit (18x18mm) et on le place à y=66
         const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
-        doc.addImage(qrUrl, 'PNG', 17, 68, 20, 20);
+        doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
     } catch (err) {
         console.error("Erreur QR", err);
     }
@@ -5605,29 +5622,32 @@ async function generateBadge(memberId) {
         /**
  * Affiche les détails d'un membre du personnel et son historique
  */
-        async function viewCrewDetails(memberId) {
-            showNotification('Chargement des détails...', 'info');
+       /**
+ * Affiche les détails d'un membre du personnel et son historique
+ */
+async function viewCrewDetails(memberId) {
+    showNotification('Chargement des détails...', 'info');
 
-            try {
-                const data = await apiCall(`/admin/crew/${memberId}`);
+    try {
+        const data = await apiCall(`/admin/crew/${memberId}`);
 
-                if (!data || !data.success) {
-                    showNotification('Impossible de charger les détails du membre.', 'error');
-                    return;
-                }
+        if (!data || !data.success) {
+            showNotification('Impossible de charger les détails du membre.', 'error');
+            return;
+        }
 
-                const member = data.member;
-                const history = data.history;
+        const member = data.member;
+        const history = data.history;
 
-                const modalTitle = document.getElementById('modal-title');
-                const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
 
-                modalTitle.textContent = `Fiche détaillée - ${member.name}`;
+        modalTitle.textContent = `Fiche détaillée - ${member.name}`;
 
-                // --- Construction de l'historique ---
-                let historyHTML = '';
-                if (history.length > 0) {
-                    historyHTML = history.map(trip => `
+        // --- Construction de l'historique ---
+        let historyHTML = '';
+        if (history.length > 0) {
+            historyHTML = history.map(trip => `
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--dark-border);">
                     <div>
                         <span style="font-weight: 600;">${new Date(trip.date).toLocaleDateString('fr-FR')}</span>
@@ -5637,67 +5657,77 @@ async function generateBadge(memberId) {
                         <span style="background: var(--dark-elevated); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-family: var(--font-mono);">
                             🚌 ${trip.busIdentifier || 'N/A'}
                         </span>
-                        <span style="background: var(--dark-elevated); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-family: var(--font-mono); margin-left: 8px;">
-                            📏 ${trip.distance} km
-                        </span>
                     </div>
                 </li>
             `).join('');
-                } else {
-                    historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
-                }
+        } else {
+            historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
+        }
 
-                // --- Construction du HTML de la modale ---
-                modalBody.innerHTML = `
+        // ✅ GESTION DE LA PHOTO DE PROFIL
+        let avatarHTML;
+        if (member.photo) {
+            // Si photo : Image ronde avec bordure
+            avatarHTML = `<img src="${member.photo}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">`;
+        } else {
+            // Sinon : Icône par défaut
+            avatarHTML = `<div style="font-size: 3rem; background: var(--dark-surface); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--dark-border);">
+                            ${member.role === 'Chauffeur' ? '🚗' : '🎫'}
+                          </div>`;
+        }
+
+        // --- Construction du HTML de la modale ---
+        modalBody.innerHTML = `
             <!-- Section Informations générales -->
             <div style="background: var(--dark-elevated); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
-                    <div style="font-size: 3rem; background: var(--dark-surface); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        ${member.role === 'Chauffeur' ? '🚗' : '🎫'}
-                    </div>
+                    <!-- Avatar dynamique -->
+                    ${avatarHTML}
+                    
                     <div>
                         <h3 style="margin: 0; font-size: 1.5rem; color: var(--primary);">${member.name}</h3>
-                        <p style="margin: 0; color: var(--text-secondary); font-family: var(--font-mono);">${member.matricule}</p>
+                        <p style="margin: 0; color: var(--text-secondary); font-family: var(--font-mono); font-weight: bold;">${member.matricule || 'N/A'}</p>
+                        <span class="badge badge-gray" style="margin-top: 5px;">${member.role}</span>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
-                    <div><strong>Téléphone:</strong><br> ${member.phone}</div>
+                    <div><strong>Téléphone:</strong><br> ${member.phone || '-'}</div>
                     <div><strong>Statut:</strong><br> ${member.status}</div>
+                    <div style="grid-column: 1 / -1;"><strong>Agence:</strong><br> ${member.agencyName || 'Non affecté'}</div>
                 </div>
             </div>
             
             <!-- Section Statistiques -->
             <div style="margin-bottom: 20px;">
                 <h4 style="color: var(--primary); margin-bottom: 10px;">📊 Statistiques</h4>
-                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
                     <div class="stat-card" style="padding: 15px;">
                         <span class="stat-label">Km parcourus</span>
-                        <div class="stat-value" style="font-size: 2rem;">${formatPrice(member.totalKm || 0)}</div>
+                        <div class="stat-value" style="font-size: 1.8rem;">${formatPrice(member.totalKm || 0)}</div>
                     </div>
                     <div class="stat-card" style="padding: 15px;">
                         <span class="stat-label">Trajets effectués</span>
-                        <div class="stat-value" style="font-size: 2rem;">${member.totalTrips || 0}</div>
+                        <div class="stat-value" style="font-size: 1.8rem;">${member.totalTrips || 0}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Section Historique -->
             <div>
-                <h4 style="color: var(--primary); margin-bottom: 10px;">🗓️ 5 derniers voyages terminés</h4>
+                <h4 style="color: var(--primary); margin-bottom: 10px;">🗓️ 5 derniers voyages</h4>
                 <ul style="list-style: none; padding: 0; background: var(--dark-surface); border-radius: 8px; border: 1px solid var(--dark-border);">
                     ${historyHTML}
                 </ul>
             </div>
         `;
 
-                document.getElementById('details-modal').classList.add('active');
+        document.getElementById('details-modal').classList.add('active');
 
-            } catch (error) {
-                console.error('❌ Erreur affichage détails membre:', error);
-                showNotification('Erreur lors de l\'affichage des détails', 'error');
-            }
-        }
-
+    } catch (error) {
+        console.error('❌ Erreur affichage détails membre:', error);
+        showNotification('Erreur lors de l\'affichage des détails', 'error');
+    }
+}
 
 
 
