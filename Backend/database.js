@@ -19,6 +19,9 @@ async function connectToDb() {
     await dbInstance.collection("trips").createIndex({ date: 1, "route.from": 1, "route.to": 1 });
     await dbInstance.collection("destinations").createIndex({ name: 1 });
     console.log("   -> Index assurés.");
+    await dbInstance.collection("attendance").createIndex({ crewId: 1, date: 1 });
+    await dbInstance.collection("attendance").createIndex({ agencyId: 1 });
+    console.log("   -> Index présences assurés.");
 
     // Initialisation des paramètres (inchangé)
     const existingSettings = await dbInstance.collection("system_settings").findOne({ key: "reportSettings" });

@@ -1555,6 +1555,109 @@ app.post(
 
 
 
+// ============================================
+// ⏱️ GESTION DU POINTAGE (ATTENDANCE)
+// ============================================
+
+// [POST] Scanner un badge (Check-in / Check-out)
+app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
+    try {
+        const { qrData } = req.body; // qrData contient le matricule ou l'ID
+        const db = getDb();
+
+        // 1. Identifier l'employé
+        // On cherche par ID (Mongo) ou par Matricule
+        let query = {};
+        if (ObjectId.isValid(qrData)) {
+            query._id = new ObjectId(qrData);
+        } else {
+            query.matricule = qrData;
+        }
+
+        const employee = await db.collection('crew').findOne(query);
+
+        if (!employee) {
+            return res.status(404).json({ error: "Badge non reconnu ou employé introuvable." });
+        }
+
+        if (employee.status !== 'Actif') {
+            return res.status(403).json({ error: "Cet employé est inactif ou en congé." });
+        }
+
+        // 2. Déterminer la date du jour (sans l'heure) pour éviter les doublons
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0]; // "2023-11-28"
+
+        // 3. Chercher un pointage existant pour aujourd'hui
+        const attendance = await db.collection('attendance').findOne({
+            crewId: employee._id,
+            date: todayStr
+        });
+
+        // CAS A : Premier scan du jour -> CHECK-IN (Arrivée)
+        if (!attendance) {
+            const newEntry = {
+                crewId: employee._id,
+                crewName: employee.name,
+                crewRole: employee.role,
+                agencyId: employee.agencyId || null, // On garde l'agence où il est affecté
+                date: todayStr,
+                checkIn: new Date(),
+                checkOut: null,
+                durationMinutes: 0,
+                status: 'present' // En cours
+            };
+            await db.collection('attendance').insertOne(newEntry);
+            
+            return res.json({ 
+                success: true, 
+                action: "check-in", 
+                message: `Bienvenue, ${employee.name} !`, 
+                time: new Date() 
+            });
+        }
+
+        // CAS B : Déjà scanné ce matin -> CHECK-OUT (Départ)
+        if (attendance.checkIn && !attendance.checkOut) {
+            const now = new Date();
+            // Calcul durée en minutes
+            const duration = Math.round((now - new Date(attendance.checkIn)) / 60000);
+
+            // Sécurité anti-doublon (si on scanne 2 fois en 1 minute)
+            if (duration < 2) {
+                return res.status(429).json({ error: "Scan ignoré (déjà scanné il y a moins de 2 min)." });
+            }
+
+            await db.collection('attendance').updateOne(
+                { _id: attendance._id },
+                { 
+                    $set: { 
+                        checkOut: now, 
+                        durationMinutes: duration,
+                        status: 'completed'
+                    } 
+                }
+            );
+
+            return res.json({ 
+                success: true, 
+                action: "check-out", 
+                message: `Au revoir, ${employee.name}. (Durée: ${Math.floor(duration/60)}h${duration%60})`,
+                time: now 
+            });
+        }
+
+        // CAS C : Déjà parti -> ERREUR ou NOUVEAU SHIFT ?
+        // Pour l'instant, on bloque (une seule vacation par jour)
+        return res.status(400).json({ error: "Journée déjà terminée pour cet employé." });
+
+    } catch (error) {
+        console.error("Erreur scan:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
 
 // DANS server.js
 
@@ -1686,6 +1789,34 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
     try {
         const destinations = await destinationsCollection.find({}).sort({ name: 1 }).toArray();
         res.json({ success: true, destinations });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+
+// [GET] Récupérer les présences du jour (Tableau de bord)
+app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        const db = getDb();
+        const records = await db.collection('attendance')
+            .find({ date: todayStr })
+            .sort({ checkIn: -1 }) // Les plus récents en haut
+            .toArray();
+
+        // Calcul des stats
+        const stats = {
+            present: records.filter(r => r.status === 'present').length,
+            completed: records.filter(r => r.status === 'completed').length,
+            total: records.length
+        };
+
+        res.json({ success: true, records, stats });
+
     } catch (error) {
         res.status(500).json({ error: "Erreur serveur" });
     }
@@ -2103,6 +2234,13 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
+
+
+
+
+
+
+
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
   try {
