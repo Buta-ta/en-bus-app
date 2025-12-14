@@ -3654,12 +3654,14 @@ app.delete("/api/admin/agencies/:id", authenticateToken, async (req, res) => {
 
 // DANS server.js
 
+// DANS server.js
+
 app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, res) => {
     const { id, action } = req.params;
     if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID de réservation invalide." });
 
     try {
-        // On charge l'objet de réservation original une seule fois au début.
+        // On charge l'objet de réservation original
         const reservation = await reservationsCollection.findOne({ _id: new ObjectId(id) });
         if (!reservation) {
             return res.status(404).json({ error: "Réservation introuvable." });
@@ -3667,6 +3669,16 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
 
         // --- CAS 1 : Confirmation de paiement ---
         if (action === "confirm-payment") {
+            // ✅ CORRECTION MAJEURE : On récupère l'utilisateur ICI
+            // `req.user.username` vient du token JWT décodé par `authenticateToken`
+            const user = await crewCollection.findOne({ username: req.user.username });
+            
+            // Sécurité : si l'utilisateur a été supprimé entre temps
+            if (!user) {
+                console.error("Utilisateur introuvable lors de la confirmation:", req.user.username);
+                // On pourrait arrêter ici, mais pour ne pas bloquer le système, on continue avec des valeurs par défaut
+            }
+
             if (reservation.status !== "En attente de paiement") {
                 return res.status(400).json({ error: "Cette réservation n'est pas en attente de paiement." });
             }
@@ -3675,15 +3687,18 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             if (!transactionProof || transactionProof.trim() === '') {
                 return res.status(400).json({ error: "Une preuve de transaction est requise." });
             }
-                // ✅ NOUVEAU : On identifie l'agence qui encaisse
-    let collectingAgencyId = null;
-    let collectingAgencyName = "Siège / Admin";
 
-    // Si l'utilisateur qui valide est rattaché à une agence
-    if (user.agencyId) {
-        collectingAgencyId = user.agencyId;
-        collectingAgencyName = user.agencyName;
-    }
+            // ✅ GESTION DE L'AGENCE D'ENCAISSEMENT
+            let collectingAgencyId = null;
+            let collectingAgencyName = "Siège / Admin"; // Valeur par défaut
+
+            // Si l'utilisateur est trouvé et affecté à une agence
+            if (user && user.agencyId) {
+                collectingAgencyId = user.agencyId;
+                collectingAgencyName = user.agencyName || "Agence inconnue";
+            }
+
+            // Mise à jour en base de données
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { 
@@ -3691,32 +3706,24 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                         status: "Confirmé", 
                         confirmedAt: new Date(), 
                         "paymentDetails.transactionProof": transactionProof.trim(),
-                        "paymentDetails.confirmedByAdmin": req.user.username ,
-                        // ✅ ON SAUVEGARDE L'AGENCE QUI A ENCAISSÉ
-                "paymentDetails.collectedByAgencyId": collectingAgencyId,
-                "paymentDetails.collectedByAgencyName": collectingAgencyName
+                        // On enregistre le nom de l'employé qui valide
+                        "paymentDetails.confirmedByAdmin": req.user.username,
+                        // On enregistre l'agence qui encaisse (pour les stats)
+                        "paymentDetails.collectedByAgencyId": collectingAgencyId,
+                        "paymentDetails.collectedByAgencyName": collectingAgencyName
                     } 
                 }
             );
             
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
-            // ========================================================
-            
-            // On met à jour l'objet 'reservation' que nous avons déjà en mémoire.
-            // C'est plus sûr car on sait qu'il contient tous les champs nécessaires (date, route...).
+            // Préparation de l'objet pour l'email (données fraîches)
             reservation.status = "Confirmé"; 
             reservation.confirmedAt = new Date();
             if(!reservation.paymentDetails) reservation.paymentDetails = {};
             reservation.paymentDetails.confirmedByAdmin = req.user.username;
             
-            // On envoie cet objet mis à jour, qui est garanti d'être complet.
+            // Envoi de l'email
             sendPaymentConfirmedEmail(reservation); 
             
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
-
             return res.json({ success: true, message: "Paiement confirmé !" });
         }
 
@@ -3742,6 +3749,7 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                 );
             }
 
+            // Mise à jour du statut
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { 
@@ -3752,8 +3760,6 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                     } 
                 }
             );
-            
-            // TODO: Envoyer un email d'annulation au client
             
             return res.json({ success: true, message: "Réservation annulée avec succès." });
         }
@@ -3766,7 +3772,6 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 
 
 
