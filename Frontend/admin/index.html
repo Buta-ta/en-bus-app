@@ -3045,6 +3045,10 @@
                 </label>
             </div>
 
+            <div style="text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">
+    ℹ️ Une pause dure au minimum 15min et au maximum 2h.
+</div>
+
             <!-- Zone du scanner -->
             <div id="scanner-container"
                 style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
@@ -6477,6 +6481,102 @@
             }).join('');
         }
 
+
+
+
+        async function openMaintenanceDetailsModal(reportId) {
+    const report = allMaintenanceReports.find(r => r._id === reportId);
+    if (!report) return;
+
+    if (!allCrewMembers || allCrewMembers.length === 0) {
+        await loadAllCrew();
+    }
+
+    const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
+    const technicians = allCrewMembers.filter(m => techRoles.includes(m.role) && m.status === 'Actif');
+    
+    let techOptions = '<option value="">-- Non assigné --</option>';
+    technicians.forEach(tech => {
+        const isSelected = report.assignedTo && report.assignedTo === tech._id ? 'selected' : '';
+        techOptions += `<option value="${tech._id}" ${isSelected}>${tech.name} (${tech.role})</option>`;
+    });
+
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = `Incident sur Bus ${report.busIdentifier}`;
+
+    const commentsHTML = (report.comments || []).map(c => `
+        <li style="padding: 8px; border-bottom: 1px solid var(--dark-border);">
+            <div style="display: flex; justify-content: space-between;">
+                <strong style="color: var(--primary);">${c.author}</strong>
+                <small style="color: var(--text-muted);">${new Date(c.date).toLocaleString('fr-FR')}</small>
+            </div>
+            <p style="margin: 4px 0 0 0; color: var(--text-secondary); white-space: pre-wrap;">${c.text}</p>
+        </li>
+    `).reverse().join(''); // .reverse() pour voir les plus récents en premier
+
+    modalBody.innerHTML = `
+        <form id="update-maintenance-form">
+            <p style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                <strong>Description:</strong> ${report.description}
+            </p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Assigner à</label>
+                    <select id="maintenance-assignee" class="form-control">${techOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Changer le statut</label>
+                    <select id="maintenance-status" class="form-control">
+                        <option value="À faire" ${report.status === 'À faire' ? 'selected' : ''}>À faire</option>
+                        <option value="En cours" ${report.status === 'En cours' ? 'selected' : ''}>En cours</option>
+                        <option value="En attente de pièces" ${report.status === 'En attente de pièces' ? 'selected' : ''}>En attente de pièces</option>
+                        <option value="Terminé" ${report.status === 'Terminé' ? 'selected' : ''}>Terminé</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr style="margin: 20px 0; border-color: var(--dark-border);">
+
+            <h4>Historique & Commentaires</h4>
+            <ul style="list-style: none; padding: 0; max-height: 150px; overflow-y: auto; background: var(--dark-elevated); border-radius: 8px; margin-bottom: 15px;">
+                ${commentsHTML || '<li style="padding: 10px; color: var(--text-muted);">Aucun commentaire.</li>'}
+            </ul>
+
+            <div class="form-group">
+                <label>Ajouter un commentaire</label>
+                <textarea id="maintenance-comment" class="form-control" rows="2" placeholder="Ex: Pièce commandée, test OK..."></textarea>
+            </div>
+
+            <div style="text-align: right; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+            </div>
+        </form>
+    `;
+
+    document.getElementById('details-modal').classList.add('active');
+
+    document.getElementById('update-maintenance-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const payload = {
+            status: document.getElementById('maintenance-status').value,
+            assignedToId: document.getElementById('maintenance-assignee').value,
+            comment: document.getElementById('maintenance-comment').value.trim()
+        };
+
+        if (!payload.comment) delete payload.comment;
+
+        const result = await apiCall(`/api/admin/maintenance/${reportId}`, 'PATCH', payload);
+        if (result && result.success) {
+            showNotification("Rapport mis à jour.", "success");
+            closeModal();
+            loadMaintenanceReports();
+        }
+    });
+}
+
         function openReportIncidentModal() {
             const modalTitle = document.getElementById('modal-title');
             const modalBody = document.getElementById('modal-body');
@@ -8254,87 +8354,84 @@
             }
         }
         async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
-            const tbody = document.getElementById('schedule-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+    const tbody = document.getElementById('schedule-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Chargement...</td></tr>';
 
-            // SÉCURITÉ : Si la liste est vide, on charge tout
-            if (!employees || employees.length === 0) {
-                if (!allCrewMembers || allCrewMembers.length === 0) {
-                    await loadAllCrew();
-                }
-                employees = allCrewMembers; // Fallback
-            }
+    if (!employees || employees.length === 0) {
+        if (!allCrewMembers || allCrewMembers.length === 0) await loadAllCrew();
+        employees = allCrewMembers;
+    }
 
-            if (employees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Aucun employé trouvé.</td></tr>';
-                return;
-            }
-            employees.forEach(member => {
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Aucun employé trouvé.</td></tr>';
+        return;
+    }
 
-                // ==========================================================
-                // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
-                // ==========================================================
-                let agencyText = '';
-                if (member.agencyName) {
-                    agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
-                } else if (member.role === 'Super Admin' || member.role === 'Manager') {
-                    agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
-                }
-                // ==========================================================
+    // Calcul des stats hebdomadaires
+    const startStr = startOfWeek.toISOString().split('T')[0];
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    const endStr = endOfWeek.toISOString().split('T')[0];
+    const weeklyStatsData = await apiCall(`/admin/attendance/week-stats?start=${startStr}&end=${endStr}`);
+    const weeklyStats = weeklyStatsData.success ? weeklyStatsData.stats : [];
 
-                let rowHTML = `
+    let tableHTML = '';
+
+    employees.forEach(member => {
+        let agencyText = '';
+        if (member.agencyName) {
+            agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
+        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
+            agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
+        }
+
+        let rowHTML = `
             <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <strong>${member.name}</strong>
-                    </div>
+                    <div style="font-weight:bold;">${member.name}</div>
                     <div style="font-size: 0.8rem; color: var(--primary);">${member.role}</div>
-                    ${agencyText} <!-- Ici on l'utilise -->
+                    ${agencyText}
                 </td>
         `;
+        
+        for(let i=0; i<7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(currentDay.getDate() + i);
+            const dateStr = currentDay.toISOString().split('T')[0];
 
-                // ... suite de la fonction
-                // Pour chaque jour de la semaine (0 à 6)
-                for (let i = 0; i < 7; i++) {
-                    const currentDay = new Date(startOfWeek);
-                    currentDay.setDate(currentDay.getDate() + i);
-                    const dateStr = currentDay.toISOString().split('T')[0];
+            const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
+            
+            let cellContent = items.map(item => {
+                const typeClass = (item.type || '').replace(/\s+/g, '_');
+                const icon = {'Voyage':'🚌', 'Astreinte':'📞', 'Heures_Sup':'⚡', 'Congé':'🏖️'}[typeClass] || '';
+                return `
+                    <div class="schedule-item type-${typeClass}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
+                        <div style="font-weight:700; font-size:0.85em; margin-bottom:2px;">${item.startTime} - ${item.endTime}</div>
+                        <div style="font-size:0.8em; opacity:0.9;">${icon}${item.note || item.type}</div>
+                    </div>
+                `;
+            }).join('');
 
-                    // Trouver les créneaux
-                    const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
-
-                    let cellContent = '';
-                    items.forEach(item => {
-                        // On nettoie le type pour qu'il soit une classe CSS valide (ex: "Heures Sup" -> "Heures_Sup")
-                        // Si vous avez déjà corrigé les valeurs en base de données, c'est bon.
-                        // Sinon, petite sécurité :
-                        const typeClass = item.type.replace(/\s+/g, '_');
-
-                        // On ajoute une icône selon le type
-                        let icon = '';
-                        if (item.type === 'Voyage') icon = '🚌 ';
-                        if (item.type === 'Astreinte') icon = '📞 ';
-                        if (item.type === 'Heures_Sup') icon = '⚡ ';
-                        if (item.type === 'Congé') icon = '🏖️ ';
-
-                        cellContent += `
-        <div class="schedule-item type-${typeClass}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
-            <div style="font-weight:700; font-size:0.85em; margin-bottom:2px;">${item.startTime} - ${item.endTime}</div>
-            <div style="font-size:0.8em; opacity:0.9;">${icon}${item.note || item.type.replace('_', ' ')}</div>
-        </div>
-    `;
-                    });
-
-                    // Bouton d'ajout (+)
-                    cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')" style="text-align:center; cursor:pointer; opacity:0.3; font-weight:bold;">+</div>`;
-
-                    rowHTML += `<td class="schedule-cell" style="min-width:100px; vertical-align:top;">${cellContent}</td>`;
-                }
-                rowHTML += '</tr>';
-                tbody.innerHTML += rowHTML;
-            });
+            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')">+</div>`;
+            rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
         }
+
+        // Calcul des heures
+        const stats = weeklyStats.find(s => s._id === member._id);
+        let hoursDisplay = '0h 00m';
+        if (stats && stats.totalWorkMinutes) {
+            const totalH = Math.floor(stats.totalWorkMinutes / 60);
+            const totalM = stats.totalWorkMinutes % 60;
+            hoursDisplay = `${totalH}h ${String(totalM).padStart(2,'0')}m`;
+        }
+        
+        rowHTML += `<td style="text-align: center; vertical-align: middle; font-weight: bold;">${hoursDisplay}</td></tr>`;
+        tableHTML += rowHTML;
+    });
+
+    tbody.innerHTML = tableHTML;
+}
 
         // Fonction utilitaire Date (Standard ISO)
         function getDateOfISOWeek(w, y) {
