@@ -1891,20 +1891,35 @@ app.post("/api/admin/crew", allowFirstAdminCreation, [
         // ✅ DÉBUT DE LA LOGIQUE DE MATRICULE MISE À JOUR
         // ========================================================
         
-        let matricule = null; // Par défaut, pas de matricule pour les rôles admin
+        // ========================================================
+// ✅ LOGIQUE DE MATRICULE MISE À JOUR (AVEC TECH)
+// ========================================================
+let matricule = null;
+const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
 
-        // On ne génère un matricule que pour les rôles opérationnels
-        if (role === 'Chauffeur' || role === 'Contrôleur') {
-            const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
-            const count = await crewCollection.countDocuments({ role: role });
-            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
-        } else {
-            // Pour les autres rôles (Agent, Manager...), on peut créer un préfixe "ADM"
-            const prefix = "ADM";
-            // On compte tous les utilisateurs qui ne sont ni chauffeur ni contrôleur
-            const count = await crewCollection.countDocuments({ role: { $nin: ['Chauffeur', 'Contrôleur'] } });
-            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
-        }
+if (role === 'Chauffeur' || role === 'Contrôleur') {
+    // 1. Personnel Roulant (CH / CT)
+    const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
+    const count = await crewCollection.countDocuments({ role: role });
+    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+
+} else if (techRoles.includes(role)) {
+    // 2. ✅ Personnel Technique (TECH)
+    const prefix = 'TECH';
+    // On compte tous les techniciens confondus pour avoir une suite logique (TECH-001, TECH-002...)
+    const count = await crewCollection.countDocuments({ role: { $in: techRoles } });
+    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+
+} else {
+    // 3. Administration & Gestion (ADM)
+    const prefix = "ADM";
+    // On compte tout ce qui n'est ni roulant ni technique
+    const count = await crewCollection.countDocuments({ 
+        role: { $nin: ['Chauffeur', 'Contrôleur', ...techRoles] } 
+    });
+    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+}
+// ========================================================
 
         // ========================================================
         // ✅ FIN DE LA LOGIQUE DE MATRICULE
