@@ -2529,6 +2529,27 @@ app.delete("/api/admin/schedules/:id", authenticateToken, async (req, res) => {
     }
 });
 
+
+
+
+// [DELETE] Supprimer un rapport de maintenance
+app.delete("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        const db = getDb();
+        const result = await db.collection('maintenance_reports').deleteOne({ _id: new ObjectId(id) });
+        
+        if (result.deletedCount === 0) return res.status(404).json({ error: "Rapport introuvable" });
+
+        res.json({ success: true, message: "Rapport de maintenance archivé." });
+
+    } catch (error) {
+        console.error("Erreur suppression maintenance:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 // Récupérer les détails d'un membre spécifique et son historique
 app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
     try {
