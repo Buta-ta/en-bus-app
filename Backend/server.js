@@ -1505,6 +1505,32 @@ app.get("/api/admin/needs-setup", async (req, res) => {
     }
 });
 
+
+
+
+// [GET] Récupérer les stats de présence pour une période (semaine)
+app.get("/api/admin/attendance/week-stats", authenticateToken, async (req, res) => {
+    try {
+        const { start, end } = req.query; // YYYY-MM-DD
+        const db = getDb();
+
+        const stats = await db.collection('attendance').aggregate([
+            { $match: { date: { $gte: start, $lte: end } } },
+            {
+                $group: {
+                    _id: "$crewId", // Regrouper par employé
+                    totalWorkMinutes: { $sum: "$durationMinutes" }, // Sommer les minutes travaillées
+                    totalBreakMinutes: { $sum: "$totalBreakMinutes" } // Sommer les pauses
+                }
+            }
+        ]).toArray();
+
+        res.json({ success: true, stats });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 // ============================================
 // === ROUTES ADMIN (PROTÉGÉES) ===
 // ============================================
