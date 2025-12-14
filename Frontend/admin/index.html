@@ -5685,90 +5685,97 @@
         /**
          * Génère et télécharge le badge d'un employé (Format CR-80 optimisé)
          */
-        async function generateBadge(memberId) {
-            const member = allCrewMembers.find(m => m._id === memberId);
-            if (!member) return;
+        /**
+ * Génère et télécharge le badge d'un employé (Avec récupération de la photo)
+ */
+async function generateBadge(memberId) {
+    showNotification("Récupération des données du badge...", "info");
 
-            showNotification("Génération du badge...", "info");
+    try {
+        // 1. On appelle l'API de détails pour avoir la photo (car la liste globale ne l'a pas)
+        const data = await apiCall(`/admin/crew/${memberId}`);
+        
+        if (!data || !data.success || !data.member) {
+            showNotification("Erreur lors de la récupération des données.", "error");
+            return;
+        }
 
-            const { jsPDF } = window.jspdf;
-            // Format carte de crédit : 54mm x 86mm
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: [54, 86]
-            });
+        const member = data.member; // Ce membre contient la photo !
 
-            // --- Design du Badge ---
+        showNotification("Génération du PDF...", "info");
 
-            // Fond Blanc
-            doc.setFillColor(255, 255, 255);
-            doc.rect(0, 0, 54, 86, 'F');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [54, 86]
+        });
 
-            // En-tête (Couleur verte En-Bus)
-            doc.setFillColor(115, 215, 0);
-            doc.rect(0, 0, 54, 15, 'F');
+        // --- Design du Badge ---
+        
+        // Fond Blanc
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, 54, 86, 'F');
+        
+        // En-tête Vert
+        doc.setFillColor(115, 215, 0); 
+        doc.rect(0, 0, 54, 15, 'F');
+        
+        // Logo
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("EN-BUS", 27, 10, { align: "center" });
 
-            // Logo / Titre
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.text("EN-BUS", 27, 10, { align: "center" });
-
-            // Photo (Centrée)
-            // On la place à y=20, taille 28x28 (un peu plus petit pour laisser de la place)
-            if (member.photo) {
-                try {
-                    doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28);
-                    // Petit cadre autour de la photo
-                    doc.setDrawColor(200, 200, 200);
-                    doc.rect(13, 20, 28, 28);
-                } catch (e) { console.warn("Erreur image", e); }
-            } else {
-                // Cadre vide si pas de photo
+        // Photo
+        if (member.photo) {
+            try {
+                // On ajoute l'image directement depuis les données reçues
+                doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28); 
                 doc.setDrawColor(200, 200, 200);
                 doc.rect(13, 20, 28, 28);
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text("No Photo", 27, 35, { align: "center" });
-            }
-
-            // Nom (Gras, Noir)
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "bold");
-            // On coupe le nom s'il est trop long pour qu'il tienne sur une ligne
-            let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
-            doc.text(displayName, 27, 54, { align: "center" });
-
-            // Rôle (Normal, Gris foncé)
-            doc.setTextColor(80, 80, 80);
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
-
-            // Matricule (Monospace, Noir)
-            doc.setTextColor(0, 0, 0);
-            doc.setFont("courier", "bold");
-            doc.setFontSize(10);
-            doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
-
-            // QR Code (Ajusté en bas)
-            // ID Unique pour le scan
-            const qrData = member.matricule || member._id;
-
-            try {
-                // On génère un QR code plus petit (18x18mm) et on le place à y=66
-                const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
-                doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
-            } catch (err) {
-                console.error("Erreur QR", err);
-            }
-
-            // Sauvegarde
-            doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
-            showNotification("Badge téléchargé !", "success");
+            } catch (e) { console.warn("Erreur image", e); }
+        } else {
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(13, 20, 28, 28);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text("No Photo", 27, 35, { align: "center" });
         }
+
+        // Nom
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
+        doc.text(displayName, 27, 54, { align: "center" });
+
+        // Rôle
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
+        
+        // Matricule
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("courier", "bold");
+        doc.setFontSize(10);
+        doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
+
+        // QR Code
+        const qrData = member.matricule || member._id; 
+        const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
+        doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
+
+        // Sauvegarde
+        doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
+        showNotification("Badge téléchargé !", "success");
+
+    } catch (error) {
+        console.error("Erreur badge:", error);
+        showNotification("Erreur lors de la génération.", "error");
+    }
+}
         /**
          * Ouvre la modale de modification
          */
