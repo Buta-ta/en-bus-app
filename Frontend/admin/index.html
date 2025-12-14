@@ -6443,59 +6443,76 @@
 
         // --- Fonctions de Maintenance ---
 
- async function loadMaintenanceReports() {
+async function loadMaintenanceReports() {
+    // 1. S'assurer que la liste du personnel est disponible pour afficher les noms
     if (!allCrewMembers || allCrewMembers.length === 0) {
         await loadAllCrew();
     }
 
+    // 2. Charger les rapports de maintenance
     const data = await apiCall('/admin/maintenance');
-    if (!data || !data.success) return;
+    if (!data || !data.success) {
+        // En cas d'erreur, on s'assure que le tableau n'est pas bloqué sur "chargement"
+        const tbody = document.getElementById('maintenance-table-body');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Erreur de chargement des données.</td></tr>';
+        return;
+    }
     
+    // On met à jour la variable globale avec les nouvelles données
     allMaintenanceReports = data.reports;
 
+    // 3. Afficher les données dans le tableau
     const tbody = document.getElementById('maintenance-table-body');
     if (allMaintenanceReports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun incident en cours.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem; color: var(--text-muted);">Aucun incident signalé pour le moment.</td></tr>';
         return;
     }
 
     tbody.innerHTML = allMaintenanceReports.map(report => {
+        // --- Badge de priorité ---
         let priorityBadge = 'badge-gray';
         if (report.priority === 'Haute') priorityBadge = 'badge-warning';
         if (report.priority === 'Critique') priorityBadge = 'badge-danger';
         
+        // --- Badge de statut ---
         let statusBadge = 'badge-gray';
         if (report.status === 'En cours') statusBadge = 'badge-warning';
         if (report.status === 'Terminé') statusBadge = 'badge-success';
 
-        // ============================================
-        // ✅ CORRECTION ICI
-        // ============================================
+        // --- Nom et agence du technicien assigné ---
         let assignedToDisplay = '<span style="color: #666; font-style: italic;">Non assigné</span>';
-        
-        // On utilise d'abord le nom stocké dans le rapport de maintenance s'il existe
         if (report.assignedToName) {
             assignedToDisplay = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
-            
-            // On cherche l'agence de cette personne
-            if (allCrewMembers.length > 0) {
-                const tech = allCrewMembers.find(m => m._id === report.assignedTo);
-                if (tech && tech.agencyName) {
-                    assignedToDisplay += `<div style="font-size: 0.8em; color: var(--accent);">📍 ${tech.agencyName}</div>`;
-                }
+            const tech = allCrewMembers.find(m => m._id === report.assignedTo);
+            if (tech && tech.agencyName) {
+                assignedToDisplay += `<div style="font-size: 0.8em; color: var(--accent);">📍 ${tech.agencyName}</div>`;
             }
         }
-        // ============================================
+        
+        // --- ✅ GESTION DES BOUTONS D'ACTION ---
+        let actionButtons = `<button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button>`;
+        
+        // On autorise la suppression (archivage) uniquement si le travail est terminé
+        if (report.status === 'Terminé') {
+            actionButtons += `
+                <button class="btn btn-sm btn-icon btn-danger" style="margin-left: 5px;" 
+                        onclick="deleteMaintenanceReport('${report._id}')" 
+                        title="Archiver ce rapport terminé">
+                    🗑️
+                </button>
+            `;
+        }
 
+        // --- Rendu final de la ligne ---
         return `
             <tr>
                 <td class="font-bold font-mono">${report.busIdentifier}</td>
                 <td>${report.description}</td>
                 <td><span class="badge ${priorityBadge}">${report.priority}</span></td>
                 <td><span class="badge ${statusBadge}">${report.status}</span></td>
-                <td>${assignedToDisplay}</td> <!-- On affiche le HTML généré -->
+                <td>${assignedToDisplay}</td>
                 <td>${new Date(report.reportedAt).toLocaleDateString('fr-FR')}</td>
-                <td><button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button></td>
+                <td class="actions-cell">${actionButtons}</td>
             </tr>
         `;
     }).join('');
@@ -6643,6 +6660,30 @@ async function openMaintenanceDetailsModal(reportId) {
                 }
             });
         }
+
+
+    // Fonction pour supprimer un rapport de maintenance
+async function deleteMaintenanceReport(reportId) {
+    const report = allMaintenanceReports.find(r => r._id === reportId);
+    if (!report) return;
+
+    const confirmed = await showAdminConfirm({
+        title: "Archiver l'incident ?",
+        message: `Voulez-vous vraiment supprimer définitivement le rapport pour le bus <strong>${report.busIdentifier}</strong> ?`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, archiver',
+        confirmClass: 'btn-danger'
+    });
+
+    if (!confirmed) return;
+
+    const result = await apiCall(`/admin/maintenance/${reportId}`, 'DELETE');
+    if (result && result.success) {
+        showNotification(result.message, 'success');
+        loadMaintenanceReports(); // Rafraîchir le tableau
+    }
+}
         // ============================================
         // 🎯 INITIALISATION & ÉVÉNEMENTS
         // ============================================
