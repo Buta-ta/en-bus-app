@@ -1863,102 +1863,85 @@ const allowFirstAdminCreation = async (req, res, next) => {
 // Ajouter un nouveau membre du personnel
 // DANS server.js
 
+// DANS server.js
+
 app.post("/api/admin/crew", allowFirstAdminCreation, [
-    // On enlève les anciennes validations trop strictes et on en met de nouvelles
     body('name').notEmpty().withMessage('Le nom est requis'),
     body('role').notEmpty().withMessage('Le rôle est requis'),
     body('username').notEmpty().withMessage('Le nom d\'utilisateur est requis'),
     body('password').isLength({ min: 6 }).withMessage('Le mot de passe doit faire au moins 6 caractères'),
-    body('permissions').isArray()
+    // On autorise agencyId (optionnel)
+    body('agencyId').optional({ nullable: true }).isString()
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ error: errors.array()[0].msg });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     try {
-        const { name, role, username, password, permissions, phone, status } = req.body;
+        const { name, role, username, password, permissions, phone, status, agencyId } = req.body;
 
         const existingUser = await crewCollection.findOne({ username: username });
-        if (existingUser) {
-            return res.status(409).json({ error: "Ce nom d'utilisateur est déjà utilisé." });
-        }
+        if (existingUser) return res.status(409).json({ error: "Ce nom d'utilisateur est déjà utilisé." });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // ========================================================
-        // ✅ DÉBUT DE LA LOGIQUE DE MATRICULE MISE À JOUR
-        // ========================================================
-        
-        // ========================================================
-// ✅ LOGIQUE DE MATRICULE MISE À JOUR (AVEC TECH)
-// ========================================================
-let matricule = null;
-const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
+        // --- Logique Matricule (Inchangée) ---
+        let matricule = null;
+        const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
+        if (role === 'Chauffeur' || role === 'Contrôleur') {
+            const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
+            const count = await crewCollection.countDocuments({ role: role });
+            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        } else if (techRoles.includes(role)) {
+            const prefix = 'TECH';
+            const count = await crewCollection.countDocuments({ role: { $in: techRoles } });
+            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        } else {
+            const prefix = "ADM";
+            const count = await crewCollection.countDocuments({ role: { $nin: ['Chauffeur', 'Contrôleur', ...techRoles] } });
+            matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        }
 
-if (role === 'Chauffeur' || role === 'Contrôleur') {
-    // 1. Personnel Roulant (CH / CT)
-    const prefix = role === 'Chauffeur' ? 'CH' : 'CT';
-    const count = await crewCollection.countDocuments({ role: role });
-    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
+        // --- GESTION DE L'AGENCE ---
+        let finalAgencyId = null;
+        let agencyName = null;
 
-} else if (techRoles.includes(role)) {
-    // 2. ✅ Personnel Technique (TECH)
-    const prefix = 'TECH';
-    // On compte tous les techniciens confondus pour avoir une suite logique (TECH-001, TECH-002...)
-    const count = await crewCollection.countDocuments({ role: { $in: techRoles } });
-    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
-
-} else {
-    // 3. Administration & Gestion (ADM)
-    const prefix = "ADM";
-    // On compte tout ce qui n'est ni roulant ni technique
-    const count = await crewCollection.countDocuments({ 
-        role: { $nin: ['Chauffeur', 'Contrôleur', ...techRoles] } 
-    });
-    matricule = `${prefix}-${String(count + 1).padStart(3, '0')}`;
-}
-// ========================================================
-
-        // ========================================================
-        // ✅ FIN DE LA LOGIQUE DE MATRICULE
-        // ========================================================
+        if (agencyId && ObjectId.isValid(agencyId)) {
+            const db = getDb();
+            const agency = await db.collection('agencies').findOne({ _id: new ObjectId(agencyId) });
+            if (agency) {
+                finalAgencyId = agency._id;
+                agencyName = agency.name; // On stocke aussi le nom pour faciliter l'affichage
+            }
+        }
 
         const newMember = {
-            matricule: matricule, // Le matricule est maintenant généré dynamiquement
-            name,
-            role,
-            username,
-            password: hashedPassword,
-            permissions,
-            phone: phone || null,
-            status: status || 'Actif',
-            totalKm: 0,
-            totalTrips: 0,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            matricule, name, role, username, password: hashedPassword, permissions,
+            phone: phone || null, status: status || 'Actif',
+            agencyId: finalAgencyId, // ✅ ID de l'agence
+            agencyName: agencyName,  // ✅ Nom de l'agence
+            totalKm: 0, totalTrips: 0, createdAt: new Date(), updatedAt: new Date()
         };
 
         await crewCollection.insertOne(newMember);
-        
-        console.log(`✅ Nouvel utilisateur/membre créé: ${username} (${role}) avec matricule ${matricule}`);
-        
-        res.status(201).json({
-            success: true,
-            message: "Utilisateur créé avec succès."
-        });
+        res.status(201).json({ success: true, message: "Membre ajouté avec succès." });
 
     } catch (error) {
         console.error("❌ Erreur création utilisateur:", error);
-        res.status(500).json({ error: "Erreur serveur lors de la création de l'utilisateur." });
+        res.status(500).json({ error: "Erreur serveur." });
     }
 });
 // Modifier un membre du personnel
+// Modifier un membre du personnel (Version Complète avec Agence)
 app.patch("/api/admin/crew/:id", authenticateToken, [
     body('name').optional().notEmpty(),
     body('phone').optional().notEmpty(),
-    body('status').optional().isIn(['Actif', 'En congé', 'Inactif'])
+    body('status').optional().isIn(['Actif', 'En congé', 'Inactif']),
+    // On valide que agencyId est soit un ID valide, soit null/vide
+    body('agencyId').optional({ nullable: true }).custom(value => {
+        if (value && !ObjectId.isValid(value)) throw new Error('ID Agence invalide');
+        return true;
+    })
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -1969,17 +1952,44 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
         const { id } = req.params;
         
         if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ error: "ID invalide" });
+            return res.status(400).json({ error: "ID de membre invalide" });
         }
 
         const updates = {};
-        if (req.body.name) updates.name = req.body.name;
-        if (req.body.phone) updates.phone = req.body.phone;
-        if (req.body.status) updates.status = req.body.status;
+        const { name, phone, status, agencyId } = req.body;
+
+        // Mise à jour des champs basiques s'ils sont présents
+        if (name) updates.name = name;
+        if (phone) updates.phone = phone;
+        if (status) updates.status = status;
         
+        // ========================================================
+        // ✅ GESTION DE L'AFFECTATION AGENCE
+        // ========================================================
+        // On ne traite agencyId que s'il est explicitement envoyé dans la requête
+        if (agencyId !== undefined) {
+            if (agencyId && agencyId !== "") {
+                // Cas 1 : On affecte une nouvelle agence
+                const db = getDb();
+                const agency = await db.collection('agencies').findOne({ _id: new ObjectId(agencyId) });
+                
+                if (agency) {
+                    updates.agencyId = agency._id;
+                    updates.agencyName = agency.name; // On stocke aussi le nom pour l'affichage facile
+                } else {
+                    return res.status(404).json({ error: "Agence introuvable" });
+                }
+            } else {
+                // Cas 2 : On désaffecte (agencyId est null ou vide)
+                updates.agencyId = null;
+                updates.agencyName = null;
+            }
+        }
+        // ========================================================
+
         updates.updatedAt = new Date();
 
-        // ✅ LIGNE MODIFIÉE
+        // Exécution de la mise à jour
         const result = await crewCollection.updateOne(
             { _id: new ObjectId(id) },
             { $set: updates }
@@ -1989,16 +1999,16 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
             return res.status(404).json({ error: "Membre introuvable" });
         }
 
-        console.log(`✅ Membre ${id} modifié`);
+        console.log(`✅ Membre ${id} modifié avec succès.`);
 
         res.json({
             success: true,
-            message: "Informations mises à jour"
+            message: "Informations mises à jour."
         });
 
     } catch (error) {
         console.error("❌ Erreur modification personnel:", error);
-        res.status(500).json({ error: "Erreur serveur" });
+        res.status(500).json({ error: "Erreur serveur lors de la mise à jour." });
     }
 });
 
