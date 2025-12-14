@@ -3675,7 +3675,15 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             if (!transactionProof || transactionProof.trim() === '') {
                 return res.status(400).json({ error: "Une preuve de transaction est requise." });
             }
+                // ✅ NOUVEAU : On identifie l'agence qui encaisse
+    let collectingAgencyId = null;
+    let collectingAgencyName = "Siège / Admin";
 
+    // Si l'utilisateur qui valide est rattaché à une agence
+    if (user.agencyId) {
+        collectingAgencyId = user.agencyId;
+        collectingAgencyName = user.agencyName;
+    }
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { 
@@ -3683,7 +3691,10 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
                         status: "Confirmé", 
                         confirmedAt: new Date(), 
                         "paymentDetails.transactionProof": transactionProof.trim(),
-                        "paymentDetails.confirmedByAdmin": req.user.username 
+                        "paymentDetails.confirmedByAdmin": req.user.username ,
+                        // ✅ ON SAUVEGARDE L'AGENCE QUI A ENCAISSÉ
+                "paymentDetails.collectedByAgencyId": collectingAgencyId,
+                "paymentDetails.collectedByAgencyName": collectingAgencyName
                     } 
                 }
             );
@@ -3753,6 +3764,42 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
     } catch (error) {
         console.error(`❌ Erreur lors de l'action '${action}' sur la réservation ${id}:`, error);
         res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
+
+
+
+// DANS server.js (Section Admin Analytics)
+
+app.get("/api/admin/analytics/revenue-by-agency", authenticateToken, async (req, res) => {
+    try {
+        const db = getDb();
+        
+        // Agrégation MongoDB puissante
+        const revenueStats = await db.collection('reservations').aggregate([
+            { 
+                $match: { 
+                    status: "Confirmé",
+                    "paymentDetails.collectedByAgencyId": { $ne: null } // On ne prend que ce qui est encaissé en agence
+                } 
+            },
+            {
+                $group: {
+                    _id: "$paymentDetails.collectedByAgencyId", // On regroupe par ID d'agence
+                    agencyName: { $first: "$paymentDetails.collectedByAgencyName" }, // On garde le nom
+                    totalRevenue: { $sum: "$totalPriceNumeric" }, // Somme des prix
+                    count: { $sum: 1 } // Nombre de tickets
+                }
+            },
+            { $sort: { totalRevenue: -1 } } // Du plus gros CA au plus petit
+        ]).toArray();
+
+        res.json({ success: true, stats: revenueStats });
+
+    } catch (error) {
+        console.error("Erreur stats revenus:", error);
+        res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
@@ -3849,6 +3896,7 @@ app.post(
     }
   }
 );
+
 
 // ===============================================
 // --- ROUTE ADMIN LA PLUS GÉNÉRIQUE (ACTION) ---
