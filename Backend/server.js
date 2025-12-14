@@ -1944,6 +1944,7 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
 
 
 
+
 // ============================================
 // 👥 GESTION DU PERSONNEL (CREW)
 // ============================================
@@ -1990,6 +1991,30 @@ const allowFirstAdminCreation = async (req, res, next) => {
     }
 };
 
+
+// [GET] Récupérer le planning d'une semaine
+app.get("/api/admin/schedules", authenticateToken, async (req, res) => {
+    try {
+        const { start, end, agencyId } = req.query; // start=2023-11-27&end=2023-12-03
+        
+        const db = getDb();
+        const query = {
+            date: { $gte: start, $lte: end }
+        };
+
+        // Si on filtre par agence, on doit d'abord trouver les employés de cette agence
+        if (agencyId) {
+            const crewIds = await db.collection('crew').find({ agencyId: new ObjectId(agencyId) }).project({ _id: 1 }).map(c => c._id).toArray();
+            query.crewId = { $in: crewIds };
+        }
+
+        const schedules = await db.collection('schedules').find(query).toArray();
+        res.json({ success: true, schedules });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 // Ajouter un nouveau membre du personnel
 // DANS server.js
@@ -2183,6 +2208,20 @@ app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
 });
 
 
+// [DELETE] Supprimer un créneau
+app.delete("/api/admin/schedules/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+
+        const result = await getDb().collection('schedules').deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) return res.status(404).json({ error: "Créneau introuvable" });
+
+        res.json({ success: true, message: "Créneau supprimé." });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 // Récupérer les détails d'un membre spécifique et son historique
 app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
@@ -2767,7 +2806,6 @@ app.post(
   "/api/admin/trips",
   authenticateToken,
   [
-    // ... tes validations existantes ...
     body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
     body("startDate").isISO8601().withMessage("La date de début est invalide."),
     body("endDate").isISO8601().withMessage("La date de fin est invalide."),
@@ -2775,8 +2813,6 @@ app.post(
     body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
     body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
     body('highlightBadge').optional({ checkFalsy: true }).isString().trim(),
-    
-    // ✅ NOUVELLES VALIDATIONS AJOUTÉES
     body("isNightTrip").isBoolean().withMessage("Le statut de voyage de nuit doit être un booléen."),
     body("arrivalDaysOffset").isInt({ min: 0, max: 5 }).withMessage("Le décalage de jour d'arrivée est invalide.")
   ],
@@ -2787,34 +2823,18 @@ app.post(
     }
     
     try {
-      // ✅ RÉCUPÉRATION DES NOUVELLES DONNÉES
       const {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek,
-        seatCount,
-        busIdentifier,
-        highlightBadge,
-        driver1Id,
-        driver1Name,
-        driver2Id,
-        driver2Name,
-        controller1Id,
-        controller1Name,
-        controller2Id,
-        controller2Name,
-        isNightTrip,         // <-- Nouveau
-        arrivalDaysOffset    // <-- Nouveau
+        routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier, highlightBadge,
+        driver1Id, driver1Name, driver2Id, driver2Name,
+        controller1Id, controller1Name, controller2Id, controller2Name,
+        isNightTrip, arrivalDaysOffset
       } = req.body;
 
       if (!ObjectId.isValid(routeId)) {
         return res.status(400).json({ error: "ID de modèle de trajet invalide." });
       }
 
-      const routeTemplate = await routeTemplatesCollection.findOne({
-        _id: new ObjectId(routeId),
-      });
+      const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
       if (!routeTemplate) {
         return res.status(404).json({ error: "Modèle de trajet non trouvé." });
       }
@@ -2824,6 +2844,7 @@ app.post(
       const lastDate = new Date(endDate);
       const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       
+      // Préparation de l'équipage
       const drivers = [];
       if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
       if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
@@ -2832,6 +2853,7 @@ app.post(
       if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
       if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
 
+      // Boucle de création des voyages
       while (currentDate <= lastDate) {
         const dayName = dayMap[currentDate.getUTCDay()];
         
@@ -2841,7 +2863,8 @@ app.post(
             status: "available",
           }));
 
-          newTrips.push({
+          // On génère l'objet voyage
+          const tripToInsert = {
             date: currentDate.toISOString().split("T")[0],
             route: routeTemplate,
             seats: seats,
@@ -2852,26 +2875,94 @@ app.post(
                 controllers: controllers.length > 0 ? controllers : null
             },
             createdAt: new Date(),
-
-            // ✅ AJOUT DES NOUVEAUX CHAMPS DANS LE DOCUMENT
             isNightTrip: isNightTrip || false,
             arrivalDaysOffset: parseInt(arrivalDaysOffset) || 0
-          });
+          };
+
+          newTrips.push(tripToInsert);
         }
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
       if (newTrips.length > 0) {
-        await tripsCollection.insertMany(newTrips);
-        console.log(`✅ ${newTrips.length} voyage(s) créé(s) avec succès.`);
+        // 1. Insertion des voyages
+        const result = await tripsCollection.insertMany(newTrips);
+        console.log(`✅ ${result.insertedCount} voyage(s) créé(s) avec succès.`);
+
+        // ========================================================
+        // ✅ 2. GÉNÉRATION AUTOMATIQUE DU PLANNING
+        // ========================================================
+        const scheduleEntries = [];
+        const db = getDb();
+
+        // On récupère les IDs insérés (car insertMany ne renvoie pas les docs complets avec ID dans certaines versions du driver)
+        // Mais ici on peut itérer sur newTrips car on a les dates et les équipages
+        // Pour lier l'ID du trip au schedule, c'est plus complexe avec insertMany.
+        // Simplification : On va créer les schedules sans lier l'ID du trip pour l'instant, ou on fait une requête.
+        // Pour faire propre et simple : On crée le schedule basé sur la date et l'équipage.
+
+        // Note : Si on veut l'ID du trip, il faut récupérer les documents insérés. 
+        // MongoDB driver >= 4 renvoie `insertedIds` (map : index -> ObjectId)
+        
+        newTrips.forEach((trip, index) => {
+            // Récupération de l'ID généré
+            const tripId = result.insertedIds[index]; 
+
+            // Calcul horaire estimé (Départ -> +8h par défaut ou durée du modèle)
+            const startT = trip.route.departure; 
+            let [h, m] = startT.split(':').map(Number);
+            
+            // Tentative de calcul de durée réelle
+            let durationMinutes = 480; // 8h par défaut
+            if (trip.route.duration) {
+                // Parsing sommaire "Xh Ym"
+                const parts = trip.route.duration.match(/(\d+)h\s*(\d+)?/);
+                if (parts) durationMinutes = (parseInt(parts[1]) * 60) + (parseInt(parts[2] || 0));
+            }
+
+            let endTotalMinutes = (h * 60 + m) + durationMinutes;
+            let endH = Math.floor(endTotalMinutes / 60) % 24;
+            let endM = endTotalMinutes % 60;
+            
+            const endT = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
+            // Génération des entrées pour chaque membre
+            if (trip.crew) {
+                const allCrew = [...(trip.crew.drivers || []), ...(trip.crew.controllers || [])];
+                
+                allCrew.forEach(member => {
+                    if (member.id) {
+                        scheduleEntries.push({
+                            crewId: new ObjectId(member.id),
+                            date: trip.date,
+                            startTime: startT,
+                            endTime: endT,
+                            type: 'Voyage',
+                            note: `${trip.route.from} > ${trip.route.to} (${trip.busIdentifier || 'Bus?'})`,
+                            source: 'auto',
+                            tripId: tripId, // Lien fort vers le voyage
+                            createdAt: new Date(),
+                            createdBy: 'system'
+                        });
+                    }
+                });
+            }
+        });
+
+        if (scheduleEntries.length > 0) {
+            await db.collection('schedules').insertMany(scheduleEntries);
+            console.log(`📅 ${scheduleEntries.length} créneaux de planning générés automatiquement.`);
+        }
+        // ========================================================
       } else {
-        console.log("⚠️ Aucun voyage créé, les jours ne correspondaient pas à la plage de dates.");
+        console.log("⚠️ Aucun voyage créé (jours incompatibles).");
       }
 
       res.status(201).json({
           success: true,
-          message: `${newTrips.length} voyage(s) ont été programmé(s).`,
+          message: `${newTrips.length} voyage(s) ont été programmé(s) et les plannings mis à jour.`,
       });
+
     } catch (error) {
       console.error("❌ Erreur lors de la création des voyages:", error);
       res.status(500).json({ error: "Erreur serveur." });
@@ -3206,6 +3297,58 @@ app.post("/api/admin/agencies", authenticateToken, [
 
 
 
+// ============================================
+// 📅 GESTION DU PLANNING (SCHEDULES)
+// ============================================
+
+// [POST] Ajouter un créneau horaire
+app.post("/api/admin/schedules", authenticateToken, [
+    body('crewId').isMongoId(),
+    body('date').isISO8601(), // YYYY-MM-DD
+    body('startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // HH:MM
+    body('endTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    body('type').isIn(['Travail', 'Repos', 'Congé', 'Voyage'])
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+    try {
+        const { crewId, date, startTime, endTime, type, note } = req.body;
+        const db = getDb();
+
+        // Vérifier chevauchement
+        const conflict = await db.collection('schedules').findOne({
+            crewId: new ObjectId(crewId),
+            date: date,
+            $or: [
+                { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+            ]
+        });
+
+        if (conflict) {
+            return res.status(409).json({ error: "Conflit d'horaire avec un autre créneau." });
+        }
+
+        const newSchedule = {
+            crewId: new ObjectId(crewId),
+            date,
+            startTime,
+            endTime,
+            type,
+            note: note || "",
+            source: 'manual', // 'manual' ou 'auto' (pour les voyages)
+            createdAt: new Date(),
+            createdBy: req.user.username
+        };
+
+        await db.collection('schedules').insertOne(newSchedule);
+        res.status(201).json({ success: true, message: "Créneau ajouté." });
+
+    } catch (error) {
+        console.error("Erreur planning:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
 
 
 
