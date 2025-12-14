@@ -1882,67 +1882,61 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 
 // [GET] Récupérer les présences du jour (Tableau de bord)
 // [GET] Récupérer les présences du jour ET les anomalies
-// [GET] Récupérer les présences du jour ET les anomalies (COMPLET)
+
+
+
+// [GET] Récupérer les présences du jour (Gestion Fuseau Horaire Intégrée)
 app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0];
-        const now = new Date(); 
-
+        const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence pour votre activité
+        const now = new Date();
+        
+        // 1. Calculer la date "aujourd'hui" dans le bon fuseau horaire
+        const todayStr = format(utcToZonedTime(now, timeZone), 'yyyy-MM-dd', { timeZone });
+        console.log(`Date calculée pour le fuseau '${timeZone}': ${todayStr}`);
+        
         const db = getDb();
 
-        // 1. Récupérer les scans du jour
+        // 2. Récupérer les scans du jour
         const records = await db.collection('attendance')
             .find({ date: todayStr })
             .sort({ checkIn: -1 })
             .toArray();
 
-        // 2. Récupérer le planning du jour
+        // 3. Récupérer le planning du jour
         const schedules = await db.collection('schedules').find({
             date: todayStr,
             type: { $nin: ['Repos', 'Congé'] }
         }).toArray();
-
-
-         console.log(`🔍 DEBUG LIEN PLANNING/SCAN (${todayStr})`);
-        console.log(`   -> Nombre de scans: ${records.length}`);
-        console.log(`   -> Nombre de créneaux: ${schedules.length}`);
-
-        if (records.length > 0 && schedules.length > 0) {
-            console.log("   -> Test comparatif Premier Scan vs Premier Schedule :");
-            console.log("      Scan CrewID:", records[0].crewId, typeof records[0].crewId);
-            console.log("      Sched CrewID:", schedules[0].crewId, typeof schedules[0].crewId);
-            console.log("      Scan Date:", records[0].date);
-            console.log("      Sched Date:", schedules[0].date);
-        }
-
-        // 3. ENRICHISSEMENT DES RECORDS (C'est ce qui manquait)
+        
+        // 4. Enrichir les scans avec les horaires prévus
         const enrichedRecords = records.map(record => {
             const schedule = schedules.find(s => s.crewId.toString() === record.crewId.toString());
             return {
                 ...record,
                 scheduledStart: schedule ? schedule.startTime : null,
-                scheduledEnd: schedule ? schedule.endTime : null
+                scheduledEnd: schedule ? schedule.endTime : null,
+                scheduleType: schedule ? schedule.type : null
             };
         });
 
-        // 4. Analyse des anomalies
+        // 5. Analyse des anomalies (retards et absences)
         const anomalies = [];
-
         for (const schedule of schedules) {
             const scan = records.find(r => r.crewId.toString() === schedule.crewId.toString());
             
+            // Récupérer le nom de l'employé
             const crewMember = await db.collection('crew').findOne({ _id: schedule.crewId });
             const name = crewMember ? crewMember.name : 'Inconnu';
 
-            const [h, m] = schedule.startTime.split(':').map(Number);
-            const scheduledStart = new Date(today);
-            scheduledStart.setHours(h, m, 0, 0);
+            // Calculer l'heure de début prévue dans le bon fuseau horaire
+            const [h, m] = schedule.startTime.split(':');
+            const scheduledStart = new Date(`${todayStr}T${h}:${m}:00`); // Crée une date naïve
 
-            // ABSENCE
+            // CAS A : ABSENCE
             if (!scan) {
-                if (now > new Date(scheduledStart.getTime() + 30*60000)) {
+                // Si l'heure actuelle est passée de plus de 30 min par rapport au planning
+                if (now > new Date(scheduledStart.getTime() + 30 * 60000)) {
                     anomalies.push({
                         type: 'ABSENCE',
                         crewName: name,
@@ -1951,31 +1945,31 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
                     });
                 }
             } 
-            // RETARD
+            // CAS B : RETARD
             else {
                 const checkInTime = new Date(scan.checkIn);
-                if (checkInTime > new Date(scheduledStart.getTime() + 10*60000)) {
+                // Si l'arrivée est plus de 10 min après l'heure prévue
+                if (checkInTime > new Date(scheduledStart.getTime() + 10 * 60000)) {
                     const diffMinutes = Math.floor((checkInTime - scheduledStart) / 60000);
                     anomalies.push({
                         type: 'RETARD',
                         crewName: name,
                         expected: schedule.startTime,
                         actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
-                        message: `${diffMinutes} min`
+                        message: `${diffMinutes} min de retard`
                     });
                 }
             }
         }
 
-        // Stats
+        // 6. Calcul des statistiques
         const stats = {
             present: records.filter(r => r.status === 'present' || r.status === 'working').length,
             completed: records.filter(r => r.status === 'completed').length,
-            anomalies: anomalies.length,
-            total: records.length
+            anomalies: anomalies.length
         };
 
-        // ✅ ON RENVOIE 'enrichedRecords' AU LIEU DE 'records'
+        // 7. Envoyer la réponse complète
         res.json({ success: true, records: enrichedRecords, anomalies, stats });
 
     } catch (error) {
