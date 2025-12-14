@@ -7977,51 +7977,65 @@
 
 
         // DANS LE SCRIPT
+async function loadSchedule() {
+    console.log("📅 Chargement du planning...");
+    
+    // 1. Initialiser le filtre agence (UNE SEULE FOIS si vide)
+    const agencySelect = document.getElementById('schedule-filter-agency');
+    // On ne remplit que si le select est vide ou n'a que l'option par défaut
+    if (agencySelect && agencySelect.options.length <= 1) { 
+        await populateScheduleAgencyFilter();
+    }
 
-        async function loadSchedule() {
-            console.log("📅 Chargement du planning...");
-                // ✅ AJOUTER CETTE LIGNE
-    await populateScheduleAgencyFilter();
+    // 2. Initialisation date (inchangé)
+    const weekInput = document.getElementById('schedule-week-picker');
+    if (!weekInput || !weekInput.value) {
+        const now = new Date();
+        const weekNum = getWeekNumber(now);
+        if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        else return;
+    }
+    
+    // 3. Calcul des dates (inchangé)
+    const [year, week] = weekInput.value.split('-W');
+    const startOfWeek = getDateOfISOWeek(week, year);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-            // 1. Initialisation date (comme avant)
-            const weekInput = document.getElementById('schedule-week-picker');
-            if (!weekInput || !weekInput.value) {
-                const now = new Date();
-                const weekNum = getWeekNumber(now);
-                if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-                else return;
-            }
+    const startStr = startOfWeek.toISOString().split('T')[0];
+    const endStr = endOfWeek.toISOString().split('T')[0];
 
-            // 2. Calcul des dates (comme avant)
-            const [year, week] = weekInput.value.split('-W');
-            const startOfWeek = getDateOfISOWeek(week, year);
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(endOfWeek.getDate() + 6);
+    // 4. ✅ RECUPERATION DU FILTRE AGENCE
+    const selectedAgencyId = agencySelect ? agencySelect.value : '';
+    console.log("Agence filtrée:", selectedAgencyId || "Toutes");
 
-            const startStr = startOfWeek.toISOString().split('T')[0];
-            const endStr = endOfWeek.toISOString().split('T')[0];
+    // 5. ✅ CONSTRUCTION DE L'URL AVEC FILTRE
+    const url = `/admin/schedules?start=${startStr}&end=${endStr}${selectedAgencyId ? `&agencyId=${selectedAgencyId}` : ''}`;
 
-            // 3. CHARGEMENT PARALLÈLE (C'est la clé !)
-            // On lance les deux requêtes en même temps : Employés ET Planning
-            const [scheduleData, crewData] = await Promise.all([
-                apiCall(`/admin/schedules?start=${startStr}&end=${endStr}`),
-                // Si allCrewMembers est déjà plein, on ne rappelle pas l'API, sinon on appelle
-                (allCrewMembers && allCrewMembers.length > 0) ? { success: true, crew: allCrewMembers } : apiCall('/admin/crew')
-            ]);
+    // 6. Chargement parallèle
+    const [scheduleData, crewData] = await Promise.all([
+        apiCall(url),
+        (allCrewMembers && allCrewMembers.length > 0) ? { success: true, crew: allCrewMembers } : apiCall('/admin/crew')
+    ]);
 
-            // 4. Mise à jour de la variable globale si nécessaire
-            if (crewData && crewData.success) {
-                allCrewMembers = crewData.crew;
-            }
+    // 7. Mise à jour globale
+    if (crewData && crewData.success) {
+        allCrewMembers = crewData.crew;
+    }
 
-            // 5. Rendu
-            if (scheduleData && scheduleData.success) {
-                renderScheduleGrid(scheduleData.schedules, startOfWeek);
-            } else {
-                renderScheduleGrid([], startOfWeek);
-            }
-        }
+    // 8. ✅ FILTRAGE DES EMPLOYÉS CÔTÉ CLIENT POUR L'AFFICHAGE
+    let employeesToDisplay = allCrewMembers;
+    if (selectedAgencyId) {
+        employeesToDisplay = allCrewMembers.filter(m => m.agencyId === selectedAgencyId);
+    }
 
+    // 9. Rendu avec la liste filtrée
+    if (scheduleData && scheduleData.success) {
+        renderScheduleGrid(scheduleData.schedules, startOfWeek, employeesToDisplay);
+    } else {
+        renderScheduleGrid([], startOfWeek, employeesToDisplay);
+    }
+}
         async function renderScheduleGrid(schedules, startOfWeek) {
             const tbody = document.getElementById('schedule-body');
             if (!tbody) return;
@@ -8037,7 +8051,7 @@
 
             // On groupe par employé
                 // On groupe par employé
-    allCrewMembers.forEach(member => {
+            employees.forEach(member => {
         
         // ==========================================================
         // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
