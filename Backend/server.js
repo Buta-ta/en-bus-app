@@ -1560,13 +1560,14 @@ app.post(
 // ============================================
 
 // [POST] Scanner un badge (Check-in / Check-out)
+// [POST] Scanner un badge (Gestion Entrées / Sorties / Pauses)
+// [POST] Scanner un badge (Gestion Entrées / Sorties / Pauses avec Mode)
 app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
     try {
-        const { qrData } = req.body; // qrData contient le matricule ou l'ID
+        const { qrData, mode } = req.body; // mode: 'auto', 'break', 'exit'
         const db = getDb();
 
         // 1. Identifier l'employé
-        // On cherche par ID (Mongo) ou par Matricule
         let query = {};
         if (ObjectId.isValid(qrData)) {
             query._id = new ObjectId(qrData);
@@ -1576,88 +1577,152 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
 
         const employee = await db.collection('crew').findOne(query);
 
-        if (!employee) {
-            return res.status(404).json({ error: "Badge non reconnu ou employé introuvable." });
-        }
+        if (!employee) return res.status(404).json({ error: "Badge non reconnu." });
+        if (employee.status !== 'Actif') return res.status(403).json({ error: "Employé inactif." });
 
-        if (employee.status !== 'Actif') {
-            return res.status(403).json({ error: "Cet employé est inactif ou en congé." });
-        }
-
-        // 2. Déterminer la date du jour (sans l'heure) pour éviter les doublons
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0]; // "2023-11-28"
+        const todayStr = today.toISOString().split('T')[0];
 
-        // 3. Chercher un pointage existant pour aujourd'hui
+        // 2. Chercher la fiche de présence du jour
         const attendance = await db.collection('attendance').findOne({
             crewId: employee._id,
             date: todayStr
         });
 
-        // CAS A : Premier scan du jour -> CHECK-IN (Arrivée)
+        const now = new Date();
+
+        // ========================================================
+        // CAS 1 : PREMIER SCAN (ARRIVÉE MATIN)
+        // ========================================================
         if (!attendance) {
+            // Si le mode est 'exit' ou 'break', c'est une erreur car la journée n'a pas commencé
+            if (mode === 'exit' || mode === 'break') {
+                return res.status(400).json({ error: "Impossible : La journée n'a pas encore commencé." });
+            }
+
             const newEntry = {
                 crewId: employee._id,
                 crewName: employee.name,
                 crewRole: employee.role,
-                agencyId: employee.agencyId || null, // On garde l'agence où il est affecté
+                agencyId: employee.agencyId || null,
                 date: todayStr,
-                checkIn: new Date(),
+                checkIn: now,
+                breaks: [], // Tableau pour stocker les pauses
                 checkOut: null,
-                durationMinutes: 0,
-                status: 'present' // En cours
+                status: 'working', // working, on_break, completed
+                totalBreakMinutes: 0,
+                lastActionTime: now
             };
             await db.collection('attendance').insertOne(newEntry);
             
-            return res.json({ 
-                success: true, 
-                action: "check-in", 
-                message: `Bienvenue, ${employee.name} !`, 
-                time: new Date() 
-            });
+            return res.json({ success: true, action: "check-in", message: `Bienvenue, ${employee.name} ! (Prise de service)` });
         }
 
-        // CAS B : Déjà scanné ce matin -> CHECK-OUT (Départ)
-        if (attendance.checkIn && !attendance.checkOut) {
-            const now = new Date();
-            // Calcul durée en minutes
-            const duration = Math.round((now - new Date(attendance.checkIn)) / 60000);
+        // --- Sécurité anti-doublon (2 min) ---
+        const lastActionTime = attendance.lastActionTime || attendance.checkIn;
+        const diffMinutes = (now - new Date(lastActionTime)) / 60000;
+        
+        // On permet de contourner la sécurité si on force la sortie 'exit'
+        if (diffMinutes < 2 && mode !== 'exit') {
+            return res.status(429).json({ error: "Badge déjà scanné à l'instant." });
+        }
 
-            // Sécurité anti-doublon (si on scanne 2 fois en 1 minute)
-            if (duration < 2) {
-                return res.status(429).json({ error: "Scan ignoré (déjà scanné il y a moins de 2 min)." });
+        // ========================================================
+        // CAS 2 : FIN DE JOURNÉE (CLÔTURE FORCÉE)
+        // ========================================================
+        if (mode === 'exit') {
+            if (attendance.status === 'completed') {
+                return res.status(400).json({ error: "Journée déjà terminée." });
             }
+
+            // Si on est en pause, on ferme la pause avant de sortir
+            let breaks = attendance.breaks || [];
+            let addedBreakTime = 0;
+            if (attendance.status === 'on_break' && breaks.length > 0) {
+                const lastBreak = breaks[breaks.length - 1];
+                if (!lastBreak.end) {
+                    lastBreak.end = now;
+                    addedBreakTime = Math.round((now - new Date(lastBreak.start)) / 60000);
+                }
+            }
+
+            // Calcul durée totale de présence (brute)
+            const totalPresenceMinutes = Math.round((now - new Date(attendance.checkIn)) / 60000);
+            
+            // Calcul durée de travail effective (Présence - Pauses)
+            const totalBreak = (attendance.totalBreakMinutes || 0) + addedBreakTime;
+            const effectiveWorkMinutes = totalPresenceMinutes - totalBreak;
 
             await db.collection('attendance').updateOne(
                 { _id: attendance._id },
                 { 
                     $set: { 
                         checkOut: now, 
-                        durationMinutes: duration,
-                        status: 'completed'
+                        breaks: breaks,
+                        status: 'completed',
+                        durationMinutes: effectiveWorkMinutes, // On stocke le temps de travail réel
+                        totalBreakMinutes: totalBreak
                     } 
                 }
             );
-
-            return res.json({ 
-                success: true, 
-                action: "check-out", 
-                message: `Au revoir, ${employee.name}. (Durée: ${Math.floor(duration/60)}h${duration%60})`,
-                time: now 
-            });
+            
+            const hours = Math.floor(effectiveWorkMinutes / 60);
+            const minutes = effectiveWorkMinutes % 60;
+            return res.json({ success: true, action: "check-out", message: `Au revoir ${employee.name}. (Travail: ${hours}h${minutes})` });
         }
 
-        // CAS C : Déjà parti -> ERREUR ou NOUVEAU SHIFT ?
-        // Pour l'instant, on bloque (une seule vacation par jour)
-        return res.status(400).json({ error: "Journée déjà terminée pour cet employé." });
+        // ========================================================
+        // CAS 3 : GESTION DES PAUSES (MODE 'BREAK' ou 'AUTO' en boucle)
+        // ========================================================
+        
+        // Si on est en train de travailler -> On part en pause
+        if (attendance.status === 'working') {
+            // Si mode 'auto' ou 'break', on part en pause
+            await db.collection('attendance').updateOne(
+                { _id: attendance._id },
+                { 
+                    $set: { status: 'on_break', lastActionTime: now },
+                    $push: { breaks: { start: now, end: null } }
+                }
+            );
+            return res.json({ success: true, action: "break-start", message: `Bonne pause, ${employee.name}.` });
+        }
+
+        // Si on est en pause -> On reprend le travail
+        if (attendance.status === 'on_break') {
+            const breaks = attendance.breaks || [];
+            if (breaks.length > 0) {
+                const lastBreak = breaks[breaks.length - 1];
+                if (!lastBreak.end) {
+                    lastBreak.end = now;
+                    // Calcul durée de cette pause
+                    const breakDuration = Math.round((now - new Date(lastBreak.start)) / 60000);
+                    
+                    await db.collection('attendance').updateOne(
+                        { _id: attendance._id },
+                        { 
+                            $set: { 
+                                status: 'working', 
+                                breaks: breaks, 
+                                lastActionTime: now 
+                            },
+                            $inc: { totalBreakMinutes: breakDuration }
+                        }
+                    );
+                    return res.json({ success: true, action: "break-end", message: `Bon retour, ${employee.name}.` });
+                }
+            }
+        }
+
+        // Cas par défaut (si terminé)
+        return res.status(400).json({ error: "Statut inconnu ou journée déjà terminée." });
 
     } catch (error) {
         console.error("Erreur scan:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 
 // DANS server.js
 
