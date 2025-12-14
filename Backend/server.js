@@ -3494,7 +3494,7 @@ app.post("/api/admin/schedules", authenticateToken, [
 
         const newSchedule = {
             crewId: new ObjectId(crewId),
-            date,
+            date: date,
             startTime,
             endTime,
             type,
