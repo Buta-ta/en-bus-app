@@ -3511,6 +3511,7 @@ app.post("/api/admin/schedules", authenticateToken, [
         console.error("Erreur planning:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
+    
 });
 
 
