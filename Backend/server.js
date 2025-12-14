@@ -1917,6 +1917,7 @@ app.post("/api/admin/crew", allowFirstAdminCreation, [
 
         const newMember = {
             matricule, name, role, username, password: hashedPassword, permissions,
+            photo: req.body.photo || null, // ✅ On enregistre la photo
             phone: phone || null, status: status || 'Actif',
             agencyId: finalAgencyId, // ✅ ID de l'agence
             agencyName: agencyName,  // ✅ Nom de l'agence
