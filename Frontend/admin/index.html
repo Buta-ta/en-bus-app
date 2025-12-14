@@ -8181,7 +8181,7 @@
             note: document.getElementById('schedule-note').value
         };
 
-        const result = await apiCall('/api/admin/schedules', 'POST', payload);
+      const result = await apiCall('/admin/schedules', 'POST', payload);
         
         if (result && result.success) {
             showNotification("Créneau ajouté !", "success");
