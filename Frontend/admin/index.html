@@ -5216,18 +5216,20 @@
  */
 function renderCrewTable(crewMembers) {
     const tbody = document.getElementById('crew-body');
+    if (!tbody) return;
 
-    if (!tbody) {
-        console.error("❌ Élément 'crew-body' introuvable");
-        return;
-    }
-
-    if (crewMembers.length === 0) {
+    if (!crewMembers || crewMembers.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
         return;
     }
 
     tbody.innerHTML = crewMembers.map(member => {
+        // Sécurisation des données
+        const role = member.role || 'Inconnu';
+        const name = member.name || 'Sans nom';
+        const matricule = member.matricule || 'N/A';
+        const status = member.status || 'Inactif';
+        
         const statusBadges = {
             'Actif': '<span class="badge badge-success">✅ Actif</span>',
             'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
@@ -5235,58 +5237,43 @@ function renderCrewTable(crewMembers) {
         };
 
         const roleIcons = {
-            'Chauffeur': '🚗',
-            'Contrôleur': '🎫',
-            'Super Admin': '👑',
-            'Manager': '💼',
-            'Manager d\'Agence': '🏢',
-            'Agent de réservation': '🎟️',
-            'Mécanicien': '🔧',
-            'Électricien': '⚡',
-            'Technicien': '🛠️'
+            'Chauffeur': '🚗', 'Contrôleur': '🎫', 'Super Admin': '👑',
+            'Manager': '💼', 'Manager d\'Agence': '🏢', 'Agent de réservation': '🎟️',
+            'Mécanicien': '🔧', 'Électricien': '⚡', 'Technicien': '🛠️'
         };
 
-        // Gestion de l'affichage de l'agence
         let agencyDisplay = '<span style="color: var(--text-muted); font-size: 0.85em;">-</span>';
         if (member.agencyName) {
             agencyDisplay = `<span style="color: var(--accent); font-weight: 600;">${member.agencyName}</span>`;
-        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
+        } else if (role === 'Super Admin' || role === 'Manager') {
             agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
         }
 
-        // ✅ Gestion de la photo de profil
-        const photoHTML = member.photo 
+        // Gestion Photo sécurisée
+        const photoHTML = (member.photo && member.photo.startsWith('data:image')) 
             ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border);">`
             : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em;">👤</div>`;
 
         return `
             <tr>
-                <td class="font-mono font-bold" style="color: var(--primary);">${member.matricule || 'N/A'}</td>
-                
-                <!-- ✅ Colonne Nom avec Photo -->
+                <td class="font-mono font-bold" style="color: var(--primary);">${matricule}</td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         ${photoHTML}
-                        <strong>${member.name}</strong>
+                        <strong>${name}</strong>
                     </div>
                 </td>
-
-                <td>${roleIcons[member.role] || ''} ${member.role}</td>
-                
+                <td>${roleIcons[role] || ''} ${role}</td>
                 <td>${agencyDisplay}</td>
-                
                 <td class="text-sm">${member.phone || '-'}</td>
                 <td class="font-bold">${formatPrice(member.totalKm || 0)} km</td>
                 <td>${member.totalTrips || 0}</td>
-                <td>${statusBadges[member.status] || member.status}</td>
-                
+                <td>${statusBadges[status] || status}</td>
                 <td class="actions-cell">
-                    <!-- ✅ Nouveau bouton Badge -->
                     <button class="btn btn-icon btn-ghost" onclick="generateBadge('${member._id}')" title="Imprimer Badge">🪪</button>
-                    
                     <button class="btn btn-icon btn-ghost" onclick="viewCrewDetails('${member._id}')" title="Voir détails">👁️</button>
                     <button class="btn btn-icon btn-ghost" onclick="openEditMemberModal('${member._id}')" title="Modifier">✏️</button>
-                    <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}')" title="Désactiver">🗑️</button>
+                    <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}', '${name}')" title="Désactiver">🗑️</button>
                 </td>
             </tr>
         `;
@@ -5300,33 +5287,18 @@ function renderCrewTable(crewMembers) {
  * Ouvre la modale pour modifier un membre (Nom, Tél, Statut, Agence)
  */
 async function openEditMemberModal(memberId) {
-    console.log("✏️ Ouverture édition membre:", memberId);
-
-    // 1. Trouver le membre dans la liste locale
     const member = allCrewMembers.find(m => m._id === memberId);
-    
-    if (!member) {
-        showNotification("Erreur : Membre introuvable.", "error");
-        return;
-    }
+    if (!member) return;
 
-    // 2. Charger/Préparer la liste des agences
-    // On utilise la fonction helper qu'on a créée plus tôt
+    // Charger les agences si nécessaire
     let agencyOptions = '<option value="">-- Aucune affectation --</option>';
+    if (!allAgencies || allAgencies.length === 0) await loadAllAgencies();
     
-    // Si la liste des agences n'est pas encore chargée, on la charge
-    if (!allAgencies || allAgencies.length === 0) {
-        await loadAllAgencies();
-    }
-
-    // Génération des options du select
     allAgencies.forEach(ag => {
-        // On sélectionne l'agence si elle correspond à celle du membre
         const isSelected = member.agencyId && ag._id === member.agencyId ? 'selected' : '';
         agencyOptions += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
     });
 
-    // 3. Préparer le HTML de la modale
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
 
@@ -5341,7 +5313,7 @@ async function openEditMemberModal(memberId) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Téléphone</label>
-                    <input type="tel" id="edit-member-phone" class="form-control" value="${member.phone || ''}" placeholder="+242...">
+                    <input type="tel" id="edit-member-phone" class="form-control" value="${member.phone || ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Statut</label>
@@ -5351,50 +5323,67 @@ async function openEditMemberModal(memberId) {
                         <option value="Inactif" ${member.status === 'Inactif' ? 'selected' : ''}>❌ Inactif</option>
                     </select>
                 </div>
-                
-                <!-- ✅ Sélecteur d'Agence -->
                 <div class="form-group">
-                    <label class="form-label">Agence d'affectation</label>
+                    <label class="form-label">Agence</label>
                     <select id="edit-member-agency" class="form-control">
                         ${agencyOptions}
                     </select>
                 </div>
             </div>
-            
-            <div style="margin-top: 1rem; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.2rem;">ℹ️</span>
-                <div>
-                    <strong>${member.role}</strong><br>
-                    <span class="font-mono text-muted" style="font-size: 0.85rem;">Matricule: ${member.matricule || 'N/A'}</span>
-                </div>
+
+            <!-- ✅ SECTION PERMISSIONS AJOUTÉE -->
+            <div class="form-group form-group-full" style="margin-top: 1rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
+                <label class="form-label">Permissions</label>
+                <div id="edit-permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
             </div>
 
-            <div style="text-align: right; margin-top: 1.5rem; border-top: 1px solid var(--dark-border); padding-top: 1rem;">
+            <div style="text-align: right; margin-top: 1.5rem;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
             </div>
         </form>
     `;
 
+    // 1. Générer les checkboxes
+    const container = document.getElementById('edit-permissions-container');
+    let html = '';
+    // On utilise ALL_PERMISSIONS défini en haut du fichier
+    for (const [key, label] of Object.entries(ALL_PERMISSIONS)) {
+        // On coche si l'utilisateur a déjà cette permission
+        const isChecked = member.permissions && member.permissions.includes(key) ? 'checked' : '';
+        
+        html += `
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" name="edit-permission" value="${key}" ${isChecked}>
+                <span style="color: var(--text-secondary); font-size: 0.9em;">${label}</span>
+            </label>
+        `;
+    }
+    container.innerHTML = html;
+
     document.getElementById('details-modal').classList.add('active');
 
-    // 4. Gérer la soumission du formulaire
+    // Gestion soumission
     document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // 2. Récupérer les permissions cochées
+        const permissions = Array.from(document.querySelectorAll('input[name="edit-permission"]:checked'))
+            .map(cb => cb.value);
+
         const updates = {
             name: document.getElementById('edit-member-name').value.trim(),
             phone: document.getElementById('edit-member-phone').value.trim(),
             status: document.getElementById('edit-member-status').value,
-            agencyId: document.getElementById('edit-member-agency').value // Peut être vide
+            agencyId: document.getElementById('edit-member-agency').value,
+            permissions: permissions // ✅ On envoie les nouvelles permissions
         };
 
         const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
-        
         if (result && result.success) {
             showNotification("Mise à jour réussie !", "success");
             closeModal();
-            loadAllCrew(); // Rafraîchir le tableau pour voir les changements
+            loadAllCrew();
         }
     });
 }
