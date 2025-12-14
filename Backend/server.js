@@ -1890,6 +1890,19 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
             type: { $nin: ['Repos', 'Congé'] }
         }).toArray();
 
+
+         console.log(`🔍 DEBUG LIEN PLANNING/SCAN (${todayStr})`);
+        console.log(`   -> Nombre de scans: ${records.length}`);
+        console.log(`   -> Nombre de créneaux: ${schedules.length}`);
+
+        if (records.length > 0 && schedules.length > 0) {
+            console.log("   -> Test comparatif Premier Scan vs Premier Schedule :");
+            console.log("      Scan CrewID:", records[0].crewId, typeof records[0].crewId);
+            console.log("      Sched CrewID:", schedules[0].crewId, typeof schedules[0].crewId);
+            console.log("      Scan Date:", records[0].date);
+            console.log("      Sched Date:", schedules[0].date);
+        }
+
         // 3. ENRICHISSEMENT DES RECORDS (C'est ce qui manquait)
         const enrichedRecords = records.map(record => {
             const schedule = schedules.find(s => s.crewId.toString() === record.crewId.toString());
