@@ -2932,6 +2932,14 @@
                 </div>
                 <div class="stat-value" id="stat-present-now">-</div>
             </div>
+
+            <!-- Zone d'alerte (Cachée si vide) -->
+<div id="attendance-alerts" class="content-card" style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
+    <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
+    <ul id="anomalies-list" style="list-style: none; padding: 0;">
+        <!-- Rempli par JS -->
+    </ul>
+</div>
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-label">Journée Terminée</span>
@@ -8603,54 +8611,73 @@ async function populateScheduleAgencyFilter() {
 
         // Charger les données du jour
         // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
-        async function loadAttendanceToday() {
-            const data = await apiCall('/admin/attendance/today');
-            if (data && data.success) {
-                // Mise à jour stats
-                document.getElementById('stat-present-now').textContent = data.stats.present;
-                document.getElementById('stat-completed-today').textContent = data.stats.completed;
+    async function loadAttendanceToday() {
+    const data = await apiCall('/admin/attendance/today');
+    
+    if (data && data.success) {
+        // Mise à jour stats
+        document.getElementById('stat-present-now').textContent = data.stats.present;
+        document.getElementById('stat-completed-today').textContent = data.stats.completed;
 
-                const tbody = document.getElementById('attendance-table-body');
-                if (data.records.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
-                    return;
-                }
+        // --- GESTION DES ANOMALIES ---
+        const alertsContainer = document.getElementById('attendance-alerts');
+        const alertsList = document.getElementById('anomalies-list');
+        
+        if (data.anomalies && data.anomalies.length > 0) {
+            alertsContainer.style.display = 'block';
+            alertsList.innerHTML = data.anomalies.map(ano => `
+                <li style="padding: 8px 0; border-bottom: 1px solid rgba(239, 83, 80, 0.2); display: flex; justify-content: space-between;">
+                    <div>
+                        <strong style="color: var(--text-primary);">${ano.crewName}</strong> 
+                        <span class="badge badge-${ano.type === 'ABSENCE' ? 'danger' : 'warning'}">${ano.type}</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.9em;">
+                        Prévu: ${ano.expected} - ${ano.message}
+                    </div>
+                </li>
+            `).join('');
+        } else {
+            alertsContainer.style.display = 'none';
+        }
 
-                tbody.innerHTML = data.records.map(r => {
-                    const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                    const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
+        // --- TABLEAU DES PRÉSENCES (Code existant inchangé) ---
+        const tbody = document.getElementById('attendance-table-body');
+        if (data.records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
+            return;
+        }
 
-                    // ========================================================
-                    // ✅ NOUVELLE LOGIQUE D'AFFICHAGE DES STATUTS
-                    // ========================================================
-                    let statusBadge = '';
-                    let actionText = '';
+        tbody.innerHTML = data.records.map(r => {
+            // ... (votre code de mapping existant, copiez-le ici ou gardez-le) ...
+            // Pour être sûr, je vous remets le mapping complet :
+            const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '...';
+            
+            let statusBadge = '';
+            let actionText = '';
 
-                    if (r.status === 'working' || r.status === 'present') {
-                        statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
-                        actionText = `Arrivée à ${checkInTime}`;
-                    }
-                    else if (r.status === 'on_break') {
-                        statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
-                        // On affiche l'heure de départ en pause si dispo
-                        const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-                        actionText = `Parti à ${lastAction}`;
-                    }
-                    else if (r.status === 'completed') {
-                        statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
-                        actionText = `Départ à ${checkOutTime}`;
-                    }
-                    // ========================================================
+            if (r.status === 'working' || r.status === 'present') {
+                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                actionText = `Arrivée à ${checkInTime}`;
+            } 
+            else if (r.status === 'on_break') {
+                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
+                actionText = `Parti à ${lastAction}`;
+            } 
+            else if (r.status === 'completed') {
+                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                actionText = `Départ à ${checkOutTime}`;
+            }
+            
+            let durationDisplay = '-';
+            if (r.durationMinutes > 0) {
+                const h = Math.floor(r.durationMinutes / 60);
+                const m = r.durationMinutes % 60;
+                durationDisplay = `${h}h ${m}m`;
+            }
 
-                    // Calcul durée lisible
-                    let durationDisplay = '-';
-                    if (r.durationMinutes > 0) {
-                        const h = Math.floor(r.durationMinutes / 60);
-                        const m = r.durationMinutes % 60;
-                        durationDisplay = `${h}h ${m}m`;
-                    }
-
-                    return `
+            return `
                 <tr>
                     <td class="font-mono">${checkInTime}</td>
                     <td><strong>${r.crewName}</strong></td>
@@ -8660,10 +8687,9 @@ async function populateScheduleAgencyFilter() {
                     <td class="font-bold">${durationDisplay}</td>
                 </tr>
             `;
-                }).join('');
-            }
-        }
-
+        }).join('');
+    }
+}
         // Activer/Désactiver le scanner
         function toggleScanner() {
             const container = document.getElementById('scanner-container');
