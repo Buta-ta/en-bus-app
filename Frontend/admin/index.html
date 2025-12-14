@@ -8036,12 +8036,13 @@
             // On groupe par employé
             allCrewMembers.forEach(member => {
                 let rowHTML = `
-            <tr>
-                <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border);">
+             <tr>
+                <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <strong>${member.name}</strong>
                     </div>
-                    <small style="color:var(--primary);">${member.role}</small>
+                    <div style="font-size: 0.8rem; color: var(--primary);">${member.role}</div>
+                    ${agencyText} <!-- ✅ L'agence s'affiche ici -->
                 </td>
         `;
 
@@ -8100,7 +8101,103 @@
         }
 
 
+        function openAddScheduleModal(crewId, crewName, dateStr) {
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
 
+    modalTitle.textContent = `Ajouter un créneau pour ${crewName}`;
+    
+    // Formatage de la date pour l'affichage (ex: Lundi 12 Décembre)
+    const dateObj = new Date(dateStr);
+    const dateDisplay = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    modalBody.innerHTML = `
+        <form id="add-schedule-form">
+            <input type="hidden" id="schedule-crew-id" value="${crewId}">
+            <input type="hidden" id="schedule-date" value="${dateStr}">
+            
+            <p style="margin-bottom: 15px; color: var(--text-secondary);">Date : <strong>${dateDisplay}</strong></p>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select id="schedule-type" class="form-control">
+                        <option value="Travail">Travail (Standard)</option>
+                        <option value="Repos">Repos / OFF</option>
+                        <option value="Congé">Congé / Absence</option>
+                        <option value="Astreinte">Astreinte</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Heure Début</label>
+                    <input type="time" id="schedule-start" class="form-control" value="08:00">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Heure Fin</label>
+                    <input type="time" id="schedule-end" class="form-control" value="17:00">
+                </div>
+                
+                <div class="form-group form-group-full">
+                    <label class="form-label">Note (Optionnel)</label>
+                    <input type="text" id="schedule-note" class="form-control" placeholder="Ex: Réunion, Maintenance...">
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    `;
+
+    document.getElementById('details-modal').classList.add('active');
+
+    // Gestion soumission
+    document.getElementById('add-schedule-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            crewId: document.getElementById('schedule-crew-id').value,
+            date: document.getElementById('schedule-date').value,
+            type: document.getElementById('schedule-type').value,
+            startTime: document.getElementById('schedule-start').value,
+            endTime: document.getElementById('schedule-end').value,
+            note: document.getElementById('schedule-note').value
+        };
+
+        const result = await apiCall('/api/admin/schedules', 'POST', payload);
+        
+        if (result && result.success) {
+            showNotification("Créneau ajouté !", "success");
+            closeModal();
+            loadSchedule(); // Rafraîchir la grille
+        } else {
+            showNotification(result?.error || "Erreur.", "error");
+        }
+    });
+}
+
+
+
+    async function deleteSchedule(scheduleId) {
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer le créneau ?",
+        message: "Voulez-vous retirer ce créneau du planning ?",
+        confirmText: "Oui, supprimer",
+        cancelText: "Annuler",
+        iconClass: "danger"
+    });
+
+    if (!confirmed) return;
+
+    const result = await apiCall(`/api/admin/schedules/${scheduleId}`, 'DELETE');
+    if (result && result.success) {
+        showNotification("Créneau supprimé.", "success");
+        loadSchedule();
+    }
+}
         // --- GESTION DES AGENCES ---
 
         let allAgencies = []; // Variable globale pour stocker les agences
