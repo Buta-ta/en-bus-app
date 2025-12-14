@@ -1904,7 +1904,7 @@
                     </li>
 
 
-                    
+
 
 
                     <li class="nav-item">
@@ -3015,69 +3015,69 @@
         // DANS admin/index.html, REMPLACEZ la fonction showDashboard par cette version finale
         // DANS admin/app.js
 
-function showDashboard() {
-    // Affiche le conteneur principal du dashboard
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("dashboard").classList.add("active");
+        function showDashboard() {
+            // Affiche le conteneur principal du dashboard
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("dashboard").classList.add("active");
 
-    const token = localStorage.getItem("admin_token");
-    const userData = decodeJwt(token);
+            const token = localStorage.getItem("admin_token");
+            const userData = decodeJwt(token);
 
-    // Si on ne peut pas lire les données du token, on ne fait rien par sécurité
-    if (!userData || !userData.permissions) {
-        console.warn("Impossible de lire les permissions du token. Tous les onglets sont masqués par sécurité.");
-        document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
-            item.style.display = 'none';
-        });
-        return;
-    }
+            // Si on ne peut pas lire les données du token, on ne fait rien par sécurité
+            if (!userData || !userData.permissions) {
+                console.warn("Impossible de lire les permissions du token. Tous les onglets sont masqués par sécurité.");
+                document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+                    item.style.display = 'none';
+                });
+                return;
+            }
 
-    const userPermissions = userData.permissions;
-    console.log("Permissions de l'utilisateur connecté :", userPermissions);
+            const userPermissions = userData.permissions;
+            console.log("Permissions de l'utilisateur connecté :", userPermissions);
 
-    // On définit quel onglet est contrôlé par quelle permission
-    const tabPermissions = {
-        'reservations': 'view_reservations',
-        'report-requests': 'manage_reports',
-        'trips': 'manage_trips',
-        'templates': 'manage_trips',
-        'destinations': 'manage_trips',
-        'analytics': 'view_analytics',
-        'crew': 'manage_crew',
-        'notifications': 'manage_notifications',
-        
-        // ========================================================
-        // ✅ LA LIGNE À AJOUTER EST ICI
-        // ========================================================
-        'agencies': 'manage_agencies'
-    };
+            // On définit quel onglet est contrôlé par quelle permission
+            const tabPermissions = {
+                'reservations': 'view_reservations',
+                'report-requests': 'manage_reports',
+                'trips': 'manage_trips',
+                'templates': 'manage_trips',
+                'destinations': 'manage_trips',
+                'analytics': 'view_analytics',
+                'crew': 'manage_crew',
+                'notifications': 'manage_notifications',
 
-    // On parcourt chaque lien du menu
-    document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
-        const tabName = link.getAttribute('data-tab');
+                // ========================================================
+                // ✅ LA LIGNE À AJOUTER EST ICI
+                // ========================================================
+                'agencies': 'manage_agencies'
+            };
 
-        if (tabName) {
-            const requiredPermission = tabPermissions[tabName];
+            // On parcourt chaque lien du menu
+            document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+                const tabName = link.getAttribute('data-tab');
 
-            // Logique stricte : on affiche l'onglet UNIQUEMENT si l'utilisateur a la permission requise.
-            if (userPermissions.includes(requiredPermission)) {
-                link.parentElement.style.display = 'block';
-            } else {
-                link.parentElement.style.display = 'none';
+                if (tabName) {
+                    const requiredPermission = tabPermissions[tabName];
+
+                    // Logique stricte : on affiche l'onglet UNIQUEMENT si l'utilisateur a la permission requise.
+                    if (userPermissions.includes(requiredPermission)) {
+                        link.parentElement.style.display = 'block';
+                    } else {
+                        link.parentElement.style.display = 'none';
+                    }
+                }
+            });
+
+            // Cas spécial pour le lien "Paramètres"
+            const settingsLink = document.querySelector('.nav-link[onclick*="openSettingsModal"]');
+            if (settingsLink) {
+                if (userPermissions.includes('manage_settings')) {
+                    settingsLink.parentElement.style.display = 'block';
+                } else {
+                    settingsLink.parentElement.style.display = 'none';
+                }
             }
         }
-    });
-
-    // Cas spécial pour le lien "Paramètres"
-    const settingsLink = document.querySelector('.nav-link[onclick*="openSettingsModal"]');
-    if (settingsLink) {
-        if (userPermissions.includes('manage_settings')) {
-            settingsLink.parentElement.style.display = 'block';
-        } else {
-            settingsLink.parentElement.style.display = 'none';
-        }
-    }
-}
         // ============================================
         // ⏱️ INACTIVITÉ
         // ============================================
@@ -5053,7 +5053,16 @@ function showDashboard() {
 
                 const roleIcons = {
                     'Chauffeur': '🚗',
-                    'Contrôleur': '🎫'
+                    'Contrôleur': '🎫',
+                    'Super Admin': '👑',
+                    'Manager': '💼',
+                    'Manager d\'Agence': '🏢',
+                    'Agent de réservation': '🎟️',
+
+                    // ✅ AJOUT DES ICÔNES TECHNIQUES
+                    'Mécanicien': '🔧',
+                    'Électricien': '⚡',
+                    'Technicien': '🛠️'
                 };
 
                 return `
@@ -5168,16 +5177,26 @@ function showDashboard() {
                 </div>
 
                 <div class="form-group">
-                    <label for="crew-role" class="form-label">Poste *</label>
-                    <select id="crew-role" class="form-control" required>
-                        <option value="">-- Choisir --</option>
-                        <option value="Agent de réservation">🎟️ Agent de réservation</option>
-                        <option value="Manager">💼 Manager</option>
-                        <option value="Super Admin">👑 Super Admin</option>
-                        <option value="Chauffeur">🚗 Chauffeur</option>
-                        <option value="Contrôleur">🎫 Contrôleur</option>
-                    </select>
-                </div>
+    <label for="crew-role" class="form-label">Poste *</label>
+    <select id="crew-role" class="form-control" required>
+        <option value="">-- Choisir --</option>
+        
+        <!-- Administration -->
+        <option value="Super Admin">👑 Super Admin</option>
+        <option value="Manager">💼 Manager Global</option>
+        <option value="Manager d'Agence">🏢 Manager d'Agence</option>
+        <option value="Agent de réservation">🎟️ Agent de réservation</option>
+        
+        <!-- Opérations (Bus) -->
+        <option value="Chauffeur">🚗 Chauffeur</option>
+        <option value="Contrôleur">🎫 Contrôleur</option>
+        
+        <!-- ✅ NOUVEAUX RÔLES TECHNIQUES -->
+        <option value="Mécanicien">🔧 Mécanicien</option>
+        <option value="Électricien">⚡ Électricien Auto</option>
+        <option value="Technicien">🛠️ Technicien Polyvalent</option>
+    </select>
+</div>
 
                 <div class="form-group">
                     <label for="crew-phone" class="form-label">Téléphone</label> <!-- Rendue optionnelle -->
@@ -5727,107 +5746,107 @@ function showDashboard() {
         // ============================================
         // 🎬 NAVIGATION
         // ============================================
-      
 
-      
-// Remplacez votre fonction switchTab par cette version async
 
-async function switchTab(tabName) {
-    console.log(`🚀 Changement d'onglet vers : ${tabName}`);
 
-    // --- 1. Gestion de l'UI (inchangé) ---
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-        tab.style.display = 'none';
-    });
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        // Remplacez votre fonction switchTab par cette version async
 
-    const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
-    if (activeLink) {
-        activeLink.classList.add('active');
-    }
+        async function switchTab(tabName) {
+            console.log(`🚀 Changement d'onglet vers : ${tabName}`);
 
-    const activeTab = document.getElementById(`tab-${tabName}`);
-    if (activeTab) {
-        activeTab.classList.add('active');
-        activeTab.style.display = 'block';
-    } else {
-        console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas.`);
-        return;
-    }
+            // --- 1. Gestion de l'UI (inchangé) ---
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-    // --- 2. Arrêt des timers si nécessaire (inchangé) ---
-    if (tabName !== 'reservations') {
-        stopCountdownUpdates();
-    }
+            const activeLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
 
-    // ==========================================================
-    // ✅ DÉBUT DE LA LOGIQUE DE PRÉ-CHARGEMENT
-    // ==========================================================
-    
-    // On crée une liste de promesses pour les données à charger en arrière-plan.
-    const dataPromises = [];
-    
-    // On identifie les onglets qui dépendent de la liste du personnel.
-    const crewDependentTabs = ['trips', 'agencies', 'crew'];
-
-    // Si on navigue vers l'un de ces onglets, on s'assure que la liste du personnel est chargée.
-    if (crewDependentTabs.includes(tabName)) {
-        // `loadAllCrewIfNeeded` ne fera l'appel API que si la liste est vide.
-        dataPromises.push(loadAllCrewIfNeeded()); 
-    }
-
-    // On attend que toutes les données nécessaires en arrière-plan soient prêtes.
-    // Dans ce cas, on attend juste que la liste du personnel soit chargée si nécessaire.
-    await Promise.all(dataPromises);
-    
-    // ==========================================================
-    // ✅ FIN DE LA LOGIQUE DE PRÉ-CHARGEMENT
-    // ==========================================================
-
-    // --- 3. Chargement des données spécifiques à l'onglet ---
-    // Ce code s'exécute maintenant AVEC la certitude que les données pré-chargées sont disponibles.
-    switch (tabName) {
-        case 'reservations':
-            loadAdminData();
-            break;
-        case 'report-requests':
-            loadReportRequests();
-            break;
-        case 'trips':
-            // La liste du personnel est déjà prête, on peut maintenant charger le reste.
-            await loadAllTemplates(); // On attend que les templates soient là
-            populateCrewSelects(); // On peut peupler les selects du formulaire
-            loadAllTrips();        // On charge les voyages
-            break;
-        case 'templates':
-            loadAllTemplates();
-            break;
-        case 'destinations':
-            loadAllDestinations();
-            break;
-        case 'analytics':
-            loadBusList();
-            break;
-        case 'crew':
-            // La liste a déjà été chargée par `loadAllCrewIfNeeded`, 
-            // il suffit d'appliquer les filtres et d'afficher.
-            if (typeof filterCrew === 'function') {
-                filterCrew(); 
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.display = 'block';
             } else {
-                loadAllCrew(); // Fallback si la fonction de filtrage n'existe pas
+                console.warn(`⚠️ L'onglet "tab-${tabName}" n'existe pas.`);
+                return;
             }
-            break;
-        case 'agencies':
-            // La liste du personnel est prête pour la modale, on peut charger les agences.
-            loadAllAgencies();
-            break;
-        default:
-            if (tabName !== 'settings') {
-                console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+
+            // --- 2. Arrêt des timers si nécessaire (inchangé) ---
+            if (tabName !== 'reservations') {
+                stopCountdownUpdates();
             }
-    }
-}
+
+            // ==========================================================
+            // ✅ DÉBUT DE LA LOGIQUE DE PRÉ-CHARGEMENT
+            // ==========================================================
+
+            // On crée une liste de promesses pour les données à charger en arrière-plan.
+            const dataPromises = [];
+
+            // On identifie les onglets qui dépendent de la liste du personnel.
+            const crewDependentTabs = ['trips', 'agencies', 'crew'];
+
+            // Si on navigue vers l'un de ces onglets, on s'assure que la liste du personnel est chargée.
+            if (crewDependentTabs.includes(tabName)) {
+                // `loadAllCrewIfNeeded` ne fera l'appel API que si la liste est vide.
+                dataPromises.push(loadAllCrewIfNeeded());
+            }
+
+            // On attend que toutes les données nécessaires en arrière-plan soient prêtes.
+            // Dans ce cas, on attend juste que la liste du personnel soit chargée si nécessaire.
+            await Promise.all(dataPromises);
+
+            // ==========================================================
+            // ✅ FIN DE LA LOGIQUE DE PRÉ-CHARGEMENT
+            // ==========================================================
+
+            // --- 3. Chargement des données spécifiques à l'onglet ---
+            // Ce code s'exécute maintenant AVEC la certitude que les données pré-chargées sont disponibles.
+            switch (tabName) {
+                case 'reservations':
+                    loadAdminData();
+                    break;
+                case 'report-requests':
+                    loadReportRequests();
+                    break;
+                case 'trips':
+                    // La liste du personnel est déjà prête, on peut maintenant charger le reste.
+                    await loadAllTemplates(); // On attend que les templates soient là
+                    populateCrewSelects(); // On peut peupler les selects du formulaire
+                    loadAllTrips();        // On charge les voyages
+                    break;
+                case 'templates':
+                    loadAllTemplates();
+                    break;
+                case 'destinations':
+                    loadAllDestinations();
+                    break;
+                case 'analytics':
+                    loadBusList();
+                    break;
+                case 'crew':
+                    // La liste a déjà été chargée par `loadAllCrewIfNeeded`, 
+                    // il suffit d'appliquer les filtres et d'afficher.
+                    if (typeof filterCrew === 'function') {
+                        filterCrew();
+                    } else {
+                        loadAllCrew(); // Fallback si la fonction de filtrage n'existe pas
+                    }
+                    break;
+                case 'agencies':
+                    // La liste du personnel est prête pour la modale, on peut charger les agences.
+                    loadAllAgencies();
+                    break;
+                default:
+                    if (tabName !== 'settings') {
+                        console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
+                    }
+            }
+        }
         // ============================================
         // 🎯 INITIALISATION
         // ============================================
@@ -5859,28 +5878,28 @@ async function switchTab(tabName) {
 
         // DANS admin/app.js
 
-/**
- * Charge la liste complète du personnel depuis l'API, mais seulement si elle n'est pas déjà chargée.
- * C'est une fonction clé pour optimiser les chargements.
- */
-async function loadAllCrewIfNeeded() {
-    if (allCrewMembers && allCrewMembers.length > 0) {
-        console.log("-> La liste du personnel est déjà en mémoire. Aucune action.");
-        return; // On ne fait rien si les données sont déjà là
-    }
-    
-    console.log("-> Chargement de la liste complète du personnel en arrière-plan...");
-    const data = await apiCall('/admin/crew');
-    if (data && data.success) {
-        allCrewMembers = data.crew;
-        console.log(`-> ✅ ${allCrewMembers.length} membres du personnel chargés en mémoire.`);
-        
-        // Optionnel : Mettre à jour les statistiques si elles sont visibles
-        if (typeof displayCrewStats === 'function' && data.stats) {
-            displayCrewStats(data.stats);
+        /**
+         * Charge la liste complète du personnel depuis l'API, mais seulement si elle n'est pas déjà chargée.
+         * C'est une fonction clé pour optimiser les chargements.
+         */
+        async function loadAllCrewIfNeeded() {
+            if (allCrewMembers && allCrewMembers.length > 0) {
+                console.log("-> La liste du personnel est déjà en mémoire. Aucune action.");
+                return; // On ne fait rien si les données sont déjà là
+            }
+
+            console.log("-> Chargement de la liste complète du personnel en arrière-plan...");
+            const data = await apiCall('/admin/crew');
+            if (data && data.success) {
+                allCrewMembers = data.crew;
+                console.log(`-> ✅ ${allCrewMembers.length} membres du personnel chargés en mémoire.`);
+
+                // Optionnel : Mettre à jour les statistiques si elles sont visibles
+                if (typeof displayCrewStats === 'function' && data.stats) {
+                    displayCrewStats(data.stats);
+                }
+            }
         }
-    }
-}
         // ============================================
         // 🎯 INITIALISATION & ÉVÉNEMENTS
         // ============================================
@@ -7506,70 +7525,113 @@ async function loadAllCrewIfNeeded() {
 
 
 
-// --- GESTION DES AGENCES ---
+        // --- GESTION DES AGENCES ---
 
-let allAgencies = []; // Variable globale pour stocker les agences
+        let allAgencies = []; // Variable globale pour stocker les agences
 
-/**
- * Charge toutes les agences depuis le backend.
- */
-/**
- * Charge toutes les agences (et le personnel nécessaire pour l'affichage)
- */
-async function loadAllAgencies() {
-    // 1. On s'assure d'abord d'avoir la liste du personnel pour afficher les noms des managers
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        console.log("Chargement préventif du personnel pour les agences...");
-        await loadAllCrew();
-    }
+        /**
+         * Charge toutes les agences depuis le backend.
+         */
+        /**
+         * Charge toutes les agences (et le personnel nécessaire pour l'affichage)
+         */
+        async function loadAllAgencies() {
+            // 1. On s'assure d'abord d'avoir la liste du personnel pour afficher les noms des managers
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                console.log("Chargement préventif du personnel pour les agences...");
+                await loadAllCrew();
+            }
 
-    // 2. Ensuite on charge les agences
-    const data = await apiCall('/admin/agencies');
-    if (data && data.success) {
-        allAgencies = data.agencies;
-        renderAgenciesTable(allAgencies);
-    }
-}
-
-/**
- * Affiche les agences dans le tableau HTML.
- * @param {Array} agencies - La liste des agences à afficher.
- */
-/**
- * Affiche les agences dans le tableau HTML.
- */
-function renderAgenciesTable(agencies) {
-    const tbody = document.getElementById('agencies-table-body');
-    if (!tbody) return;
-
-    if (!agencies || agencies.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = agencies.map(agency => {
-        const statusBadge = agency.status === 'active' 
-            ? `<span class="badge badge-success">Actif</span>`
-            : `<span class="badge badge-gray">Inactif</span>`;
-
-        // ============================================================
-        // ✅ CORRECTION : RECHERCHE DYNAMIQUE DU NOM DU MANAGER
-        // ============================================================
-        let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
-        
-        if (agency.managerId) {
-            // On cherche l'employé qui a cet ID dans la liste globale
-            const manager = allCrewMembers.find(m => m._id === agency.managerId);
-            if (manager) {
-                managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
-            } else {
-                // Si l'ID existe mais qu'on ne trouve pas le membre (ex: supprimé)
-                managerName = '<span style="color: #ef5350;">Introuvable</span>';
+            // 2. Ensuite on charge les agences
+            const data = await apiCall('/admin/agencies');
+            if (data && data.success) {
+                allAgencies = data.agencies;
+                renderAgenciesTable(allAgencies);
             }
         }
-        // ============================================================
 
-        return `
+
+
+
+
+        /**
+         * Supprime une agence après confirmation via la modale personnalisée.
+         */
+        async function deleteAgency(agencyId) {
+            // 1. Trouver l'agence dans la liste locale pour récupérer son nom
+            const agency = allAgencies.find(a => a._id === agencyId);
+
+            // Sécurité si l'agence n'est pas trouvée localement
+            if (!agency) {
+                console.error("Agence introuvable localement");
+                return;
+            }
+
+            // 2. Afficher la modale de confirmation personnalisée
+            const confirmed = await showAdminConfirm({
+                title: "Supprimer l'agence ?",
+                message: `Voulez-vous vraiment supprimer l'agence <strong>"${agency.name}"</strong> ?\n\n⚠️ Cette action est irréversible. Le personnel affecté sera détaché (mais pas supprimé).`,
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Oui, supprimer',
+                cancelText: 'Annuler',
+                confirmClass: 'btn-danger' // Rouge pour le danger
+            });
+
+            // Si l'utilisateur clique sur Annuler, on arrête tout
+            if (!confirmed) return;
+
+            // 3. Appel API pour la suppression
+            try {
+                const data = await apiCall(`/admin/agencies/${agencyId}`, 'DELETE');
+
+                if (data && data.success) {
+                    showNotification("Agence supprimée avec succès.", 'success');
+                    loadAllAgencies(); // Rafraîchir le tableau
+                }
+            } catch (error) {
+                showNotification("Erreur lors de la suppression.", "error");
+            }
+        }
+        /**
+         * Affiche les agences dans le tableau HTML.
+         * @param {Array} agencies - La liste des agences à afficher.
+         */
+        /**
+         * Affiche les agences dans le tableau HTML.
+         */
+        function renderAgenciesTable(agencies) {
+            const tbody = document.getElementById('agencies-table-body');
+            if (!tbody) return;
+
+            if (!agencies || agencies.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = agencies.map(agency => {
+                const statusBadge = agency.status === 'active'
+                    ? `<span class="badge badge-success">Actif</span>`
+                    : `<span class="badge badge-gray">Inactif</span>`;
+
+                // ============================================================
+                // ✅ CORRECTION : RECHERCHE DYNAMIQUE DU NOM DU MANAGER
+                // ============================================================
+                let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+
+                if (agency.managerId) {
+                    // On cherche l'employé qui a cet ID dans la liste globale
+                    const manager = allCrewMembers.find(m => m._id === agency.managerId);
+                    if (manager) {
+                        managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
+                    } else {
+                        // Si l'ID existe mais qu'on ne trouve pas le membre (ex: supprimé)
+                        managerName = '<span style="color: #ef5350;">Introuvable</span>';
+                    }
+                }
+                // ============================================================
+
+                return `
             <tr>
                 <td>
                     <strong class="font-bold">${agency.name}</strong><br>
@@ -7585,71 +7647,71 @@ function renderAgenciesTable(agencies) {
                 </td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
- */
-// DANS admin/app.js, REMPLACEZ la fonction openAgencyModal
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+         */
+        // DANS admin/app.js, REMPLACEZ la fonction openAgencyModal
 
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
- */
-// DANS admin/app.js
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+         */
+        // DANS admin/app.js
 
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
- */
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- */
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- */
-async function openAgencyModal(agencyId = null) {
-    const isEditing = agencyId !== null;
-    const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
-    
-    // 1. SÉCURITÉ : On s'assure que la liste du personnel est chargée
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        await loadAllCrew();
-    }
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+         */
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         */
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         */
+        async function openAgencyModal(agencyId = null) {
+            const isEditing = agencyId !== null;
+            const modalTitleText = isEditing ? "Modifier l'agence" : "Créer une nouvelle agence";
 
-    // =========================================================================
-    // ✅ LA CORRECTION EST ICI : On accepte plusieurs types de rôles
-    // =========================================================================
-    const managers = allCrewMembers.filter(m => 
-        (m.role === 'Manager' || m.role === "Manager d'Agence" || m.role === 'Super Admin') 
-        && m.status === 'Actif'
-    );
-    // =========================================================================
+            // 1. SÉCURITÉ : On s'assure que la liste du personnel est chargée
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                await loadAllCrew();
+            }
 
-    // On génère les options HTML
-    let managerOptions = '<option value="">-- Aucun manager --</option>';
-    
-    if (managers.length > 0) {
-        managerOptions += managers.map(m => 
-            `<option value="${m._id}">${m.name} (${m.role})</option>`
-        ).join('');
-    } else {
-        console.warn("⚠️ Aucun manager éligible trouvé.");
-    }
+            // =========================================================================
+            // ✅ LA CORRECTION EST ICI : On accepte plusieurs types de rôles
+            // =========================================================================
+            const managers = allCrewMembers.filter(m =>
+                (m.role === 'Manager' || m.role === "Manager d'Agence" || m.role === 'Super Admin')
+                && m.status === 'Actif'
+            );
+            // =========================================================================
 
-    // 2. Récupération des données si édition
-    let agency = {};
-    if (isEditing) {
-        agency = allAgencies.find(a => a._id === agencyId) || {};
-    }
+            // On génère les options HTML
+            let managerOptions = '<option value="">-- Aucun manager --</option>';
 
-    const modalTitle = document.getElementById("modal-title");
-    const modalBody = document.getElementById("modal-body");
+            if (managers.length > 0) {
+                managerOptions += managers.map(m =>
+                    `<option value="${m._id}">${m.name} (${m.role})</option>`
+                ).join('');
+            } else {
+                console.warn("⚠️ Aucun manager éligible trouvé.");
+            }
 
-    modalTitle.textContent = modalTitleText;
-    modalBody.innerHTML = `
+            // 2. Récupération des données si édition
+            let agency = {};
+            if (isEditing) {
+                agency = allAgencies.find(a => a._id === agencyId) || {};
+            }
+
+            const modalTitle = document.getElementById("modal-title");
+            const modalBody = document.getElementById("modal-body");
+
+            modalTitle.textContent = modalTitleText;
+            modalBody.innerHTML = `
         <form id="agency-form">
             <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="form-group">
@@ -7695,65 +7757,65 @@ async function openAgencyModal(agencyId = null) {
             </div>
         </form>
     `;
-    
-    // Sélectionner le manager actuel si on édite
-    if (isEditing && agency.managerId) {
-        setTimeout(() => {
-            const select = document.getElementById('agency-manager');
-            if (select) select.value = agency.managerId;
-        }, 50);
-    }
 
-    document.getElementById('agency-form').addEventListener('submit', (e) => {
-        handleAgencySubmit(e, agencyId);
-    });
+            // Sélectionner le manager actuel si on édite
+            if (isEditing && agency.managerId) {
+                setTimeout(() => {
+                    const select = document.getElementById('agency-manager');
+                    if (select) select.value = agency.managerId;
+                }, 50);
+            }
 
-    document.getElementById('details-modal').classList.add('active');
-}
-/**
- * Gère la soumission du formulaire de création/modification d'agence.
- */
-async function handleAgencySubmit(event, agencyId) {
-    event.preventDefault();
-    const isEditing = agencyId !== null;
+            document.getElementById('agency-form').addEventListener('submit', (e) => {
+                handleAgencySubmit(e, agencyId);
+            });
 
-    const agencyData = {
-        name: document.getElementById('agency-name').value,
-        city: document.getElementById('agency-city').value,
-        address: document.getElementById('agency-address').value,
-        phone: document.getElementById('agency-phone').value,
-        openingHours: document.getElementById('agency-hours').value,
-        managerId: document.getElementById('agency-manager').value || null,
-        status: document.getElementById('agency-status').value
-    };
+            document.getElementById('details-modal').classList.add('active');
+        }
+        /**
+         * Gère la soumission du formulaire de création/modification d'agence.
+         */
+        async function handleAgencySubmit(event, agencyId) {
+            event.preventDefault();
+            const isEditing = agencyId !== null;
 
-    let response;
-    if (isEditing) {
-        // Logique de mise à jour (à créer)
-        // response = await apiCall(`/admin/agencies/${agencyId}`, 'PATCH', agencyData);
-        alert("Logique de PATCH à implémenter pour la modification.");
-    } else {
-        // Logique de création (déjà créée côté backend)
-        response = await apiCall('/admin/agencies', 'POST', agencyData);
-    }
+            const agencyData = {
+                name: document.getElementById('agency-name').value,
+                city: document.getElementById('agency-city').value,
+                address: document.getElementById('agency-address').value,
+                phone: document.getElementById('agency-phone').value,
+                openingHours: document.getElementById('agency-hours').value,
+                managerId: document.getElementById('agency-manager').value || null,
+                status: document.getElementById('agency-status').value
+            };
 
-    if (response && response.success) {
-        showNotification(isEditing ? "Agence modifiée avec succès !" : "Agence créée avec succès !", 'success');
-        closeModal();
-        loadAllAgencies(); // On rafraîchit la liste
-    }
-    // La gestion d'erreur est déjà dans apiCall()
-}
+            let response;
+            if (isEditing) {
+                // Logique de mise à jour (à créer)
+                // response = await apiCall(`/admin/agencies/${agencyId}`, 'PATCH', agencyData);
+                alert("Logique de PATCH à implémenter pour la modification.");
+            } else {
+                // Logique de création (déjà créée côté backend)
+                response = await apiCall('/admin/agencies', 'POST', agencyData);
+            }
 
-/**
- * Supprime une agence après confirmation.
- * @param {string} agencyId - L'ID de l'agence à supprimer.
- */
-function deleteAgency(agencyId) {
-    console.log("Demande de suppression pour l'agence :", agencyId);
-    // TODO: Logique de suppression avec modale de confirmation
-    alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
-}
+            if (response && response.success) {
+                showNotification(isEditing ? "Agence modifiée avec succès !" : "Agence créée avec succès !", 'success');
+                closeModal();
+                loadAllAgencies(); // On rafraîchit la liste
+            }
+            // La gestion d'erreur est déjà dans apiCall()
+        }
+
+        /**
+         * Supprime une agence après confirmation.
+         * @param {string} agencyId - L'ID de l'agence à supprimer.
+         */
+        function deleteAgency(agencyId) {
+            console.log("Demande de suppression pour l'agence :", agencyId);
+            // TODO: Logique de suppression avec modale de confirmation
+            alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
+        }
 
     </script>
 
