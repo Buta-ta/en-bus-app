@@ -2020,11 +2020,15 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
 // 👥 GESTION DU PERSONNEL (CREW)
 // ============================================
 
-// Récupérer tous les membres du personnel
+// Récupérer tous les membres du personnel (SANS LA PHOTO LOURDE)
 app.get("/api/admin/crew", authenticateToken, async (req, res) => {
     try {
-        // ✅ CODE CORRECT
-        const crewMembers = await crewCollection.find({}).sort({ createdAt: -1 }).toArray();
+        const crewMembers = await crewCollection
+            .find({})
+            .project({ photo: 0 }) // ✅ OPTIMISATION : On exclut la photo
+            .sort({ createdAt: -1 })
+            .toArray();
+
         // Calculer les stats générales
         const stats = {
             total: crewMembers.length,
