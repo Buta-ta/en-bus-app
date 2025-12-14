@@ -8362,6 +8362,7 @@ let html5QrcodeScanner = null;
 let isScanning = false;
 
 // Charger les données du jour
+// Charger les données du jour (CORRIGÉ POUR LA PAUSE)
 async function loadAttendanceToday() {
     const data = await apiCall('/admin/attendance/today');
     if (data && data.success) {
@@ -8369,7 +8370,6 @@ async function loadAttendanceToday() {
         document.getElementById('stat-present-now').textContent = data.stats.present;
         document.getElementById('stat-completed-today').textContent = data.stats.completed;
 
-        // Mise à jour tableau
         const tbody = document.getElementById('attendance-table-body');
         if (data.records.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
@@ -8380,11 +8380,27 @@ async function loadAttendanceToday() {
             const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
             const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '...';
             
-            let statusBadge = r.status === 'present' 
-                ? `<span class="badge badge-success">🟢 Présent</span>` 
-                : `<span class="badge badge-gray">🏁 Terminé</span>`;
+            // ========================================================
+            // ✅ NOUVELLE LOGIQUE D'AFFICHAGE DES STATUTS
+            // ========================================================
+            let statusBadge = '';
+            let actionText = '';
 
-            let actionText = r.status === 'present' ? `Arrivée à ${checkInTime}` : `Départ à ${checkOutTime}`;
+            if (r.status === 'working' || r.status === 'present') {
+                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                actionText = `Arrivée à ${checkInTime}`;
+            } 
+            else if (r.status === 'on_break') {
+                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                // On affiche l'heure de départ en pause si dispo
+                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
+                actionText = `Parti à ${lastAction}`;
+            } 
+            else if (r.status === 'completed') {
+                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                actionText = `Départ à ${checkOutTime}`;
+            }
+            // ========================================================
             
             // Calcul durée lisible
             let durationDisplay = '-';
@@ -8400,7 +8416,7 @@ async function loadAttendanceToday() {
                     <td><strong>${r.crewName}</strong></td>
                     <td>${r.crewRole}</td>
                     <td>${r.agencyId ? 'Agence' : 'Siège'}</td>
-                    <td>${statusBadge} <small>${actionText}</small></td>
+                    <td>${statusBadge} <small style="display:block; color:#888;">${actionText}</small></td>
                     <td class="font-bold">${durationDisplay}</td>
                 </tr>
             `;
