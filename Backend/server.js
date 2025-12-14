@@ -1886,94 +1886,100 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 
 
 // [GET] Récupérer les présences du jour (Gestion Fuseau Horaire Intégrée)
+// [GET] Récupérer les présences du jour ET les anomalies (Version finale)
 app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
     try {
-        const timeZone = 'Africa/Brazzaville'; // Fuseau horaire de référence pour votre activité
+        const timeZone = 'Africa/Brazzaville';
         const now = new Date();
-        
-        // 1. Calculer la date "aujourd'hui" dans le bon fuseau horaire
         const todayStr = format(utcToZonedTime(now, timeZone), 'yyyy-MM-dd', { timeZone });
-        console.log(`Date calculée pour le fuseau '${timeZone}': ${todayStr}`);
-        
+
         const db = getDb();
 
-        // 2. Récupérer les scans du jour
-        const records = await db.collection('attendance')
-            .find({ date: todayStr })
-            .sort({ checkIn: -1 })
-            .toArray();
-
-        // 3. Récupérer le planning du jour
-        const schedules = await db.collection('schedules').find({
-            date: todayStr,
-            type: { $nin: ['Repos', 'Congé'] }
-        }).toArray();
+        // 1. Requête principale avec agrégation pour fusionner les données
+        const records = await db.collection('attendance').aggregate([
+            { $match: { date: todayStr } },
+            { $sort: { checkIn: -1 } },
+            // A. Joindre les infos de l'employé (nom, rôle, agence)
+            {
+                $lookup: {
+                    from: "crew",
+                    localField: "crewId",
+                    foreignField: "_id",
+                    as: "crewDetails"
+                }
+            },
+            // B. Joindre les infos du planning (horaires prévus)
+            {
+                $lookup: {
+                    from: "schedules",
+                    let: { crew_id: "$crewId", attendance_date: "$date" },
+                    pipeline: [
+                        { $match: 
+                            { $expr: 
+                                { $and:
+                                    [
+                                        { $eq: [ "$crewId",  "$$crew_id" ] },
+                                        { $eq: [ "$date", "$$attendance_date" ] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "scheduleDetails"
+                }
+            },
+            // C. Nettoyer et formater le résultat pour le frontend
+            {
+                $project: {
+                    _id: 1,
+                    crewId: 1,
+                    crewName: { $ifNull: [ { $arrayElemAt: ["$crewDetails.name", 0] }, "Employé Supprimé" ] },
+                    crewRole: { $ifNull: [ { $arrayElemAt: ["$crewDetails.role", 0] }, "N/A" ] },
+                    agencyName: { $ifNull: [ { $arrayElemAt: ["$crewDetails.agencyName", 0] }, null ] },
+                    checkIn: 1, checkOut: 1, status: 1, lastActionTime: 1, durationMinutes: 1,
+                    scheduledStart: { $ifNull: [{ $arrayElemAt: ["$scheduleDetails.startTime", 0] }, null] },
+                    scheduledEnd: { $ifNull: [{ $arrayElemAt: ["$scheduleDetails.endTime", 0] }, null] }
+                }
+            }
+        ]).toArray();
         
-        // 4. Enrichir les scans avec les horaires prévus
-        const enrichedRecords = records.map(record => {
-            const schedule = schedules.find(s => s.crewId.toString() === record.crewId.toString());
-            return {
-                ...record,
-                scheduledStart: schedule ? schedule.startTime : null,
-                scheduledEnd: schedule ? schedule.endTime : null,
-                scheduleType: schedule ? schedule.type : null
-            };
-        });
-
-        // 5. Analyse des anomalies (retards et absences)
+        // 2. Calcul des anomalies (retards et absences)
+        const schedules = await db.collection('schedules').find({ date: todayStr, type: { $nin: ['Repos', 'Congé'] } }).toArray();
         const anomalies = [];
+        
         for (const schedule of schedules) {
             const scan = records.find(r => r.crewId.toString() === schedule.crewId.toString());
-            
-            // Récupérer le nom de l'employé
             const crewMember = await db.collection('crew').findOne({ _id: schedule.crewId });
             const name = crewMember ? crewMember.name : 'Inconnu';
 
-            // Calculer l'heure de début prévue dans le bon fuseau horaire
             const [h, m] = schedule.startTime.split(':');
-            const scheduledStart = new Date(`${todayStr}T${h}:${m}:00`); // Crée une date naïve
+            const scheduledStart = new Date(`${todayStr}T${h}:${m}:00`);
 
-            // CAS A : ABSENCE
             if (!scan) {
-                // Si l'heure actuelle est passée de plus de 30 min par rapport au planning
                 if (now > new Date(scheduledStart.getTime() + 30 * 60000)) {
-                    anomalies.push({
-                        type: 'ABSENCE',
-                        crewName: name,
-                        expected: schedule.startTime,
-                        message: "N'a pas pointé"
-                    });
+                    anomalies.push({ type: 'ABSENCE', crewName: name, expected: schedule.startTime, message: "N'a pas pointé" });
                 }
-            } 
-            // CAS B : RETARD
-            else {
+            } else {
                 const checkInTime = new Date(scan.checkIn);
-                // Si l'arrivée est plus de 10 min après l'heure prévue
                 if (checkInTime > new Date(scheduledStart.getTime() + 10 * 60000)) {
                     const diffMinutes = Math.floor((checkInTime - scheduledStart) / 60000);
-                    anomalies.push({
-                        type: 'RETARD',
-                        crewName: name,
-                        expected: schedule.startTime,
-                        actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
-                        message: `${diffMinutes} min de retard`
-                    });
+                    anomalies.push({ type: 'RETARD', crewName: name, expected: schedule.startTime, actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}), message: `${diffMinutes} min` });
                 }
             }
         }
 
-        // 6. Calcul des statistiques
+        // 3. Calcul des statistiques
         const stats = {
             present: records.filter(r => r.status === 'present' || r.status === 'working').length,
             completed: records.filter(r => r.status === 'completed').length,
             anomalies: anomalies.length
         };
 
-        // 7. Envoyer la réponse complète
-        res.json({ success: true, records: enrichedRecords, anomalies, stats });
+        // 4. Envoi de la réponse
+        res.json({ success: true, records, anomalies, stats });
 
     } catch (error) {
-        console.error("Erreur attendance:", error);
+        console.error("Erreur lors de la récupération des pointages:", error);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
@@ -3511,7 +3517,7 @@ app.post("/api/admin/schedules", authenticateToken, [
         console.error("Erreur planning:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
-    
+
 });
 
 
