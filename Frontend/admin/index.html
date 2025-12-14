@@ -1829,13 +1829,67 @@
             background-color: rgba(255, 255, 255, 0.05);
             /* Effet survol */
         }
-        
+
 
 
 
         /* DANS LE STYLE */
-.schedule-item.type-Astreinte { border-color: #ff9800; background: rgba(255, 152, 0, 0.1); }
-.schedule-item.type-Heures.Sup { border-color: #e91e63; background: rgba(233, 30, 99, 0.1); } /* Attention à l'espace dans la classe CSS */
+        .schedule-item.type-Astreinte {
+            border-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .schedule-item.type-Heures.Sup {
+            border-color: #e91e63;
+            background: rgba(233, 30, 99, 0.1);
+        }
+
+        /* Attention à l'espace dans la classe CSS */
+
+
+        /* --- COULEURS DU PLANNING --- */
+
+        /* Travail Standard (Bleu neutre) */
+        .schedule-item.type-Travail {
+            border-left-color: #2196f3;
+            background: rgba(33, 150, 243, 0.15);
+            color: #90caf9;
+        }
+
+        /* Voyage (Vert vif - Activité principale) */
+        .schedule-item.type-Voyage {
+            border-left-color: #73d700;
+            background: rgba(115, 215, 0, 0.15);
+            color: #aeea00;
+        }
+
+        /* Repos (Gris discret) */
+        .schedule-item.type-Repos {
+            border-left-color: #78909c;
+            background: rgba(120, 144, 156, 0.15);
+            color: #b0bec5;
+        }
+
+        /* Congé (Rouge/Rose) */
+        .schedule-item.type-Congé {
+            border-left-color: #ef5350;
+            background: rgba(239, 83, 80, 0.15);
+            color: #ef9a9a;
+        }
+
+        /* Astreinte (Orange - Attention requise) */
+        .schedule-item.type-Astreinte {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.15);
+            color: #ffcc80;
+        }
+
+        /* Heures Sup (Violet/Magenta - Exceptionnel) */
+        .schedule-item.type-Heures_Sup {
+            border-left-color: #e040fb;
+            background: rgba(224, 64, 251, 0.15);
+            color: #ea80fc;
+        }
     </style>
 </head>
 
@@ -2941,12 +2995,13 @@
             </div>
 
             <!-- Zone d'alerte (Cachée si vide) -->
-<div id="attendance-alerts" class="content-card" style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
-    <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
-    <ul id="anomalies-list" style="list-style: none; padding: 0;">
-        <!-- Rempli par JS -->
-    </ul>
-</div>
+            <div id="attendance-alerts" class="content-card"
+                style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
+                <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
+                <ul id="anomalies-list" style="list-style: none; padding: 0;">
+                    <!-- Rempli par JS -->
+                </ul>
+            </div>
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-label">Journée Terminée</span>
@@ -7992,96 +8047,96 @@
 
 
         // DANS LE SCRIPT
-async function loadSchedule() {
-    console.log("📅 Chargement du planning...");
-    
-    // 1. Initialiser le filtre agence (UNE SEULE FOIS si vide)
-    const agencySelect = document.getElementById('schedule-filter-agency');
-    // On ne remplit que si le select est vide ou n'a que l'option par défaut
-    if (agencySelect && agencySelect.options.length <= 1) { 
-        await populateScheduleAgencyFilter();
-    }
+        async function loadSchedule() {
+            console.log("📅 Chargement du planning...");
 
-    // 2. Initialisation date (inchangé)
-    const weekInput = document.getElementById('schedule-week-picker');
-    if (!weekInput || !weekInput.value) {
-        const now = new Date();
-        const weekNum = getWeekNumber(now);
-        if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-        else return;
-    }
-    
-    // 3. Calcul des dates (inchangé)
-    const [year, week] = weekInput.value.split('-W');
-    const startOfWeek = getDateOfISOWeek(week, year);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
+            // 1. Initialiser le filtre agence (UNE SEULE FOIS si vide)
+            const agencySelect = document.getElementById('schedule-filter-agency');
+            // On ne remplit que si le select est vide ou n'a que l'option par défaut
+            if (agencySelect && agencySelect.options.length <= 1) {
+                await populateScheduleAgencyFilter();
+            }
 
-    const startStr = startOfWeek.toISOString().split('T')[0];
-    const endStr = endOfWeek.toISOString().split('T')[0];
+            // 2. Initialisation date (inchangé)
+            const weekInput = document.getElementById('schedule-week-picker');
+            if (!weekInput || !weekInput.value) {
+                const now = new Date();
+                const weekNum = getWeekNumber(now);
+                if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+                else return;
+            }
 
-    // 4. ✅ RECUPERATION DU FILTRE AGENCE
-    const selectedAgencyId = agencySelect ? agencySelect.value : '';
-    console.log("Agence filtrée:", selectedAgencyId || "Toutes");
+            // 3. Calcul des dates (inchangé)
+            const [year, week] = weekInput.value.split('-W');
+            const startOfWeek = getDateOfISOWeek(week, year);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-    // 5. ✅ CONSTRUCTION DE L'URL AVEC FILTRE
-    const url = `/admin/schedules?start=${startStr}&end=${endStr}${selectedAgencyId ? `&agencyId=${selectedAgencyId}` : ''}`;
+            const startStr = startOfWeek.toISOString().split('T')[0];
+            const endStr = endOfWeek.toISOString().split('T')[0];
 
-    // 6. Chargement parallèle
-    const [scheduleData, crewData] = await Promise.all([
-        apiCall(url),
-        (allCrewMembers && allCrewMembers.length > 0) ? { success: true, crew: allCrewMembers } : apiCall('/admin/crew')
-    ]);
+            // 4. ✅ RECUPERATION DU FILTRE AGENCE
+            const selectedAgencyId = agencySelect ? agencySelect.value : '';
+            console.log("Agence filtrée:", selectedAgencyId || "Toutes");
 
-    // 7. Mise à jour globale
-    if (crewData && crewData.success) {
-        allCrewMembers = crewData.crew;
-    }
+            // 5. ✅ CONSTRUCTION DE L'URL AVEC FILTRE
+            const url = `/admin/schedules?start=${startStr}&end=${endStr}${selectedAgencyId ? `&agencyId=${selectedAgencyId}` : ''}`;
 
-    // 8. ✅ FILTRAGE DES EMPLOYÉS CÔTÉ CLIENT POUR L'AFFICHAGE
-    let employeesToDisplay = allCrewMembers;
-    if (selectedAgencyId) {
-        employeesToDisplay = allCrewMembers.filter(m => m.agencyId === selectedAgencyId);
-    }
+            // 6. Chargement parallèle
+            const [scheduleData, crewData] = await Promise.all([
+                apiCall(url),
+                (allCrewMembers && allCrewMembers.length > 0) ? { success: true, crew: allCrewMembers } : apiCall('/admin/crew')
+            ]);
 
-    // 9. Rendu avec la liste filtrée
-    if (scheduleData && scheduleData.success) {
-        renderScheduleGrid(scheduleData.schedules, startOfWeek, employeesToDisplay);
-    } else {
-        renderScheduleGrid([], startOfWeek, employeesToDisplay);
-    }
-}
- async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
-    const tbody = document.getElementById('schedule-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+            // 7. Mise à jour globale
+            if (crewData && crewData.success) {
+                allCrewMembers = crewData.crew;
+            }
 
-    // SÉCURITÉ : Si la liste est vide, on charge tout
-    if (!employees || employees.length === 0) {
-        if (!allCrewMembers || allCrewMembers.length === 0) {
-            await loadAllCrew();
+            // 8. ✅ FILTRAGE DES EMPLOYÉS CÔTÉ CLIENT POUR L'AFFICHAGE
+            let employeesToDisplay = allCrewMembers;
+            if (selectedAgencyId) {
+                employeesToDisplay = allCrewMembers.filter(m => m.agencyId === selectedAgencyId);
+            }
+
+            // 9. Rendu avec la liste filtrée
+            if (scheduleData && scheduleData.success) {
+                renderScheduleGrid(scheduleData.schedules, startOfWeek, employeesToDisplay);
+            } else {
+                renderScheduleGrid([], startOfWeek, employeesToDisplay);
+            }
         }
-        employees = allCrewMembers; // Fallback
-    }
+        async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
+            const tbody = document.getElementById('schedule-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
 
-    if (employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Aucun employé trouvé.</td></tr>';
-        return;
-    }
-     employees.forEach(member => {
-        
-        // ==========================================================
-        // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
-        // ==========================================================
-        let agencyText = '';
-        if (member.agencyName) {
-            agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
-        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
-            agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
-        }
-        // ==========================================================
+            // SÉCURITÉ : Si la liste est vide, on charge tout
+            if (!employees || employees.length === 0) {
+                if (!allCrewMembers || allCrewMembers.length === 0) {
+                    await loadAllCrew();
+                }
+                employees = allCrewMembers; // Fallback
+            }
 
-        let rowHTML = `
+            if (employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Aucun employé trouvé.</td></tr>';
+                return;
+            }
+            employees.forEach(member => {
+
+                // ==========================================================
+                // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
+                // ==========================================================
+                let agencyText = '';
+                if (member.agencyName) {
+                    agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
+                } else if (member.role === 'Super Admin' || member.role === 'Manager') {
+                    agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
+                }
+                // ==========================================================
+
+                let rowHTML = `
             <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -8091,8 +8146,8 @@ async function loadSchedule() {
                     ${agencyText} <!-- Ici on l'utilise -->
                 </td>
         `;
-        
-        // ... suite de la fonction
+
+                // ... suite de la fonction
                 // Pour chaque jour de la semaine (0 à 6)
                 for (let i = 0; i < 7; i++) {
                     const currentDay = new Date(startOfWeek);
@@ -8104,18 +8159,24 @@ async function loadSchedule() {
 
                     let cellContent = '';
                     items.forEach(item => {
-                        // Couleur selon le type
-                        let colorClass = 'primary';
-                        if (item.type === 'Repos') colorClass = 'secondary';
-                        if (item.type === 'Congé') colorClass = 'danger';
-                        if (item.type === 'Voyage') colorClass = 'info';
+                        // On nettoie le type pour qu'il soit une classe CSS valide (ex: "Heures Sup" -> "Heures_Sup")
+                        // Si vous avez déjà corrigé les valeurs en base de données, c'est bon.
+                        // Sinon, petite sécurité :
+                        const typeClass = item.type.replace(/\s+/g, '_');
+
+                        // On ajoute une icône selon le type
+                        let icon = '';
+                        if (item.type === 'Voyage') icon = '🚌 ';
+                        if (item.type === 'Astreinte') icon = '📞 ';
+                        if (item.type === 'Heures_Sup') icon = '⚡ ';
+                        if (item.type === 'Congé') icon = '🏖️ ';
 
                         cellContent += `
-                    <div class="schedule-item type-${item.type}" style="margin-bottom:4px; padding:4px; border-radius:4px; font-size:0.75em; background:rgba(255,255,255,0.1); border-left:3px solid var(--${colorClass}); cursor:pointer;" onclick="deleteSchedule('${item._id}')" title="Supprimer">
-                        <strong>${item.startTime}-${item.endTime}</strong><br>
-                        ${item.note || item.type}
-                    </div>
-                `;
+        <div class="schedule-item type-${typeClass}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
+            <div style="font-weight:700; font-size:0.85em; margin-bottom:2px;">${item.startTime} - ${item.endTime}</div>
+            <div style="font-size:0.8em; opacity:0.9;">${icon}${item.note || item.type.replace('_', ' ')}</div>
+        </div>
+    `;
                     });
 
                     // Bouton d'ajout (+)
@@ -8149,16 +8210,16 @@ async function loadSchedule() {
 
 
         function openAddScheduleModal(crewId, crewName, dateStr) {
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
 
-    modalTitle.textContent = `Ajouter un créneau pour ${crewName}`;
-    
-    // Formatage de la date pour l'affichage (ex: Lundi 12 Décembre)
-    const dateObj = new Date(dateStr);
-    const dateDisplay = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            modalTitle.textContent = `Ajouter un créneau pour ${crewName}`;
 
-    modalBody.innerHTML = `
+            // Formatage de la date pour l'affichage (ex: Lundi 12 Décembre)
+            const dateObj = new Date(dateStr);
+            const dateDisplay = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            modalBody.innerHTML = `
         <form id="add-schedule-form">
             <input type="hidden" id="schedule-crew-id" value="${crewId}">
             <input type="hidden" id="schedule-date" value="${dateStr}">
@@ -8200,72 +8261,72 @@ async function loadSchedule() {
         </form>
     `;
 
-    document.getElementById('details-modal').classList.add('active');
+            document.getElementById('details-modal').classList.add('active');
 
-    // Gestion soumission
-    document.getElementById('add-schedule-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const payload = {
-            crewId: document.getElementById('schedule-crew-id').value,
-            date: document.getElementById('schedule-date').value,
-            type: document.getElementById('schedule-type').value,
-            startTime: document.getElementById('schedule-start').value,
-            endTime: document.getElementById('schedule-end').value,
-            note: document.getElementById('schedule-note').value
-        };
+            // Gestion soumission
+            document.getElementById('add-schedule-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-      const result = await apiCall('/admin/schedules', 'POST', payload);
-        
-        if (result && result.success) {
-            showNotification("Créneau ajouté !", "success");
-            closeModal();
-            loadSchedule(); // Rafraîchir la grille
-        } else {
-            showNotification(result?.error || "Erreur.", "error");
+                const payload = {
+                    crewId: document.getElementById('schedule-crew-id').value,
+                    date: document.getElementById('schedule-date').value,
+                    type: document.getElementById('schedule-type').value,
+                    startTime: document.getElementById('schedule-start').value,
+                    endTime: document.getElementById('schedule-end').value,
+                    note: document.getElementById('schedule-note').value
+                };
+
+                const result = await apiCall('/admin/schedules', 'POST', payload);
+
+                if (result && result.success) {
+                    showNotification("Créneau ajouté !", "success");
+                    closeModal();
+                    loadSchedule(); // Rafraîchir la grille
+                } else {
+                    showNotification(result?.error || "Erreur.", "error");
+                }
+            });
         }
-    });
-}
 
 
 
-    async function deleteSchedule(scheduleId) {
-    const confirmed = await showAdminConfirm({
-        title: "Supprimer le créneau ?",
-        message: "Voulez-vous retirer ce créneau du planning ?",
-        confirmText: "Oui, supprimer",
-        cancelText: "Annuler",
-        iconClass: "danger"
-    });
+        async function deleteSchedule(scheduleId) {
+            const confirmed = await showAdminConfirm({
+                title: "Supprimer le créneau ?",
+                message: "Voulez-vous retirer ce créneau du planning ?",
+                confirmText: "Oui, supprimer",
+                cancelText: "Annuler",
+                iconClass: "danger"
+            });
 
-    if (!confirmed) return;
+            if (!confirmed) return;
 
-    const result = await apiCall(`/admin/schedules/${scheduleId}`, 'DELETE');
-    if (result && result.success) {
-        showNotification("Créneau supprimé.", "success");
-        loadSchedule();
-    }
-}
+            const result = await apiCall(`/admin/schedules/${scheduleId}`, 'DELETE');
+            if (result && result.success) {
+                showNotification("Créneau supprimé.", "success");
+                loadSchedule();
+            }
+        }
 
 
 
-// Fonction pour remplir le filtre d'agence du planning
-async function populateScheduleAgencyFilter() {
-    const select = document.getElementById('schedule-filter-agency');
-    if (!select) return;
+        // Fonction pour remplir le filtre d'agence du planning
+        async function populateScheduleAgencyFilter() {
+            const select = document.getElementById('schedule-filter-agency');
+            if (!select) return;
 
-    // Si les agences ne sont pas chargées, on les charge
-    if (!allAgencies || allAgencies.length === 0) {
-        await loadAllAgencies();
-    }
+            // Si les agences ne sont pas chargées, on les charge
+            if (!allAgencies || allAgencies.length === 0) {
+                await loadAllAgencies();
+            }
 
-    let html = '<option value="">Toutes les agences</option>';
-    allAgencies.forEach(ag => {
-        html += `<option value="${ag._id}">${ag.city} - ${ag.name}</option>`;
-    });
-    
-    select.innerHTML = html;
-}
+            let html = '<option value="">Toutes les agences</option>';
+            allAgencies.forEach(ag => {
+                html += `<option value="${ag._id}">${ag.city} - ${ag.name}</option>`;
+            });
+
+            select.innerHTML = html;
+        }
         // --- GESTION DES AGENCES ---
 
         let allAgencies = []; // Variable globale pour stocker les agences
@@ -8619,21 +8680,21 @@ async function populateScheduleAgencyFilter() {
 
         // Charger les données du jour
         // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
-    async function loadAttendanceToday() {
-    const data = await apiCall('/admin/attendance/today');
-    
-    if (data && data.success) {
-        // Mise à jour stats
-        document.getElementById('stat-present-now').textContent = data.stats.present;
-        document.getElementById('stat-completed-today').textContent = data.stats.completed;
+        async function loadAttendanceToday() {
+            const data = await apiCall('/admin/attendance/today');
 
-        // --- GESTION DES ANOMALIES ---
-        const alertsContainer = document.getElementById('attendance-alerts');
-        const alertsList = document.getElementById('anomalies-list');
-        
-        if (data.anomalies && data.anomalies.length > 0) {
-            alertsContainer.style.display = 'block';
-            alertsList.innerHTML = data.anomalies.map(ano => `
+            if (data && data.success) {
+                // Mise à jour stats
+                document.getElementById('stat-present-now').textContent = data.stats.present;
+                document.getElementById('stat-completed-today').textContent = data.stats.completed;
+
+                // --- GESTION DES ANOMALIES ---
+                const alertsContainer = document.getElementById('attendance-alerts');
+                const alertsList = document.getElementById('anomalies-list');
+
+                if (data.anomalies && data.anomalies.length > 0) {
+                    alertsContainer.style.display = 'block';
+                    alertsList.innerHTML = data.anomalies.map(ano => `
                 <li style="padding: 8px 0; border-bottom: 1px solid rgba(239, 83, 80, 0.2); display: flex; justify-content: space-between;">
                     <div>
                         <strong style="color: var(--text-primary);">${ano.crewName}</strong> 
@@ -8644,48 +8705,48 @@ async function populateScheduleAgencyFilter() {
                     </div>
                 </li>
             `).join('');
-        } else {
-            alertsContainer.style.display = 'none';
-        }
+                } else {
+                    alertsContainer.style.display = 'none';
+                }
 
-        // --- TABLEAU DES PRÉSENCES (Code existant inchangé) ---
-        const tbody = document.getElementById('attendance-table-body');
-        if (data.records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
-            return;
-        }
+                // --- TABLEAU DES PRÉSENCES (Code existant inchangé) ---
+                const tbody = document.getElementById('attendance-table-body');
+                if (data.records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
+                    return;
+                }
 
-        tbody.innerHTML = data.records.map(r => {
-            // ... (votre code de mapping existant, copiez-le ici ou gardez-le) ...
-            // Pour être sûr, je vous remets le mapping complet :
-            const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '...';
-            
-            let statusBadge = '';
-            let actionText = '';
+                tbody.innerHTML = data.records.map(r => {
+                    // ... (votre code de mapping existant, copiez-le ici ou gardez-le) ...
+                    // Pour être sûr, je vous remets le mapping complet :
+                    const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
 
-            if (r.status === 'working' || r.status === 'present') {
-                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
-                actionText = `Arrivée à ${checkInTime}`;
-            } 
-            else if (r.status === 'on_break') {
-                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
-                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
-                actionText = `Parti à ${lastAction}`;
-            } 
-            else if (r.status === 'completed') {
-                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
-                actionText = `Départ à ${checkOutTime}`;
-            }
-            
-            let durationDisplay = '-';
-            if (r.durationMinutes > 0) {
-                const h = Math.floor(r.durationMinutes / 60);
-                const m = r.durationMinutes % 60;
-                durationDisplay = `${h}h ${m}m`;
-            }
+                    let statusBadge = '';
+                    let actionText = '';
 
-            return `
+                    if (r.status === 'working' || r.status === 'present') {
+                        statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                        actionText = `Arrivée à ${checkInTime}`;
+                    }
+                    else if (r.status === 'on_break') {
+                        statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                        const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                        actionText = `Parti à ${lastAction}`;
+                    }
+                    else if (r.status === 'completed') {
+                        statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                        actionText = `Départ à ${checkOutTime}`;
+                    }
+
+                    let durationDisplay = '-';
+                    if (r.durationMinutes > 0) {
+                        const h = Math.floor(r.durationMinutes / 60);
+                        const m = r.durationMinutes % 60;
+                        durationDisplay = `${h}h ${m}m`;
+                    }
+
+                    return `
                 <tr>
                     <td class="font-mono">${checkInTime}</td>
                     <td><strong>${r.crewName}</strong></td>
@@ -8695,9 +8756,9 @@ async function populateScheduleAgencyFilter() {
                     <td class="font-bold">${durationDisplay}</td>
                 </tr>
             `;
-        }).join('');
-    }
-}
+                }).join('');
+            }
+        }
         // Activer/Désactiver le scanner
         function toggleScanner() {
             const container = document.getElementById('scanner-container');
