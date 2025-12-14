@@ -1562,6 +1562,7 @@ app.post(
 // [POST] Scanner un badge (Check-in / Check-out)
 // [POST] Scanner un badge (Gestion Entrées / Sorties / Pauses)
 // [POST] Scanner un badge (Gestion Entrées / Sorties / Pauses avec Mode)
+// [POST] Scanner un badge (Gestion Entrées / Sorties / Pauses avec Mode)
 app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
     try {
         const { qrData, mode } = req.body; // mode: 'auto', 'break', 'exit'
@@ -1596,7 +1597,6 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
         // CAS 1 : PREMIER SCAN (ARRIVÉE MATIN)
         // ========================================================
         if (!attendance) {
-            // Si le mode est 'exit' ou 'break', c'est une erreur car la journée n'a pas commencé
             if (mode === 'exit' || mode === 'break') {
                 return res.status(400).json({ error: "Impossible : La journée n'a pas encore commencé." });
             }
@@ -1608,38 +1608,40 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                 agencyId: employee.agencyId || null,
                 date: todayStr,
                 checkIn: now,
-                breaks: [], // Tableau pour stocker les pauses
+                breaks: [],
                 checkOut: null,
-                status: 'working', // working, on_break, completed
+                status: 'working', // On utilise 'working' comme standard
                 totalBreakMinutes: 0,
                 lastActionTime: now
             };
             await db.collection('attendance').insertOne(newEntry);
             
-            return res.json({ success: true, action: "check-in", message: `Bienvenue, ${employee.name} ! (Prise de service)` });
+            return res.json({ success: true, action: "check-in", message: `Bienvenue, ${employee.name} !` });
         }
 
         // --- Sécurité anti-doublon (2 min) ---
+        // Sauf si on force la sortie
         const lastActionTime = attendance.lastActionTime || attendance.checkIn;
         const diffMinutes = (now - new Date(lastActionTime)) / 60000;
         
-        // On permet de contourner la sécurité si on force la sortie 'exit'
-        if (diffMinutes < 2 && mode !== 'exit') {
+        if (diffMinutes < 1 && mode !== 'exit') {
             return res.status(429).json({ error: "Badge déjà scanné à l'instant." });
         }
 
+        const currentStatus = attendance.status;
+
         // ========================================================
-        // CAS 2 : FIN DE JOURNÉE (CLÔTURE FORCÉE)
+        // CAS 2 : FIN DE JOURNÉE (MODE EXIT)
         // ========================================================
         if (mode === 'exit') {
-            if (attendance.status === 'completed') {
+            if (currentStatus === 'completed') {
                 return res.status(400).json({ error: "Journée déjà terminée." });
             }
 
-            // Si on est en pause, on ferme la pause avant de sortir
+            // Fermer la pause si en cours
             let breaks = attendance.breaks || [];
             let addedBreakTime = 0;
-            if (attendance.status === 'on_break' && breaks.length > 0) {
+            if (currentStatus === 'on_break' && breaks.length > 0) {
                 const lastBreak = breaks[breaks.length - 1];
                 if (!lastBreak.end) {
                     lastBreak.end = now;
@@ -1647,10 +1649,7 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                 }
             }
 
-            // Calcul durée totale de présence (brute)
             const totalPresenceMinutes = Math.round((now - new Date(attendance.checkIn)) / 60000);
-            
-            // Calcul durée de travail effective (Présence - Pauses)
             const totalBreak = (attendance.totalBreakMinutes || 0) + addedBreakTime;
             const effectiveWorkMinutes = totalPresenceMinutes - totalBreak;
 
@@ -1661,7 +1660,7 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                         checkOut: now, 
                         breaks: breaks,
                         status: 'completed',
-                        durationMinutes: effectiveWorkMinutes, // On stocke le temps de travail réel
+                        durationMinutes: effectiveWorkMinutes,
                         totalBreakMinutes: totalBreak
                     } 
                 }
@@ -1673,30 +1672,39 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
         }
 
         // ========================================================
-        // CAS 3 : GESTION DES PAUSES (MODE 'BREAK' ou 'AUTO' en boucle)
+        // CAS 3 : DÉPART EN PAUSE
         // ========================================================
-        
-        // Si on est en train de travailler -> On part en pause
-        if (attendance.status === 'working') {
-            // Si mode 'auto' ou 'break', on part en pause
-            await db.collection('attendance').updateOne(
-                { _id: attendance._id },
-                { 
-                    $set: { status: 'on_break', lastActionTime: now },
-                    $push: { breaks: { start: now, end: null } }
-                }
-            );
-            return res.json({ success: true, action: "break-start", message: `Bonne pause, ${employee.name}.` });
+        // ✅ CORRECTION : On accepte 'working' OU 'present' (pour compatibilité)
+        if (currentStatus === 'working' || currentStatus === 'present') {
+            
+            // Si on demande explicitement une pause, ou si on est en mode auto (bascule)
+            if (mode === 'break' || mode === 'auto') {
+                await db.collection('attendance').updateOne(
+                    { _id: attendance._id },
+                    { 
+                        $set: { status: 'on_break', lastActionTime: now },
+                        $push: { breaks: { start: now, end: null } }
+                    }
+                );
+                return res.json({ success: true, action: "break-start", message: `Pause enregistrée pour ${employee.name}.` });
+            }
         }
 
-        // Si on est en pause -> On reprend le travail
-        if (attendance.status === 'on_break') {
+        // ========================================================
+        // CAS 4 : RETOUR DE PAUSE (REPRISE)
+        // ========================================================
+        if (currentStatus === 'on_break') {
+            
+            // Si on demande une pause ALORS qu'on y est déjà -> Erreur
+            if (mode === 'break') {
+                return res.status(400).json({ error: "Vous êtes déjà en pause. Sélectionnez 'Auto' ou 'Fin'." });
+            }
+
             const breaks = attendance.breaks || [];
             if (breaks.length > 0) {
                 const lastBreak = breaks[breaks.length - 1];
                 if (!lastBreak.end) {
                     lastBreak.end = now;
-                    // Calcul durée de cette pause
                     const breakDuration = Math.round((now - new Date(lastBreak.start)) / 60000);
                     
                     await db.collection('attendance').updateOne(
@@ -1710,20 +1718,18 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                             $inc: { totalBreakMinutes: breakDuration }
                         }
                     );
-                    return res.json({ success: true, action: "break-end", message: `Bon retour, ${employee.name}.` });
+                    return res.json({ success: true, action: "break-end", message: `Reprise du travail pour ${employee.name}.` });
                 }
             }
         }
 
-        // Cas par défaut (si terminé)
-        return res.status(400).json({ error: "Statut inconnu ou journée déjà terminée." });
+        return res.status(400).json({ error: `Action impossible. Statut actuel: ${currentStatus}` });
 
     } catch (error) {
         console.error("Erreur scan:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
-
 // DANS server.js
 
 // ========================================================
