@@ -7811,12 +7811,56 @@
          * Supprime une agence après confirmation.
          * @param {string} agencyId - L'ID de l'agence à supprimer.
          */
-        function deleteAgency(agencyId) {
-            console.log("Demande de suppression pour l'agence :", agencyId);
-            // TODO: Logique de suppression avec modale de confirmation
-            alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
-        }
+       /**
+ * Supprime une agence après confirmation via la modale personnalisée.
+ */
+async function deleteAgency(agencyId) {
+    console.log("🗑️ Tentative de suppression pour l'agence :", agencyId);
 
+    // 1. Trouver l'agence dans la liste locale pour récupérer son nom
+    const agency = allAgencies.find(a => a._id === agencyId);
+    
+    // Sécurité si l'agence n'est pas trouvée localement
+    if (!agency) {
+        console.error("❌ Erreur : Agence introuvable dans la liste locale (allAgencies).");
+        showNotification("Erreur interne : Agence introuvable.", "error");
+        return;
+    }
+
+    // 2. Afficher la modale de confirmation personnalisée
+    // Note : showAdminConfirm renvoie true (confirmé) ou false (annulé)
+    const confirmed = await showAdminConfirm({
+        title: "Supprimer l'agence ?",
+        message: `Voulez-vous vraiment supprimer l'agence <strong>"${agency.name}"</strong> ?\n\n⚠️ Cette action est irréversible. Le personnel affecté sera détaché.`,
+        icon: '🗑️',
+        iconClass: 'danger',
+        confirmText: 'Oui, supprimer',
+        cancelText: 'Annuler',
+        confirmClass: 'btn-danger'
+    });
+
+    // Si l'utilisateur clique sur Annuler
+    if (!confirmed) {
+        console.log("Annulation de la suppression.");
+        return;
+    }
+
+    // 3. Appel API pour la suppression
+    try {
+        const data = await apiCall(`/admin/agencies/${agencyId}`, 'DELETE');
+
+        if (data && data.success) {
+            showNotification(data.message || "Agence supprimée avec succès.", 'success');
+            loadAllAgencies(); // Rafraîchir le tableau
+        } else {
+            // Si le serveur renvoie une erreur mais pas un crash (ex: 404)
+            showNotification(data.error || "Erreur lors de la suppression.", "error");
+        }
+    } catch (error) {
+        console.error("Erreur API Delete:", error);
+        showNotification("Erreur de connexion au serveur.", "error");
+    }
+}
     </script>
 
 
