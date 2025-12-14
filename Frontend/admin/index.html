@@ -16,10 +16,10 @@
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <!-- Librairie pour générer les PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- Librairie pour les QR Codes (si pas déjà présente) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Librairie pour les QR Codes (si pas déjà présente) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         /* ============================================
@@ -1773,35 +1773,62 @@
 
 
         .schedule-cell {
-    min-width: 120px;
-    height: 80px;
-    vertical-align: top;
-    padding: 5px;
-    border: 1px solid var(--dark-border);
-    position: relative;
-}
-.schedule-item {
-    background: var(--dark-elevated);
-    border-left: 3px solid var(--primary);
-    padding: 4px;
-    margin-bottom: 4px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.schedule-item.type-Voyage { border-color: #00d9ff; background: rgba(0, 217, 255, 0.1); }
-.schedule-item.type-Repos { border-color: #78909c; background: rgba(120, 144, 156, 0.1); }
-.schedule-item.type-Congé { border-color: #ef5350; background: rgba(239, 83, 80, 0.1); }
+            min-width: 120px;
+            height: 80px;
+            vertical-align: top;
+            padding: 5px;
+            border: 1px solid var(--dark-border);
+            position: relative;
+        }
 
-.schedule-add-btn {
-    opacity: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    cursor: pointer;
-}
-.schedule-cell:hover .schedule-add-btn { opacity: 1; }
+        .schedule-item {
+            background: var(--dark-elevated);
+            border-left: 3px solid var(--primary);
+            padding: 4px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .schedule-item.type-Voyage {
+            border-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .schedule-item.type-Repos {
+            border-color: #78909c;
+            background: rgba(120, 144, 156, 0.1);
+        }
+
+        .schedule-item.type-Congé {
+            border-color: #ef5350;
+            background: rgba(239, 83, 80, 0.1);
+        }
+
+        .schedule-add-btn {
+            opacity: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .schedule-cell:hover .schedule-add-btn {
+            opacity: 1;
+        }
+
+        .schedule-table td {
+            color: var(--text-primary);
+            /* Blanc ou gris clair */
+            border-color: var(--dark-border);
+        }
+
+        .schedule-cell:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            /* Effet survol */
+        }
     </style>
 </head>
 
@@ -1941,19 +1968,19 @@
                     </li>
 
                     <li class="nav-item">
-    <a href="#" class="nav-link" data-tab="schedule">
-        <span class="nav-icon">📅</span>
-        <span>Planning</span>
-    </a>
-</li>
+                        <a href="#" class="nav-link" data-tab="schedule">
+                            <span class="nav-icon">📅</span>
+                            <span>Planning</span>
+                        </a>
+                    </li>
 
 
                     <li class="nav-item">
-    <a href="#" class="nav-link" data-tab="attendance">
-        <span class="nav-icon">⏱️</span>
-        <span>Présences</span>
-    </a>
-</li>
+                        <a href="#" class="nav-link" data-tab="attendance">
+                            <span class="nav-icon">⏱️</span>
+                            <span>Présences</span>
+                        </a>
+                    </li>
 
 
 
@@ -2734,7 +2761,7 @@
                             <th>Matricule</th>
                             <th>Nom</th>
                             <th>Poste</th>
-                            <th>Agence</th> 
+                            <th>Agence</th>
                             <th>Téléphone</th>
                             <th>Km</th>
                             <th>Trajets</th>
@@ -2854,8 +2881,8 @@
             <p class="page-subtitle">Créez, modifiez et gérez les points de vente et bases opérationnelles.</p>
         </div>
         <div id="agency-revenue-stats" class="stats-grid" style="margin-bottom: 30px;">
-    <!-- Sera rempli par JS -->
-</div>
+            <!-- Sera rempli par JS -->
+        </div>
         <!-- Tableau des agences existantes -->
         <div class="content-card">
             <div class="card-header">
@@ -2887,125 +2914,128 @@
 
 
 
-<!-- ONGLET: PRÉSENCES -->
-<div id="tab-attendance" class="tab-content">
-    
-    <!-- 1. En-tête -->
-    <div class="page-header">
-        <h1 class="page-title">Suivi des Présences</h1>
-        <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
+    <!-- ONGLET: PRÉSENCES -->
+    <div id="tab-attendance" class="tab-content">
+
+        <!-- 1. En-tête -->
+        <div class="page-header">
+            <h1 class="page-title">Suivi des Présences</h1>
+            <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
+        </div>
+
+        <!-- 2. Statistiques (Votre bloc actuel) -->
+        <div class="stats-grid" id="attendance-stats">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Présents Actuellement</span>
+                    <div class="stat-icon success">🟢</div>
+                </div>
+                <div class="stat-value" id="stat-present-now">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label">Journée Terminée</span>
+                    <div class="stat-icon primary">🏁</div>
+                </div>
+                <div class="stat-value" id="stat-completed-today">-</div>
+            </div>
+        </div>
+
+        <!-- 3. Carte Principale (Scanner + Tableau) -->
+        <div class="content-card">
+
+            <!-- Header de la carte -->
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="card-title">Borne de Pointage</h2>
+                <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer Caméra</button>
+            </div>
+
+            <!-- ✅ SÉLECTEUR D'INTENTION (Placé ici) -->
+            <div class="scan-mode-selector"
+                style="display: flex; gap: 15px; margin: 20px 0; justify-content: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid var(--dark-border);">
+                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                    <input type="radio" name="scan-mode" value="auto" checked>
+                    <span style="font-weight: bold; margin-left: 5px; color: var(--accent);">🤖 Auto / Arrivée</span>
+                </label>
+
+                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                    <input type="radio" name="scan-mode" value="break">
+                    <span style="font-weight: bold; margin-left: 5px; color: #ff9800;">☕ Pause / Reprise</span>
+                </label>
+
+                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                    <input type="radio" name="scan-mode" value="exit">
+                    <span style="font-weight: bold; margin-left: 5px; color: #ef5350;">🏁 Fin de journée</span>
+                </label>
+            </div>
+
+            <!-- Zone du scanner -->
+            <div id="scanner-container"
+                style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
+                <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
+                <div id="scan-result-overlay"
+                    style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
+                    ✅ SCANNÉ !
+                </div>
+            </div>
+
+            <!-- Tableau des logs -->
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Heure</th>
+                            <th>Employé</th>
+                            <th>Rôle</th>
+                            <th>Agence</th>
+                            <th>Statut</th> <!-- Renommé pour clarté -->
+                            <th>Temps de travail</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-table-body">
+                        <!-- Rempli par JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- 2. Statistiques (Votre bloc actuel) -->
-    <div class="stats-grid" id="attendance-stats">
-        <div class="stat-card">
-            <div class="stat-header">
-                <span class="stat-label">Présents Actuellement</span>
-                <div class="stat-icon success">🟢</div>
-            </div>
-            <div class="stat-value" id="stat-present-now">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-header">
-                <span class="stat-label">Journée Terminée</span>
-                <div class="stat-icon primary">🏁</div>
-            </div>
-            <div class="stat-value" id="stat-completed-today">-</div>
-        </div>
-    </div>
 
-    <!-- 3. Carte Principale (Scanner + Tableau) -->
-    <div class="content-card">
-        
-        <!-- Header de la carte -->
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 class="card-title">Borne de Pointage</h2>
-            <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer Caméra</button>
-        </div>
 
-        <!-- ✅ SÉLECTEUR D'INTENTION (Placé ici) -->
-        <div class="scan-mode-selector" style="display: flex; gap: 15px; margin: 20px 0; justify-content: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid var(--dark-border);">
-            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                <input type="radio" name="scan-mode" value="auto" checked>
-                <span style="font-weight: bold; margin-left: 5px; color: var(--accent);">🤖 Auto / Arrivée</span>
-            </label>
-            
-            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                <input type="radio" name="scan-mode" value="break">
-                <span style="font-weight: bold; margin-left: 5px; color: #ff9800;">☕ Pause / Reprise</span>
-            </label>
-            
-            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                <input type="radio" name="scan-mode" value="exit">
-                <span style="font-weight: bold; margin-left: 5px; color: #ef5350;">🏁 Fin de journée</span>
-            </label>
-        </div>
-
-        <!-- Zone du scanner -->
-        <div id="scanner-container" style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
-            <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
-            <div id="scan-result-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
-                ✅ SCANNÉ !
-            </div>
-        </div>
-
-        <!-- Tableau des logs -->
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Heure</th>
-                        <th>Employé</th>
-                        <th>Rôle</th>
-                        <th>Agence</th>
-                        <th>Statut</th> <!-- Renommé pour clarté -->
-                        <th>Temps de travail</th>
-                    </tr>
-                </thead>
-                <tbody id="attendance-table-body">
+    <div id="tab-schedule" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Emploi du Temps</h1>
+            <div class="filters">
+                <input type="week" id="schedule-week-picker" class="form-control" onchange="loadSchedule()">
+                <select id="schedule-filter-agency" class="form-control" onchange="loadSchedule()">
                     <!-- Rempli par JS -->
-                </tbody>
-            </table>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grille de Planning (Style Gantt simplifié) -->
+        <div class="content-card">
+            <div class="schedule-grid-container" style="overflow-x: auto;">
+                <table class="table schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Employé</th>
+                            <th>Lun</th>
+                            <th>Mar</th>
+                            <th>Mer</th>
+                            <th>Jeu</th>
+                            <th>Ven</th>
+                            <th>Sam</th>
+                            <th>Dim</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body">
+                        <!-- Rempli par JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-
-
-
-<div id="tab-schedule" class="tab-content">
-    <div class="page-header">
-        <h1 class="page-title">Emploi du Temps</h1>
-        <div class="filters">
-            <input type="week" id="schedule-week-picker" class="form-control" onchange="loadSchedule()">
-            <select id="schedule-filter-agency" class="form-control" onchange="loadSchedule()">
-                <!-- Rempli par JS -->
-            </select>
-        </div>
-    </div>
-
-    <!-- Grille de Planning (Style Gantt simplifié) -->
-    <div class="content-card">
-        <div class="schedule-grid-container" style="overflow-x: auto;">
-            <table class="table schedule-table">
-                <thead>
-                    <tr>
-                        <th>Employé</th>
-                        <th>Lun</th>
-                        <th>Mar</th>
-                        <th>Mer</th>
-                        <th>Jeu</th>
-                        <th>Ven</th>
-                        <th>Sam</th>
-                        <th>Dim</th>
-                    </tr>
-                </thead>
-                <tbody id="schedule-body">
-                    <!-- Rempli par JS -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
     </main>
     </div>
     <!-- TAB: Paramètres -->
@@ -3065,9 +3095,9 @@
             manage_crew: "Gérer le personnel",
             view_analytics: "Voir les statistiques",
             manage_notifications: "Envoyer des notifications",
-            manage_agencies: "Gérer les agences" ,
-            manage_attendance: "Gérer les présences" ,
-            manage_schedule: "Gérer le planning" 
+            manage_agencies: "Gérer les agences",
+            manage_attendance: "Gérer les présences",
+            manage_schedule: "Gérer le planning"
         };
 
 
@@ -3224,7 +3254,7 @@
                 // ✅ LA LIGNE À AJOUTER EST ICI
                 // ========================================================
                 'agencies': 'manage_agencies',
-                'attendance': 'manage_attendance' ,
+                'attendance': 'manage_attendance',
                 'schedule': 'manage_schedule'
 
             };
@@ -5211,72 +5241,72 @@
         /**
  * Affiche le tableau du personnel (Avec Agence)
  */
-/**
- * Affiche le tableau du personnel (Avec Photo, Agence et Bouton Badge)
- */
-/**
- * Affiche le tableau du personnel (Version Robuste)
- */
-function renderCrewTable(crewMembers) {
-    const tbody = document.getElementById('crew-body');
+        /**
+         * Affiche le tableau du personnel (Avec Photo, Agence et Bouton Badge)
+         */
+        /**
+         * Affiche le tableau du personnel (Version Robuste)
+         */
+        function renderCrewTable(crewMembers) {
+            const tbody = document.getElementById('crew-body');
 
-    // 1. Vérification de sécurité
-    if (!tbody) {
-        console.error("❌ Élément 'crew-body' introuvable dans le DOM");
-        return;
-    }
+            // 1. Vérification de sécurité
+            if (!tbody) {
+                console.error("❌ Élément 'crew-body' introuvable dans le DOM");
+                return;
+            }
 
-    // 2. Gestion liste vide
-    if (!crewMembers || crewMembers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
-        return;
-    }
+            // 2. Gestion liste vide
+            if (!crewMembers || crewMembers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
+                return;
+            }
 
-    console.log(`📋 Affichage de ${crewMembers.length} membres dans le tableau.`);
+            console.log(`📋 Affichage de ${crewMembers.length} membres dans le tableau.`);
 
-    // 3. Construction du HTML
-    tbody.innerHTML = crewMembers.map(member => {
-        
-        // --- Sécurisation des données (Valeurs par défaut) ---
-        const role = member.role || 'Inconnu';
-        const name = member.name || 'Sans nom';
-        const matricule = member.matricule || 'N/A';
-        const phone = member.phone || '-';
-        const status = member.status || 'Inactif';
-        const totalKm = member.totalKm || 0;
-        const totalTrips = member.totalTrips || 0;
+            // 3. Construction du HTML
+            tbody.innerHTML = crewMembers.map(member => {
 
-        // --- Badges & Icônes ---
-        const statusBadges = {
-            'Actif': '<span class="badge badge-success">✅ Actif</span>',
-            'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
-            'Inactif': '<span class="badge badge-gray">❌ Inactif</span>'
-        };
+                // --- Sécurisation des données (Valeurs par défaut) ---
+                const role = member.role || 'Inconnu';
+                const name = member.name || 'Sans nom';
+                const matricule = member.matricule || 'N/A';
+                const phone = member.phone || '-';
+                const status = member.status || 'Inactif';
+                const totalKm = member.totalKm || 0;
+                const totalTrips = member.totalTrips || 0;
 
-        const roleIcons = {
-            'Chauffeur': '🚗', 'Contrôleur': '🎫', 'Super Admin': '👑',
-            'Manager': '💼', 'Manager d\'Agence': '🏢', 'Agent de réservation': '🎟️',
-            'Mécanicien': '🔧', 'Électricien': '⚡', 'Technicien': '🛠️'
-        };
+                // --- Badges & Icônes ---
+                const statusBadges = {
+                    'Actif': '<span class="badge badge-success">✅ Actif</span>',
+                    'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
+                    'Inactif': '<span class="badge badge-gray">❌ Inactif</span>'
+                };
 
-        // --- Affichage Agence ---
-        let agencyDisplay = '<span style="color: var(--text-muted); font-size: 0.85em;">-</span>';
-        if (member.agencyName) {
-            agencyDisplay = `<span style="color: var(--accent); font-weight: 600;">${member.agencyName}</span>`;
-        } else if (role === 'Super Admin' || role === 'Manager') {
-            agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
-        }
+                const roleIcons = {
+                    'Chauffeur': '🚗', 'Contrôleur': '🎫', 'Super Admin': '👑',
+                    'Manager': '💼', 'Manager d\'Agence': '🏢', 'Agent de réservation': '🎟️',
+                    'Mécanicien': '🔧', 'Électricien': '⚡', 'Technicien': '🛠️'
+                };
 
-        // --- Affichage Photo (Avec fallback) ---
-        // On vérifie si la photo existe et si c'est une chaîne valide (base64 ou url)
-        const hasPhoto = member.photo && typeof member.photo === 'string' && member.photo.length > 50;
-        
-        const photoHTML = hasPhoto
-            ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border); margin-right: 10px;">`
-            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em; margin-right: 10px;">👤</div>`;
+                // --- Affichage Agence ---
+                let agencyDisplay = '<span style="color: var(--text-muted); font-size: 0.85em;">-</span>';
+                if (member.agencyName) {
+                    agencyDisplay = `<span style="color: var(--accent); font-weight: 600;">${member.agencyName}</span>`;
+                } else if (role === 'Super Admin' || role === 'Manager') {
+                    agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
+                }
 
-        // --- Rendu Ligne ---
-        return `
+                // --- Affichage Photo (Avec fallback) ---
+                // On vérifie si la photo existe et si c'est une chaîne valide (base64 ou url)
+                const hasPhoto = member.photo && typeof member.photo === 'string' && member.photo.length > 50;
+
+                const photoHTML = hasPhoto
+                    ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border); margin-right: 10px;">`
+                    : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em; margin-right: 10px;">👤</div>`;
+
+                // --- Rendu Ligne ---
+                return `
             <tr>
                 <td class="font-mono font-bold" style="color: var(--primary);">${matricule}</td>
                 <td>
@@ -5299,33 +5329,33 @@ function renderCrewTable(crewMembers) {
                 </td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
         // ============================================
         // ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
         // ============================================
-       /**
- * Ouvre la modale pour modifier un membre (Nom, Tél, Statut, Agence)
- */
-async function openEditMemberModal(memberId) {
-    const member = allCrewMembers.find(m => m._id === memberId);
-    if (!member) return;
+        /**
+  * Ouvre la modale pour modifier un membre (Nom, Tél, Statut, Agence)
+  */
+        async function openEditMemberModal(memberId) {
+            const member = allCrewMembers.find(m => m._id === memberId);
+            if (!member) return;
 
-    // Charger les agences si nécessaire
-    let agencyOptions = '<option value="">-- Aucune affectation --</option>';
-    if (!allAgencies || allAgencies.length === 0) await loadAllAgencies();
-    
-    allAgencies.forEach(ag => {
-        const isSelected = member.agencyId && ag._id === member.agencyId ? 'selected' : '';
-        agencyOptions += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
-    });
+            // Charger les agences si nécessaire
+            let agencyOptions = '<option value="">-- Aucune affectation --</option>';
+            if (!allAgencies || allAgencies.length === 0) await loadAllAgencies();
 
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
+            allAgencies.forEach(ag => {
+                const isSelected = member.agencyId && ag._id === member.agencyId ? 'selected' : '';
+                agencyOptions += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
+            });
 
-    modalTitle.textContent = `Modifier ${member.name}`;
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
 
-    modalBody.innerHTML = `
+            modalTitle.textContent = `Modifier ${member.name}`;
+
+            modalBody.innerHTML = `
         <form id="edit-member-form">
             <div class="form-grid">
                 <div class="form-group">
@@ -5365,62 +5395,62 @@ async function openEditMemberModal(memberId) {
         </form>
     `;
 
-    // 1. Générer les checkboxes
-    const container = document.getElementById('edit-permissions-container');
-    let html = '';
-    // On utilise ALL_PERMISSIONS défini en haut du fichier
-    for (const [key, label] of Object.entries(ALL_PERMISSIONS)) {
-        // On coche si l'utilisateur a déjà cette permission
-        const isChecked = member.permissions && member.permissions.includes(key) ? 'checked' : '';
-        
-        html += `
+            // 1. Générer les checkboxes
+            const container = document.getElementById('edit-permissions-container');
+            let html = '';
+            // On utilise ALL_PERMISSIONS défini en haut du fichier
+            for (const [key, label] of Object.entries(ALL_PERMISSIONS)) {
+                // On coche si l'utilisateur a déjà cette permission
+                const isChecked = member.permissions && member.permissions.includes(key) ? 'checked' : '';
+
+                html += `
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" name="edit-permission" value="${key}" ${isChecked}>
                 <span style="color: var(--text-secondary); font-size: 0.9em;">${label}</span>
             </label>
         `;
-    }
-    container.innerHTML = html;
+            }
+            container.innerHTML = html;
 
-    document.getElementById('details-modal').classList.add('active');
+            document.getElementById('details-modal').classList.add('active');
 
-    // Gestion soumission
-    document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // 2. Récupérer les permissions cochées
-        const permissions = Array.from(document.querySelectorAll('input[name="edit-permission"]:checked'))
-            .map(cb => cb.value);
+            // Gestion soumission
+            document.getElementById('edit-member-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-        const updates = {
-            name: document.getElementById('edit-member-name').value.trim(),
-            phone: document.getElementById('edit-member-phone').value.trim(),
-            status: document.getElementById('edit-member-status').value,
-            agencyId: document.getElementById('edit-member-agency').value,
-            permissions: permissions // ✅ On envoie les nouvelles permissions
-        };
+                // 2. Récupérer les permissions cochées
+                const permissions = Array.from(document.querySelectorAll('input[name="edit-permission"]:checked'))
+                    .map(cb => cb.value);
 
-        const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
-        if (result && result.success) {
-            showNotification("Mise à jour réussie !", "success");
-            closeModal();
-            loadAllCrew();
+                const updates = {
+                    name: document.getElementById('edit-member-name').value.trim(),
+                    phone: document.getElementById('edit-member-phone').value.trim(),
+                    status: document.getElementById('edit-member-status').value,
+                    agencyId: document.getElementById('edit-member-agency').value,
+                    permissions: permissions // ✅ On envoie les nouvelles permissions
+                };
+
+                const result = await apiCall(`/admin/crew/${memberId}`, 'PATCH', updates);
+                if (result && result.success) {
+                    showNotification("Mise à jour réussie !", "success");
+                    closeModal();
+                    loadAllCrew();
+                }
+            });
         }
-    });
-}
         /**
          * Ouvre la modale d'ajout d'un membre
          */
         // DANS admin/index.html, REMPLACEZ la fonction openAddCrewModal
 
         async function openAddCrewModal() {
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
 
-    modalTitle.textContent = "Ajouter un membre du personnel";
-    const agencyOptions = await getAgencyOptionsHTML();
+            modalTitle.textContent = "Ajouter un membre du personnel";
+            const agencyOptions = await getAgencyOptionsHTML();
 
-    modalBody.innerHTML = `
+            modalBody.innerHTML = `
         <form id="add-crew-form">
             <!-- ✅ NOUVELLE SECTION PHOTO -->
             <div style="display: flex; gap: 20px; align-items: start; margin-bottom: 20px;">
@@ -5502,173 +5532,173 @@ async function openEditMemberModal(memberId) {
         </form>
     `;
 
-    populatePermissionsCheckboxes('permissions-container');
-    document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
-    document.getElementById('details-modal').classList.add('active');
-}
-
-// Fonction utilitaire pour la prévisualisation
-function previewPhoto(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('photo-preview');
-            preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            populatePermissionsCheckboxes('permissions-container');
+            document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
+            document.getElementById('details-modal').classList.add('active');
         }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
+
+        // Fonction utilitaire pour la prévisualisation
+        function previewPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById('photo-preview');
+                    preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
         /**
          * Gère l'ajout d'un membre
          */
         // DANS admin/index.html, REMPLACEZ la fonction handleAddCrew
 
         async function handleAddCrew(e) {
-    e.preventDefault();
+            e.preventDefault();
 
-    // 1. Gestion de la photo
-    const photoInput = document.getElementById('crew-photo');
-    let photoBase64 = null;
+            // 1. Gestion de la photo
+            const photoInput = document.getElementById('crew-photo');
+            let photoBase64 = null;
 
-    if (photoInput.files && photoInput.files[0]) {
-        // Petite fonction pour convertir en promesse
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
-        
-        try {
-            photoBase64 = await toBase64(photoInput.files[0]);
-        } catch (err) {
-            console.error("Erreur conversion photo:", err);
+            if (photoInput.files && photoInput.files[0]) {
+                // Petite fonction pour convertir en promesse
+                const toBase64 = file => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+
+                try {
+                    photoBase64 = await toBase64(photoInput.files[0]);
+                } catch (err) {
+                    console.error("Erreur conversion photo:", err);
+                }
+            }
+
+            // 2. Le reste est identique, on ajoute juste le champ 'photo'
+            const permissions = Array.from(document.querySelectorAll('#permissions-container input:checked')).map(cb => cb.value);
+            const agencyId = document.getElementById('crew-agency').value;
+
+            const newMember = {
+                name: document.getElementById('crew-name').value.trim(),
+                role: document.getElementById('crew-role').value,
+                phone: document.getElementById('crew-phone').value.trim(),
+                status: document.getElementById('crew-status').value,
+                username: document.getElementById('crew-username').value.trim(),
+                password: document.getElementById('crew-password').value,
+                agencyId: agencyId || null,
+                permissions: permissions,
+                photo: photoBase64 // ✅ On envoie la photo encodée
+            };
+
+            if (!newMember.username || !newMember.password) {
+                showNotification("Login et mot de passe requis.", "warning");
+                return;
+            }
+
+            // Le backend recevra la chaîne base64 et la stockera directement
+            const data = await apiCall('/admin/crew', 'POST', newMember);
+            if (data && data.success) {
+                showNotification("Membre ajouté !", 'success');
+                closeModal();
+                loadAllCrew();
+            }
         }
-    }
-
-    // 2. Le reste est identique, on ajoute juste le champ 'photo'
-    const permissions = Array.from(document.querySelectorAll('#permissions-container input:checked')).map(cb => cb.value);
-    const agencyId = document.getElementById('crew-agency').value;
-
-    const newMember = {
-        name: document.getElementById('crew-name').value.trim(),
-        role: document.getElementById('crew-role').value,
-        phone: document.getElementById('crew-phone').value.trim(),
-        status: document.getElementById('crew-status').value,
-        username: document.getElementById('crew-username').value.trim(),
-        password: document.getElementById('crew-password').value,
-        agencyId: agencyId || null,
-        permissions: permissions,
-        photo: photoBase64 // ✅ On envoie la photo encodée
-    };
-
-    if (!newMember.username || !newMember.password) {
-        showNotification("Login et mot de passe requis.", "warning");
-        return;
-    }
-
-    // Le backend recevra la chaîne base64 et la stockera directement
-    const data = await apiCall('/admin/crew', 'POST', newMember);
-    if (data && data.success) {
-        showNotification("Membre ajouté !", 'success');
-        closeModal();
-        loadAllCrew();
-    }
-}
 
 
 
 
-/**
- * Génère et télécharge le badge d'un employé
- */
-/**
- * Génère et télécharge le badge d'un employé (Format CR-80 optimisé)
- */
-async function generateBadge(memberId) {
-    const member = allCrewMembers.find(m => m._id === memberId);
-    if (!member) return;
+        /**
+         * Génère et télécharge le badge d'un employé
+         */
+        /**
+         * Génère et télécharge le badge d'un employé (Format CR-80 optimisé)
+         */
+        async function generateBadge(memberId) {
+            const member = allCrewMembers.find(m => m._id === memberId);
+            if (!member) return;
 
-    showNotification("Génération du badge...", "info");
+            showNotification("Génération du badge...", "info");
 
-    const { jsPDF } = window.jspdf;
-    // Format carte de crédit : 54mm x 86mm
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [54, 86]
-    });
+            const { jsPDF } = window.jspdf;
+            // Format carte de crédit : 54mm x 86mm
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [54, 86]
+            });
 
-    // --- Design du Badge ---
-    
-    // Fond Blanc
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, 54, 86, 'F');
-    
-    // En-tête (Couleur verte En-Bus)
-    doc.setFillColor(115, 215, 0); 
-    doc.rect(0, 0, 54, 15, 'F');
-    
-    // Logo / Titre
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("EN-BUS", 27, 10, { align: "center" });
+            // --- Design du Badge ---
 
-    // Photo (Centrée)
-    // On la place à y=20, taille 28x28 (un peu plus petit pour laisser de la place)
-    if (member.photo) {
-        try {
-            doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28); 
-            // Petit cadre autour de la photo
-            doc.setDrawColor(200, 200, 200);
-            doc.rect(13, 20, 28, 28);
-        } catch (e) { console.warn("Erreur image", e); }
-    } else {
-        // Cadre vide si pas de photo
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(13, 20, 28, 28);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text("No Photo", 27, 35, { align: "center" });
-    }
+            // Fond Blanc
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, 54, 86, 'F');
 
-    // Nom (Gras, Noir)
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    // On coupe le nom s'il est trop long pour qu'il tienne sur une ligne
-    let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
-    doc.text(displayName, 27, 54, { align: "center" });
+            // En-tête (Couleur verte En-Bus)
+            doc.setFillColor(115, 215, 0);
+            doc.rect(0, 0, 54, 15, 'F');
 
-    // Rôle (Normal, Gris foncé)
-    doc.setTextColor(80, 80, 80);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
-    
-    // Matricule (Monospace, Noir)
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("courier", "bold");
-    doc.setFontSize(10);
-    doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
+            // Logo / Titre
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("EN-BUS", 27, 10, { align: "center" });
 
-    // QR Code (Ajusté en bas)
-    // ID Unique pour le scan
-    const qrData = member.matricule || member._id; 
-    
-    try {
-        // On génère un QR code plus petit (18x18mm) et on le place à y=66
-        const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
-        doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
-    } catch (err) {
-        console.error("Erreur QR", err);
-    }
+            // Photo (Centrée)
+            // On la place à y=20, taille 28x28 (un peu plus petit pour laisser de la place)
+            if (member.photo) {
+                try {
+                    doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28);
+                    // Petit cadre autour de la photo
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(13, 20, 28, 28);
+                } catch (e) { console.warn("Erreur image", e); }
+            } else {
+                // Cadre vide si pas de photo
+                doc.setDrawColor(200, 200, 200);
+                doc.rect(13, 20, 28, 28);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text("No Photo", 27, 35, { align: "center" });
+            }
 
-    // Sauvegarde
-    doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
-    showNotification("Badge téléchargé !", "success");
-}
+            // Nom (Gras, Noir)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            // On coupe le nom s'il est trop long pour qu'il tienne sur une ligne
+            let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
+            doc.text(displayName, 27, 54, { align: "center" });
+
+            // Rôle (Normal, Gris foncé)
+            doc.setTextColor(80, 80, 80);
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
+
+            // Matricule (Monospace, Noir)
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("courier", "bold");
+            doc.setFontSize(10);
+            doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
+
+            // QR Code (Ajusté en bas)
+            // ID Unique pour le scan
+            const qrData = member.matricule || member._id;
+
+            try {
+                // On génère un QR code plus petit (18x18mm) et on le place à y=66
+                const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
+                doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
+            } catch (err) {
+                console.error("Erreur QR", err);
+            }
+
+            // Sauvegarde
+            doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
+            showNotification("Badge téléchargé !", "success");
+        }
         /**
          * Ouvre la modale de modification
          */
@@ -5808,32 +5838,32 @@ async function generateBadge(memberId) {
         /**
  * Affiche les détails d'un membre du personnel et son historique
  */
-       /**
- * Affiche les détails d'un membre du personnel et son historique
- */
-async function viewCrewDetails(memberId) {
-    showNotification('Chargement des détails...', 'info');
+        /**
+  * Affiche les détails d'un membre du personnel et son historique
+  */
+        async function viewCrewDetails(memberId) {
+            showNotification('Chargement des détails...', 'info');
 
-    try {
-        const data = await apiCall(`/admin/crew/${memberId}`);
+            try {
+                const data = await apiCall(`/admin/crew/${memberId}`);
 
-        if (!data || !data.success) {
-            showNotification('Impossible de charger les détails du membre.', 'error');
-            return;
-        }
+                if (!data || !data.success) {
+                    showNotification('Impossible de charger les détails du membre.', 'error');
+                    return;
+                }
 
-        const member = data.member;
-        const history = data.history;
+                const member = data.member;
+                const history = data.history;
 
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
 
-        modalTitle.textContent = `Fiche détaillée - ${member.name}`;
+                modalTitle.textContent = `Fiche détaillée - ${member.name}`;
 
-        // --- Construction de l'historique ---
-        let historyHTML = '';
-        if (history.length > 0) {
-            historyHTML = history.map(trip => `
+                // --- Construction de l'historique ---
+                let historyHTML = '';
+                if (history.length > 0) {
+                    historyHTML = history.map(trip => `
                 <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--dark-border);">
                     <div>
                         <span style="font-weight: 600;">${new Date(trip.date).toLocaleDateString('fr-FR')}</span>
@@ -5846,24 +5876,24 @@ async function viewCrewDetails(memberId) {
                     </div>
                 </li>
             `).join('');
-        } else {
-            historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
-        }
+                } else {
+                    historyHTML = '<li style="padding: 10px; color: var(--text-muted);">Aucun voyage terminé enregistré.</li>';
+                }
 
-        // ✅ GESTION DE LA PHOTO DE PROFIL
-        let avatarHTML;
-        if (member.photo) {
-            // Si photo : Image ronde avec bordure
-            avatarHTML = `<img src="${member.photo}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">`;
-        } else {
-            // Sinon : Icône par défaut
-            avatarHTML = `<div style="font-size: 3rem; background: var(--dark-surface); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--dark-border);">
+                // ✅ GESTION DE LA PHOTO DE PROFIL
+                let avatarHTML;
+                if (member.photo) {
+                    // Si photo : Image ronde avec bordure
+                    avatarHTML = `<img src="${member.photo}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">`;
+                } else {
+                    // Sinon : Icône par défaut
+                    avatarHTML = `<div style="font-size: 3rem; background: var(--dark-surface); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--dark-border);">
                             ${member.role === 'Chauffeur' ? '🚗' : '🎫'}
                           </div>`;
-        }
+                }
 
-        // --- Construction du HTML de la modale ---
-        modalBody.innerHTML = `
+                // --- Construction du HTML de la modale ---
+                modalBody.innerHTML = `
             <!-- Section Informations générales -->
             <div style="background: var(--dark-elevated); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
                 <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
@@ -5907,13 +5937,13 @@ async function viewCrewDetails(memberId) {
             </div>
         `;
 
-        document.getElementById('details-modal').classList.add('active');
+                document.getElementById('details-modal').classList.add('active');
 
-    } catch (error) {
-        console.error('❌ Erreur affichage détails membre:', error);
-        showNotification('Erreur lors de l\'affichage des détails', 'error');
-    }
-}
+            } catch (error) {
+                console.error('❌ Erreur affichage détails membre:', error);
+                showNotification('Erreur lors de l\'affichage des détails', 'error');
+            }
+        }
 
 
 
@@ -6209,8 +6239,8 @@ async function viewCrewDetails(memberId) {
                     break;
 
                 case 'attendance':
-    loadAttendanceToday();
-    break;
+                    loadAttendanceToday();
+                    break;
 
                 default:
                     if (tabName !== 'settings') {
@@ -6314,89 +6344,89 @@ async function viewCrewDetails(memberId) {
 
         // DANS admin/index.html, dans <script>
 
-      function setupEventListeners() {
-    // --- Login & Logout ---
-    document.getElementById("login-form").addEventListener("submit", handleLogin);
-    document.getElementById("logout-btn").addEventListener("click", handleLogout);
+        function setupEventListeners() {
+            // --- Login & Logout ---
+            document.getElementById("login-form").addEventListener("submit", handleLogin);
+            document.getElementById("logout-btn").addEventListener("click", handleLogout);
 
-    // --- Navigation Onglets ---
-    document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            const tabName = link.getAttribute("data-tab");
-            if (tabName) switchTab(tabName);
-        });
-    });
+            // --- Navigation Onglets ---
+            document.querySelectorAll(".nav-link").forEach((link) => {
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const tabName = link.getAttribute("data-tab");
+                    if (tabName) switchTab(tabName);
+                });
+            });
 
-    // --- Filtres ---
-    document.getElementById("search-input").addEventListener("input", applyFilters);
-    document.querySelectorAll(".filter-pill").forEach((pill) => {
-        pill.addEventListener("click", () => {
-            document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
-            pill.classList.add("active");
-            applyFilters();
-        });
-    });
+            // --- Filtres ---
+            document.getElementById("search-input").addEventListener("input", applyFilters);
+            document.querySelectorAll(".filter-pill").forEach((pill) => {
+                pill.addEventListener("click", () => {
+                    document.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+                    pill.classList.add("active");
+                    applyFilters();
+                });
+            });
 
-    // --- Forms Création ---
-    document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
-    document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
+            // --- Forms Création ---
+            document.getElementById("template-creation-form").addEventListener("submit", handleCreateTemplate);
+            document.getElementById("trip-creation-form").addEventListener("submit", handleCreateTrips);
 
-    // --- Modal Close ---
-    window.addEventListener("click", (e) => {
-        if (e.target === document.getElementById("details-modal")) {
-            closeModal();
-        }
-    });
+            // --- Modal Close ---
+            window.addEventListener("click", (e) => {
+                if (e.target === document.getElementById("details-modal")) {
+                    closeModal();
+                }
+            });
 
-    // --- Délégation Tableau Voyages ---
-    const tripsTbody = document.getElementById('trips-body');
-    if (tripsTbody) {
-        tripsTbody.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
-            const action = button.dataset.action;
-            const tripId = button.dataset.tripId;
-            switch (action) {
-                case 'delete': deleteTrip(tripId); break;
-                case 'manage-seats': manageSeats(tripId); break;
-                case 'edit-trip': showEditTripModal(tripId); break;
-                case 'reset-seats': resetTripSeats(tripId); break;
+            // --- Délégation Tableau Voyages ---
+            const tripsTbody = document.getElementById('trips-body');
+            if (tripsTbody) {
+                tripsTbody.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action]');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const tripId = button.dataset.tripId;
+                    switch (action) {
+                        case 'delete': deleteTrip(tripId); break;
+                        case 'manage-seats': manageSeats(tripId); break;
+                        case 'edit-trip': showEditTripModal(tripId); break;
+                        case 'reset-seats': resetTripSeats(tripId); break;
+                    }
+                });
             }
-        });
-    }
 
-    // --- ✅ CORRECTION ICI : FORMULAIRE PARAMÈTRES ---
-    // Le formulaire s'appelle 'settings-form' dans la nouvelle modale, pas 'report-settings-form'
-    const settingsForm = document.getElementById("settings-form"); 
-    if (settingsForm) {
-        // On utilise la nouvelle fonction saveAllSettings
-        settingsForm.addEventListener("submit", saveAllSettings); 
-    }
+            // --- ✅ CORRECTION ICI : FORMULAIRE PARAMÈTRES ---
+            // Le formulaire s'appelle 'settings-form' dans la nouvelle modale, pas 'report-settings-form'
+            const settingsForm = document.getElementById("settings-form");
+            if (settingsForm) {
+                // On utilise la nouvelle fonction saveAllSettings
+                settingsForm.addEventListener("submit", saveAllSettings);
+            }
 
-    // --- Création Destination ---
-    const destForm = document.getElementById("destination-creation-form");
-    if (destForm) {
-        destForm.addEventListener("submit", handleCreateDestination);
-    }
+            // --- Création Destination ---
+            const destForm = document.getElementById("destination-creation-form");
+            if (destForm) {
+                destForm.addEventListener("submit", handleCreateDestination);
+            }
 
-    // --- Notifications ---
-    if (typeof setupNotificationFormListeners === 'function') {
-        setupNotificationFormListeners();
-    }
+            // --- Notifications ---
+            if (typeof setupNotificationFormListeners === 'function') {
+                setupNotificationFormListeners();
+            }
 
 
-    // Initialiser le sélecteur de semaine du planning
-const weekPicker = document.getElementById('schedule-week-picker');
-if (weekPicker) {
-    const now = new Date();
-    // Fonction simple pour avoir YYYY-Www
-    const weekNum = getWeekNumber(now);
-    const year = now.getFullYear();
-    // Format requis par l'input type="week" : "2023-W45"
-    weekPicker.value = `${year}-W${String(weekNum).padStart(2, '0')}`;
-}
-}
+            // Initialiser le sélecteur de semaine du planning
+            const weekPicker = document.getElementById('schedule-week-picker');
+            if (weekPicker) {
+                const now = new Date();
+                // Fonction simple pour avoir YYYY-Www
+                const weekNum = getWeekNumber(now);
+                const year = now.getFullYear();
+                // Format requis par l'input type="week" : "2023-W45"
+                weekPicker.value = `${year}-W${String(weekNum).padStart(2, '0')}`;
+            }
+        }
 
 
         /**
@@ -7905,17 +7935,17 @@ if (weekPicker) {
 
 
 
-       async function loadAgencyRevenue() {
-    const container = document.getElementById('agency-revenue-stats');
-    if(!container) return;
+        async function loadAgencyRevenue() {
+            const container = document.getElementById('agency-revenue-stats');
+            if (!container) return;
 
-    // Affiche un petit loader ou un état vide par défaut
-    container.innerHTML = '<div style="color: #888; font-style: italic;">Chargement des revenus...</div>';
+            // Affiche un petit loader ou un état vide par défaut
+            container.innerHTML = '<div style="color: #888; font-style: italic;">Chargement des revenus...</div>';
 
-    const data = await apiCall('/admin/analytics/revenue-by-agency');
-    
-    if (data && data.success && data.stats.length > 0) {
-        container.innerHTML = data.stats.map(stat => `
+            const data = await apiCall('/admin/analytics/revenue-by-agency');
+
+            if (data && data.success && data.stats.length > 0) {
+                container.innerHTML = data.stats.map(stat => `
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-label" style="font-size: 0.9em; text-transform: uppercase; color: #888;">${stat.agencyName || 'Agence Inconnue'}</span>
@@ -7927,80 +7957,80 @@ if (weekPicker) {
                 </div>
             </div>
         `).join('');
-    } else {
-        // Message si aucune donnée
-        container.innerHTML = `
+            } else {
+                // Message si aucune donnée
+                container.innerHTML = `
             <div class="content-card" style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--text-muted);">
                 <p>Aucun revenu encaissé par les agences pour le moment.</p>
                 <small>Assurez-vous que les employés qui valident les paiements sont bien affectés à une agence.</small>
             </div>
         `;
-    }
-}
+            }
+        }
 
 
 
 
-// DANS LE SCRIPT
+        // DANS LE SCRIPT
 
-async function loadSchedule() {
-    console.log("📅 Chargement du planning...");
-    
-    // 1. Récupérer ou initialiser la date
-    const weekInput = document.getElementById('schedule-week-picker');
-    if (!weekInput || !weekInput.value) {
-        // Fallback si vide
-        const now = new Date();
-        const weekNum = getWeekNumber(now);
-        if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-        else return; // Si pas d'input, on arrête
-    }
-    
-    // 2. Calculer le Lundi de cette semaine
-    const [year, week] = weekInput.value.split('-W');
-    const startOfWeek = getDateOfISOWeek(week, year);
-    
-    // Calculer le Dimanche
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
+        async function loadSchedule() {
+            console.log("📅 Chargement du planning...");
 
-    const startStr = startOfWeek.toISOString().split('T')[0];
-    const endStr = endOfWeek.toISOString().split('T')[0];
+            // 1. Initialisation date (comme avant)
+            const weekInput = document.getElementById('schedule-week-picker');
+            if (!weekInput || !weekInput.value) {
+                const now = new Date();
+                const weekNum = getWeekNumber(now);
+                if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+                else return;
+            }
 
-    console.log(`   -> Période: ${startStr} au ${endStr}`);
+            // 2. Calcul des dates (comme avant)
+            const [year, week] = weekInput.value.split('-W');
+            const startOfWeek = getDateOfISOWeek(week, year);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-    // 3. Appel API
-    // On peut aussi filtrer par agence si le select existe
-    const agencyFilter = document.getElementById('schedule-filter-agency');
-    const agencyId = agencyFilter ? agencyFilter.value : '';
-    
-    const url = `/admin/schedules?start=${startStr}&end=${endStr}${agencyId ? `&agencyId=${agencyId}` : ''}`;
-    const data = await apiCall(url);
-    
-    if (data && data.success) {
-        renderScheduleGrid(data.schedules, startOfWeek);
-    } else {
-        // En cas d'erreur ou vide, on rend une grille vide pour afficher les employés
-        renderScheduleGrid([], startOfWeek);
-    }
-}
+            const startStr = startOfWeek.toISOString().split('T')[0];
+            const endStr = endOfWeek.toISOString().split('T')[0];
 
-async function renderScheduleGrid(schedules, startOfWeek) {
-    const tbody = document.getElementById('schedule-body');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Chargement...</td></tr>';
+            // 3. CHARGEMENT PARALLÈLE (C'est la clé !)
+            // On lance les deux requêtes en même temps : Employés ET Planning
+            const [scheduleData, crewData] = await Promise.all([
+                apiCall(`/admin/schedules?start=${startStr}&end=${endStr}`),
+                // Si allCrewMembers est déjà plein, on ne rappelle pas l'API, sinon on appelle
+                (allCrewMembers && allCrewMembers.length > 0) ? { success: true, crew: allCrewMembers } : apiCall('/admin/crew')
+            ]);
 
-    // SÉCURITÉ : On s'assure d'avoir les employés
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        await loadAllCrew();
-    }
+            // 4. Mise à jour de la variable globale si nécessaire
+            if (crewData && crewData.success) {
+                allCrewMembers = crewData.crew;
+            }
 
-    tbody.innerHTML = ''; // On vide le loader
+            // 5. Rendu
+            if (scheduleData && scheduleData.success) {
+                renderScheduleGrid(scheduleData.schedules, startOfWeek);
+            } else {
+                renderScheduleGrid([], startOfWeek);
+            }
+        }
 
-    // On groupe par employé
-    allCrewMembers.forEach(member => {
-        let rowHTML = `
+        async function renderScheduleGrid(schedules, startOfWeek) {
+            const tbody = document.getElementById('schedule-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Chargement...</td></tr>';
+
+            // SÉCURITÉ : On s'assure d'avoir les employés
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                await loadAllCrew();
+            }
+
+            tbody.innerHTML = ''; // On vide le loader
+
+            // On groupe par employé
+            allCrewMembers.forEach(member => {
+                let rowHTML = `
             <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border);">
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -8009,60 +8039,60 @@ async function renderScheduleGrid(schedules, startOfWeek) {
                     <small style="color:var(--primary);">${member.role}</small>
                 </td>
         `;
-        
-        // Pour chaque jour de la semaine (0 à 6)
-        for(let i=0; i<7; i++) {
-            const currentDay = new Date(startOfWeek);
-            currentDay.setDate(currentDay.getDate() + i);
-            const dateStr = currentDay.toISOString().split('T')[0];
 
-            // Trouver les créneaux
-            const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
-            
-            let cellContent = '';
-            items.forEach(item => {
-                // Couleur selon le type
-                let colorClass = 'primary';
-                if (item.type === 'Repos') colorClass = 'secondary';
-                if (item.type === 'Congé') colorClass = 'danger';
-                if (item.type === 'Voyage') colorClass = 'info';
+                // Pour chaque jour de la semaine (0 à 6)
+                for (let i = 0; i < 7; i++) {
+                    const currentDay = new Date(startOfWeek);
+                    currentDay.setDate(currentDay.getDate() + i);
+                    const dateStr = currentDay.toISOString().split('T')[0];
 
-                cellContent += `
+                    // Trouver les créneaux
+                    const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
+
+                    let cellContent = '';
+                    items.forEach(item => {
+                        // Couleur selon le type
+                        let colorClass = 'primary';
+                        if (item.type === 'Repos') colorClass = 'secondary';
+                        if (item.type === 'Congé') colorClass = 'danger';
+                        if (item.type === 'Voyage') colorClass = 'info';
+
+                        cellContent += `
                     <div class="schedule-item type-${item.type}" style="margin-bottom:4px; padding:4px; border-radius:4px; font-size:0.75em; background:rgba(255,255,255,0.1); border-left:3px solid var(--${colorClass}); cursor:pointer;" onclick="deleteSchedule('${item._id}')" title="Supprimer">
                         <strong>${item.startTime}-${item.endTime}</strong><br>
                         ${item.note || item.type}
                     </div>
                 `;
+                    });
+
+                    // Bouton d'ajout (+)
+                    cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')" style="text-align:center; cursor:pointer; opacity:0.3; font-weight:bold;">+</div>`;
+
+                    rowHTML += `<td class="schedule-cell" style="min-width:100px; vertical-align:top;">${cellContent}</td>`;
+                }
+                rowHTML += '</tr>';
+                tbody.innerHTML += rowHTML;
             });
-
-            // Bouton d'ajout (+)
-            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')" style="text-align:center; cursor:pointer; opacity:0.3; font-weight:bold;">+</div>`;
-
-            rowHTML += `<td class="schedule-cell" style="min-width:100px; vertical-align:top;">${cellContent}</td>`;
         }
-        rowHTML += '</tr>';
-        tbody.innerHTML += rowHTML;
-    });
-}
 
-// Fonction utilitaire Date (Standard ISO)
-function getDateOfISOWeek(w, y) {
-    var simple = new Date(y, 0, 1 + (w - 1) * 7);
-    var dow = simple.getDay();
-    var ISOweekStart = simple;
-    if (dow <= 4)
-        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else
-        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-    return ISOweekStart;
-}
-function getWeekNumber(d) {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-    return weekNo;
-}
+        // Fonction utilitaire Date (Standard ISO)
+        function getDateOfISOWeek(w, y) {
+            var simple = new Date(y, 0, 1 + (w - 1) * 7);
+            var dow = simple.getDay();
+            var ISOweekStart = simple;
+            if (dow <= 4)
+                ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+            else
+                ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+            return ISOweekStart;
+        }
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
 
 
 
@@ -8142,30 +8172,30 @@ function getWeekNumber(d) {
          * Affiche les agences dans le tableau HTML.
          */
         function renderAgenciesTable(agencies) {
-    const tbody = document.getElementById('agencies-table-body');
-    if (!tbody) return;
+            const tbody = document.getElementById('agencies-table-body');
+            if (!tbody) return;
 
-    if (!agencies || agencies.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = agencies.map(agency => {
-        const statusBadge = agency.status === 'active' 
-            ? `<span class="badge badge-success">Actif</span>`
-            : `<span class="badge badge-gray">Inactif</span>`;
-
-        let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
-        
-        // Sécurisation : On vérifie que allCrewMembers existe avant de chercher dedans
-        if (agency.managerId && typeof allCrewMembers !== 'undefined') {
-            const manager = allCrewMembers.find(m => m._id === agency.managerId);
-            if (manager) {
-                managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
+            if (!agencies || agencies.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
+                return;
             }
-        }
 
-        return `
+            tbody.innerHTML = agencies.map(agency => {
+                const statusBadge = agency.status === 'active'
+                    ? `<span class="badge badge-success">Actif</span>`
+                    : `<span class="badge badge-gray">Inactif</span>`;
+
+                let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+
+                // Sécurisation : On vérifie que allCrewMembers existe avant de chercher dedans
+                if (agency.managerId && typeof allCrewMembers !== 'undefined') {
+                    const manager = allCrewMembers.find(m => m._id === agency.managerId);
+                    if (manager) {
+                        managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
+                    }
+                }
+
+                return `
             <tr>
                 <td>
                     <strong class="font-bold">${agency.name}</strong><br>
@@ -8181,8 +8211,8 @@ function getWeekNumber(d) {
                 </td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
         /**
          * Ouvre la modale pour créer ou modifier une agence.
          * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
@@ -8341,132 +8371,132 @@ function getWeekNumber(d) {
         }
 
 
- 
-
-// DANS Admin/index.html (section <script>)
-
-async function getAgencyOptionsHTML(selectedId = null) {
-    // On s'assure d'avoir les agences chargées
-    if (!allAgencies || allAgencies.length === 0) {
-        const data = await apiCall('/admin/agencies');
-        if (data && data.success) allAgencies = data.agencies;
-    }
-
-    let html = '<option value="">-- Aucune affectation --</option>';
-    allAgencies.forEach(ag => {
-        const isSelected = selectedId && ag._id === selectedId ? 'selected' : '';
-        html += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
-    });
-    return html;
-}
-async function deleteAgency(agencyId) {
-    console.log("🗑️ Tentative de suppression pour l'agence :", agencyId);
-
-    // 1. Trouver l'agence dans la liste locale pour récupérer son nom
-    const agency = allAgencies.find(a => a._id === agencyId);
-    
-    // Sécurité si l'agence n'est pas trouvée localement
-    if (!agency) {
-        console.error("❌ Erreur : Agence introuvable dans la liste locale (allAgencies).");
-        showNotification("Erreur interne : Agence introuvable.", "error");
-        return;
-    }
-
-    // 2. Afficher la modale de confirmation personnalisée
-    // Note : showAdminConfirm renvoie true (confirmé) ou false (annulé)
-    const confirmed = await showAdminConfirm({
-        title: "Supprimer l'agence ?",
-        message: `Voulez-vous vraiment supprimer l'agence <strong>"${agency.name}"</strong> ?\n\n⚠️ Cette action est irréversible. Le personnel affecté sera détaché.`,
-        icon: '🗑️',
-        iconClass: 'danger',
-        confirmText: 'Oui, supprimer',
-        cancelText: 'Annuler',
-        confirmClass: 'btn-danger'
-    });
-
-    // Si l'utilisateur clique sur Annuler
-    if (!confirmed) {
-        console.log("Annulation de la suppression.");
-        return;
-    }
-
-    // 3. Appel API pour la suppression
-    try {
-        const data = await apiCall(`/admin/agencies/${agencyId}`, 'DELETE');
-
-        if (data && data.success) {
-            showNotification(data.message || "Agence supprimée avec succès.", 'success');
-            loadAllAgencies(); // Rafraîchir le tableau
-        } else {
-            // Si le serveur renvoie une erreur mais pas un crash (ex: 404)
-            showNotification(data.error || "Erreur lors de la suppression.", "error");
-        }
-    } catch (error) {
-        console.error("Erreur API Delete:", error);
-        showNotification("Erreur de connexion au serveur.", "error");
-    }
-}
 
 
+        // DANS Admin/index.html (section <script>)
 
-
-// ============================================
-// ⏱️ GESTION PRÉSENCES & SCANNER
-// ============================================
-
-let html5QrcodeScanner = null;
-let isScanning = false;
-
-// Charger les données du jour
-// Charger les données du jour (CORRIGÉ POUR LA PAUSE)
-async function loadAttendanceToday() {
-    const data = await apiCall('/admin/attendance/today');
-    if (data && data.success) {
-        // Mise à jour stats
-        document.getElementById('stat-present-now').textContent = data.stats.present;
-        document.getElementById('stat-completed-today').textContent = data.stats.completed;
-
-        const tbody = document.getElementById('attendance-table-body');
-        if (data.records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = data.records.map(r => {
-            const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '...';
-            
-            // ========================================================
-            // ✅ NOUVELLE LOGIQUE D'AFFICHAGE DES STATUTS
-            // ========================================================
-            let statusBadge = '';
-            let actionText = '';
-
-            if (r.status === 'working' || r.status === 'present') {
-                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
-                actionText = `Arrivée à ${checkInTime}`;
-            } 
-            else if (r.status === 'on_break') {
-                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
-                // On affiche l'heure de départ en pause si dispo
-                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '';
-                actionText = `Parti à ${lastAction}`;
-            } 
-            else if (r.status === 'completed') {
-                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
-                actionText = `Départ à ${checkOutTime}`;
-            }
-            // ========================================================
-            
-            // Calcul durée lisible
-            let durationDisplay = '-';
-            if (r.durationMinutes > 0) {
-                const h = Math.floor(r.durationMinutes / 60);
-                const m = r.durationMinutes % 60;
-                durationDisplay = `${h}h ${m}m`;
+        async function getAgencyOptionsHTML(selectedId = null) {
+            // On s'assure d'avoir les agences chargées
+            if (!allAgencies || allAgencies.length === 0) {
+                const data = await apiCall('/admin/agencies');
+                if (data && data.success) allAgencies = data.agencies;
             }
 
-            return `
+            let html = '<option value="">-- Aucune affectation --</option>';
+            allAgencies.forEach(ag => {
+                const isSelected = selectedId && ag._id === selectedId ? 'selected' : '';
+                html += `<option value="${ag._id}" ${isSelected}>${ag.city} - ${ag.name}</option>`;
+            });
+            return html;
+        }
+        async function deleteAgency(agencyId) {
+            console.log("🗑️ Tentative de suppression pour l'agence :", agencyId);
+
+            // 1. Trouver l'agence dans la liste locale pour récupérer son nom
+            const agency = allAgencies.find(a => a._id === agencyId);
+
+            // Sécurité si l'agence n'est pas trouvée localement
+            if (!agency) {
+                console.error("❌ Erreur : Agence introuvable dans la liste locale (allAgencies).");
+                showNotification("Erreur interne : Agence introuvable.", "error");
+                return;
+            }
+
+            // 2. Afficher la modale de confirmation personnalisée
+            // Note : showAdminConfirm renvoie true (confirmé) ou false (annulé)
+            const confirmed = await showAdminConfirm({
+                title: "Supprimer l'agence ?",
+                message: `Voulez-vous vraiment supprimer l'agence <strong>"${agency.name}"</strong> ?\n\n⚠️ Cette action est irréversible. Le personnel affecté sera détaché.`,
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Oui, supprimer',
+                cancelText: 'Annuler',
+                confirmClass: 'btn-danger'
+            });
+
+            // Si l'utilisateur clique sur Annuler
+            if (!confirmed) {
+                console.log("Annulation de la suppression.");
+                return;
+            }
+
+            // 3. Appel API pour la suppression
+            try {
+                const data = await apiCall(`/admin/agencies/${agencyId}`, 'DELETE');
+
+                if (data && data.success) {
+                    showNotification(data.message || "Agence supprimée avec succès.", 'success');
+                    loadAllAgencies(); // Rafraîchir le tableau
+                } else {
+                    // Si le serveur renvoie une erreur mais pas un crash (ex: 404)
+                    showNotification(data.error || "Erreur lors de la suppression.", "error");
+                }
+            } catch (error) {
+                console.error("Erreur API Delete:", error);
+                showNotification("Erreur de connexion au serveur.", "error");
+            }
+        }
+
+
+
+
+        // ============================================
+        // ⏱️ GESTION PRÉSENCES & SCANNER
+        // ============================================
+
+        let html5QrcodeScanner = null;
+        let isScanning = false;
+
+        // Charger les données du jour
+        // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
+        async function loadAttendanceToday() {
+            const data = await apiCall('/admin/attendance/today');
+            if (data && data.success) {
+                // Mise à jour stats
+                document.getElementById('stat-present-now').textContent = data.stats.present;
+                document.getElementById('stat-completed-today').textContent = data.stats.completed;
+
+                const tbody = document.getElementById('attendance-table-body');
+                if (data.records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.records.map(r => {
+                    const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
+
+                    // ========================================================
+                    // ✅ NOUVELLE LOGIQUE D'AFFICHAGE DES STATUTS
+                    // ========================================================
+                    let statusBadge = '';
+                    let actionText = '';
+
+                    if (r.status === 'working' || r.status === 'present') {
+                        statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                        actionText = `Arrivée à ${checkInTime}`;
+                    }
+                    else if (r.status === 'on_break') {
+                        statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                        // On affiche l'heure de départ en pause si dispo
+                        const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                        actionText = `Parti à ${lastAction}`;
+                    }
+                    else if (r.status === 'completed') {
+                        statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                        actionText = `Départ à ${checkOutTime}`;
+                    }
+                    // ========================================================
+
+                    // Calcul durée lisible
+                    let durationDisplay = '-';
+                    if (r.durationMinutes > 0) {
+                        const h = Math.floor(r.durationMinutes / 60);
+                        const m = r.durationMinutes % 60;
+                        durationDisplay = `${h}h ${m}m`;
+                    }
+
+                    return `
                 <tr>
                     <td class="font-mono">${checkInTime}</td>
                     <td><strong>${r.crewName}</strong></td>
@@ -8476,90 +8506,90 @@ async function loadAttendanceToday() {
                     <td class="font-bold">${durationDisplay}</td>
                 </tr>
             `;
-        }).join('');
-    }
-}
-
-// Activer/Désactiver le scanner
-function toggleScanner() {
-    const container = document.getElementById('scanner-container');
-    
-    if (isScanning) {
-        // Arrêt
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(() => {
-                container.style.display = 'none';
-                isScanning = false;
-            }).catch(error => {
-                console.error("Failed to clear html5QrcodeScanner. ", error);
-            });
-        }
-    } else {
-        // Démarrage
-        container.style.display = 'block';
-        
-        // On initialise le scanner
-        if (!html5QrcodeScanner) {
-            // "reader" est l'id de la div
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        }
-        
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        isScanning = true;
-    }
-}
-
-// Callback succès scan
-async function onScanSuccess(decodedText, decodedResult) {
-    // 1. Feedback visuel immédiat
-    const overlay = document.getElementById('scan-result-overlay');
-    overlay.style.opacity = '1';
-    
-    // Pause du scanner
-    html5QrcodeScanner.pause();
-
-    // ✅ RÉCUPÉRATION DU MODE (Auto/Pause/Exit)
-    const modeInput = document.querySelector('input[name="scan-mode"]:checked');
-    const mode = modeInput ? modeInput.value : 'auto';
-
-    console.log(`Scan: ${decodedText}, Mode: ${mode}`);
-
-    try {
-        // 2. Envoi au serveur AVEC LE MODE
-        const response = await apiCall('/admin/attendance/scan', 'POST', { 
-            qrData: decodedText,
-            mode: mode // <--- C'est ici que ça manquait !
-        });
-        
-        if (response && response.success) {
-            // Succès
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
-            audio.play().catch(e => {}); 
-            
-            showNotification(response.message, 'success');
-            loadAttendanceToday(); // Rafraîchir le tableau
-        } else {
-            // Erreur métier
-            showNotification(response?.error || "Erreur lors du pointage", "error");
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'); 
-            audio.play().catch(e => {});
+                }).join('');
+            }
         }
 
-    } catch (e) {
-        console.error(e);
-        showNotification("Erreur de connexion", "error");
-    }
+        // Activer/Désactiver le scanner
+        function toggleScanner() {
+            const container = document.getElementById('scanner-container');
 
-    // 3. Reprise après 2 secondes
-    setTimeout(() => {
-        overlay.style.opacity = '0';
-        html5QrcodeScanner.resume();
-    }, 2000);
-}
+            if (isScanning) {
+                // Arrêt
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.clear().then(() => {
+                        container.style.display = 'none';
+                        isScanning = false;
+                    }).catch(error => {
+                        console.error("Failed to clear html5QrcodeScanner. ", error);
+                    });
+                }
+            } else {
+                // Démarrage
+                container.style.display = 'block';
 
-function onScanFailure(error) {
-    // On ignore les erreurs de scan frame par frame (trop verbeux)
-}
+                // On initialise le scanner
+                if (!html5QrcodeScanner) {
+                    // "reader" est l'id de la div
+                    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                }
+
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+                isScanning = true;
+            }
+        }
+
+        // Callback succès scan
+        async function onScanSuccess(decodedText, decodedResult) {
+            // 1. Feedback visuel immédiat
+            const overlay = document.getElementById('scan-result-overlay');
+            overlay.style.opacity = '1';
+
+            // Pause du scanner
+            html5QrcodeScanner.pause();
+
+            // ✅ RÉCUPÉRATION DU MODE (Auto/Pause/Exit)
+            const modeInput = document.querySelector('input[name="scan-mode"]:checked');
+            const mode = modeInput ? modeInput.value : 'auto';
+
+            console.log(`Scan: ${decodedText}, Mode: ${mode}`);
+
+            try {
+                // 2. Envoi au serveur AVEC LE MODE
+                const response = await apiCall('/admin/attendance/scan', 'POST', {
+                    qrData: decodedText,
+                    mode: mode // <--- C'est ici que ça manquait !
+                });
+
+                if (response && response.success) {
+                    // Succès
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play().catch(e => { });
+
+                    showNotification(response.message, 'success');
+                    loadAttendanceToday(); // Rafraîchir le tableau
+                } else {
+                    // Erreur métier
+                    showNotification(response?.error || "Erreur lors du pointage", "error");
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3');
+                    audio.play().catch(e => { });
+                }
+
+            } catch (e) {
+                console.error(e);
+                showNotification("Erreur de connexion", "error");
+            }
+
+            // 3. Reprise après 2 secondes
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                html5QrcodeScanner.resume();
+            }, 2000);
+        }
+
+        function onScanFailure(error) {
+            // On ignore les erreurs de scan frame par frame (trop verbeux)
+        }
     </script>
 
 
