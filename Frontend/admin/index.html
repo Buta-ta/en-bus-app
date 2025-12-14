@@ -8036,22 +8036,24 @@ async function loadSchedule() {
         renderScheduleGrid([], startOfWeek, employeesToDisplay);
     }
 }
-        async function renderScheduleGrid(schedules, startOfWeek) {
-            const tbody = document.getElementById('schedule-body');
-            if (!tbody) return;
+ async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
+    const tbody = document.getElementById('schedule-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Chargement...</td></tr>';
+    // SÉCURITÉ : Si la liste est vide, on charge tout
+    if (!employees || employees.length === 0) {
+        if (!allCrewMembers || allCrewMembers.length === 0) {
+            await loadAllCrew();
+        }
+        employees = allCrewMembers; // Fallback
+    }
 
-            // SÉCURITÉ : On s'assure d'avoir les employés
-            if (!allCrewMembers || allCrewMembers.length === 0) {
-                await loadAllCrew();
-            }
-
-            tbody.innerHTML = ''; // On vide le loader
-
-            // On groupe par employé
-                // On groupe par employé
-            employees.forEach(member => {
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Aucun employé trouvé.</td></tr>';
+        return;
+    }
+     employees.forEach(member => {
         
         // ==========================================================
         // ✅ C'EST CE BLOC QUI DOIT ÊTRE PRÉSENT
