@@ -3438,7 +3438,7 @@ app.post("/api/admin/schedules", authenticateToken, [
     body('date').isISO8601(), // YYYY-MM-DD
     body('startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // HH:MM
     body('endTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
-    body('type').isIn(['Travail', 'Repos', 'Congé', 'Voyage'])
+    body('type').isIn(['Travail', 'Repos', 'Congé', 'Voyage', 'Astreinte', 'Heures Sup'])
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
