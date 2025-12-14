@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- Librairie pour les QR Codes (si pas déjà présente) -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
         /* ============================================
@@ -1908,6 +1909,14 @@
                     </li>
 
 
+                    <li class="nav-item">
+    <a href="#" class="nav-link" data-tab="attendance">
+        <span class="nav-icon">⏱️</span>
+        <span>Présences</span>
+    </a>
+</li>
+
+
 
 
 
@@ -2835,6 +2844,63 @@
             </div>
         </div>
     </div>
+
+
+
+
+
+    <!-- ONGLET: PRÉSENCES -->
+<div id="tab-attendance" class="tab-content">
+    <div class="page-header">
+        <h1 class="page-title">Suivi des Présences</h1>
+        <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
+    </div>
+
+    <div class="stats-grid" id="attendance-stats">
+        <!-- Stats remplies par JS -->
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-label">Présents Actuellement</span><div class="stat-icon success">🟢</div></div>
+            <div class="stat-value" id="stat-present-now">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header"><span class="stat-label">Journée Terminée</span><div class="stat-icon primary">🏁</div></div>
+            <div class="stat-value" id="stat-completed-today">-</div>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="card-header" style="display: flex; justify-content: space-between;">
+            <h2 class="card-title">Scanner de Pointage</h2>
+            <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer/Désactiver Caméra</button>
+        </div>
+        
+        <!-- Zone du scanner (Cachée par défaut) -->
+        <div id="scanner-container" style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
+            <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
+            <div id="scan-result-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
+                ✅ SCANNÉ !
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Heure</th>
+                        <th>Employé</th>
+                        <th>Rôle</th>
+                        <th>Agence</th>
+                        <th>Action</th>
+                        <th>Durée</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                    <!-- Rempli par JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
     </main>
     </div>
     <!-- TAB: Paramètres -->
@@ -6021,6 +6087,11 @@ async function viewCrewDetails(memberId) {
                     loadAgencyRevenue(); // <--- ✅ AJOUTEZ CETTE LIGNE
 
                     break;
+
+                case 'attendance':
+    loadAttendanceToday();
+    break;
+
                 default:
                     if (tabName !== 'settings') {
                         console.warn(`⚠️ Aucun chargement de données prévu pour : ${tabName}`);
@@ -8079,6 +8150,135 @@ async function deleteAgency(agencyId) {
         console.error("Erreur API Delete:", error);
         showNotification("Erreur de connexion au serveur.", "error");
     }
+}
+
+
+
+
+// ============================================
+// ⏱️ GESTION PRÉSENCES & SCANNER
+// ============================================
+
+let html5QrcodeScanner = null;
+let isScanning = false;
+
+// Charger les données du jour
+async function loadAttendanceToday() {
+    const data = await apiCall('/admin/attendance/today');
+    if (data && data.success) {
+        // Mise à jour stats
+        document.getElementById('stat-present-now').textContent = data.stats.present;
+        document.getElementById('stat-completed-today').textContent = data.stats.completed;
+
+        // Mise à jour tableau
+        const tbody = document.getElementById('attendance-table-body');
+        if (data.records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.records.map(r => {
+            const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : '...';
+            
+            let statusBadge = r.status === 'present' 
+                ? `<span class="badge badge-success">🟢 Présent</span>` 
+                : `<span class="badge badge-gray">🏁 Terminé</span>`;
+
+            let actionText = r.status === 'present' ? `Arrivée à ${checkInTime}` : `Départ à ${checkOutTime}`;
+            
+            // Calcul durée lisible
+            let durationDisplay = '-';
+            if (r.durationMinutes > 0) {
+                const h = Math.floor(r.durationMinutes / 60);
+                const m = r.durationMinutes % 60;
+                durationDisplay = `${h}h ${m}m`;
+            }
+
+            return `
+                <tr>
+                    <td class="font-mono">${checkInTime}</td>
+                    <td><strong>${r.crewName}</strong></td>
+                    <td>${r.crewRole}</td>
+                    <td>${r.agencyId ? 'Agence' : 'Siège'}</td>
+                    <td>${statusBadge} <small>${actionText}</small></td>
+                    <td class="font-bold">${durationDisplay}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+}
+
+// Activer/Désactiver le scanner
+function toggleScanner() {
+    const container = document.getElementById('scanner-container');
+    
+    if (isScanning) {
+        // Arrêt
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                container.style.display = 'none';
+                isScanning = false;
+            }).catch(error => {
+                console.error("Failed to clear html5QrcodeScanner. ", error);
+            });
+        }
+    } else {
+        // Démarrage
+        container.style.display = 'block';
+        
+        // On initialise le scanner
+        if (!html5QrcodeScanner) {
+            // "reader" est l'id de la div
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        }
+        
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        isScanning = true;
+    }
+}
+
+// Callback succès scan
+async function onScanSuccess(decodedText, decodedResult) {
+    // 1. Feedback visuel immédiat (Bip visuel)
+    const overlay = document.getElementById('scan-result-overlay');
+    overlay.style.opacity = '1';
+    
+    // Pause du scanner pour éviter double scan immédiat
+    html5QrcodeScanner.pause();
+
+    try {
+        // 2. Envoi au serveur
+        const response = await apiCall('/admin/attendance/scan', 'POST', { qrData: decodedText });
+        
+        if (response && response.success) {
+            // Succès
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Son "Ding"
+            audio.play().catch(e => {}); // Ignorer erreur autoplay
+            
+            showNotification(response.message, response.action === 'check-in' ? 'success' : 'info');
+            loadAttendanceToday(); // Rafraîchir le tableau
+        } else {
+            // Erreur métier (ex: déjà scanné)
+            showNotification(response?.error || "Erreur lors du pointage", "error");
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'); // Son "Erreur"
+            audio.play().catch(e => {});
+        }
+
+    } catch (e) {
+        console.error(e);
+        showNotification("Erreur de connexion", "error");
+    }
+
+    // 3. Reprise après 2 secondes
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        html5QrcodeScanner.resume();
+    }, 2000);
+}
+
+function onScanFailure(error) {
+    // On ignore les erreurs de scan frame par frame (trop verbeux)
 }
     </script>
 
