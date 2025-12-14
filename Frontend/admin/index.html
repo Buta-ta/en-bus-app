@@ -6443,32 +6443,47 @@
 
         // --- Fonctions de Maintenance ---
 
-        async function loadMaintenanceReports() {
-            const data = await apiCall('/admin/maintenance');
-            if (!data || !data.success) return;
+      async function loadMaintenanceReports() {
+    // 1. S'assurer que la liste du personnel est disponible
+    if (!allCrewMembers || allCrewMembers.length === 0) {
+        await loadAllCrew();
+    }
 
-            const tbody = document.getElementById('maintenance-table-body');
-            if (data.reports.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun incident en cours.</td></tr>';
-                return;
-            }
+    // 2. Charger les rapports de maintenance
+    const data = await apiCall('/admin/maintenance');
+    if (!data || !data.success) return;
+    
+    // On met à jour la variable globale
+    allMaintenanceReports = data.reports;
 
-            tbody.innerHTML = data.reports.map(report => {
-                let priorityBadge = 'badge-gray';
-                if (report.priority === 'Haute') priorityBadge = 'badge-warning';
-                if (report.priority === 'Critique') priorityBadge = 'badge-danger';
+    const tbody = document.getElementById('maintenance-table-body');
+    if (allMaintenanceReports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun incident en cours.</td></tr>';
+        return;
+    }
 
-                let statusBadge = 'badge-gray';
-                if (report.status === 'En cours') statusBadge = 'badge-warning';
-                if (report.status === 'Terminé') statusBadge = 'badge-success';
+    tbody.innerHTML = allMaintenanceReports.map(report => {
+        let priorityBadge = 'badge-gray';
+        if (report.priority === 'Haute') priorityBadge = 'badge-warning';
+        if (report.priority === 'Critique') priorityBadge = 'badge-danger';
+        
+        let statusBadge = 'badge-gray';
+        if (report.status === 'En cours') statusBadge = 'badge-warning';
+        if (report.status === 'Terminé') statusBadge = 'badge-success';
 
-                let assignedToName = 'Non assigné';
-                if (report.assignedTo) {
-                    const tech = allCrewMembers.find(m => m._id === report.assignedTo);
-                    assignedToName = tech ? tech.name : 'Inconnu';
-                }
+        // ✅ RECHERCHE SÉCURISÉE DU NOM DU TECHNICIEN
+        let assignedToName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+        
+        // On cherche le nom via l'ID stocké dans `assignedToName` ou `assignedTo`
+        if (report.assignedToName) {
+            assignedToName = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
+        } else if (report.assignedTo) {
+            // Fallback si le nom n'a pas été stocké, on cherche dans la liste
+            const tech = allCrewMembers.find(m => m._id === report.assignedTo);
+            assignedToName = tech ? `<strong style="color: var(--primary);">${tech.name}</strong>` : '<span style="color: #ef5350;">Technicien introuvable</span>';
+        }
 
-                return `
+        return `
             <tr>
                 <td class="font-bold font-mono">${report.busIdentifier}</td>
                 <td>${report.description}</td>
@@ -6476,12 +6491,11 @@
                 <td><span class="badge ${statusBadge}">${report.status}</span></td>
                 <td>${assignedToName}</td>
                 <td>${new Date(report.reportedAt).toLocaleDateString('fr-FR')}</td>
-                <td><button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Détails</button></td>
+                <td><button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button></td>
             </tr>
         `;
-            }).join('');
-        }
-
+    }).join('');
+}
 
 
 
