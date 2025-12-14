@@ -15,6 +15,10 @@
 
     <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    <!-- Librairie pour générer les PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Librairie pour les QR Codes (si pas déjà présente) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 
     <style>
         /* ============================================
@@ -5037,6 +5041,9 @@
         /**
  * Affiche le tableau du personnel (Avec Agence)
  */
+/**
+ * Affiche le tableau du personnel (Avec Photo, Agence et Bouton Badge)
+ */
 function renderCrewTable(crewMembers) {
     const tbody = document.getElementById('crew-body');
 
@@ -5077,23 +5084,39 @@ function renderCrewTable(crewMembers) {
             agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
         }
 
+        // ✅ Gestion de la photo de profil
+        const photoHTML = member.photo 
+            ? `<img src="${member.photo}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dark-border);">`
+            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: var(--dark-elevated); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 1.2em;">👤</div>`;
+
         return `
             <tr>
                 <td class="font-mono font-bold" style="color: var(--primary);">${member.matricule || 'N/A'}</td>
-                <td><strong>${member.name}</strong></td>
+                
+                <!-- ✅ Colonne Nom avec Photo -->
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${photoHTML}
+                        <strong>${member.name}</strong>
+                    </div>
+                </td>
+
                 <td>${roleIcons[member.role] || ''} ${member.role}</td>
                 
-                <!-- ✅ Colonne Agence -->
                 <td>${agencyDisplay}</td>
                 
                 <td class="text-sm">${member.phone || '-'}</td>
                 <td class="font-bold">${formatPrice(member.totalKm || 0)} km</td>
                 <td>${member.totalTrips || 0}</td>
                 <td>${statusBadges[member.status] || member.status}</td>
+                
                 <td class="actions-cell">
+                    <!-- ✅ Nouveau bouton Badge -->
+                    <button class="btn btn-icon btn-ghost" onclick="generateBadge('${member._id}')" title="Imprimer Badge">🪪</button>
+                    
                     <button class="btn btn-icon btn-ghost" onclick="viewCrewDetails('${member._id}')" title="Voir détails">👁️</button>
                     <button class="btn btn-icon btn-ghost" onclick="openEditMemberModal('${member._id}')" title="Modifier">✏️</button>
-                    <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}', '${member.name}')" title="Désactiver">🗑️</button>
+                    <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}')" title="Désactiver">🗑️</button>
                 </td>
             </tr>
         `;
@@ -5215,45 +5238,55 @@ async function openEditMemberModal(memberId) {
     const modalBody = document.getElementById('modal-body');
 
     modalTitle.textContent = "Ajouter un membre du personnel";
-
-    // On prépare les options d'agences
     const agencyOptions = await getAgencyOptionsHTML();
 
     modalBody.innerHTML = `
         <form id="add-crew-form">
+            <!-- ✅ NOUVELLE SECTION PHOTO -->
+            <div style="display: flex; gap: 20px; align-items: start; margin-bottom: 20px;">
+                <div style="flex-shrink: 0; text-align: center;">
+                    <div id="photo-preview" style="width: 100px; height: 100px; background: var(--dark-elevated); border: 2px dashed var(--dark-border); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 10px;">
+                        <span style="font-size: 2rem;">👤</span>
+                    </div>
+                    <label class="btn btn-sm btn-ghost" style="cursor: pointer;">
+                        📷 Photo
+                        <input type="file" id="crew-photo" accept="image/*" style="display: none;" onchange="previewPhoto(this)">
+                    </label>
+                </div>
+                
+                <div class="form-grid" style="flex-grow: 1; margin-bottom: 0;">
+                    <div class="form-group">
+                        <label for="crew-name" class="form-label">Nom complet *</label>
+                        <input type="text" id="crew-name" class="form-control" placeholder="Ex: Jean Mobembo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="crew-role" class="form-label">Poste *</label>
+                        <select id="crew-role" class="form-control" required>
+                            <option value="">-- Choisir --</option>
+                            <option value="Chauffeur">🚗 Chauffeur</option>
+                            <option value="Contrôleur">🎫 Contrôleur</option>
+                            <option value="Mécanicien">🔧 Mécanicien</option>
+                            <option value="Électricien">⚡ Électricien Auto</option>
+                            <option value="Agent de réservation">🎟️ Agent de réservation</option>
+                            <option value="Manager">💼 Manager Global</option>
+                            <option value="Manager d'Agence">🏢 Manager d'Agence</option>
+                            <option value="Super Admin">👑 Super Admin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-grid">
-                <div class="form-group">
-                    <label for="crew-name" class="form-label">Nom complet *</label>
-                    <input type="text" id="crew-name" class="form-control" placeholder="Ex: Jean Mobembo" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="crew-role" class="form-label">Poste *</label>
-                    <select id="crew-role" class="form-control" required>
-                        <option value="">-- Choisir --</option>
-                        <option value="Chauffeur">🚗 Chauffeur</option>
-                        <option value="Contrôleur">🎫 Contrôleur</option>
-                        <option value="Mécanicien">🔧 Mécanicien</option>
-                        <option value="Électricien">⚡ Électricien Auto</option>
-                        <option value="Agent de réservation">🎟️ Agent de réservation</option>
-                        <option value="Manager">💼 Manager Global</option>
-                        <option value="Manager d'Agence">🏢 Manager d'Agence</option>
-                        <option value="Super Admin">👑 Super Admin</option>
-                    </select>
-                </div>
-
                 <div class="form-group">
                     <label for="crew-agency" class="form-label">Agence d'affectation</label>
                     <select id="crew-agency" class="form-control">
                         ${agencyOptions}
                     </select>
                 </div>
-
                 <div class="form-group">
                     <label for="crew-phone" class="form-label">Téléphone</label>
                     <input type="tel" id="crew-phone" class="form-control" placeholder="+242...">
                 </div>
-
                 <div class="form-group">
                     <label for="crew-status" class="form-label">Statut *</label>
                     <select id="crew-status" class="form-control" required>
@@ -5264,7 +5297,7 @@ async function openEditMemberModal(memberId) {
             </div>
 
             <hr style="border-color: var(--dark-border); margin: 1.5rem 0;">
-            <h4 style="color: var(--primary); margin-bottom: 1rem;">Connexion (Optionnel pour Chauffeurs)</h4>
+            <h4 style="color: var(--primary); margin-bottom: 1rem;">Connexion (Optionnel)</h4>
 
             <div class="form-grid">
                 <div class="form-group">
@@ -5282,13 +5315,6 @@ async function openEditMemberModal(memberId) {
                 <div id="permissions-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
             </div>
 
-
-            <div class="form-group form-group-full" style="margin-top: 1rem; padding: 1rem; background: rgba(115, 215, 0, 0.1); border-radius: 8px;">
-                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">
-                    💡 <strong>Info :</strong> Le matricule sera généré automatiquement (ex: CH-001, CT-001, TECH-001)
-                </p>
-            </div>
-
             <div style="text-align: right; margin-top: 1.5rem;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Annuler</button>
                 <button type="submit" class="btn btn-primary">💾 Ajouter</button>
@@ -5300,67 +5326,152 @@ async function openEditMemberModal(memberId) {
     document.getElementById('add-crew-form').addEventListener('submit', handleAddCrew);
     document.getElementById('details-modal').classList.add('active');
 }
+
+// Fonction utilitaire pour la prévisualisation
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('photo-preview');
+            preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
         /**
          * Gère l'ajout d'un membre
          */
         // DANS admin/index.html, REMPLACEZ la fonction handleAddCrew
 
         async function handleAddCrew(e) {
-            e.preventDefault();
+    e.preventDefault();
 
-            // ========================================================
-            // ✅ DÉBUT DE LA MISE À JOUR
-            // ========================================================
+    // 1. Gestion de la photo
+    const photoInput = document.getElementById('crew-photo');
+    let photoBase64 = null;
 
-            // Récupérer les permissions cochées dans le conteneur
-            const permissions = Array.from(document.querySelectorAll('#permissions-container input[name="permission"]:checked'))
-                .map(checkbox => checkbox.value);
-
-            const agencyId = document.getElementById('crew-agency').value;
-
-            // On récupère toutes les valeurs du formulaire, y compris les nouvelles
-            const newMember = {
-                name: document.getElementById('crew-name').value.trim(),
-                role: document.getElementById('crew-role').value,
-                phone: document.getElementById('crew-phone').value.trim(),
-                status: document.getElementById('crew-status').value,
-                username: document.getElementById('crew-username').value.trim(),
-                password: document.getElementById('crew-password').value, // On ne trim() pas le mot de passe
-                agencyId: agencyId || null, // ✅ On l'ajoute à l'objet envoyé
-                permissions: permissions
-            };
-
-            // Ajout de validations côté client pour une meilleure expérience
-            if (!newMember.name || !newMember.role || !newMember.username || !newMember.password) {
-                showNotification("Veuillez remplir tous les champs obligatoires (*).", "warning");
-                return;
-            }
-
-            if (newMember.password.length < 6) {
-                showNotification("Le mot de passe doit contenir au moins 6 caractères.", "warning");
-                return;
-            }
-
-            // ========================================================
-            // ✅ FIN DE LA MISE À JOUR
-            // ========================================================
-
-            try {
-                // L'appel API reste le même, mais on envoie maintenant l'objet 'newMember' enrichi
-                const data = await apiCall('/admin/crew', 'POST', newMember);
-
-                if (data && data.success) {
-                    showNotification(data.message || "Utilisateur créé avec succès !", 'success');
-                    closeModal();
-                    loadAllCrew(); // Recharger la liste
-                }
-                // Note: la fonction apiCall gère déjà l'affichage des erreurs du serveur
-
-            } catch (error) {
-                console.error('❌ Erreur ajout membre:', error);
-                showNotification('Erreur lors de l\'ajout', 'error');
-            }
+    if (photoInput.files && photoInput.files[0]) {
+        // Petite fonction pour convertir en promesse
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+        
+        try {
+            photoBase64 = await toBase64(photoInput.files[0]);
+        } catch (err) {
+            console.error("Erreur conversion photo:", err);
         }
+    }
+
+    // 2. Le reste est identique, on ajoute juste le champ 'photo'
+    const permissions = Array.from(document.querySelectorAll('#permissions-container input:checked')).map(cb => cb.value);
+    const agencyId = document.getElementById('crew-agency').value;
+
+    const newMember = {
+        name: document.getElementById('crew-name').value.trim(),
+        role: document.getElementById('crew-role').value,
+        phone: document.getElementById('crew-phone').value.trim(),
+        status: document.getElementById('crew-status').value,
+        username: document.getElementById('crew-username').value.trim(),
+        password: document.getElementById('crew-password').value,
+        agencyId: agencyId || null,
+        permissions: permissions,
+        photo: photoBase64 // ✅ On envoie la photo encodée
+    };
+
+    if (!newMember.username || !newMember.password) {
+        showNotification("Login et mot de passe requis.", "warning");
+        return;
+    }
+
+    // Le backend recevra la chaîne base64 et la stockera directement
+    const data = await apiCall('/admin/crew', 'POST', newMember);
+    if (data && data.success) {
+        showNotification("Membre ajouté !", 'success');
+        closeModal();
+        loadAllCrew();
+    }
+}
+
+
+
+
+/**
+ * Génère et télécharge le badge d'un employé
+ */
+async function generateBadge(memberId) {
+    const member = allCrewMembers.find(m => m._id === memberId);
+    if (!member) return;
+
+    showNotification("Génération du badge...", "info");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [54, 86] // Format carte de crédit (CR-80) standard
+    });
+
+    // --- Design du Badge ---
+    
+    // Fond
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, 54, 86, 'F');
+    
+    // En-tête (Couleur verte En-Bus)
+    doc.setFillColor(115, 215, 0); 
+    doc.rect(0, 0, 54, 15, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("EN-BUS", 27, 10, { align: "center" });
+
+    // Photo
+    if (member.photo) {
+        try {
+            doc.addImage(member.photo, 'JPEG', 12, 20, 30, 30); // x, y, w, h
+        } catch (e) { console.warn("Erreur image", e); }
+    } else {
+        // Cadre vide si pas de photo
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(12, 20, 30, 30);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("No Photo", 27, 35, { align: "center" });
+    }
+
+    // Infos Employé
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(member.name, 27, 55, { align: "center", maxWidth: 50 });
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(member.role.toUpperCase(), 27, 60, { align: "center" });
+    
+    doc.setFont("courier", "bold");
+    doc.text(member.matricule || "N/A", 27, 65, { align: "center" });
+
+    // QR Code
+    // Le QR contient l'ID unique de l'employé pour le scan
+    const qrData = member.matricule || member._id; 
+    
+    try {
+        const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
+        doc.addImage(qrUrl, 'PNG', 17, 68, 20, 20);
+    } catch (err) {
+        console.error("Erreur QR", err);
+    }
+
+    // Sauvegarde
+    doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
+    showNotification("Badge téléchargé !", "success");
+}
         /**
          * Ouvre la modale de modification
          */
