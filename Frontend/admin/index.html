@@ -8414,7 +8414,7 @@ async function deleteMaintenanceReport(reportId) {
                 renderScheduleGrid([], startOfWeek, employeesToDisplay);
             }
         }
-        async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
+async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
     const tbody = document.getElementById('schedule-body');
     if (!tbody) return;
     tbody.innerHTML = '<tr><td colspan="9" class="text-center">Chargement...</td></tr>';
@@ -8428,27 +8428,16 @@ async function deleteMaintenanceReport(reportId) {
         tbody.innerHTML = '<tr><td colspan="9" class="text-center">Aucun employé trouvé.</td></tr>';
         return;
     }
-
-    // Calcul des stats hebdomadaires
-    const startStr = startOfWeek.toISOString().split('T')[0];
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    const endStr = endOfWeek.toISOString().split('T')[0];
-
     
-    const weeklyStatsData = await apiCall(`/admin/attendance/week-stats?start=${startStr}&end=${endStr}`);
-    const weeklyStats = weeklyStatsData.success ? weeklyStatsData.stats : [];
-
     let tableHTML = '';
 
     employees.forEach(member => {
-        let agencyText = '';
-        if (member.agencyName) {
-            agencyText = `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`;
-        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
-            agencyText = `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`;
-        }
-
+        let agencyText = member.agencyName 
+            ? `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`
+            : (member.role === 'Super Admin' || member.role === 'Manager') 
+                ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`
+                : '';
+        
         let rowHTML = `
             <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
@@ -8457,45 +8446,56 @@ async function deleteMaintenanceReport(reportId) {
                     ${agencyText}
                 </td>
         `;
+
+        // ✅ CALCUL DES HEURES DIRECTEMENT ICI
+        let totalMinutesSemaine = 0;
         
-        for(let i=0; i<7; i++) {
+        for (let i = 0; i < 7; i++) {
             const currentDay = new Date(startOfWeek);
             currentDay.setDate(currentDay.getDate() + i);
             const dateStr = currentDay.toISOString().split('T')[0];
 
             const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
             
-            let cellContent = items.map(item => {
+            let cellContent = '';
+            items.forEach(item => {
+                // Ajout au total si c'est du travail
+                if (item.type === 'Travail' || item.type === 'Voyage' || item.type === 'Heures_Sup' || item.type === 'Astreinte') {
+                    const [h1, m1] = item.startTime.split(':').map(Number);
+                    const [h2, m2] = item.endTime.split(':').map(Number);
+                    const start = h1 * 60 + m1;
+                    const end = h2 * 60 + m2;
+                    if (end > start) {
+                        totalMinutesSemaine += (end - start);
+                    }
+                }
+
+                // ... (votre code d'affichage de la cellule)
                 const typeClass = (item.type || '').replace(/\s+/g, '_');
                 const icon = {'Voyage':'🚌', 'Astreinte':'📞', 'Heures_Sup':'⚡', 'Congé':'🏖️'}[typeClass] || '';
-                return `
+                cellContent += `
                     <div class="schedule-item type-${typeClass}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
-                        <div style="font-weight:700; font-size:0.85em; margin-bottom:2px;">${item.startTime} - ${item.endTime}</div>
-                        <div style="font-size:0.8em; opacity:0.9;">${icon}${item.note || item.type}</div>
+                        <div style="font-weight:700;">${item.startTime} - ${item.endTime}</div>
+                        <div style="font-size:0.8em;">${icon}${item.note || item.type}</div>
                     </div>
                 `;
-            }).join('');
+            });
 
             cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')">+</div>`;
             rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
         }
 
-        // Calcul des heures
-        const stats = weeklyStats.find(s => s._id === member._id);
-        let hoursDisplay = '0h 00m';
-        if (stats && stats.totalWorkMinutes) {
-            const totalH = Math.floor(stats.totalWorkMinutes / 60);
-            const totalM = stats.totalWorkMinutes % 60;
-            hoursDisplay = `${totalH}h ${String(totalM).padStart(2,'0')}m`;
-        }
+        // Affichage des heures calculées
+        const totalH = Math.floor(totalMinutesSemaine / 60);
+        const totalM = totalMinutesSemaine % 60;
+        const hoursDisplay = `<strong style="font-size: 1.1em;">${totalH}h ${String(totalM).padStart(2,'0')}m</strong>`;
         
-        rowHTML += `<td style="text-align: center; vertical-align: middle; font-weight: bold;">${hoursDisplay}</td></tr>`;
+        rowHTML += `<td style="text-align: center; vertical-align: middle;">${hoursDisplay}</td></tr>`;
         tableHTML += rowHTML;
     });
 
     tbody.innerHTML = tableHTML;
 }
-
         // Fonction utilitaire Date (Standard ISO)
         function getDateOfISOWeek(w, y) {
             var simple = new Date(y, 0, 1 + (w - 1) * 7);
