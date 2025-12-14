@@ -2036,6 +2036,7 @@
                     </li>
 
 
+
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-tab="attendance">
                             <span class="nav-icon">⏱️</span>
@@ -2045,7 +2046,12 @@
 
 
 
-
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="maintenance">
+                            <span class="nav-icon">🛠️</span>
+                            <span>Maintenance</span>
+                        </a>
+                    </li>
 
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-tab="notifications">
@@ -3102,6 +3108,40 @@
                     <tbody id="schedule-body">
                         <!-- Rempli par JS -->
                     </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <div id="tab-maintenance" class="tab-content">
+        <div class="page-header">
+            <h1 class="page-title">Suivi de la Maintenance</h1>
+            <p class="page-subtitle">Gérez les incidents et l'état de la flotte.</p>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Incidents en cours</h2>
+                <button class="btn btn-danger" onclick="openReportIncidentModal()">🚨 Signaler un incident</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bus</th>
+                            <th>Incident</th>
+                            <th>Priorité</th>
+                            <th>Statut</th>
+                            <th>Assigné à</th>
+                            <th>Signalé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="maintenance-table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -5688,94 +5728,94 @@
         /**
  * Génère et télécharge le badge d'un employé (Avec récupération de la photo)
  */
-async function generateBadge(memberId) {
-    showNotification("Récupération des données du badge...", "info");
+        async function generateBadge(memberId) {
+            showNotification("Récupération des données du badge...", "info");
 
-    try {
-        // 1. On appelle l'API de détails pour avoir la photo (car la liste globale ne l'a pas)
-        const data = await apiCall(`/admin/crew/${memberId}`);
-        
-        if (!data || !data.success || !data.member) {
-            showNotification("Erreur lors de la récupération des données.", "error");
-            return;
-        }
-
-        const member = data.member; // Ce membre contient la photo !
-
-        showNotification("Génération du PDF...", "info");
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: [54, 86]
-        });
-
-        // --- Design du Badge ---
-        
-        // Fond Blanc
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 0, 54, 86, 'F');
-        
-        // En-tête Vert
-        doc.setFillColor(115, 215, 0); 
-        doc.rect(0, 0, 54, 15, 'F');
-        
-        // Logo
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("EN-BUS", 27, 10, { align: "center" });
-
-        // Photo
-        if (member.photo) {
             try {
-                // On ajoute l'image directement depuis les données reçues
-                doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28); 
-                doc.setDrawColor(200, 200, 200);
-                doc.rect(13, 20, 28, 28);
-            } catch (e) { console.warn("Erreur image", e); }
-        } else {
-            doc.setDrawColor(200, 200, 200);
-            doc.rect(13, 20, 28, 28);
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text("No Photo", 27, 35, { align: "center" });
+                // 1. On appelle l'API de détails pour avoir la photo (car la liste globale ne l'a pas)
+                const data = await apiCall(`/admin/crew/${memberId}`);
+
+                if (!data || !data.success || !data.member) {
+                    showNotification("Erreur lors de la récupération des données.", "error");
+                    return;
+                }
+
+                const member = data.member; // Ce membre contient la photo !
+
+                showNotification("Génération du PDF...", "info");
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [54, 86]
+                });
+
+                // --- Design du Badge ---
+
+                // Fond Blanc
+                doc.setFillColor(255, 255, 255);
+                doc.rect(0, 0, 54, 86, 'F');
+
+                // En-tête Vert
+                doc.setFillColor(115, 215, 0);
+                doc.rect(0, 0, 54, 15, 'F');
+
+                // Logo
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("EN-BUS", 27, 10, { align: "center" });
+
+                // Photo
+                if (member.photo) {
+                    try {
+                        // On ajoute l'image directement depuis les données reçues
+                        doc.addImage(member.photo, 'JPEG', 13, 20, 28, 28);
+                        doc.setDrawColor(200, 200, 200);
+                        doc.rect(13, 20, 28, 28);
+                    } catch (e) { console.warn("Erreur image", e); }
+                } else {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.rect(13, 20, 28, 28);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text("No Photo", 27, 35, { align: "center" });
+                }
+
+                // Nom
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
+                doc.text(displayName, 27, 54, { align: "center" });
+
+                // Rôle
+                doc.setTextColor(80, 80, 80);
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
+
+                // Matricule
+                doc.setTextColor(0, 0, 0);
+                doc.setFont("courier", "bold");
+                doc.setFontSize(10);
+                doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
+
+                // QR Code
+                const qrData = member.matricule || member._id;
+                const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
+                doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
+
+                // Sauvegarde
+                doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
+                showNotification("Badge téléchargé !", "success");
+
+            } catch (error) {
+                console.error("Erreur badge:", error);
+                showNotification("Erreur lors de la génération.", "error");
+            }
         }
-
-        // Nom
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        let displayName = member.name.length > 18 ? member.name.substring(0, 16) + '...' : member.name;
-        doc.text(displayName, 27, 54, { align: "center" });
-
-        // Rôle
-        doc.setTextColor(80, 80, 80);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text(member.role.toUpperCase(), 27, 59, { align: "center" });
-        
-        // Matricule
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("courier", "bold");
-        doc.setFontSize(10);
-        doc.text(member.matricule || "N/A", 27, 64, { align: "center" });
-
-        // QR Code
-        const qrData = member.matricule || member._id; 
-        const qrUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 0 });
-        doc.addImage(qrUrl, 'PNG', 18, 66, 18, 18);
-
-        // Sauvegarde
-        doc.save(`Badge_${member.name.replace(/\s+/g, '_')}.pdf`);
-        showNotification("Badge téléchargé !", "success");
-
-    } catch (error) {
-        console.error("Erreur badge:", error);
-        showNotification("Erreur lors de la génération.", "error");
-    }
-}
         /**
          * Ouvre la modale de modification
          */
@@ -6323,6 +6363,11 @@ async function generateBadge(memberId) {
                 case 'attendance':
                     loadAttendanceToday();
                     break;
+                // ✅ AJOUTEZ CE BLOC
+                case 'maintenance':
+                    loadMaintenanceReports();
+                    break;
+
 
                 default:
                     if (tabName !== 'settings') {
@@ -6382,6 +6427,99 @@ async function generateBadge(memberId) {
                     displayCrewStats(data.stats);
                 }
             }
+        }
+
+
+
+
+
+
+        // --- Fonctions de Maintenance ---
+
+        async function loadMaintenanceReports() {
+            const data = await apiCall('/admin/maintenance');
+            if (!data || !data.success) return;
+
+            const tbody = document.getElementById('maintenance-table-body');
+            if (data.reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Aucun incident en cours.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.reports.map(report => {
+                let priorityBadge = 'badge-gray';
+                if (report.priority === 'Haute') priorityBadge = 'badge-warning';
+                if (report.priority === 'Critique') priorityBadge = 'badge-danger';
+
+                let statusBadge = 'badge-gray';
+                if (report.status === 'En cours') statusBadge = 'badge-warning';
+                if (report.status === 'Terminé') statusBadge = 'badge-success';
+
+                let assignedToName = 'Non assigné';
+                if (report.assignedTo) {
+                    const tech = allCrewMembers.find(m => m._id === report.assignedTo);
+                    assignedToName = tech ? tech.name : 'Inconnu';
+                }
+
+                return `
+            <tr>
+                <td class="font-bold font-mono">${report.busIdentifier}</td>
+                <td>${report.description}</td>
+                <td><span class="badge ${priorityBadge}">${report.priority}</span></td>
+                <td><span class="badge ${statusBadge}">${report.status}</span></td>
+                <td>${assignedToName}</td>
+                <td>${new Date(report.reportedAt).toLocaleDateString('fr-FR')}</td>
+                <td><button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Détails</button></td>
+            </tr>
+        `;
+            }).join('');
+        }
+
+        function openReportIncidentModal() {
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = "Signaler un nouvel incident";
+            modalBody.innerHTML = `
+        <form id="incident-form">
+            <div class="form-group">
+                <label>N° du Bus *</label>
+                <input type="text" id="incident-bus-id" class="form-control" required placeholder="Ex: B45">
+            </div>
+            <div class="form-group">
+                <label>Description de l'incident *</label>
+                <textarea id="incident-desc" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Priorité *</label>
+                <select id="incident-priority" class="form-control">
+                    <option value="Basse">Basse</option>
+                    <option value="Moyenne">Moyenne</option>
+                    <option value="Haute">Haute</option>
+                    <option value="Critique">Critique (Bus immobilisé)</option>
+                </select>
+            </div>
+            <div class="form-group" style="text-align: right;">
+                <button type="submit" class="btn btn-danger">Valider l'incident</button>
+            </div>
+        </form>
+    `;
+            document.getElementById('details-modal').classList.add('active');
+
+            document.getElementById('incident-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const payload = {
+                    busIdentifier: document.getElementById('incident-bus-id').value,
+                    description: document.getElementById('incident-desc').value,
+                    priority: document.getElementById('incident-priority').value,
+                };
+                const result = await apiCall('/api/admin/maintenance', 'POST', payload);
+                if (result && result.success) {
+                    showNotification("Incident signalé.", "success");
+                    closeModal();
+                    loadMaintenanceReports();
+                }
+            });
         }
         // ============================================
         // 🎯 INITIALISATION & ÉVÉNEMENTS
@@ -8688,70 +8826,70 @@ async function generateBadge(memberId) {
         // Charger les données du jour
         // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
         // Charger les données du jour (VERSION FINALE)
-// Charger les données du jour (Version Simplifiée pour l'affichage de l'heure)
-async function loadAttendanceToday() {
-    const data = await apiCall('/admin/attendance/today');
-    
-    if (!data || !data.success) {
-        console.error("Impossible de charger les données de pointage.");
-        return;
-    }
+        // Charger les données du jour (Version Simplifiée pour l'affichage de l'heure)
+        async function loadAttendanceToday() {
+            const data = await apiCall('/admin/attendance/today');
 
-    // Mise à jour des stats et anomalies (inchangé)
-    document.getElementById('stat-present-now').textContent = data.stats.present || 0;
-    document.getElementById('stat-completed-today').textContent = data.stats.completed || 0;
-    const alertsContainer = document.getElementById('attendance-alerts');
-    const alertsList = document.getElementById('anomalies-list');
-    if (data.anomalies && data.anomalies.length > 0) {
-        alertsContainer.style.display = 'block';
-        alertsList.innerHTML = data.anomalies.map(/* votre code anomalies ici */).join('');
-    } else {
-        alertsContainer.style.display = 'none';
-    }
+            if (!data || !data.success) {
+                console.error("Impossible de charger les données de pointage.");
+                return;
+            }
 
-    // --- TABLEAU DES PRÉSENCES ---
-    const tbody = document.getElementById('attendance-table-body');
-    if (data.records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage enregistré aujourd\'hui.</td></tr>';
-        return;
-    }
+            // Mise à jour des stats et anomalies (inchangé)
+            document.getElementById('stat-present-now').textContent = data.stats.present || 0;
+            document.getElementById('stat-completed-today').textContent = data.stats.completed || 0;
+            const alertsContainer = document.getElementById('attendance-alerts');
+            const alertsList = document.getElementById('anomalies-list');
+            if (data.anomalies && data.anomalies.length > 0) {
+                alertsContainer.style.display = 'block';
+                alertsList.innerHTML = data.anomalies.map(/* votre code anomalies ici */).join('');
+            } else {
+                alertsContainer.style.display = 'none';
+            }
 
-    tbody.innerHTML = data.records.map(r => {
-        const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
+            // --- TABLEAU DES PRÉSENCES ---
+            const tbody = document.getElementById('attendance-table-body');
+            if (data.records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage enregistré aujourd\'hui.</td></tr>';
+                return;
+            }
 
-        // --- Début du mapping des statuts (inchangé) ---
-        let statusBadge = '';
-        let actionText = `Arrivée à ${checkInTime}`;
-        if (r.status === 'working' || r.status === 'present') {
-            statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
-        } else if (r.status === 'on_break') {
-            statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
-            const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-            actionText = `Parti en pause à ${lastAction}`;
-        } else if (r.status === 'completed') {
-            statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
-            actionText = `Départ à ${checkOutTime}`;
-        }
-        
-        let durationDisplay = '-';
-        if (r.durationMinutes > 0) {
-            const h = Math.floor(r.durationMinutes / 60);
-            const m = r.durationMinutes % 60;
-            durationDisplay = `${h}h ${String(m).padStart(2,'0')}m`;
-        } else if (r.status === 'working' || r.status === 'on_break') {
-            const now = new Date();
-            const elapsed = Math.max(0, Math.floor((now - new Date(r.checkIn)) / 60000) - (r.totalBreakMinutes || 0));
-            const h = Math.floor(elapsed / 60);
-            const m = elapsed % 60;
-            durationDisplay = `${h}h ${String(m).padStart(2,'0')}m (en cours)`;
-        }
+            tbody.innerHTML = data.records.map(r => {
+                const checkInTime = new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
 
-        const agencyDisplay = r.agencyName 
-            ? `<span style="color: var(--accent);">${r.agencyName}</span>` 
-            : '<span style="color: var(--text-muted);">Siège/Global</span>';
+                // --- Début du mapping des statuts (inchangé) ---
+                let statusBadge = '';
+                let actionText = `Arrivée à ${checkInTime}`;
+                if (r.status === 'working' || r.status === 'present') {
+                    statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+                } else if (r.status === 'on_break') {
+                    statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                    const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                    actionText = `Parti en pause à ${lastAction}`;
+                } else if (r.status === 'completed') {
+                    statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                    actionText = `Départ à ${checkOutTime}`;
+                }
 
-        return `
+                let durationDisplay = '-';
+                if (r.durationMinutes > 0) {
+                    const h = Math.floor(r.durationMinutes / 60);
+                    const m = r.durationMinutes % 60;
+                    durationDisplay = `${h}h ${String(m).padStart(2, '0')}m`;
+                } else if (r.status === 'working' || r.status === 'on_break') {
+                    const now = new Date();
+                    const elapsed = Math.max(0, Math.floor((now - new Date(r.checkIn)) / 60000) - (r.totalBreakMinutes || 0));
+                    const h = Math.floor(elapsed / 60);
+                    const m = elapsed % 60;
+                    durationDisplay = `${h}h ${String(m).padStart(2, '0')}m (en cours)`;
+                }
+
+                const agencyDisplay = r.agencyName
+                    ? `<span style="color: var(--accent);">${r.agencyName}</span>`
+                    : '<span style="color: var(--text-muted);">Siège/Global</span>';
+
+                return `
             <tr>
                 <!-- ✅ CORRECTION ICI : On revient à l'affichage simple -->
                 <td class="font-mono" style="font-size: 1.1em; font-weight: bold;">${checkInTime}</td>
@@ -8763,8 +8901,8 @@ async function loadAttendanceToday() {
                 <td class="font-bold font-mono">${durationDisplay}</td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
         // Activer/Désactiver le scanner
         function toggleScanner() {
             const container = document.getElementById('scanner-container');
@@ -8848,22 +8986,22 @@ async function loadAttendanceToday() {
 
 
         // ============================================
-// 🕵️ FONCTION DE DÉBOGAGE (TEMPORAIRE)
-// ============================================
-async function debugScheduleData() {
-    console.log("--- DÉBOGAGE DU PLANNING ---");
-    console.log("On demande au serveur TOUT le contenu de la collection 'schedules'...");
-    
-    const data = await apiCall('/admin/debug/schedules');
-    
-    if (data && data.success) {
-        console.log("✅ Données reçues ! Voici ce qu'il y a dans la base :");
-        // Affiche un tableau clair dans la console
-        console.table(data.schedules); 
-    } else {
-        console.error("❌ Impossible de récupérer les données de débogage.");
-    }
-}
+        // 🕵️ FONCTION DE DÉBOGAGE (TEMPORAIRE)
+        // ============================================
+        async function debugScheduleData() {
+            console.log("--- DÉBOGAGE DU PLANNING ---");
+            console.log("On demande au serveur TOUT le contenu de la collection 'schedules'...");
+
+            const data = await apiCall('/admin/debug/schedules');
+
+            if (data && data.success) {
+                console.log("✅ Données reçues ! Voici ce qu'il y a dans la base :");
+                // Affiche un tableau clair dans la console
+                console.table(data.schedules);
+            } else {
+                console.error("❌ Impossible de récupérer les données de débogage.");
+            }
+        }
     </script>
 
 
