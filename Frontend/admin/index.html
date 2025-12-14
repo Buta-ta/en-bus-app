@@ -8870,6 +8870,25 @@ async function loadAttendanceToday() {
         function onScanFailure(error) {
             // On ignore les erreurs de scan frame par frame (trop verbeux)
         }
+
+
+        // ============================================
+// 🕵️ FONCTION DE DÉBOGAGE (TEMPORAIRE)
+// ============================================
+async function debugScheduleData() {
+    console.log("--- DÉBOGAGE DU PLANNING ---");
+    console.log("On demande au serveur TOUT le contenu de la collection 'schedules'...");
+    
+    const data = await apiCall('/admin/debug/schedules');
+    
+    if (data && data.success) {
+        console.log("✅ Données reçues ! Voici ce qu'il y a dans la base :");
+        // Affiche un tableau clair dans la console
+        console.table(data.schedules); 
+    } else {
+        console.error("❌ Impossible de récupérer les données de débogage.");
+    }
+}
     </script>
 
 
@@ -8929,7 +8948,7 @@ async function loadAttendanceToday() {
 
 
 
-    
+
     <!-- ... (vos autres modales et scripts) ... -->
 
     <!-- ============================================
