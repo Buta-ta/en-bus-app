@@ -2042,22 +2042,45 @@ app.post("/api/admin/maintenance", authenticateToken, [
 });
 
 // [PATCH] Mettre à jour un rapport (statut, technicien, commentaire)
+// [PATCH] Mettre à jour un rapport (statut, technicien, commentaire)
 app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { status, assignedToId, comment } = req.body;
         const db = getDb();
 
-        if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID invalide" });
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "ID de rapport invalide" });
+        }
         
         const updates = { $set: { updatedAt: new Date() } };
         
-        if (status) updates.$set.status = status;
-        if (assignedToId) updates.$set.assignedTo = ObjectId.isValid(assignedToId) ? new ObjectId(assignedToId) : null;
-        if (comment) {
+        // Mise à jour du statut
+        if (status) {
+            updates.$set.status = status;
+        }
+        
+        // Mise à jour de l'assignation
+        if (assignedToId !== undefined) {
+            if (assignedToId && ObjectId.isValid(assignedToId)) {
+                const technician = await db.collection('crew').findOne({ _id: new ObjectId(assignedToId) });
+                if (technician) {
+                    updates.$set.assignedTo = technician._id;
+                    updates.$set.assignedToName = technician.name; // Stocker le nom pour un affichage facile
+                }
+            } else {
+                // Si l'ID est vide ou null, on désassigne
+                updates.$set.assignedTo = null;
+                updates.$set.assignedToName = null;
+            }
+        }
+        
+        // Ajout d'un commentaire
+        if (comment && comment.trim() !== '') {
             updates.$push = {
                 comments: {
-                    text: comment,
+                    _id: new ObjectId(), // ID unique pour le commentaire
+                    text: comment.trim(),
                     author: req.user.username,
                     date: new Date()
                 }
@@ -2066,11 +2089,14 @@ app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
 
         const result = await db.collection('maintenance_reports').updateOne({ _id: new ObjectId(id) }, updates);
         
-        if (result.matchedCount === 0) return res.status(404).json({ error: "Rapport introuvable" });
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: "Rapport de maintenance introuvable" });
+        }
         
-        res.json({ success: true, message: "Rapport mis à jour." });
+        res.json({ success: true, message: "Rapport mis à jour avec succès." });
 
     } catch (error) {
+        console.error("Erreur lors de la mise à jour du rapport de maintenance:", error);
         res.status(500).json({ error: "Erreur serveur." });
     }
 });
