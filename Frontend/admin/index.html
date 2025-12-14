@@ -2682,6 +2682,7 @@
                             <th>Matricule</th>
                             <th>Nom</th>
                             <th>Poste</th>
+                            <th>Agence</th> 
                             <th>Téléphone</th>
                             <th>Km</th>
                             <th>Trajets</th>
@@ -5031,65 +5032,71 @@
         /**
          * Affiche le tableau du personnel
          */
-        function renderCrewTable(crewMembers) {
-            const tbody = document.getElementById('crew-body');
+        /**
+ * Affiche le tableau du personnel (Avec Agence)
+ */
+function renderCrewTable(crewMembers) {
+    const tbody = document.getElementById('crew-body');
 
-            if (!tbody) {
-                console.error("❌ Élément 'crew-body' introuvable");
-                return;
-            }
+    if (!tbody) {
+        console.error("❌ Élément 'crew-body' introuvable");
+        return;
+    }
 
-            if (crewMembers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
-                return;
-            }
+    if (crewMembers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding: 3rem;">Aucun membre du personnel trouvé</td></tr>';
+        return;
+    }
 
-            tbody.innerHTML = crewMembers.map(member => {
-                const statusBadges = {
-                    'Actif': '<span class="badge badge-success">✅ Actif</span>',
-                    'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
-                    'Inactif': '<span class="badge badge-gray">❌ Inactif</span>'
-                };
+    tbody.innerHTML = crewMembers.map(member => {
+        const statusBadges = {
+            'Actif': '<span class="badge badge-success">✅ Actif</span>',
+            'En congé': '<span class="badge badge-warning">🏖️ En congé</span>',
+            'Inactif': '<span class="badge badge-gray">❌ Inactif</span>'
+        };
 
-                const roleIcons = {
-                    'Chauffeur': '🚗',
-                    'Contrôleur': '🎫',
-                    'Super Admin': '👑',
-                    'Manager': '💼',
-                    'Manager d\'Agence': '🏢',
-                    'Agent de réservation': '🎟️',
+        const roleIcons = {
+            'Chauffeur': '🚗',
+            'Contrôleur': '🎫',
+            'Super Admin': '👑',
+            'Manager': '💼',
+            'Manager d\'Agence': '🏢',
+            'Agent de réservation': '🎟️',
+            'Mécanicien': '🔧',
+            'Électricien': '⚡',
+            'Technicien': '🛠️'
+        };
 
-                    // ✅ AJOUT DES ICÔNES TECHNIQUES
-                    'Mécanicien': '🔧',
-                    'Électricien': '⚡',
-                    'Technicien': '🛠️'
-                };
+        // Gestion de l'affichage de l'agence
+        let agencyDisplay = '<span style="color: var(--text-muted); font-size: 0.85em;">-</span>';
+        if (member.agencyName) {
+            agencyDisplay = `<span style="color: var(--accent); font-weight: 600;">${member.agencyName}</span>`;
+        } else if (member.role === 'Super Admin' || member.role === 'Manager') {
+            agencyDisplay = '<span style="color: var(--text-muted);">Global</span>';
+        }
 
-                return `
+        return `
             <tr>
-                <td class="font-mono font-bold" style="color: var(--primary);">${member.matricule}</td>
+                <td class="font-mono font-bold" style="color: var(--primary);">${member.matricule || 'N/A'}</td>
                 <td><strong>${member.name}</strong></td>
                 <td>${roleIcons[member.role] || ''} ${member.role}</td>
-                <td class="text-sm">${member.phone}</td>
+                
+                <!-- ✅ Colonne Agence -->
+                <td>${agencyDisplay}</td>
+                
+                <td class="text-sm">${member.phone || '-'}</td>
                 <td class="font-bold">${formatPrice(member.totalKm || 0)} km</td>
                 <td>${member.totalTrips || 0}</td>
                 <td>${statusBadges[member.status] || member.status}</td>
                 <td class="actions-cell">
                     <button class="btn btn-icon btn-ghost" onclick="viewCrewDetails('${member._id}')" title="Voir détails">👁️</button>
-                    
-
-<button class="btn btn-icon btn-ghost" 
-    onclick="openEditMemberModal('${member._id}')" 
-    title="Modifier">
-    ✏️
-</button>
+                    <button class="btn btn-icon btn-ghost" onclick="openEditMemberModal('${member._id}')" title="Modifier">✏️</button>
                     <button class="btn btn-icon btn-danger" onclick="deactivateCrewMember('${member._id}', '${member.name}')" title="Désactiver">🗑️</button>
                 </td>
             </tr>
         `;
-            }).join('');
-        }
-
+    }).join('');
+}
 
         // ============================================
         // ✏️ MODIFIER UN MEMBRE (VERSION STYLÉE)
