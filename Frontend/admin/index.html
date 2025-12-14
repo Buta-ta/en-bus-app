@@ -7513,7 +7513,17 @@ let allAgencies = []; // Variable globale pour stocker les agences
 /**
  * Charge toutes les agences depuis le backend.
  */
+/**
+ * Charge toutes les agences (et le personnel nécessaire pour l'affichage)
+ */
 async function loadAllAgencies() {
+    // 1. On s'assure d'abord d'avoir la liste du personnel pour afficher les noms des managers
+    if (!allCrewMembers || allCrewMembers.length === 0) {
+        console.log("Chargement préventif du personnel pour les agences...");
+        await loadAllCrew();
+    }
+
+    // 2. Ensuite on charge les agences
     const data = await apiCall('/admin/agencies');
     if (data && data.success) {
         allAgencies = data.agencies;
@@ -7525,11 +7535,14 @@ async function loadAllAgencies() {
  * Affiche les agences dans le tableau HTML.
  * @param {Array} agencies - La liste des agences à afficher.
  */
+/**
+ * Affiche les agences dans le tableau HTML.
+ */
 function renderAgenciesTable(agencies) {
     const tbody = document.getElementById('agencies-table-body');
     if (!tbody) return;
 
-    if (agencies.length === 0) {
+    if (!agencies || agencies.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
         return;
     }
@@ -7539,8 +7552,22 @@ function renderAgenciesTable(agencies) {
             ? `<span class="badge badge-success">Actif</span>`
             : `<span class="badge badge-gray">Inactif</span>`;
 
-        // TODO: Remplacer "Non assigné" par le vrai nom du manager
-        const managerName = "Non assigné"; 
+        // ============================================================
+        // ✅ CORRECTION : RECHERCHE DYNAMIQUE DU NOM DU MANAGER
+        // ============================================================
+        let managerName = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+        
+        if (agency.managerId) {
+            // On cherche l'employé qui a cet ID dans la liste globale
+            const manager = allCrewMembers.find(m => m._id === agency.managerId);
+            if (manager) {
+                managerName = `<strong style="color: var(--primary);">${manager.name}</strong>`;
+            } else {
+                // Si l'ID existe mais qu'on ne trouve pas le membre (ex: supprimé)
+                managerName = '<span style="color: #ef5350;">Introuvable</span>';
+            }
+        }
+        // ============================================================
 
         return `
             <tr>
@@ -7549,7 +7576,7 @@ function renderAgenciesTable(agencies) {
                     <small class="text-muted">${agency.address || 'Adresse non spécifiée'}</small>
                 </td>
                 <td>${agency.city}</td>
-                <td>${managerName}</td>
+                <td>${managerName}</td> <!-- On affiche le nom trouvé -->
                 <td class="font-bold text-center">${agency.employeeCount || 0}</td>
                 <td>${statusBadge}</td>
                 <td class="actions-cell">
@@ -7560,7 +7587,6 @@ function renderAgenciesTable(agencies) {
         `;
     }).join('');
 }
-
 
 /**
  * Ouvre la modale pour créer ou modifier une agence.
