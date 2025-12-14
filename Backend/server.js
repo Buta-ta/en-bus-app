@@ -1867,32 +1867,88 @@ app.get("/api/admin/destinations", authenticateToken, async (req, res) => {
 
 
 // [GET] Récupérer les présences du jour (Tableau de bord)
+// [GET] Récupérer les présences du jour ET les anomalies
 app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayStr = today.toISOString().split('T')[0];
+        const now = new Date(); // Heure actuelle pour comparer
 
         const db = getDb();
+
+        // 1. Récupérer les scans du jour
         const records = await db.collection('attendance')
             .find({ date: todayStr })
-            .sort({ checkIn: -1 }) // Les plus récents en haut
+            .sort({ checkIn: -1 })
             .toArray();
 
-        // Calcul des stats
+        // 2. Récupérer le planning du jour (Ceux qui DOIVENT travailler)
+        // On exclut 'Repos' et 'Congé'
+        const schedules = await db.collection('schedules').find({
+            date: todayStr,
+            type: { $nin: ['Repos', 'Congé'] }
+        }).toArray();
+
+        // 3. Analyse des anomalies
+        const anomalies = [];
+
+        for (const schedule of schedules) {
+            // Est-ce que cette personne a pointé ?
+            const scan = records.find(r => r.crewId.toString() === schedule.crewId.toString());
+            
+            // Récupérer le nom (optimisation possible avec un $lookup mais simple ici)
+            const crewMember = await db.collection('crew').findOne({ _id: schedule.crewId });
+            const name = crewMember ? crewMember.name : 'Inconnu';
+
+            // Heure prévue de début
+            const [h, m] = schedule.startTime.split(':').map(Number);
+            const scheduledStart = new Date(today);
+            scheduledStart.setHours(h, m, 0, 0);
+
+            // CAS A : ABSENCE (Pas de scan alors que l'heure est passée de > 30min)
+            if (!scan) {
+                // Si l'heure actuelle est > heure début + 30min
+                if (now > new Date(scheduledStart.getTime() + 30*60000)) {
+                    anomalies.push({
+                        type: 'ABSENCE',
+                        crewName: name,
+                        expected: schedule.startTime,
+                        message: "N'a pas pointé (Retard > 30min ou Absence)"
+                    });
+                }
+            } 
+            // CAS B : RETARD (A pointé, mais après l'heure)
+            else {
+                const checkInTime = new Date(scan.checkIn);
+                // Marge de tolérance de 10 min
+                if (checkInTime > new Date(scheduledStart.getTime() + 10*60000)) {
+                    const diffMinutes = Math.floor((checkInTime - scheduledStart) / 60000);
+                    anomalies.push({
+                        type: 'RETARD',
+                        crewName: name,
+                        expected: schedule.startTime,
+                        actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
+                        message: `Arrivé avec ${diffMinutes} min de retard`
+                    });
+                }
+            }
+        }
+
+        // Stats mises à jour
         const stats = {
-            present: records.filter(r => r.status === 'present').length,
+            present: records.filter(r => r.status === 'present' || r.status === 'working').length,
             completed: records.filter(r => r.status === 'completed').length,
-            total: records.length
+            anomalies: anomalies.length
         };
 
-        res.json({ success: true, records, stats });
+        res.json({ success: true, records, anomalies, stats });
 
     } catch (error) {
+        console.error("Erreur attendance:", error);
         res.status(500).json({ error: "Erreur serveur" });
     }
 });
-
 
 
 // ============================================
