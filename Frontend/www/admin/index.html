@@ -2985,13 +2985,7 @@
 
 
 
-        // Ajoutez aussi l'écouteur sur le bouton de déconnexion du menu
-        document.addEventListener('DOMContentLoaded', () => {
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', logout);
-            }
-        });
+
 
 
 
@@ -5965,6 +5959,17 @@
                 setupNotificationFormListeners();
             }
             // ========================================================
+
+            // Initialiser le sélecteur de semaine du planning
+            const weekPicker = document.getElementById('schedule-week-picker');
+            if (weekPicker) {
+                const now = new Date();
+                // Fonction simple pour avoir YYYY-Www
+                const weekNum = getWeekNumber(now);
+                const year = now.getFullYear();
+                // Format requis par l'input type="week" : "2023-W45"
+                weekPicker.value = `${year}-W${String(weekNum).padStart(2, '0')}`;
+            }
         }
 
 
@@ -7473,43 +7478,43 @@
 
 
 
-// --- GESTION DES AGENCES ---
+        // --- GESTION DES AGENCES ---
 
-let allAgencies = []; // Variable globale pour stocker les agences
+        let allAgencies = []; // Variable globale pour stocker les agences
 
-/**
- * Charge toutes les agences depuis le backend.
- */
-async function loadAllAgencies() {
-    const data = await apiCall('/admin/agencies');
-    if (data && data.success) {
-        allAgencies = data.agencies;
-        renderAgenciesTable(allAgencies);
-    }
-}
+        /**
+         * Charge toutes les agences depuis le backend.
+         */
+        async function loadAllAgencies() {
+            const data = await apiCall('/admin/agencies');
+            if (data && data.success) {
+                allAgencies = data.agencies;
+                renderAgenciesTable(allAgencies);
+            }
+        }
 
-/**
- * Affiche les agences dans le tableau HTML.
- * @param {Array} agencies - La liste des agences à afficher.
- */
-function renderAgenciesTable(agencies) {
-    const tbody = document.getElementById('agencies-table-body');
-    if (!tbody) return;
+        /**
+         * Affiche les agences dans le tableau HTML.
+         * @param {Array} agencies - La liste des agences à afficher.
+         */
+        function renderAgenciesTable(agencies) {
+            const tbody = document.getElementById('agencies-table-body');
+            if (!tbody) return;
 
-    if (agencies.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
-        return;
-    }
+            if (agencies.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 2rem;">Aucune agence créée pour le moment.</td></tr>`;
+                return;
+            }
 
-    tbody.innerHTML = agencies.map(agency => {
-        const statusBadge = agency.status === 'active' 
-            ? `<span class="badge badge-success">Actif</span>`
-            : `<span class="badge badge-gray">Inactif</span>`;
+            tbody.innerHTML = agencies.map(agency => {
+                const statusBadge = agency.status === 'active'
+                    ? `<span class="badge badge-success">Actif</span>`
+                    : `<span class="badge badge-gray">Inactif</span>`;
 
-        // TODO: Remplacer "Non assigné" par le vrai nom du manager
-        const managerName = "Non assigné"; 
+                // TODO: Remplacer "Non assigné" par le vrai nom du manager
+                const managerName = "Non assigné";
 
-        return `
+                return `
             <tr>
                 <td>
                     <strong class="font-bold">${agency.name}</strong><br>
@@ -7525,35 +7530,35 @@ function renderAgenciesTable(agencies) {
                 </td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
 
-/**
- * Ouvre la modale pour créer ou modifier une agence.
- * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
- */
-function openAgencyModal(agencyId = null) {
-    if (agencyId) {
-        console.log("Ouverture de la modale pour MODIFIER l'agence :", agencyId);
-        // TODO: Logique de modification
-        alert("Fonctionnalité 'Modifier l'agence' à implémenter.");
-    } else {
-        console.log("Ouverture de la modale pour CRÉER une agence.");
-        // TODO: Logique de création
-        alert("Fonctionnalité 'Créer une agence' à implémenter.");
-    }
-}
+        /**
+         * Ouvre la modale pour créer ou modifier une agence.
+         * @param {string|null} agencyId - L'ID de l'agence à modifier, ou null pour en créer une nouvelle.
+         */
+        function openAgencyModal(agencyId = null) {
+            if (agencyId) {
+                console.log("Ouverture de la modale pour MODIFIER l'agence :", agencyId);
+                // TODO: Logique de modification
+                alert("Fonctionnalité 'Modifier l'agence' à implémenter.");
+            } else {
+                console.log("Ouverture de la modale pour CRÉER une agence.");
+                // TODO: Logique de création
+                alert("Fonctionnalité 'Créer une agence' à implémenter.");
+            }
+        }
 
-/**
- * Supprime une agence après confirmation.
- * @param {string} agencyId - L'ID de l'agence à supprimer.
- */
-function deleteAgency(agencyId) {
-    console.log("Demande de suppression pour l'agence :", agencyId);
-    // TODO: Logique de suppression avec modale de confirmation
-    alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
-}
+        /**
+         * Supprime une agence après confirmation.
+         * @param {string} agencyId - L'ID de l'agence à supprimer.
+         */
+        function deleteAgency(agencyId) {
+            console.log("Demande de suppression pour l'agence :", agencyId);
+            // TODO: Logique de suppression avec modale de confirmation
+            alert("Fonctionnalité 'Supprimer l'agence' à implémenter.");
+        }
 
     </script>
 

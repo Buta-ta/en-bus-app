@@ -6384,6 +6384,18 @@ async function viewCrewDetails(memberId) {
     if (typeof setupNotificationFormListeners === 'function') {
         setupNotificationFormListeners();
     }
+
+
+    // Initialiser le sélecteur de semaine du planning
+const weekPicker = document.getElementById('schedule-week-picker');
+if (weekPicker) {
+    const now = new Date();
+    // Fonction simple pour avoir YYYY-Www
+    const weekNum = getWeekNumber(now);
+    const year = now.getFullYear();
+    // Format requis par l'input type="week" : "2023-W45"
+    weekPicker.value = `${year}-W${String(weekNum).padStart(2, '0')}`;
+}
 }
 
 
@@ -7932,38 +7944,71 @@ async function viewCrewDetails(memberId) {
 // DANS LE SCRIPT
 
 async function loadSchedule() {
-    // 1. Calculer les dates de la semaine sélectionnée
+    console.log("📅 Chargement du planning...");
+    
+    // 1. Récupérer ou initialiser la date
     const weekInput = document.getElementById('schedule-week-picker');
-    if (!weekInput.value) {
-        // Par défaut : semaine en cours
+    if (!weekInput || !weekInput.value) {
+        // Fallback si vide
         const now = new Date();
-        const weekNum = getWeekNumber(now); // Fonction utilitaire à créer
-        weekInput.value = `${now.getFullYear()}-W${weekNum}`;
+        const weekNum = getWeekNumber(now);
+        if (weekInput) weekInput.value = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        else return; // Si pas d'input, on arrête
     }
     
+    // 2. Calculer le Lundi de cette semaine
     const [year, week] = weekInput.value.split('-W');
     const startOfWeek = getDateOfISOWeek(week, year);
+    
+    // Calculer le Dimanche
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 6);
 
     const startStr = startOfWeek.toISOString().split('T')[0];
     const endStr = endOfWeek.toISOString().split('T')[0];
 
-    // 2. Appel API
-    const data = await apiCall(`/admin/schedules?start=${startStr}&end=${endStr}`);
+    console.log(`   -> Période: ${startStr} au ${endStr}`);
+
+    // 3. Appel API
+    // On peut aussi filtrer par agence si le select existe
+    const agencyFilter = document.getElementById('schedule-filter-agency');
+    const agencyId = agencyFilter ? agencyFilter.value : '';
     
-    // 3. Rendu (Logique complexe de grille)
-    renderScheduleGrid(data.schedules, startOfWeek);
+    const url = `/admin/schedules?start=${startStr}&end=${endStr}${agencyId ? `&agencyId=${agencyId}` : ''}`;
+    const data = await apiCall(url);
+    
+    if (data && data.success) {
+        renderScheduleGrid(data.schedules, startOfWeek);
+    } else {
+        // En cas d'erreur ou vide, on rend une grille vide pour afficher les employés
+        renderScheduleGrid([], startOfWeek);
+    }
 }
 
-function renderScheduleGrid(schedules, startOfWeek) {
+async function renderScheduleGrid(schedules, startOfWeek) {
     const tbody = document.getElementById('schedule-body');
-    tbody.innerHTML = '';
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Chargement...</td></tr>';
+
+    // SÉCURITÉ : On s'assure d'avoir les employés
+    if (!allCrewMembers || allCrewMembers.length === 0) {
+        await loadAllCrew();
+    }
+
+    tbody.innerHTML = ''; // On vide le loader
 
     // On groupe par employé
-    // Pour simplifier, on itère sur 'allCrewMembers' (qu'on a déjà en mémoire)
     allCrewMembers.forEach(member => {
-        let rowHTML = `<tr><td><strong>${member.name}</strong><br><small>${member.role}</small></td>`;
+        let rowHTML = `
+            <tr>
+                <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <strong>${member.name}</strong>
+                    </div>
+                    <small style="color:var(--primary);">${member.role}</small>
+                </td>
+        `;
         
         // Pour chaque jour de la semaine (0 à 6)
         for(let i=0; i<7; i++) {
@@ -7971,23 +8016,29 @@ function renderScheduleGrid(schedules, startOfWeek) {
             currentDay.setDate(currentDay.getDate() + i);
             const dateStr = currentDay.toISOString().split('T')[0];
 
-            // Trouver les créneaux de ce jour pour cet employé
+            // Trouver les créneaux
             const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
             
             let cellContent = '';
             items.forEach(item => {
+                // Couleur selon le type
+                let colorClass = 'primary';
+                if (item.type === 'Repos') colorClass = 'secondary';
+                if (item.type === 'Congé') colorClass = 'danger';
+                if (item.type === 'Voyage') colorClass = 'info';
+
                 cellContent += `
-                    <div class="schedule-item type-${item.type}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
-                        <strong>${item.startTime} - ${item.endTime}</strong><br>
-                        ${item.type === 'Voyage' ? '🚌' : ''} ${item.note || item.type}
+                    <div class="schedule-item type-${item.type}" style="margin-bottom:4px; padding:4px; border-radius:4px; font-size:0.75em; background:rgba(255,255,255,0.1); border-left:3px solid var(--${colorClass}); cursor:pointer;" onclick="deleteSchedule('${item._id}')" title="Supprimer">
+                        <strong>${item.startTime}-${item.endTime}</strong><br>
+                        ${item.note || item.type}
                     </div>
                 `;
             });
 
-            // Bouton + (invisible sauf hover)
-            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${dateStr}')">+</div>`;
+            // Bouton d'ajout (+)
+            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')" style="text-align:center; cursor:pointer; opacity:0.3; font-weight:bold;">+</div>`;
 
-            rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
+            rowHTML += `<td class="schedule-cell" style="min-width:100px; vertical-align:top;">${cellContent}</td>`;
         }
         rowHTML += '</tr>';
         tbody.innerHTML += rowHTML;
