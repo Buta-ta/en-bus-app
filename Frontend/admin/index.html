@@ -6583,7 +6583,9 @@
 
         if (!payload.comment) delete payload.comment;
 
-        const result = await apiCall(`/api/admin/maintenance/${reportId}`, 'PATCH', payload);
+       // ...
+const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload);
+// ...
         if (result && result.success) {
             showNotification("Rapport mis à jour.", "success");
             closeModal();
