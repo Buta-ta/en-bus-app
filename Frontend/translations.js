@@ -681,6 +681,9 @@ const translations = {
     rating_toast_must_rate: "Veuillez donner une note globale.",
     derniere_cle_existante: "Sa valeur",
     rating_label_controller: "Contrôleur (accueil, service)",
+    button_select: "Sélectionner",
+button_full: "COMPLET", // ✅ AJOUTER CETTE LIGNE
+// ...
 
     // ============================================
 
@@ -1363,6 +1366,8 @@ const translations = {
 
     last_existing_key: "Its value",
     rating_label_controller: "Controller (welcome, service)", 
+    button_select: "Select",
+button_full: "FULL", // ✅ AJOUTER CETTE LIGNE
 
     // ============================================
   },

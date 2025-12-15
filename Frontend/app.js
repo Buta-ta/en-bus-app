@@ -4805,13 +4805,14 @@ function displayResults(results, isReturn = false) {
         let seatsInfoHTML = '';
 
         if (route.availableSeats > 0) {
-            buttonHTML = `<button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>`;
-            seatsInfoHTML = `<strong>${route.availableSeats}</strong> ${translation.seats_available}`;
-        } else {
-            // Si le bus est plein, on met un bouton désactivé et un texte différent
-            buttonHTML = `<button class="btn btn-disabled" disabled>COMPLET</button>`;
-            seatsInfoHTML = `<strong style="color: #ef5350;">COMPLET</strong>`;
-        }
+    // Si sièges dispo: bouton normal
+    buttonHTML = `<button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>`;
+    seatsInfoHTML = `<strong>${route.availableSeats}</strong> ${translation.seats_available}`;
+} else {
+    // Si bus plein: bouton désactivé avec texte "COMPLET" traduit
+    buttonHTML = `<button class="btn btn-disabled" disabled>${translation.button_full || 'COMPLET'}</button>`;
+    seatsInfoHTML = `<strong style="color: #ef5350;">${translation.button_full || 'COMPLET'}</strong>`;
+}
         // ============================================
 
         return `
