@@ -3000,14 +3000,7 @@
                 <div class="stat-value" id="stat-present-now">-</div>
             </div>
 
-            <!-- Zone d'alerte (Cachée si vide) -->
-            <div id="attendance-alerts" class="content-card"
-                style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
-                <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
-                <ul id="anomalies-list" style="list-style: none; padding: 0;">
-                    <!-- Rempli par JS -->
-                </ul>
-            </div>
+            
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-label">Journée Terminée</span>
@@ -3016,6 +3009,15 @@
                 <div class="stat-value" id="stat-completed-today">-</div>
             </div>
         </div>
+
+        <!-- Zone d'alerte (Cachée si vide) -->
+            <div id="attendance-alerts" class="content-card"
+                style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
+                <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
+                <ul id="anomalies-list" style="list-style: none; padding: 0;">
+                    <!-- Rempli par JS -->
+                </ul>
+            </div>
 
         <!-- 3. Carte Principale (Scanner + Tableau) -->
         <div class="content-card">
@@ -3060,28 +3062,8 @@
                 </div>
             </div>
 
-            <!-- Tableau des logs -->
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Heure</th>
-                            <th>Employé</th>
-                            <th>Rôle</th>
-                            <th>Agence</th>
-                            <th>Statut</th> <!-- Renommé pour clarté -->
-                            <th>Temps de travail</th>
-                        </tr>
-                    </thead>
-                    <tbody id="attendance-table-body">
-                        <!-- Rempli par JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    <!-- DANS #tab-attendance, APRÈS la carte du scanner -->
+            <!-- DANS #tab-attendance, APRÈS la carte du scanner -->
 
     <div class="content-card" style="margin-top: 2rem;">
         <div class="card-header">
@@ -3117,6 +3099,29 @@
             </table>
         </div>
     </div>
+
+            <!-- Tableau des logs -->
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Heure</th>
+                            <th>Employé</th>
+                            <th>Rôle</th>
+                            <th>Agence</th>
+                            <th>Statut</th> <!-- Renommé pour clarté -->
+                            <th>Temps de travail</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-table-body">
+                        <!-- Rempli par JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
 
 
 
