@@ -6415,9 +6415,16 @@
 
                 case 'attendance':
                     loadAttendanceToday();
-                    setupHistoryFilters(); // ✅ AJOUTER CETTE LIGNE
+                    // On s'assure que les employés sont là, PUIS on met en place l'historique
+                    (async () => {
+                        if (!allCrewMembers || allCrewMembers.length === 0) {
+                            await loadAllCrew();
+                        }
+                        // Maintenant qu'on est sûr d'avoir les employés, on lance les fonctions
+                        setupHistoryFilters();
+                        loadAttendanceHistory();
+                    })();
                     break;
-
 
 
                 default:
@@ -9198,14 +9205,10 @@
         // --- FONCTIONS POUR L'HISTORIQUE ---
 
         // Initialise les filtres de l'historique (sélecteur d'employés et calendrier)
-        async function setupHistoryFilters() {
+        function setupHistoryFilters() {
     const select = document.getElementById('history-crew-select');
-    if (!select) return;
+    if (!select || !allCrewMembers || allCrewMembers.length === 0) return;
 
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        await loadAllCrew();
-    }
-    
     select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
     allCrewMembers.forEach(member => {
         select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
@@ -9220,83 +9223,66 @@
             new Date()
         ],
         onClose: function(selectedDates) {
-            if (selectedDates.length === 2) {
-                loadAttendanceHistory();
-            }
+            if (selectedDates.length === 2) loadAttendanceHistory();
         }
     });
-    
-    // ===============================================
-    // ✅ CORRECTION AJOUTÉE ICI
-    // ===============================================
-    // On vérifie s'il y a des employés dans la liste
-    if (allCrewMembers.length > 0) {
-        // On sélectionne le premier employé de la liste par défaut
-        select.value = allCrewMembers[0]._id;
-        
-        // On attend que le calendrier soit initialisé, puis on charge l'historique
-        setTimeout(() => {
-            loadAttendanceHistory();
-        }, 100); 
-    } else {
-        const tbody = document.getElementById('history-table-body');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun employé à afficher.</td></tr>';
-    }
-    // ===============================================
+
+    // Pré-sélectionner le premier
+    select.value = allCrewMembers[0]._id;
 }
         // Charge et affiche l'historique pour l'employé et la période sélectionnés
         async function loadAttendanceHistory() {
-    console.log("--- DEBUG: loadAttendanceHistory ---");
-    
-    const crewSelect = document.getElementById('history-crew-select');
-    const dateRangeInput = document.getElementById('history-date-range');
-    const tbody = document.getElementById('history-table-body');
+            console.log("--- DEBUG: loadAttendanceHistory ---");
 
-    if (!crewSelect || !dateRangeInput || !tbody) {
-        console.error("-> Erreur: Un des éléments de filtre est manquant.");
-        return;
-    }
+            const crewSelect = document.getElementById('history-crew-select');
+            const dateRangeInput = document.getElementById('history-date-range');
+            const tbody = document.getElementById('history-table-body');
 
-    const crewId = crewSelect.value;
-    const dateRange = dateRangeInput.value;
+            if (!crewSelect || !dateRangeInput || !tbody) {
+                console.error("-> Erreur: Un des éléments de filtre est manquant.");
+                return;
+            }
 
-    console.log("-> Employé sélectionné (ID):", crewId);
-    console.log("-> Plage de dates sélectionnée:", dateRange);
+            const crewId = crewSelect.value;
+            const dateRange = dateRangeInput.value;
 
-    if (!crewId) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
-        console.log("-> Arrêt: Aucun employé sélectionné.");
-        return;
-    }
-    if (!dateRange.includes(' au ')) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner une période complète.</td></tr>';
-        console.log("-> Arrêt: Plage de dates incomplète.");
-        return;
-    }
+            console.log("-> Employé sélectionné (ID):", crewId);
+            console.log("-> Plage de dates sélectionnée:", dateRange);
 
-    const [startDate, endDate] = dateRange.split(' au ');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
-    
-    const url = `/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`;
-    console.log("-> Appel de l'API avec l'URL:", url);
+            if (!crewId) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
+                console.log("-> Arrêt: Aucun employé sélectionné.");
+                return;
+            }
+            if (!dateRange.includes(' au ')) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner une période complète.</td></tr>';
+                console.log("-> Arrêt: Plage de dates incomplète.");
+                return;
+            }
 
-    const data = await apiCall(url);
+            const [startDate, endDate] = dateRange.split(' au ');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
 
-    console.log("-> Réponse reçue de l'API:", data);
+            const url = `/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`;
+            console.log("-> Appel de l'API avec l'URL:", url);
 
-    if (data && data.success) {
-        if (data.records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
-            console.log("-> Succès, mais aucun enregistrement trouvé.");
-        } else {
-            // ... (votre code de rendu de tableau, qui est correct)
-            console.log(`-> Succès, affichage de ${data.records.length} enregistrements.`);
+            const data = await apiCall(url);
+
+            console.log("-> Réponse reçue de l'API:", data);
+
+            if (data && data.success) {
+                if (data.records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
+                    console.log("-> Succès, mais aucun enregistrement trouvé.");
+                } else {
+                    // ... (votre code de rendu de tableau, qui est correct)
+                    console.log(`-> Succès, affichage de ${data.records.length} enregistrements.`);
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
+                console.error("-> Échec de l'appel API ou réponse invalide.");
+            }
         }
-    } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
-        console.error("-> Échec de l'appel API ou réponse invalide.");
-    }
-}
 
         // ============================================
         // 🕵️ FONCTION DE DÉBOGAGE (TEMPORAIRE)
