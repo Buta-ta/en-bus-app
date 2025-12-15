@@ -3045,9 +3045,10 @@
                 </label>
             </div>
 
-            <div style="text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">
-    ℹ️ Une pause dure au minimum 15min et au maximum 2h.
-</div>
+            <div
+                style="text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">
+                ℹ️ Une pause dure au minimum 15min et au maximum 2h.
+            </div>
 
             <!-- Zone du scanner -->
             <div id="scanner-container"
@@ -3077,6 +3078,43 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- DANS #tab-attendance, APRÈS la carte du scanner -->
+
+    <div class="content-card" style="margin-top: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Historique des Pointages</h2>
+        </div>
+
+        <!-- Filtres pour l'historique -->
+        <div class="filters" style="margin-bottom: 1.5rem;">
+            <select id="history-crew-select" class="form-control" onchange="loadAttendanceHistory()"
+                style="flex: 1; max-width: 300px;">
+                <!-- Rempli par JS -->
+            </select>
+            <input type="text" id="history-date-range" class="form-control" placeholder="Sélectionner une période..."
+                style="flex: 1; max-width: 300px;">
+            <button class="btn btn-secondary" onclick="loadAttendanceHistory()">🔄 Actualiser</button>
+        </div>
+
+        <!-- Tableau de l'historique -->
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Arrivée</th>
+                        <th>Départ</th>
+                        <th>Pauses</th>
+                        <th>Temps de travail</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <!-- Rempli par JS -->
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -3195,7 +3233,7 @@
         let allTrips = [];
         let allTemplates = [];
         let inactivityTimer;
-        let allMaintenanceReports = []; 
+        let allMaintenanceReports = [];
 
 
         // ============================================
@@ -6375,6 +6413,12 @@
                     loadMaintenanceReports();
                     break;
 
+                case 'attendance':
+                    loadAttendanceToday();
+                    setupHistoryFilters(); // ✅ AJOUTER CETTE LIGNE
+                    break;
+
+
 
                 default:
                     if (tabName !== 'settings') {
@@ -6443,68 +6487,68 @@
 
         // --- Fonctions de Maintenance ---
 
-async function loadMaintenanceReports() {
-    // 1. S'assurer que la liste du personnel est disponible pour afficher les noms
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        await loadAllCrew();
-    }
-
-    // 2. Charger les rapports de maintenance
-    const data = await apiCall('/admin/maintenance');
-    if (!data || !data.success) {
-        // En cas d'erreur, on s'assure que le tableau n'est pas bloqué sur "chargement"
-        const tbody = document.getElementById('maintenance-table-body');
-        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Erreur de chargement des données.</td></tr>';
-        return;
-    }
-    
-    // On met à jour la variable globale avec les nouvelles données
-    allMaintenanceReports = data.reports;
-
-    // 3. Afficher les données dans le tableau
-    const tbody = document.getElementById('maintenance-table-body');
-    if (allMaintenanceReports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem; color: var(--text-muted);">Aucun incident signalé pour le moment.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = allMaintenanceReports.map(report => {
-        // --- Badge de priorité ---
-        let priorityBadge = 'badge-gray';
-        if (report.priority === 'Haute') priorityBadge = 'badge-warning';
-        if (report.priority === 'Critique') priorityBadge = 'badge-danger';
-        
-        // --- Badge de statut ---
-        let statusBadge = 'badge-gray';
-        if (report.status === 'En cours') statusBadge = 'badge-warning';
-        if (report.status === 'Terminé') statusBadge = 'badge-success';
-
-        // --- Nom et agence du technicien assigné ---
-        let assignedToDisplay = '<span style="color: #666; font-style: italic;">Non assigné</span>';
-        if (report.assignedToName) {
-            assignedToDisplay = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
-            const tech = allCrewMembers.find(m => m._id === report.assignedTo);
-            if (tech && tech.agencyName) {
-                assignedToDisplay += `<div style="font-size: 0.8em; color: var(--accent);">📍 ${tech.agencyName}</div>`;
+        async function loadMaintenanceReports() {
+            // 1. S'assurer que la liste du personnel est disponible pour afficher les noms
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                await loadAllCrew();
             }
-        }
-        
-        // --- ✅ GESTION DES BOUTONS D'ACTION ---
-        let actionButtons = `<button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button>`;
-        
-        // On autorise la suppression (archivage) uniquement si le travail est terminé
-        if (report.status === 'Terminé') {
-            actionButtons += `
+
+            // 2. Charger les rapports de maintenance
+            const data = await apiCall('/admin/maintenance');
+            if (!data || !data.success) {
+                // En cas d'erreur, on s'assure que le tableau n'est pas bloqué sur "chargement"
+                const tbody = document.getElementById('maintenance-table-body');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Erreur de chargement des données.</td></tr>';
+                return;
+            }
+
+            // On met à jour la variable globale avec les nouvelles données
+            allMaintenanceReports = data.reports;
+
+            // 3. Afficher les données dans le tableau
+            const tbody = document.getElementById('maintenance-table-body');
+            if (allMaintenanceReports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 2rem; color: var(--text-muted);">Aucun incident signalé pour le moment.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allMaintenanceReports.map(report => {
+                // --- Badge de priorité ---
+                let priorityBadge = 'badge-gray';
+                if (report.priority === 'Haute') priorityBadge = 'badge-warning';
+                if (report.priority === 'Critique') priorityBadge = 'badge-danger';
+
+                // --- Badge de statut ---
+                let statusBadge = 'badge-gray';
+                if (report.status === 'En cours') statusBadge = 'badge-warning';
+                if (report.status === 'Terminé') statusBadge = 'badge-success';
+
+                // --- Nom et agence du technicien assigné ---
+                let assignedToDisplay = '<span style="color: #666; font-style: italic;">Non assigné</span>';
+                if (report.assignedToName) {
+                    assignedToDisplay = `<strong style="color: var(--primary);">${report.assignedToName}</strong>`;
+                    const tech = allCrewMembers.find(m => m._id === report.assignedTo);
+                    if (tech && tech.agencyName) {
+                        assignedToDisplay += `<div style="font-size: 0.8em; color: var(--accent);">📍 ${tech.agencyName}</div>`;
+                    }
+                }
+
+                // --- ✅ GESTION DES BOUTONS D'ACTION ---
+                let actionButtons = `<button class="btn btn-sm btn-ghost" onclick="openMaintenanceDetailsModal('${report._id}')">Gérer</button>`;
+
+                // On autorise la suppression (archivage) uniquement si le travail est terminé
+                if (report.status === 'Terminé') {
+                    actionButtons += `
                 <button class="btn btn-sm btn-icon btn-danger" style="margin-left: 5px;" 
                         onclick="deleteMaintenanceReport('${report._id}')" 
                         title="Archiver ce rapport terminé">
                     🗑️
                 </button>
             `;
-        }
+                }
 
-        // --- Rendu final de la ligne ---
-        return `
+                // --- Rendu final de la ligne ---
+                return `
             <tr>
                 <td class="font-bold font-mono">${report.busIdentifier}</td>
                 <td>${report.description}</td>
@@ -6515,36 +6559,36 @@ async function loadMaintenanceReports() {
                 <td class="actions-cell">${actionButtons}</td>
             </tr>
         `;
-    }).join('');
-}
+            }).join('');
+        }
 
-async function openMaintenanceDetailsModal(reportId) {
-    const report = allMaintenanceReports.find(r => r._id === reportId);
-    if (!report) return;
+        async function openMaintenanceDetailsModal(reportId) {
+            const report = allMaintenanceReports.find(r => r._id === reportId);
+            if (!report) return;
 
-    if (!allCrewMembers || allCrewMembers.length === 0) {
-        await loadAllCrew();
-    }
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                await loadAllCrew();
+            }
 
-    const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
-    const technicians = allCrewMembers.filter(m => techRoles.includes(m.role) && m.status === 'Actif');
-    
-    // --- ✅ MODIFICATION ICI ---
-    let techOptions = '<option value="">-- Non assigné --</option>';
-    technicians.forEach(tech => {
-        const isSelected = report.assignedTo && report.assignedTo === tech._id ? 'selected' : '';
-        // On ajoute l'agence à côté du nom
-        const agencyInfo = tech.agencyName || 'Siège'; 
-        techOptions += `<option value="${tech._id}" ${isSelected}>${tech.name} (${agencyInfo})</option>`;
-    });
-    // -------------------------
+            const techRoles = ['Mécanicien', 'Électricien', 'Technicien'];
+            const technicians = allCrewMembers.filter(m => techRoles.includes(m.role) && m.status === 'Actif');
 
-    const modalTitle = document.getElementById('modal-title');
-    const modalBody = document.getElementById('modal-body');
+            // --- ✅ MODIFICATION ICI ---
+            let techOptions = '<option value="">-- Non assigné --</option>';
+            technicians.forEach(tech => {
+                const isSelected = report.assignedTo && report.assignedTo === tech._id ? 'selected' : '';
+                // On ajoute l'agence à côté du nom
+                const agencyInfo = tech.agencyName || 'Siège';
+                techOptions += `<option value="${tech._id}" ${isSelected}>${tech.name} (${agencyInfo})</option>`;
+            });
+            // -------------------------
 
-    modalTitle.textContent = `Incident sur Bus ${report.busIdentifier}`;
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
 
-    const commentsHTML = (report.comments || []).map(c => `
+            modalTitle.textContent = `Incident sur Bus ${report.busIdentifier}`;
+
+            const commentsHTML = (report.comments || []).map(c => `
         <li style="padding: 8px; border-bottom: 1px solid var(--dark-border);">
             <div style="display: flex; justify-content: space-between;">
                 <strong style="color: var(--primary);">${c.author}</strong>
@@ -6554,7 +6598,7 @@ async function openMaintenanceDetailsModal(reportId) {
         </li>
     `).reverse().join('');
 
-    modalBody.innerHTML = `
+            modalBody.innerHTML = `
         <form id="update-maintenance-form">
             <p style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
                 <strong>Description:</strong> ${report.description}
@@ -6594,26 +6638,26 @@ async function openMaintenanceDetailsModal(reportId) {
         </form>
     `;
 
-    document.getElementById('details-modal').classList.add('active');
+            document.getElementById('details-modal').classList.add('active');
 
-    document.getElementById('update-maintenance-form').addEventListener('submit', async e => {
-        e.preventDefault();
-        const payload = {
-            status: document.getElementById('maintenance-status').value,
-            assignedToId: document.getElementById('maintenance-assignee').value,
-            comment: document.getElementById('maintenance-comment').value.trim()
-        };
+            document.getElementById('update-maintenance-form').addEventListener('submit', async e => {
+                e.preventDefault();
+                const payload = {
+                    status: document.getElementById('maintenance-status').value,
+                    assignedToId: document.getElementById('maintenance-assignee').value,
+                    comment: document.getElementById('maintenance-comment').value.trim()
+                };
 
-        if (!payload.comment) delete payload.comment;
+                if (!payload.comment) delete payload.comment;
 
-        const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload);
-        if (result && result.success) {
-            showNotification("Rapport mis à jour.", "success");
-            closeModal();
-            loadMaintenanceReports();
+                const result = await apiCall(`/admin/maintenance/${reportId}`, 'PATCH', payload);
+                if (result && result.success) {
+                    showNotification("Rapport mis à jour.", "success");
+                    closeModal();
+                    loadMaintenanceReports();
+                }
+            });
         }
-    });
-}
         function openReportIncidentModal() {
             const modalTitle = document.getElementById('modal-title');
             const modalBody = document.getElementById('modal-body');
@@ -6652,7 +6696,7 @@ async function openMaintenanceDetailsModal(reportId) {
                     description: document.getElementById('incident-desc').value,
                     priority: document.getElementById('incident-priority').value,
                 };
-               const result = await apiCall('/admin/maintenance', 'POST', payload);
+                const result = await apiCall('/admin/maintenance', 'POST', payload);
                 if (result && result.success) {
                     showNotification("Incident signalé.", "success");
                     closeModal();
@@ -6662,28 +6706,28 @@ async function openMaintenanceDetailsModal(reportId) {
         }
 
 
-    // Fonction pour supprimer un rapport de maintenance
-async function deleteMaintenanceReport(reportId) {
-    const report = allMaintenanceReports.find(r => r._id === reportId);
-    if (!report) return;
+        // Fonction pour supprimer un rapport de maintenance
+        async function deleteMaintenanceReport(reportId) {
+            const report = allMaintenanceReports.find(r => r._id === reportId);
+            if (!report) return;
 
-    const confirmed = await showAdminConfirm({
-        title: "Archiver l'incident ?",
-        message: `Voulez-vous vraiment supprimer définitivement le rapport pour le bus <strong>${report.busIdentifier}</strong> ?`,
-        icon: '🗑️',
-        iconClass: 'danger',
-        confirmText: 'Oui, archiver',
-        confirmClass: 'btn-danger'
-    });
+            const confirmed = await showAdminConfirm({
+                title: "Archiver l'incident ?",
+                message: `Voulez-vous vraiment supprimer définitivement le rapport pour le bus <strong>${report.busIdentifier}</strong> ?`,
+                icon: '🗑️',
+                iconClass: 'danger',
+                confirmText: 'Oui, archiver',
+                confirmClass: 'btn-danger'
+            });
 
-    if (!confirmed) return;
+            if (!confirmed) return;
 
-    const result = await apiCall(`/admin/maintenance/${reportId}`, 'DELETE');
-    if (result && result.success) {
-        showNotification(result.message, 'success');
-        loadMaintenanceReports(); // Rafraîchir le tableau
-    }
-}
+            const result = await apiCall(`/admin/maintenance/${reportId}`, 'DELETE');
+            if (result && result.success) {
+                showNotification(result.message, 'success');
+                loadMaintenanceReports(); // Rafraîchir le tableau
+            }
+        }
         // ============================================
         // 🎯 INITIALISATION & ÉVÉNEMENTS
         // ============================================
@@ -8414,31 +8458,31 @@ async function deleteMaintenanceReport(reportId) {
                 renderScheduleGrid([], startOfWeek, employeesToDisplay);
             }
         }
-async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
-    const tbody = document.getElementById('schedule-body');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Chargement...</td></tr>';
+        async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMembers) {
+            const tbody = document.getElementById('schedule-body');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">Chargement...</td></tr>';
 
-    if (!employees || employees.length === 0) {
-        if (!allCrewMembers || allCrewMembers.length === 0) await loadAllCrew();
-        employees = allCrewMembers;
-    }
+            if (!employees || employees.length === 0) {
+                if (!allCrewMembers || allCrewMembers.length === 0) await loadAllCrew();
+                employees = allCrewMembers;
+            }
 
-    if (employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Aucun employé trouvé.</td></tr>';
-        return;
-    }
-    
-    let tableHTML = '';
+            if (employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Aucun employé trouvé.</td></tr>';
+                return;
+            }
 
-    employees.forEach(member => {
-        let agencyText = member.agencyName 
-            ? `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`
-            : (member.role === 'Super Admin' || member.role === 'Manager') 
-                ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`
-                : '';
-        
-        let rowHTML = `
+            let tableHTML = '';
+
+            employees.forEach(member => {
+                let agencyText = member.agencyName
+                    ? `<div style="font-size: 0.75rem; color: var(--accent); margin-top: 2px;">📍 ${member.agencyName}</div>`
+                    : (member.role === 'Super Admin' || member.role === 'Manager')
+                        ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">🌍 Global</div>`
+                        : '';
+
+                let rowHTML = `
             <tr>
                 <td style="position: sticky; left: 0; background: var(--dark-surface); z-index: 10; border-right: 2px solid var(--dark-border); min-width: 180px;">
                     <div style="font-weight:bold;">${member.name}</div>
@@ -8447,55 +8491,55 @@ async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMem
                 </td>
         `;
 
-        // ✅ CALCUL DES HEURES DIRECTEMENT ICI
-        let totalMinutesSemaine = 0;
-        
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(startOfWeek);
-            currentDay.setDate(currentDay.getDate() + i);
-            const dateStr = currentDay.toISOString().split('T')[0];
+                // ✅ CALCUL DES HEURES DIRECTEMENT ICI
+                let totalMinutesSemaine = 0;
 
-            const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
-            
-            let cellContent = '';
-            items.forEach(item => {
-                // Ajout au total si c'est du travail
-                if (item.type === 'Travail' || item.type === 'Voyage' || item.type === 'Heures_Sup' || item.type === 'Astreinte') {
-                    const [h1, m1] = item.startTime.split(':').map(Number);
-                    const [h2, m2] = item.endTime.split(':').map(Number);
-                    const start = h1 * 60 + m1;
-                    const end = h2 * 60 + m2;
-                    if (end > start) {
-                        totalMinutesSemaine += (end - start);
-                    }
-                }
+                for (let i = 0; i < 7; i++) {
+                    const currentDay = new Date(startOfWeek);
+                    currentDay.setDate(currentDay.getDate() + i);
+                    const dateStr = currentDay.toISOString().split('T')[0];
 
-                // ... (votre code d'affichage de la cellule)
-                const typeClass = (item.type || '').replace(/\s+/g, '_');
-                const icon = {'Voyage':'🚌', 'Astreinte':'📞', 'Heures_Sup':'⚡', 'Congé':'🏖️'}[typeClass] || '';
-                cellContent += `
+                    const items = schedules.filter(s => s.crewId === member._id && s.date === dateStr);
+
+                    let cellContent = '';
+                    items.forEach(item => {
+                        // Ajout au total si c'est du travail
+                        if (item.type === 'Travail' || item.type === 'Voyage' || item.type === 'Heures_Sup' || item.type === 'Astreinte') {
+                            const [h1, m1] = item.startTime.split(':').map(Number);
+                            const [h2, m2] = item.endTime.split(':').map(Number);
+                            const start = h1 * 60 + m1;
+                            const end = h2 * 60 + m2;
+                            if (end > start) {
+                                totalMinutesSemaine += (end - start);
+                            }
+                        }
+
+                        // ... (votre code d'affichage de la cellule)
+                        const typeClass = (item.type || '').replace(/\s+/g, '_');
+                        const icon = { 'Voyage': '🚌', 'Astreinte': '📞', 'Heures_Sup': '⚡', 'Congé': '🏖️' }[typeClass] || '';
+                        cellContent += `
                     <div class="schedule-item type-${typeClass}" onclick="deleteSchedule('${item._id}')" title="Cliquer pour supprimer">
                         <div style="font-weight:700;">${item.startTime} - ${item.endTime}</div>
                         <div style="font-size:0.8em;">${icon}${item.note || item.type}</div>
                     </div>
                 `;
+                    });
+
+                    cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')">+</div>`;
+                    rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
+                }
+
+                // Affichage des heures calculées
+                const totalH = Math.floor(totalMinutesSemaine / 60);
+                const totalM = totalMinutesSemaine % 60;
+                const hoursDisplay = `<strong style="font-size: 1.1em;">${totalH}h ${String(totalM).padStart(2, '0')}m</strong>`;
+
+                rowHTML += `<td style="text-align: center; vertical-align: middle;">${hoursDisplay}</td></tr>`;
+                tableHTML += rowHTML;
             });
 
-            cellContent += `<div class="schedule-add-btn" onclick="openAddScheduleModal('${member._id}', '${member.name}', '${dateStr}')">+</div>`;
-            rowHTML += `<td class="schedule-cell">${cellContent}</td>`;
+            tbody.innerHTML = tableHTML;
         }
-
-        // Affichage des heures calculées
-        const totalH = Math.floor(totalMinutesSemaine / 60);
-        const totalM = totalMinutesSemaine % 60;
-        const hoursDisplay = `<strong style="font-size: 1.1em;">${totalH}h ${String(totalM).padStart(2,'0')}m</strong>`;
-        
-        rowHTML += `<td style="text-align: center; vertical-align: middle;">${hoursDisplay}</td></tr>`;
-        tableHTML += rowHTML;
-    });
-
-    tbody.innerHTML = tableHTML;
-}
         // Fonction utilitaire Date (Standard ISO)
         function getDateOfISOWeek(w, y) {
             var simple = new Date(y, 0, 1 + (w - 1) * 7);
@@ -9144,6 +9188,102 @@ async function renderScheduleGrid(schedules, startOfWeek, employees = allCrewMem
 
         function onScanFailure(error) {
             // On ignore les erreurs de scan frame par frame (trop verbeux)
+        }
+
+
+
+
+
+
+        // --- FONCTIONS POUR L'HISTORIQUE ---
+
+        // Initialise les filtres de l'historique (sélecteur d'employés et calendrier)
+        async function setupHistoryFilters() {
+            // 1. Remplir le sélecteur d'employés
+            const select = document.getElementById('history-crew-select');
+            if (!select) return;
+
+            if (!allCrewMembers || allCrewMembers.length === 0) {
+                await loadAllCrew();
+            }
+
+            select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
+            allCrewMembers.forEach(member => {
+                select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
+            });
+
+            // 2. Initialiser le calendrier Flatpickr pour la période
+            flatpickr("#history-date-range", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "fr",
+                defaultDate: [
+                    new Date(new Date().setDate(new Date().getDate() - 30)), // Il y a 30 jours
+                    new Date() // Aujourd'hui
+                ],
+                onChange: function (selectedDates, dateStr, instance) {
+                    // Recharger l'historique quand la date change
+                    if (selectedDates.length === 2) {
+                        loadAttendanceHistory();
+                    }
+                }
+            });
+        }
+
+        // Charge et affiche l'historique pour l'employé et la période sélectionnés
+        async function loadAttendanceHistory() {
+            const crewId = document.getElementById('history-crew-select').value;
+            const dateRange = document.getElementById('history-date-range').value;
+            const tbody = document.getElementById('history-table-body');
+
+            if (!crewId) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
+                return;
+            }
+            if (!dateRange.includes(' au ')) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner une période complète.</td></tr>';
+                return;
+            }
+
+            const [startDate, endDate] = dateRange.split(' au ');
+
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
+
+            const data = await apiCall(`/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`);
+
+            if (data && data.success) {
+                if (data.records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.records.map(record => {
+                    const checkIn = new Date(record.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    const checkOut = record.checkOut ? new Date(record.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'En cours';
+
+                    const totalBreak = record.totalBreakMinutes || 0;
+                    const breakDisplay = totalBreak > 0 ? `${totalBreak} min` : '-';
+
+                    let durationDisplay = '-';
+                    if (record.durationMinutes > 0) {
+                        const h = Math.floor(record.durationMinutes / 60);
+                        const m = record.durationMinutes % 60;
+                        durationDisplay = `${h}h ${String(m).padStart(2, '0')}m`;
+                    }
+
+                    return `
+                <tr>
+                    <td class="font-bold">${new Date(record.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
+                    <td class="font-mono">${checkIn}</td>
+                    <td class="font-mono">${checkOut}</td>
+                    <td>${breakDisplay}</td>
+                    <td class="font-bold">${durationDisplay}</td>
+                </tr>
+            `;
+                }).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
+            }
         }
 
 
