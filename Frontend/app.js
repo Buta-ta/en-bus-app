@@ -2408,11 +2408,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
 
         if (qrCodeBase64) {
             pdf.setFillColor(255, 255, 255);
-    pdf.rect(qrX + 2, qrY + 2, 46, 46, 'F');
-    
-    // QR sans compression
-    pdf.addImage(qrCodeBase64, 'PNG', qrX + 3, qrY + 3, 44, 44, undefined, 'NONE');
-
+            pdf.rect(qrX + 2, qrY + 2, 46, 46, 'F');
+            pdf.addImage(qrCodeBase64, 'PNG', qrX + 3, qrY + 3, 44, 44, undefined, 'NONE');
         }
 
         pdf.setTextColor(140, 140, 140);
@@ -2435,11 +2432,10 @@ async function generateTicketPDF(reservation, isReturn = false) {
         let pName = reservation.passengers[0].name;
         if (pName.length > 16) pName = pName.substring(0, 15) + '...';
         pdf.text(pName, qrX + 25, qrY + 78, { align: 'center' });
-
+        
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
-        // ✅ LIGNE CORRIGÉE AVEC LA BONNE CLÉ
         pdf.text((translation.pdf_total_paid || 'TOTAL PAYÉ').toUpperCase(), qrX + 25, qrY + 88, { align: 'center' });
 
         pdf.setTextColor(255, 255, 255);
@@ -2481,11 +2477,9 @@ async function generateTicketPDF(reservation, isReturn = false) {
         y += boxHeight + gap;
 
         // ========================================
-        // DETAILS - Ligne 2 (Compagnie + Bus) - CASES PLUS LARGES
+        // DETAILS - Ligne 2 (Compagnie + Bus)
         // ========================================
         const largeBoxWidth = 70;
-
-        // Compagnie - case plus large
         pdf.setFillColor(245, 245, 245);
         pdf.roundedRect(margin, y, largeBoxWidth, boxHeight, 2, 2, 'F');
         pdf.setTextColor(100, 100, 100);
@@ -2495,10 +2489,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
         pdf.setTextColor(30, 30, 30);
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
-        // Nom complet de la compagnie sans troncature
         pdf.text(route.company || 'N/A', margin + largeBoxWidth / 2, y + 17, { align: 'center' });
 
-        // Bus N - case plus petite
         const smallBoxWidth = 46;
         pdf.setFillColor(245, 245, 245);
         pdf.roundedRect(margin + largeBoxWidth + gap, y, smallBoxWidth, boxHeight, 2, 2, 'F');
@@ -2520,45 +2512,37 @@ async function generateTicketPDF(reservation, isReturn = false) {
         pdf.setFontSize(11);
         pdf.setFont('helvetica', 'bold');
         pdf.text((translation.details_label_passengers || 'PASSAGERS').toUpperCase(), margin, y);
-
         pdf.setFillColor(115, 215, 0);
         pdf.rect(margin, y + 2, 35, 1.5, 'F');
-
         y += 10;
-
+        
+        const paxHeight = reservation.passengers.length * 8 + 10;
         pdf.setFillColor(250, 250, 250);
-        const paxHeight = reservation.passengers.length * 10 + 6;
-        pdf.roundedRect(margin, y, 120, paxHeight, 2, 2, 'F');
-
-        y += 5;
+        pdf.roundedRect(margin, y, 180, paxHeight, 2, 2, 'F');
+        y += 6;
 
         reservation.passengers.forEach((p, i) => {
             pdf.setTextColor(30, 30, 30);
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(p.name, margin + 5, y + 2);
-
+            pdf.text(p.name, margin + 5, y);
             pdf.setTextColor(80, 80, 80);
             pdf.setFontSize(9);
-            pdf.text((translation.details_label_seat || 'Siege') + ' ' + seats[i], margin + 115, y + 2, { align: 'right' });
-
-            y += 10;
+            pdf.text((translation.details_label_seat || 'Siege') + ' ' + seats[i], pageWidth - margin - 5, y, { align: 'right' });
+            y += 8;
         });
-
         y += 8;
 
         // ========================================
-        // ARRETS (sans icone)
+        // ARRETS
         // ========================================
         if (route.stops && route.stops.length > 0) {
             pdf.setTextColor(30, 30, 30);
             pdf.setFontSize(11);
             pdf.setFont('helvetica', 'bold');
             pdf.text((translation.details_stops_planned || 'ARRETS PREVUS').toUpperCase(), margin, y);
-
             pdf.setFillColor(115, 215, 0);
             pdf.rect(margin, y + 2, 30, 1.5, 'F');
-
             y += 10;
 
             route.stops.forEach(stop => {
@@ -2566,71 +2550,73 @@ async function generateTicketPDF(reservation, isReturn = false) {
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
                 pdf.text(stop.city, margin + 5, y);
-
                 if (translation.details_stop_info) {
                     pdf.setTextColor(100, 100, 100);
                     pdf.setFontSize(8);
                     pdf.text(translation.details_stop_info(stop.duration, stop.arrivalTime), margin + 115, y, { align: 'right' });
                 }
-
                 y += 8;
             });
-
             y += 5;
         }
 
         // ========================================
-        // CORRESPONDANCES (sans icone)
+        // CORRESPONDANCES
         // ========================================
         if (route.connections && route.connections.length > 0) {
             pdf.setTextColor(200, 60, 60);
             pdf.setFontSize(11);
             pdf.setFont('helvetica', 'bold');
             pdf.text((translation.details_connections_title || 'CORRESPONDANCES').toUpperCase(), margin, y);
-
             pdf.setFillColor(200, 60, 60);
             pdf.rect(margin, y + 2, 35, 1.5, 'F');
-
             y += 10;
 
             route.connections.forEach(conn => {
                 pdf.setTextColor(30, 30, 30);
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'normal');
-
                 if (translation.details_connection_info) {
                     pdf.text(translation.details_connection_info(conn.at, conn.waitTime), margin + 5, y);
                 }
-
                 y += 6;
-
                 if (translation.details_next_bus_info) {
                     pdf.setTextColor(100, 100, 100);
                     pdf.setFontSize(8);
                     pdf.text(translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture), margin + 8, y);
                 }
-
                 y += 10;
             });
         }
 
         // ========================================
-        // FOOTER
+        // FOOTER (POSITIONNEMENT DYNAMIQUE)
         // ========================================
+        let footerY = 297 - 30; // 30mm du bas de la page A4 (297mm)
+
+        // Si le contenu est déjà plus bas que la position par défaut du footer, on le décale
+        if (y > footerY - 10) {
+            footerY = y + 10;
+        }
+
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.3);
-        pdf.line(margin, 265, pageWidth - margin, 265);
+        pdf.line(margin, footerY, pageWidth - margin, footerY);
+        footerY += 7;
 
         pdf.setTextColor(80, 80, 80);
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'normal');
         const footerMsg = translation.ticket_footer_instruction || 'Presentez-vous 30 min avant le depart avec une piece d identite';
-        pdf.text('IMPORTANT : ' + footerMsg, pageWidth / 2, 272, { align: 'center' });
+        const splitText = pdf.splitTextToSize('IMPORTANT : ' + footerMsg, pageWidth - (margin * 2));
+        pdf.text(splitText, pageWidth / 2, footerY, { align: 'center' });
+        
+        footerY += (splitText.length * 5) + 3; // Augmente la position en fonction du nombre de lignes
 
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(8);
-        pdf.text(`EN-BUS - ${translation.pdf_footer_tagline || 'Votre partenaire de voyage'}`, pageWidth / 2, 280, { align: 'center' });
-
+        pdf.text(`EN-BUS - ${translation.pdf_footer_tagline || 'Votre partenaire de voyage'}`, pageWidth / 2, footerY, { align: 'center' });
+        
         // ========================================
         // SAUVEGARDE
         // ========================================
@@ -2645,15 +2631,12 @@ async function generateTicketPDF(reservation, isReturn = false) {
                 recursive: true
             });
 
-            console.log('PDF sauvegarde :', result.uri);
+            console.log('PDF sauvegardé sur l\'appareil :', result.uri);
 
-                        if (LocalNotifications) {
+            if (LocalNotifications) {
                 try {
                    const permResult = await LocalNotifications.requestPermissions();
                     if (permResult.display === 'granted') {
-                        // ========================================================
-                        // ✅ DÉBUT DE LA CORRECTION
-                        // ========================================================
                         await LocalNotifications.schedule({
                             notifications: [{
                                 title: translation.local_notif_ticket_download_title || 'Billet téléchargé',
@@ -2661,20 +2644,16 @@ async function generateTicketPDF(reservation, isReturn = false) {
                                 id: Math.floor(Math.random() * 100000),
                                 schedule: { at: new Date(Date.now() + 1000) },
                                 sound: 'default',
-                                // ON AJOUTE CETTE LIGNE POUR L'ICÔNE :
-                                smallIcon: 'ic_notification' // Utilise l'icône de notification par défaut de Capacitor
+                                smallIcon: 'ic_notification'
                             }]
                         });
-                        // ========================================================
-                        // ✅ FIN DE LA CORRECTION
-                        // ========================================================
                     }
                 } catch (e) {
-                    console.warn('Notification echouee:', e);
+                    console.warn('Échec de la notification locale:', e);
                 }
             }
 
-            Utils.showToast(translation.toast_ticket_downloaded_native || 'Billet PDF enregistre !', 'success');
+            Utils.showToast(translation.toast_ticket_downloaded_native || 'Billet PDF enregistré !', 'success');
         } else {
             pdf.save(fileName);
             Utils.showToast(translation.toast_ticket_downloaded || 'Billet PDF telecharge !', 'success');
@@ -4697,33 +4676,25 @@ window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
 // DANS app.js (remplacez votre fonction displayResults par celle-ci)
 
 function displayResults(results, isReturn = false) {
-    // --- 0. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     
-    // --- 1. Récupération des éléments DOM ---
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
     const locationFilterSection = document.getElementById('departure-location-filter-section');
     const locationSelect = document.getElementById('filter-departure-location');
 
-    // --- 2. Application des filtres sur la liste brute fournie en entrée ---
     const filteredAndSortedResults = applyFiltersAndSort(results);
-
-    // --- 3. Mise à jour de l'état des résultats qui sont réellement affichés ---
     appState.displayedResults = filteredAndSortedResults;
     
-    // --- 4. Mise à jour du résumé avec le nombre de résultats APRÈS filtrage ---
     let summaryText = isReturn
         ? translation.results_summary_return(filteredAndSortedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
         : translation.results_summary_outbound(filteredAndSortedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
     if (summary) summary.innerHTML = summaryText;
 
-    // --- 5. Mise à jour du filtre par lieu de départ ---
     if (locationFilterSection && locationSelect) {
         const uniqueLocations = [...new Set(results.map(t => t.departureLocation).filter(Boolean))];
-        
         if (uniqueLocations.length > 1) {
             const currentFilterValue = activeFilters.departureLocation;
             locationSelect.innerHTML = `<option value="all">${translation.filter_all_locations || 'Tous les lieux'}</option>`;
@@ -4737,7 +4708,6 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 6. Logique pour les badges "Moins cher" et "Plus rapide" (basée sur la liste filtrée) ---
     let cheapestId = null, fastestId = null;
     if (filteredAndSortedResults.length > 1) {
         const minPrice = Math.min(...filteredAndSortedResults.map(r => r.price));
@@ -4757,14 +4727,9 @@ function displayResults(results, isReturn = false) {
         }
     }
 
-    // --- 7. Affichage du message si aucun résultat après filtrage ---
     if (filteredAndSortedResults.length === 0) {
         const totalBeforeFilters = results?.length || 0;
-        
-         if (totalBeforeFilters > 0) {
-            // ========================================================
-            // ✅ DÉBUT DE LA CORRECTION
-            // ========================================================
+        if (totalBeforeFilters > 0) {
             resultsList.innerHTML = `
                 <div class="no-results" style="text-align: center; padding: 48px;">
                     <h3>${translation.results_no_results_title}</h3>
@@ -4775,9 +4740,6 @@ function displayResults(results, isReturn = false) {
                         ${translation.filter_reset_button}
                     </button>
                 </div>`;
-            // ========================================================
-            // ✅ FIN DE LA CORRECTION
-            // ========================================================
         } else {
             resultsList.innerHTML = `
                 <div class="no-results" style="text-align: center; padding: 48px;">
@@ -4788,35 +4750,17 @@ function displayResults(results, isReturn = false) {
         return;
     }
 
-    // --- 8. Génération des cartes de résultats à partir de la liste filtrée ---
     resultsList.innerHTML = filteredAndSortedResults.map(route => {
         let badgeHTML = '';
-        
-        // ========================================================
-        // ✅ DÉBUT DE LA CORRECTION
-        // ========================================================
-        
-        // PRIORITÉ 1 : Badge trajet de nuit
         if (route.isNightTrip) {
-            // On utilise la clé de traduction
             badgeHTML = `<div class="highlight-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">${translation.badge_night_trip}</div>`;
-        }
-        // PRIORITÉ 2 : Badge personnalisé
-        else if (route.highlightBadge) {
+        } else if (route.highlightBadge) {
             badgeHTML = `<div class="highlight-badge">${route.highlightBadge}</div>`;
-        }
-        // PRIORITÉ 3 : Moins cher
-        else if (route.id === cheapestId) {
+        } else if (route.id === cheapestId) {
             badgeHTML = `<div class="highlight-badge cheapest">${translation.badge_cheapest}</div>`;
-        }
-        // PRIORITÉ 4 : Plus rapide
-        else if (route.id === fastestId) {
+        } else if (route.id === fastestId) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
-
-        // ========================================================
-        // ✅ FIN DE LA CORRECTION
-        // ========================================================
 
         const amenitiesHTML = route.amenities.map(amenity => 
             `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`
@@ -4827,151 +4771,81 @@ function displayResults(results, isReturn = false) {
             : '';
         
         let tripDetailsHTML = '';
-
         if (route.stops && route.stops.length > 0) {
-            tripDetailsHTML += `
-                <div class="trip-details-accordion">
-                    <div class="accordion-header" onclick="toggleTripDetails(this)">
-                        <span class="bus-card-trip-details">
-                            <span class="accordion-icon">▶</span>
-                            <span>${translation.details_stops_planned} </span>
-                            <strong class="bus-card-stops">${translation.details_stops_count(route.stops.length)}</strong>
-                        </span>
-                    </div>
-                    <div class="accordion-content">
-                        ${route.stops.map(stop => `<div class="accordion-content-item">🛑 <strong>${stop.city}</strong> (${stop.duration})</div>`).join('')}
-                    </div>
-                </div>`;
+            tripDetailsHTML += `<div class="trip-details-accordion"><div class="accordion-header" onclick="toggleTripDetails(this)"><span class="bus-card-trip-details"><span class="accordion-icon">▶</span><span>${translation.details_stops_planned} </span><strong class="bus-card-stops">${translation.details_stops_count(route.stops.length)}</strong></span></div><div class="accordion-content">${route.stops.map(stop => `<div class="accordion-content-item">🛑 <strong>${stop.city}</strong> (${stop.duration})</div>`).join('')}</div></div>`;
         }
-
         if (route.connections && route.connections.length > 0) {
-            tripDetailsHTML += `
-                <div class="trip-details-accordion" style="margin-top: 4px;">
-                    <div class="accordion-header" onclick="toggleTripDetails(this)">
-                        <span class="bus-card-trip-details" style="color: #00d9ff;">
-                            <span class="accordion-icon">▶</span>
-                            <span>${translation.details_connections} </span>
-                            <strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong>
-                        </span>
-                    </div>
-                    <div class="accordion-content">
-                        ${route.connections.map(conn => 
-                            `<div class="accordion-content-item">
-                                ⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br>
-                                <small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small>
-                            </div>`
-                        ).join('')}
-                    </div>
-                </div>`;
+            tripDetailsHTML += `<div class="trip-details-accordion" style="margin-top: 4px;"><div class="accordion-header" onclick="toggleTripDetails(this)"><span class="bus-card-trip-details" style="color: #00d9ff;"><span class="accordion-icon">▶</span><span>${translation.details_connections} </span><strong class="bus-card-stops">${translation.details_connections_count(route.connections.length)}</strong></span></div><div class="accordion-content">${route.connections.map(conn => `<div class="accordion-content-item">⇄ ${translation.details_connection_info(conn.at, conn.waitTime)}<br><small>${translation.details_next_bus_info(conn.nextCompany, conn.nextBusNumber, conn.nextDeparture)}</small></div>`).join('')}</div></div>`;
         }
-
         if (tripDetailsHTML === '') {
-            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">
-                ${Utils.getAmenityIcon('direct')}
-                <span>${translation.details_direct_trip}</span>
-            </div>`;
+            tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
         }
         
         const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
             ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
             : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
 
-
-        
-        // ========================================================
-        // ✅ DÉBUT DE LA MISE À JOUR POUR LA TRADUCTION
-        // ========================================================
         let tripTitleHTML;
-        
         if (route.isSegment) {
-            tripTitleHTML = `
-                <div class="bus-card-trip-title" style="font-size: 0.9em; color: var(--color-text-secondary);">
-                    ${translation.segment_on_line(route.from, route.to)}
-                </div>
-                <div class="bus-card-segment-info" style="font-size: 1.2em; font-weight: 700; margin-top: 4px;">
-                    ${translation.segment_your_trip} <strong>${route.segmentFrom} → ${route.segmentTo}</strong>
-                </div>
-            `;
+            tripTitleHTML = `<div class="bus-card-trip-title" style="font-size: 0.9em; color: var(--color-text-secondary);">${translation.segment_on_line(route.from, route.to)}</div><div class="bus-card-segment-info" style="font-size: 1.2em; font-weight: 700; margin-top: 4px;">${translation.segment_your_trip} <strong>${route.segmentFrom} → ${route.segmentTo}</strong></div>`;
         } else {
             tripTitleHTML = `<div class="bus-card-trip-title" style="font-size: 1.2em; font-weight: 700;">${route.from} → ${route.to}</div>`;
         }
-        // ========================================================
-        // ✅ FIN DE LA MISE À JOUR
-        // ========================================================
-        // ✅ FIN DU NOUVEAU BLOC
-        // ========================================================
-        
-            // ========================================================
-    // ✅ NOUVELLE LOGIQUE POUR AFFICHER LES ALERTES
-    // ========================================================
-  let alertsHTML = '';
-if (route.route.alerts && route.route.alerts.length > 0) {
-    const alertIcons = { info: 'ℹ️', warning: '⚠️', danger: '🛑' };
-      // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION : Structure HTML simplifiée
-    // ========================================================
-    alertsHTML = `
-        <div class="bus-card-alerts">
-            ${route.route.alerts.map(alert => {
-                // On met l'icône et le message DANS LA MÊME BALISE
-                return `
-                    <div class="alert-item ${alert.type}">
-                        ${alertIcons[alert.type] || 'ℹ️'} ${alert.message}
+
+        let alertsHTML = '';
+        if (route.route.alerts && route.route.alerts.length > 0) {
+            const alertIcons = { info: 'ℹ️', warning: '⚠️', danger: '🛑' };
+            alertsHTML = `<div class="bus-card-alerts">${route.route.alerts.map(alert => `<div class="alert-item ${alert.type}">${alertIcons[alert.type] || 'ℹ️'} ${alert.message}</div>`).join('')}</div>`;
+        }
+
+        // ============================================
+        // ✅ CORRECTION LOGIQUE BUS COMPLET
+        // ============================================
+        let buttonHTML = '';
+        let seatsInfoHTML = '';
+
+        if (route.availableSeats > 0) {
+            buttonHTML = `<button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>`;
+            seatsInfoHTML = `<strong>${route.availableSeats}</strong> ${translation.seats_available}`;
+        } else {
+            // Si le bus est plein, on met un bouton désactivé et un texte différent
+            buttonHTML = `<button class="btn btn-disabled" disabled>COMPLET</button>`;
+            seatsInfoHTML = `<strong style="color: #ef5350;">COMPLET</strong>`;
+        }
+        // ============================================
+
+        return `
+            <div class="bus-card">
+                ${badgeHTML}
+                <div class="bus-card-wrapper">
+                    <div class="bus-card-main">
+                        ${tripTitleHTML}
+                        <div class="bus-card-time">
+                            <span>${route.departure}</span>
+                            <div class="bus-card-duration">
+                                <span>→</span><br>
+                                ${route.duration || 'N/A'}
+                            </div>
+                            ${arrivalDisplay}
+                        </div>
+                        ${departureLocationHTML}
+                        <div class="bus-card-company">${route.company}</div>
+                        ${tripDetailsHTML}
+                        <div class="bus-card-details">
+                            <div class="bus-amenities">${amenitiesHTML}</div>
+                            <div class="bus-seats">${seatsInfoHTML}</div>
+                        </div>
+                        ${alertsHTML} 
                     </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
-}
-
-// ========================================================
-// ✅ DÉBUT DE LA NOUVELLE STRUCTURE HTML
-// ========================================================
-return `
-    <div class="bus-card">
-        ${badgeHTML}
-        <div class="bus-card-wrapper">
-            
-            <!-- On remet tout dans une seule colonne principale -->
-            <div class="bus-card-main">
-                ${tripTitleHTML}
-                <div class="bus-card-time">
-                    <span>${route.departure}</span>
-                    <div class="bus-card-duration">
-                        <span>→</span><br>
-                        ${route.duration || 'N/A'}
+                    <div class="bus-card-pricing">
+                        <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
+                        ${buttonHTML}
                     </div>
-                    ${arrivalDisplay}
                 </div>
-                ${departureLocationHTML}
-                <div class="bus-card-company">${route.company}</div>
-                ${tripDetailsHTML}
-                <div class="bus-card-details">
-                    <div class="bus-amenities">${amenitiesHTML}</div>
-                    <div class="bus-seats"><strong>${route.availableSeats}</strong> ${translation.seats_available}</div>
-                </div>
-                <!-- On remet les alertes ici, à la fin de la colonne principale -->
-                ${alertsHTML} 
             </div>
-
-            <!-- La partie prix et bouton est séparée comme avant -->
-            <div class="bus-card-pricing">
-                <div class="bus-price">${Utils.formatPrice(route.price)} FCFA</div>
-                <button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>
-            </div>
-
-        </div>
-    </div>
-`;
-    // ========================================================
-    // ✅ FIN DE LA MISE À JOUR
-    // ========================================================
+        `;
     }).join("");
 
-    // --- 9. Mise à jour de la légende ---
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
         legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 

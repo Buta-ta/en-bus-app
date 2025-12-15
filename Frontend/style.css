@@ -6494,3 +6494,11 @@ body.pwa-installed .container {
   color: #f44336; /* Rouge pour le titre de l'erreur */
   margin-bottom: 0.5rem;
 }
+
+
+
+.btn-disabled {
+    background: var(--gray-600);
+    color: var(--gray-400);
+    cursor: not-allowed;
+}
