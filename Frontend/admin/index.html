@@ -9198,38 +9198,48 @@
         // --- FONCTIONS POUR L'HISTORIQUE ---
 
         // Initialise les filtres de l'historique (sélecteur d'employés et calendrier)
-        async function setupHistoryFilters() {
-            // 1. Remplir le sélecteur d'employés
-            const select = document.getElementById('history-crew-select');
-            if (!select) return;
+       async function setupHistoryFilters() {
+    const select = document.getElementById('history-crew-select');
+    if (!select) return;
 
-            if (!allCrewMembers || allCrewMembers.length === 0) {
-                await loadAllCrew();
+    // Si la liste des employés est vide, on la charge
+    if (!allCrewMembers || allCrewMembers.length === 0) {
+        await loadAllCrew();
+    }
+    
+    // Remplir le sélecteur d'employés
+    select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
+    allCrewMembers.forEach(member => {
+        select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
+    });
+
+    // Initialiser le calendrier Flatpickr
+    flatpickr("#history-date-range", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        locale: "fr",
+        defaultDate: [
+            new Date(new Date().setDate(new Date().getDate() - 30)),
+            new Date()
+        ],
+        onClose: function(selectedDates) {
+            // Recharger si on a bien une plage de dates
+            if (selectedDates.length === 2) {
+                loadAttendanceHistory();
             }
-
-            select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
-            allCrewMembers.forEach(member => {
-                select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
-            });
-
-            // 2. Initialiser le calendrier Flatpickr pour la période
-            flatpickr("#history-date-range", {
-                mode: "range",
-                dateFormat: "Y-m-d",
-                locale: "fr",
-                defaultDate: [
-                    new Date(new Date().setDate(new Date().getDate() - 30)), // Il y a 30 jours
-                    new Date() // Aujourd'hui
-                ],
-                onChange: function (selectedDates, dateStr, instance) {
-                    // Recharger l'historique quand la date change
-                    if (selectedDates.length === 2) {
-                        loadAttendanceHistory();
-                    }
-                }
-            });
         }
-
+    });
+    
+    // ✅ NOUVEAU : On charge l'historique pour le premier employé par défaut
+    if (allCrewMembers.length > 0) {
+        select.value = allCrewMembers[0]._id; // On sélectionne le premier
+        loadAttendanceHistory(); // Et on charge ses données
+    } else {
+        // S'il n'y a aucun employé, on vide le tableau
+        const tbody = document.getElementById('history-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun employé à afficher.</td></tr>';
+    }
+}
         // Charge et affiche l'historique pour l'employé et la période sélectionnés
         async function loadAttendanceHistory() {
             const crewId = document.getElementById('history-crew-select').value;
