@@ -9147,63 +9147,95 @@ async function loadAttendanceHistory() {
         let isScanning = false;
 
         // Charger les données du jour
-        // Charger les données du jour (CORRIGÉ POUR LA PAUSE)
-        // Charger les données du jour (VERSION FINALE)
-        // Charger les données du jour (Version Simplifiée pour l'affichage de l'heure)
-        // Charger les données du jour (Version Finale Blindée)
-// VERSION DE DÉBOGAGE - EXTRÊMEMENT SIMPLE
-async function loadAttendanceToday() {
-    console.log("--- DÉBUG: Début de loadAttendanceToday ---");
+      async function loadAttendanceToday() {
     const data = await apiCall('/admin/attendance/today');
-
+    
     if (!data || !data.success) {
-        console.error("-> Étape 1: Échec de l'appel API ou réponse invalide.");
         return;
     }
 
-    console.log("-> Étape 2: Données reçues. Nombre d'enregistrements:", data.records.length);
+    // Mise à jour des stats et anomalies (votre code est bon)
+    document.getElementById('stat-present-now').textContent = data.stats.present || 0;
+    document.getElementById('stat-completed-today').textContent = data.stats.completed || 0;
+    
+    // ... votre code pour afficher les anomalies ici ...
 
+    // --- TABLEAU DES PRÉSENCES ---
     const tbody = document.getElementById('attendance-table-body');
-    if (!tbody) {
-        console.error("-> Étape 3: Erreur fatale, le tbody 'attendance-table-body' est INTROUVABLE.");
-        return;
-    }
-
     if (!data.records || data.records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui. (Info depuis le débug)</td></tr>';
-        console.log("-> Étape 4: Fin, aucun enregistrement à afficher.");
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun pointage aujourd\'hui.</td></tr>';
         return;
     }
 
-    try {
-        let html = '';
-        data.records.forEach(r => {
-            // On utilise des valeurs par défaut pour tout, pour éviter les erreurs
-            const checkInTime = r.checkIn ? new Date(r.checkIn).toLocaleTimeString('fr-FR') : 'N/A';
-            const crewName = r.crewName || 'Inconnu';
-            const crewRole = r.crewRole || 'N/A';
-            const status = r.status || '...';
+    tbody.innerHTML = data.records.map(r => {
+        try {
+            // --- 1. Formatage SÉCURISÉ ---
+            const checkInTime = r.checkIn ? new Date(r.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+            const checkOutTime = r.checkOut ? new Date(r.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '...';
+
+            // --- 2. Affichage Heure Prévue ---
+            let timeDisplay = `<span class="font-mono" style="font-size: 1.1em; font-weight: bold;">${checkInTime}</span>`;
+            if (r.scheduledStart) {
+                timeDisplay += `<div style="font-size: 0.8em; color: var(--text-muted);">Prévu: ${r.scheduledStart}</div>`;
+            }
+
+            // --- 3. Affichage Agence ---
+            const agencyDisplay = r.agencyName 
+                ? `<span style="color: var(--accent);">${r.agencyName}</span>` 
+                : '<span style="color: var(--text-muted);">Siège/Global</span>';
+
+            // --- 4. Statut Actuel ---
+            let statusBadge = '';
+            let actionText = `Arrivée à ${checkInTime}`;
+            if (r.status === 'working' || r.status === 'present') {
+                statusBadge = `<span class="badge badge-success">🟢 Présent</span>`;
+            } else if (r.status === 'on_break') {
+                statusBadge = `<span class="badge badge-warning">☕ En Pause</span>`;
+                const lastAction = r.lastActionTime ? new Date(r.lastActionTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                actionText = `Parti en pause à ${lastAction}`;
+            } else if (r.status === 'completed') {
+                statusBadge = `<span class="badge badge-gray">🏁 Terminé</span>`;
+                actionText = `Départ à ${checkOutTime}`;
+            }
             
-            html += `
+            // --- 5. Temps de travail (SÉCURISÉ) ---
+            let durationDisplay = '-';
+            // Cas 1: La journée est terminée, on a la durée finale
+            if (r.durationMinutes && r.durationMinutes > 0) {
+                const h = Math.floor(r.durationMinutes / 60);
+                const m = r.durationMinutes % 60;
+                durationDisplay = `${h}h ${String(m).padStart(2, '0')}m`;
+            } 
+            // Cas 2: La journée est en cours, on calcule le temps écoulé
+            else if (r.status !== 'completed' && r.checkIn) {
+                const now = new Date();
+                const checkInDate = new Date(r.checkIn);
+                // On vérifie que la date est valide avant de calculer
+                if (!isNaN(checkInDate.getTime())) {
+                    const elapsed = Math.max(0, Math.floor((now - checkInDate) / 60000) - (r.totalBreakMinutes || 0));
+                    const h = Math.floor(elapsed / 60);
+                    const m = elapsed % 60;
+                    durationDisplay = `${h}h ${String(m).padStart(2, '0')}m (en cours)`;
+                }
+            }
+
+            return `
                 <tr>
-                    <td>${checkInTime}</td>
-                    <td>${crewName}</td>
-                    <td>${crewRole}</td>
-                    <td>-</td>
-                    <td>${status}</td>
-                    <td>-</td>
+                    <td>${timeDisplay}</td>
+                    <td><strong>${r.crewName || 'Inconnu'}</strong></td>
+                    <td>${r.crewRole || 'N/A'}</td>
+                    <td>${agencyDisplay}</td>
+                    <td>${statusBadge}<small style="display:block; color:#888;">${actionText}</small></td>
+                    <td class="font-bold font-mono">${durationDisplay}</td>
                 </tr>
             `;
-        });
-        
-        tbody.innerHTML = html;
-        console.log("-> Étape 5: SUCCÈS ! Le tableau a été rempli.");
-
-    } catch (error) {
-        console.error("-> ÉTAPE X: ERREUR CRITIQUE DANS LA BOUCLE D'AFFICHAGE !", error);
-        tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Une erreur JavaScript a bloqué l\'affichage.</td></tr>';
-    }
+        } catch (e) {
+            console.error("Erreur de rendu pour l'enregistrement:", r, e);
+            return '<tr><td colspan="6" class="text-danger">Erreur affichage ligne</td></tr>';
+        }
+    }).join('');
 }
+
         // Activer/Désactiver le scanner
         function toggleScanner() {
             const container = document.getElementById('scanner-container');
