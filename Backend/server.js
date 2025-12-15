@@ -3040,6 +3040,35 @@ app.get("/api/trips/:tripId/reviews", async (req, res) => {
 // Route pour METTRE À JOUR les paramètres
 // DANS server.js
 
+
+
+
+// [GET] Récupérer l'historique de pointage d'un employé sur une période
+app.get("/api/admin/attendance/history", authenticateToken, async (req, res) => {
+    try {
+        const { crewId, startDate, endDate } = req.query;
+
+        if (!crewId || !startDate || !endDate) {
+            return res.status(400).json({ error: "Paramètres manquants." });
+        }
+        if (!ObjectId.isValid(crewId)) {
+            return res.status(400).json({ error: "ID d'employé invalide." });
+        }
+
+        const db = getDb();
+        const records = await db.collection('attendance').find({
+            crewId: new ObjectId(crewId),
+            date: { $gte: startDate, $lte: endDate }
+        }).sort({ date: -1 }).toArray();
+
+        res.json({ success: true, records });
+
+    } catch (error) {
+        console.error("Erreur historique pointage:", error);
+        res.status(500).json({ error: "Erreur serveur." });
+    }
+});
+
 app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
     body('childMaxAge').isInt({ min: 0, max: 17 }),
     body('childPricingMode').isIn(['percentage', 'fixed']),
