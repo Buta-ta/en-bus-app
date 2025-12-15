@@ -9266,13 +9266,38 @@ async function initAttendanceHistory() {
     await loadAttendanceHistory();
 }
 
-// VERSION FINALE DE loadAttendanceHistory
 async function loadAttendanceHistory() {
+    let crewSelect, dateRangeInput, tbody;
+    let attempts = 0;
+
+    // Fonction interne pour essayer de trouver les éléments
+    const findElements = () => {
+        crewSelect = document.getElementById('history-crew-select');
+        dateRangeInput = document.getElementById('history-date-range');
+        tbody = document.getElementById('history-table-body');
+        return crewSelect && dateRangeInput && tbody;
+    };
+
+    // Si les éléments ne sont pas là, on attend un peu et on réessaie (max 5 fois)
+    while (!findElements() && attempts < 5) {
+        console.warn(`Tentative ${attempts + 1}: Éléments de l'historique non trouvés, attente de 100ms...`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+
+    if (!findElements()) {
+        console.error("-> ERREUR FATALE: Impossible de trouver les éléments de l'historique après plusieurs tentatives.");
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur d\'initialisation de l\'interface.</td></tr>';
+        return;
+    }
+
+    // --- Le reste de la fonction est identique ---
     console.log("--- DEBUG: loadAttendanceHistory ---");
-    
-    const crewId = document.getElementById('history-crew-select').value;
-    const dateRange = document.getElementById('history-date-range').value;
-    const tbody = document.getElementById('history-table-body');
+    const crewId = crewSelect.value;
+    const dateRange = dateRangeInput.value;
+
+    console.log("-> Employé sélectionné (ID):", crewId);
+    console.log("-> Plage de dates sélectionnée:", dateRange);
 
     if (!crewId) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
@@ -9287,19 +9312,18 @@ async function loadAttendanceHistory() {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
     
     const url = `/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`;
-    console.log("-> Appel API:", url);
+    console.log("-> Appel de l'API avec l'URL:", url);
 
     const data = await apiCall(url);
-    console.log("-> Réponse:", data);
+    console.log("-> Réponse reçue de l'API:", data);
 
     if (data && data.success) {
         if (data.records.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
         } else {
-            // Rendu du tableau (votre code est déjà bon)
             tbody.innerHTML = data.records.map(record => {
                 const checkIn = new Date(record.checkIn).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-                const checkOut = record.checkOut ? new Date(record.checkOut).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : 'En cours';
+                const checkOut = record.checkOut ? new Date(record.checkOut).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '...';
                 const totalBreak = record.totalBreakMinutes || 0;
                 const breakDisplay = totalBreak > 0 ? `${totalBreak} min` : '-';
                 
@@ -9322,7 +9346,7 @@ async function loadAttendanceHistory() {
             }).join('');
         }
     } else {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement de l\'historique.</td></tr>';
     }
 }
 
