@@ -2981,107 +2981,104 @@
 
 
 
-    <!-- ONGLET: PRÉSENCES -->
-    <div id="tab-attendance" class="tab-content">
+    <!-- ONGLET: PRÉSENCES (VERSION COMPLÈTE ET CORRIGÉE) -->
+<div id="tab-attendance" class="tab-content">
 
-        <!-- 1. En-tête -->
-        <div class="page-header">
-            <h1 class="page-title">Suivi des Présences</h1>
-            <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
+    <!-- 1. En-tête de la page -->
+    <div class="page-header">
+        <h1 class="page-title">Suivi des Présences</h1>
+        <p class="page-subtitle">Pointez les arrivées et départs via QR Code</p>
+    </div>
+
+    <!-- 2. Statistiques -->
+    <div class="stats-grid" id="attendance-stats">
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Présents Actuellement</span>
+                <div class="stat-icon success">🟢</div>
+            </div>
+            <div class="stat-value" id="stat-present-now">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <span class="stat-label">Journée Terminée</span>
+                <div class="stat-icon primary">🏁</div>
+            </div>
+            <div class="stat-value" id="stat-completed-today">-</div>
+        </div>
+    </div>
+
+    <!-- 3. Carte d'alertes pour les anomalies -->
+    <div id="attendance-alerts" class="content-card" style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05); margin-bottom: 1.5rem;">
+        <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
+        <ul id="anomalies-list" style="list-style: none; padding: 0;">
+            <!-- Rempli par JS -->
+        </ul>
+    </div>
+
+    <!-- 4. Carte Principale (Scanner + Tableau des pointages du jour) -->
+    <div class="content-card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="card-title">Borne & Pointages du Jour</h2>
+            <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer Caméra</button>
+        </div>
+        
+        <div class="scan-mode-selector" style="display: flex; gap: 15px; margin: 20px 0; justify-content: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid var(--dark-border);">
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="auto" checked>
+                <span style="font-weight: bold; margin-left: 5px; color: var(--accent);">🤖 Auto / Arrivée</span>
+            </label>
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="break">
+                <span style="font-weight: bold; margin-left: 5px; color: #ff9800;">☕ Pause / Reprise</span>
+            </label>
+            <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
+                <input type="radio" name="scan-mode" value="exit">
+                <span style="font-weight: bold; margin-left: 5px; color: #ef5350;">🏁 Fin de journée</span>
+            </label>
+        </div>
+        <div style="text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">
+            ℹ️ Une pause dure au minimum 15min.
         </div>
 
-        <!-- 2. Statistiques (Votre bloc actuel) -->
-        <div class="stats-grid" id="attendance-stats">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-label">Présents Actuellement</span>
-                    <div class="stat-icon success">🟢</div>
-                </div>
-                <div class="stat-value" id="stat-present-now">-</div>
-            </div>
-
-            
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-label">Journée Terminée</span>
-                    <div class="stat-icon primary">🏁</div>
-                </div>
-                <div class="stat-value" id="stat-completed-today">-</div>
+        <div id="scanner-container" style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
+            <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
+            <div id="scan-result-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
+                ✅ SCANNÉ !
             </div>
         </div>
 
-        <!-- Zone d'alerte (Cachée si vide) -->
-            <div id="attendance-alerts" class="content-card"
-                style="display: none; border-left: 5px solid #ef5350; background: rgba(239, 83, 80, 0.05);">
-                <h3 style="color: #ef5350; margin-bottom: 10px;">⚠️ Anomalies Détectées</h3>
-                <ul id="anomalies-list" style="list-style: none; padding: 0;">
-                    <!-- Rempli par JS -->
-                </ul>
-            </div>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Heure</th>
+                        <th>Employé</th>
+                        <th>Rôle</th>
+                        <th>Agence</th>
+                        <th>Statut</th>
+                        <th>Temps de travail</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                    <!-- Rempli par loadAttendanceToday -->
+                </tbody>
+            </table>
+        </div>
+    </div> <!-- FIN de la carte principale -->
 
-        <!-- 3. Carte Principale (Scanner + Tableau) -->
-        <div class="content-card">
-
-            <!-- Header de la carte -->
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 class="card-title">Borne de Pointage</h2>
-                <button class="btn btn-primary" onclick="toggleScanner()">📷 Activer Caméra</button>
-            </div>
-
-            <!-- ✅ SÉLECTEUR D'INTENTION (Placé ici) -->
-            <div class="scan-mode-selector"
-                style="display: flex; gap: 15px; margin: 20px 0; justify-content: center; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid var(--dark-border);">
-                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                    <input type="radio" name="scan-mode" value="auto" checked>
-                    <span style="font-weight: bold; margin-left: 5px; color: var(--accent);">🤖 Auto / Arrivée</span>
-                </label>
-
-                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                    <input type="radio" name="scan-mode" value="break">
-                    <span style="font-weight: bold; margin-left: 5px; color: #ff9800;">☕ Pause / Reprise</span>
-                </label>
-
-                <label class="scan-mode-btn" style="cursor: pointer; user-select: none;">
-                    <input type="radio" name="scan-mode" value="exit">
-                    <span style="font-weight: bold; margin-left: 5px; color: #ef5350;">🏁 Fin de journée</span>
-                </label>
-            </div>
-
-            <div
-                style="text-align: center; font-size: 0.8em; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">
-                ℹ️ Une pause dure au minimum 15min et au maximum 2h.
-            </div>
-
-            <!-- Zone du scanner -->
-            <div id="scanner-container"
-                style="display: none; margin-bottom: 20px; background: black; border-radius: 12px; overflow: hidden; position: relative;">
-                <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
-                <div id="scan-result-overlay"
-                    style="position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; font-size: 2rem; font-weight: bold; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
-                    ✅ SCANNÉ !
-                </div>
-            </div>
-
-
-            <!-- DANS #tab-attendance, APRÈS la carte du scanner -->
-
+    <!-- 5. Carte de l'Historique (séparée) -->
     <div class="content-card" style="margin-top: 2rem;">
         <div class="card-header">
             <h2 class="card-title">Historique des Pointages</h2>
         </div>
-
-        <!-- Filtres pour l'historique -->
+        
         <div class="filters" style="margin-bottom: 1.5rem;">
-            <select id="history-crew-select" class="form-control" onchange="loadAttendanceHistory()"
-                style="flex: 1; max-width: 300px;">
-                <!-- Rempli par JS -->
-            </select>
-            <input type="text" id="history-date-range" class="form-control" placeholder="Sélectionner une période..."
-                style="flex: 1; max-width: 300px;">
+            <select id="history-crew-select" class="form-control" onchange="loadAttendanceHistory()" style="flex: 1; max-width: 300px;"></select>
+            <input type="text" id="history-date-range" class="form-control" placeholder="Sélectionner une période..." style="flex: 1; max-width: 300px;">
             <button class="btn btn-secondary" onclick="loadAttendanceHistory()">🔄 Actualiser</button>
         </div>
 
-        <!-- Tableau de l'historique -->
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -3094,34 +3091,15 @@
                     </tr>
                 </thead>
                 <tbody id="history-table-body">
-                    <!-- Rempli par JS -->
+                    <!-- Rempli par loadAttendanceHistory -->
                 </tbody>
             </table>
         </div>
-    </div>
+    </div> <!-- FIN de la carte de l'historique -->
 
-            <!-- Tableau des logs -->
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Heure</th>
-                            <th>Employé</th>
-                            <th>Rôle</th>
-                            <th>Agence</th>
-                            <th>Statut</th> <!-- Renommé pour clarté -->
-                            <th>Temps de travail</th>
-                        </tr>
-                    </thead>
-                    <tbody id="attendance-table-body">
-                        <!-- Rempli par JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+</div> <!-- FIN de #tab-attendance -->
 
-    
+
 
 
 
@@ -9211,30 +9189,30 @@
 
         // Initialise les filtres de l'historique (sélecteur d'employés et calendrier)
         function setupHistoryFilters() {
-    const select = document.getElementById('history-crew-select');
-    if (!select || !allCrewMembers || allCrewMembers.length === 0) return;
+            const select = document.getElementById('history-crew-select');
+            if (!select || !allCrewMembers || allCrewMembers.length === 0) return;
 
-    select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
-    allCrewMembers.forEach(member => {
-        select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
-    });
+            select.innerHTML = '<option value="">-- Sélectionnez un employé --</option>';
+            allCrewMembers.forEach(member => {
+                select.innerHTML += `<option value="${member._id}">${member.name} (${member.role})</option>`;
+            });
 
-    flatpickr("#history-date-range", {
-        mode: "range",
-        dateFormat: "Y-m-d",
-        locale: "fr",
-        defaultDate: [
-            new Date(new Date().setDate(new Date().getDate() - 30)),
-            new Date()
-        ],
-        onClose: function(selectedDates) {
-            if (selectedDates.length === 2) loadAttendanceHistory();
+            flatpickr("#history-date-range", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                locale: "fr",
+                defaultDate: [
+                    new Date(new Date().setDate(new Date().getDate() - 30)),
+                    new Date()
+                ],
+                onClose: function (selectedDates) {
+                    if (selectedDates.length === 2) loadAttendanceHistory();
+                }
+            });
+
+            // Pré-sélectionner le premier
+            select.value = allCrewMembers[0]._id;
         }
-    });
-
-    // Pré-sélectionner le premier
-    select.value = allCrewMembers[0]._id;
-}
         // Charge et affiche l'historique pour l'employé et la période sélectionnés
         async function loadAttendanceHistory() {
             console.log("--- DEBUG: loadAttendanceHistory ---");
