@@ -6405,6 +6405,11 @@
 
                 case 'attendance':
                     loadAttendanceToday();
+
+                // 2. On lance la séquence pour l'historique
+    initAttendanceHistory();
+    break;
+
                     // On s'assure que les employés sont là, PUIS on met en place l'historique
                     // On crée une fonction asynchrone auto-exécutée pour gérer l'historique
                     (async () => {
@@ -6461,6 +6466,33 @@
                 .join("");
         }
 
+
+
+
+        // AJOUTEZ CETTE NOUVELLE FONCTION DANS VOTRE <script>
+
+async function initAttendanceHistory() {
+    try {
+        // ÉTAPE A : S'assurer que les employés sont chargés
+        if (!allCrewMembers || allCrewMembers.length === 0) {
+            console.log("-> Historique : Attente du chargement du personnel...");
+            await loadAllCrew();
+        }
+        
+        // ÉTAPE B : Remplir les filtres (le select)
+        // La fonction `setupHistoryFilters` remplit le select et le pré-sélectionne
+        console.log("-> Historique : Initialisation des filtres...");
+        setupHistoryFilters();
+        
+        // ÉTAPE C : Charger les données de l'historique
+        // Cette fonction est maintenant appelée APRÈS que le select ait été rempli et sélectionné
+        console.log("-> Historique : Chargement des données...");
+        await loadAttendanceHistory();
+        
+    } catch (error) {
+        console.error("Erreur lors de l'initialisation de l'historique:", error);
+    }
+}
 
         // DANS admin/app.js
 
