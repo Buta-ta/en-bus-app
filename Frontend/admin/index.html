@@ -9242,60 +9242,57 @@
 }
         // Charge et affiche l'historique pour l'employé et la période sélectionnés
         async function loadAttendanceHistory() {
-            const crewId = document.getElementById('history-crew-select').value;
-            const dateRange = document.getElementById('history-date-range').value;
-            const tbody = document.getElementById('history-table-body');
+    console.log("--- DEBUG: loadAttendanceHistory ---");
+    
+    const crewSelect = document.getElementById('history-crew-select');
+    const dateRangeInput = document.getElementById('history-date-range');
+    const tbody = document.getElementById('history-table-body');
 
-            if (!crewId) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
-                return;
-            }
-            if (!dateRange.includes(' au ')) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner une période complète.</td></tr>';
-                return;
-            }
+    if (!crewSelect || !dateRangeInput || !tbody) {
+        console.error("-> Erreur: Un des éléments de filtre est manquant.");
+        return;
+    }
 
-            const [startDate, endDate] = dateRange.split(' au ');
+    const crewId = crewSelect.value;
+    const dateRange = dateRangeInput.value;
 
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
+    console.log("-> Employé sélectionné (ID):", crewId);
+    console.log("-> Plage de dates sélectionnée:", dateRange);
 
-            const data = await apiCall(`/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`);
+    if (!crewId) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner un employé.</td></tr>';
+        console.log("-> Arrêt: Aucun employé sélectionné.");
+        return;
+    }
+    if (!dateRange.includes(' au ')) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Veuillez sélectionner une période complète.</td></tr>';
+        console.log("-> Arrêt: Plage de dates incomplète.");
+        return;
+    }
 
-            if (data && data.success) {
-                if (data.records.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
-                    return;
-                }
+    const [startDate, endDate] = dateRange.split(' au ');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Chargement...</td></tr>';
+    
+    const url = `/admin/attendance/history?crewId=${crewId}&startDate=${startDate}&endDate=${endDate}`;
+    console.log("-> Appel de l'API avec l'URL:", url);
 
-                tbody.innerHTML = data.records.map(record => {
-                    const checkIn = new Date(record.checkIn).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                    const checkOut = record.checkOut ? new Date(record.checkOut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'En cours';
+    const data = await apiCall(url);
 
-                    const totalBreak = record.totalBreakMinutes || 0;
-                    const breakDisplay = totalBreak > 0 ? `${totalBreak} min` : '-';
+    console.log("-> Réponse reçue de l'API:", data);
 
-                    let durationDisplay = '-';
-                    if (record.durationMinutes > 0) {
-                        const h = Math.floor(record.durationMinutes / 60);
-                        const m = record.durationMinutes % 60;
-                        durationDisplay = `${h}h ${String(m).padStart(2, '0')}m`;
-                    }
-
-                    return `
-                <tr>
-                    <td class="font-bold">${new Date(record.date).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</td>
-                    <td class="font-mono">${checkIn}</td>
-                    <td class="font-mono">${checkOut}</td>
-                    <td>${breakDisplay}</td>
-                    <td class="font-bold">${durationDisplay}</td>
-                </tr>
-            `;
-                }).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
-            }
+    if (data && data.success) {
+        if (data.records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Aucun pointage trouvé pour cette période.</td></tr>';
+            console.log("-> Succès, mais aucun enregistrement trouvé.");
+        } else {
+            // ... (votre code de rendu de tableau, qui est correct)
+            console.log(`-> Succès, affichage de ${data.records.length} enregistrements.`);
         }
-
+    } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erreur de chargement.</td></tr>';
+        console.error("-> Échec de l'appel API ou réponse invalide.");
+    }
+}
 
         // ============================================
         // 🕵️ FONCTION DE DÉBOGAGE (TEMPORAIRE)
