@@ -8,8 +8,8 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { ObjectId } = require("mongodb"); 
-const { connectToDb, getDb } = require('./database'); 
+const { ObjectId } = require("mongodb");
+const { connectToDb, getDb } = require('./database');
 // On déstructure l'objet pour récupérer toutes les fonctions ET l'objet admin
 const { registerToken, sendPush } = require('./notifications');// 
 // --- Imports (à ajouter en haut de votre fichier avec les autres) ---
@@ -26,6 +26,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 const html_pdf = require('html-pdf-node'); // ✅ AJOUTER CETTE LIGNE
+// ✅ AJOUTER CETTE LIGNE
+const axios = require("axios");
 
 // --- Client OAuth2 (à créer une seule fois, après vos imports) ---
 // La variable d'environnement doit être ajoutée sur Render.
@@ -45,23 +47,23 @@ const translations = require("./emailTranslations.js");
 
 // --- Validation des variables d'environnement ---
 const requiredEnvVars = [
-  "MONGODB_URI",
-  "JWT_SECRET",
-  "ADMIN_USERNAME",
-  "ADMIN_PASSWORD_HASH",
-  "RESEND_API_KEY",
-  "EMAIL_FROM_ADDRESS",
-  "ALLOWED_ORIGINS",
+    "MONGODB_URI",
+    "JWT_SECRET",
+    "ADMIN_USERNAME",
+    "ADMIN_PASSWORD_HASH",
+    "RESEND_API_KEY",
+    "EMAIL_FROM_ADDRESS",
+    "ALLOWED_ORIGINS",
 ];
 const missingEnvVars = requiredEnvVars.filter(
-  (varName) => !process.env[varName]
+    (varName) => !process.env[varName]
 );
 if (missingEnvVars.length > 0) {
-  console.error(
-    "❌ Variables d'environnement manquantes:",
-    missingEnvVars.join(", ")
-  );
-  process.exit(1);
+    console.error(
+        "❌ Variables d'environnement manquantes:",
+        missingEnvVars.join(", ")
+    );
+    process.exit(1);
 }
 console.log("✅ Variables d'environnement validées.");
 
@@ -71,100 +73,100 @@ const server = http.createServer(app);
 app.set("trust proxy", 1);
 app.use(helmet());
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map((o) =>
-  o.trim()
+    o.trim()
 );
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 
 // --- Rate Limiting ---
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 const strictLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: "Trop de tentatives. Réessayez dans 15 minutes." },
 });
 app.use("/api/", generalLimiter);
 
 
 
 
-if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true") 
-  
-  // Tâche pour les réservations expirées (votre code existant)
-  // cron.schedule("*/5 * * * *", async () => { ... });
+if (process.env.NODE_ENV === "production" && process.env.CRON_ENABLED === "true")
 
-// DANS server.js, remplacez votre cron.schedule pour la notation
+    // Tâche pour les réservations expirées (votre code existant)
+    // cron.schedule("*/5 * * * *", async () => { ... });
 
-// DANS server.js, remplacez votre cron.schedule pour la notation
+    // DANS server.js, remplacez votre cron.schedule pour la notation
 
-cron.schedule('*/15 * * * *', async () => { // On le fait tourner toutes les 15 minutes pour être plus réactif
-    console.log('⏰ CRON: Recherche de voyages terminés pour demandes de notation...');
-    
-    try {
-        const aDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // On regarde les voyages terminés sur les dernières 24h
+    // DANS server.js, remplacez votre cron.schedule pour la notation
 
-        // 1. Trouver les voyages terminés récemment qui n'ont PAS ENCORE été notifiés
-        const tripsToNotify = await tripsCollection.find({
-            "liveStatus.status": "ARRIVED",
-            "liveStatus.lastUpdated": { $gte: aDayAgo },   // Arrivé dans les dernières 24h
-            "reviewNotificationSent": { $ne: true }       // N'a pas déjà été notifié
-        }).toArray();
+    cron.schedule('*/15 * * * *', async () => { // On le fait tourner toutes les 15 minutes pour être plus réactif
+        console.log('⏰ CRON: Recherche de voyages terminés pour demandes de notation...');
 
-        if (tripsToNotify.length === 0) {
-            console.log('-> Aucun nouveau voyage terminé trouvé à notifier.');
-            return;
-        }
+        try {
+            const aDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // On regarde les voyages terminés sur les dernières 24h
 
-        console.log(`-> ${tripsToNotify.length} voyage(s) trouvé(s) à notifier.`);
-
-        for (const trip of tripsToNotify) {
-            // 2. Trouver les réservations confirmées pour ce voyage avec un token FCM
-            const reservations = await reservationsCollection.find({
-                "route.id": trip._id.toString(),
-                "status": "Confirmé",
-                "fcmToken": { $exists: true, $ne: null }
+            // 1. Trouver les voyages terminés récemment qui n'ont PAS ENCORE été notifiés
+            const tripsToNotify = await tripsCollection.find({
+                "liveStatus.status": "ARRIVED",
+                "liveStatus.lastUpdated": { $gte: aDayAgo },   // Arrivé dans les dernières 24h
+                "reviewNotificationSent": { $ne: true }       // N'a pas déjà été notifié
             }).toArray();
 
-            if (reservations.length > 0) {
-                const tokens = reservations.map(r => r.fcmToken);
-                // TODO: Traduire ces messages
-                const title = "Comment était votre voyage ?";
-                const body = `Notez votre trajet ${trip.route.from} → ${trip.route.to} pour aider la communauté !`;
-                
-                // On passe le tripId ET un bookingNumber en référence
-                const data = { 
-                    page: 'rate-trip', 
-                    tripId: trip._id.toString(),
-                    bookingNumber: reservations[0].bookingNumber 
-                }; 
-
-                await sendPush(tokens, title, body, data);
-
-                // 3. Marquer le voyage comme "notifié" pour ne pas le refaire
-                await tripsCollection.updateOne(
-                    { _id: trip._id },
-                    { $set: { reviewNotificationSent: true } }
-                );
-                console.log(`-> Notifications de notation envoyées pour le voyage ${trip._id}`);
-            } else {
-                // S'il n'y a personne à notifier, on marque quand même le voyage pour ne pas le revérifier inutilement
-                await tripsCollection.updateOne(
-                    { _id: trip._id },
-                    { $set: { reviewNotificationSent: true, notificationSkipped: true } }
-                );
-                console.log(`-> Voyage ${trip._id} marqué, mais aucun client à notifier.`);
+            if (tripsToNotify.length === 0) {
+                console.log('-> Aucun nouveau voyage terminé trouvé à notifier.');
+                return;
             }
+
+            console.log(`-> ${tripsToNotify.length} voyage(s) trouvé(s) à notifier.`);
+
+            for (const trip of tripsToNotify) {
+                // 2. Trouver les réservations confirmées pour ce voyage avec un token FCM
+                const reservations = await reservationsCollection.find({
+                    "route.id": trip._id.toString(),
+                    "status": "Confirmé",
+                    "fcmToken": { $exists: true, $ne: null }
+                }).toArray();
+
+                if (reservations.length > 0) {
+                    const tokens = reservations.map(r => r.fcmToken);
+                    // TODO: Traduire ces messages
+                    const title = "Comment était votre voyage ?";
+                    const body = `Notez votre trajet ${trip.route.from} → ${trip.route.to} pour aider la communauté !`;
+
+                    // On passe le tripId ET un bookingNumber en référence
+                    const data = {
+                        page: 'rate-trip',
+                        tripId: trip._id.toString(),
+                        bookingNumber: reservations[0].bookingNumber
+                    };
+
+                    await sendPush(tokens, title, body, data);
+
+                    // 3. Marquer le voyage comme "notifié" pour ne pas le refaire
+                    await tripsCollection.updateOne(
+                        { _id: trip._id },
+                        { $set: { reviewNotificationSent: true } }
+                    );
+                    console.log(`-> Notifications de notation envoyées pour le voyage ${trip._id}`);
+                } else {
+                    // S'il n'y a personne à notifier, on marque quand même le voyage pour ne pas le revérifier inutilement
+                    await tripsCollection.updateOne(
+                        { _id: trip._id },
+                        { $set: { reviewNotificationSent: true, notificationSkipped: true } }
+                    );
+                    console.log(`-> Voyage ${trip._id} marqué, mais aucun client à notifier.`);
+                }
+            }
+        } catch (error) {
+            console.error("❌ Erreur dans le CRON de notation:", error);
         }
-    } catch (error) {
-        console.error("❌ Erreur dans le CRON de notation:", error);
-    }
-});
+    });
 
 // ============================================
 // ✅ ROUTE DE TEST (À PLACER ICI TEMPORAIREMENT)
@@ -185,16 +187,16 @@ app.get("/api/admin/test-destinations", authenticateToken, async (req, res) => {
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 let reservationsCollection,
-  positionsCollection,
-  tripsCollection,
-  routeTemplatesCollection,
-  systemSettingsCollection,
-  destinationsCollection, // ✅ METS UNE VIRGULE ICI
-  crewCollection, // ✅ Maintenant elle fait partie du `let`
-  agenciesCollection; 
+    positionsCollection,
+    tripsCollection,
+    routeTemplatesCollection,
+    systemSettingsCollection,
+    destinationsCollection, // ✅ METS UNE VIRGULE ICI
+    crewCollection, // ✅ Maintenant elle fait partie du `let`
+    agenciesCollection;
 
 
-  
+
 
 
 
@@ -204,7 +206,7 @@ let reservationsCollection,
 // ============================================
 const emailTemplate = (content, headerTitle, lang = 'fr') => {
     const translation = translations[lang] || translations.fr;
-    
+
     // Couleurs modernes
     const primaryColor = "#73d700"; // Vert En-Bus
     const darkColor = "#10101A";    // Bleu Nuit
@@ -320,19 +322,19 @@ function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
     if (!client?.email) return;
 
-    const lang = reservation.lang || 'fr'; 
+    const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
     const locale = lang === 'en' ? enUS : fr;
     const timeZone = 'Africa/Brazzaville';
 
     const subject = translation.email_pending_subject(reservation.bookingNumber);
     const headerTitle = translation.email_pending_title;
-    
+
     // Date formatée
     const deadlineUTC = new Date(reservation.paymentDeadline);
     const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
     const deadline = format(zonedDeadline, "PPPP p", { locale: locale });
-    
+
     let paymentInstructions = '';
     if (reservation.paymentMethod === 'AGENCY') {
         // Style Code Box
@@ -380,7 +382,7 @@ function sendPaymentConfirmedEmail(reservation) {
 
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
     const headerTitle = translation.email_confirmed_title;
-    
+
     // ========================================================
     // ✅ DÉBUT DE LA CORRECTION : Sécurisation du formatage de date
     // ========================================================
@@ -399,12 +401,12 @@ function sendPaymentConfirmedEmail(reservation) {
                 // Votre format original a été conservé
                 formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale });
             } else {
-                 // Si la date est invalide, on logue une alerte
-                 console.warn(`[WARN] Date de départ invalide pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
-                 // On pourrait utiliser une autre date en secours, comme la date de confirmation
-                 if (reservation.confirmedAt) {
-                     formattedDateTime = new Date(reservation.confirmedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
-                 }
+                // Si la date est invalide, on logue une alerte
+                console.warn(`[WARN] Date de départ invalide pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
+                // On pourrait utiliser une autre date en secours, comme la date de confirmation
+                if (reservation.confirmedAt) {
+                    formattedDateTime = new Date(reservation.confirmedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+                }
             }
         } catch (e) {
             // Si une erreur se produit pendant le formatage, on logue et on continue
@@ -458,9 +460,9 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
 
     const subject = translation.email_report_subject(newReservation.bookingNumber);
     const headerTitle = translation.email_report_title;
-    
+
     const oldDate = new Date(oldReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
-    
+
     const newDepartureDateTimeUTC = new Date(`${newReservation.date}T${newReservation.route.departure}:00`);
     const newZonedDeparture = utcToZonedTime(newDepartureDateTimeUTC, timeZone);
     const newFormattedDateTime = format(newZonedDeparture, "PPPP 'à' p", { locale: locale });
@@ -504,21 +506,21 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
 }
 // --- Middleware & Utilitaires ---
 function authenticateToken(req, res, next) {
-  const token = req.headers["authorization"]?.split(" ")[1];
-  if (!token) return res.sendStatus(401);
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
+    const token = req.headers["authorization"]?.split(" ")[1];
+    if (!token) return res.sendStatus(401);
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
 }
 
 function generateBookingNumber() {
-  const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-  return `EB-${timestamp.slice(-6)}${random}`;
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
+    return `EB-${timestamp.slice(-6)}${random}`;
 }
 
 
@@ -526,11 +528,11 @@ function generateBookingNumber() {
 // Route pour enregistrer un token
 app.post('/api/notifications/register', (req, res) => {
     const { token, bookingNumber, busId } = req.body;
-    
+
     if (!token || !bookingNumber) {
         return res.status(400).json({ error: 'token et bookingNumber requis' });
     }
-    
+
     registerToken(token, bookingNumber, busId);
     res.json({ success: true });
 });
@@ -538,7 +540,7 @@ app.post('/api/notifications/register', (req, res) => {
 // Route pour envoyer une notification (admin)
 app.post('/api/notifications/send', async (req, res) => {
     const { bookingNumber, title, body } = req.body;
-    
+
     const success = await sendToBooking(bookingNumber, title, body);
     res.json({ success });
 });
@@ -546,7 +548,7 @@ app.post('/api/notifications/send', async (req, res) => {
 // Route pour notifier un bus en retard
 app.post('/api/notifications/bus-delay', async (req, res) => {
     const { busId, delayMinutes } = req.body;
-    
+
     const count = await sendToBus(
         busId,
         'Bus en retard',
@@ -568,7 +570,7 @@ app.post('/api/notifications/bus-delay', async (req, res) => {
 // Route get only
 
 app.get("/api/version", (req, res) =>
-  res.json({ version: "2025-01-18-FINAL" })
+    res.json({ version: "2025-01-18-FINAL" })
 );
 
 
@@ -602,7 +604,7 @@ app.get("/api/popular-destinations", async (req, res) => {
 app.get("/api/route-templates", async (req, res) => {
     try {
         // On ne renvoie que les modèles qui ont au moins une ville de départ et d'arrivée
-        const templates = await routeTemplatesCollection.find({ 
+        const templates = await routeTemplatesCollection.find({
             from: { $exists: true, $ne: "" },
             to: { $exists: true, $ne: "" }
         }).toArray();
@@ -667,15 +669,15 @@ app.get("/api/search", async (req, res) => {
                 const minutes = diffMinutes % 60;
                 return `${hours}h ${minutes > 0 ? String(minutes).padStart(2, '0') : ''}`;
             };
-            
+
             const results = availableTrips.map(trip => {
                 const isSegment = (trip.route.from.toLowerCase() !== fromCity.toLowerCase() || trip.route.to.toLowerCase() !== toCity.toLowerCase());
-                
+
                 return {
                     id: trip._id.toString(),
                     // On passe l'objet route complet pour la juridiction
                     route: trip.route,
-                    
+
                     // On garde les champs plats pour la compatibilité avec l'affichage
                     from: trip.route.from,
                     to: trip.route.to,
@@ -684,7 +686,7 @@ app.get("/api/search", async (req, res) => {
                     departure: trip.route.departure,
                     arrival: trip.route.arrival,
                     amenities: trip.route.amenities || [],
-                    
+
                     // ========================================================
                     // ✅ CORRECTION PRINCIPALE : On rajoute les champs manquants
                     // ========================================================
@@ -692,9 +694,9 @@ app.get("/api/search", async (req, res) => {
                     stops: trip.route.stops || [],
                     connections: trip.route.connections || [],
                     // ========================================================
-                    
+
                     duration: trip.route.duration || calculateDuration(trip.route.departure, trip.route.arrival, trip.arrivalDaysOffset || 0),
-                    
+
                     departureLocation: trip.route.departureLocation || null,
                     arrivalLocation: trip.route.arrivalLocation || null,
                     trackerId: trip.busIdentifier || trip.route.trackerId || null,
@@ -706,7 +708,7 @@ app.get("/api/search", async (req, res) => {
                     busIdentifier: trip.busIdentifier,
                     baggageOptions: trip.route.baggageOptions,
                     highlightBadge: trip.highlightBadge || null,
-                    
+
                     isSegment: isSegment,
                     segmentFrom: fromCity,
                     segmentTo: toCity
@@ -714,7 +716,7 @@ app.get("/api/search", async (req, res) => {
             });
 
             return res.json({ success: true, count: results.length, results: results, alternativeTrips: [] });
-        
+
         } else {
             // Logique pour les alternatives (inchangée)
             console.log(`ℹ️ Aucun trajet trouvé pour ${fromCity}->${toCity} le ${date}. Recherche d'alternatives sur 7 jours...`);
@@ -770,9 +772,9 @@ app.get("/api/trips/:id/seats", async (req, res) => {
         // ========================================================
 
         // 1. On récupère toutes les réservations CONFIRMÉES pour ce voyage
-        const reservations = await reservationsCollection.find({ 
+        const reservations = await reservationsCollection.find({
             "route.id": id,
-            "status": "Confirmé" 
+            "status": "Confirmé"
         }).toArray();
 
         // 2. On crée une map (un dictionnaire) : { numeroSiege: "Nom du Passager" }
@@ -796,7 +798,7 @@ app.get("/api/trips/:id/seats", async (req, res) => {
             }
             return seat; // On retourne le siège tel quel sinon
         });
-        
+
         // ========================================================
         // ✅ FIN DE LA NOUVELLE LOGIQUE
         // ========================================================
@@ -812,17 +814,17 @@ app.get("/api/trips/:id/seats", async (req, res) => {
 
 
 app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
-  try {
-    const { bookingNumber } = req.params;
-    const reservation = await reservationsCollection.findOne({ bookingNumber });
-    if (!reservation)
-      return res
-        .status(404)
-        .json({ success: false, error: "Réservation introuvable" });
-    res.json({ success: true, status: reservation.status });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Erreur serveur" });
-  }
+    try {
+        const { bookingNumber } = req.params;
+        const reservation = await reservationsCollection.findOne({ bookingNumber });
+        if (!reservation)
+            return res
+                .status(404)
+                .json({ success: false, error: "Réservation introuvable" });
+        res.json({ success: true, status: reservation.status });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
 });
 
 app.get("/api/reservations/details", async (req, res) => {
@@ -833,32 +835,32 @@ app.get("/api/reservations/details", async (req, res) => {
         }
 
         // --- PHASE 1 : Trouver toute la chaîne de réservations (originales + remplacements) ---
-        
+
         let allRelevantBookingNumbers = new Set(knownBookingNumbers);
         let numbersToSearch = [...knownBookingNumbers];
-        
+
         // Boucle pour trouver tous les billets liés, au cas où il y aurait plusieurs reports successifs
         while (numbersToSearch.length > 0) {
             const foundReservations = await reservationsCollection
                 .find({ bookingNumber: { $in: numbersToSearch } })
                 .project({ replacementBookingNumber: 1 }) // On ne prend que le champ qui nous intéresse
                 .toArray();
-                
+
             const newReplacements = foundReservations
                 .map(r => r.replacementBookingNumber)
                 .filter(Boolean) // On enlève les undefined/null
                 .filter(num => !allRelevantBookingNumbers.has(num)); // On ne garde que les nouveaux
-            
+
             if (newReplacements.length === 0) {
                 break; // Plus rien à trouver, on sort de la boucle
             }
-            
+
             newReplacements.forEach(num => allRelevantBookingNumbers.add(num));
             numbersToSearch = newReplacements;
         }
 
         // --- PHASE 2 : Récupérer les détails complets de tous les billets pertinents AVEC leur statut live ---
-        
+
         const finalReservations = await reservationsCollection.aggregate([
             { $match: { bookingNumber: { $in: Array.from(allRelevantBookingNumbers) } } },
             { $addFields: { tripObjectId: { $toObjectId: "$route.id" } } },
@@ -887,17 +889,17 @@ app.get("/api/reservations/details", async (req, res) => {
 
 
 app.get("/api/reservations/:bookingNumber", async (req, res) => {
-  try {
-    const { bookingNumber } = req.params;
-    const reservation = await reservationsCollection.findOne({ bookingNumber });
-    if (!reservation)
-      return res
-        .status(404)
-        .json({ success: false, error: "Réservation introuvable" });
-    res.json({ success: true, reservation });
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Erreur serveur" });
-  }
+    try {
+        const { bookingNumber } = req.params;
+        const reservation = await reservationsCollection.findOne({ bookingNumber });
+        if (!reservation)
+            return res
+                .status(404)
+                .json({ success: false, error: "Réservation introuvable" });
+        res.json({ success: true, reservation });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
 });
 
 
@@ -909,111 +911,111 @@ app.get("/api/reservations/:bookingNumber", async (req, res) => {
 
 
 app.post(
-  "/api/reservations",
-  loginLimiter, // Utilise un rate limiter plus strict pour la création
-  [
-    body("bookingNumber").notEmpty(),
-    body("route").isObject(),
-    body("route.id").notEmpty(),
-    body("date").isISO8601(),
-    body("passengers").isArray({ min: 1 }),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    "/api/reservations",
+    loginLimiter, // Utilise un rate limiter plus strict pour la création
+    [
+        body("bookingNumber").notEmpty(),
+        body("route").isObject(),
+        body("route.id").notEmpty(),
+        body("date").isISO8601(),
+        body("passengers").isArray({ min: 1 }),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const reservationData = req.body;
+
+            // --- Vérification et réservation du trajet ALLER ---
+            if (!reservationData.route || !reservationData.route.id) {
+                return res.status(400).json({ error: "Données de route aller invalides." });
+            }
+            const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
+            if (!trip) return res.status(404).json({ error: "Voyage aller introuvable." });
+
+            const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
+            const alreadyTaken = trip.seats.filter(s => seatNumbersToOccupy.includes(s.number) && s.status !== "available");
+            if (alreadyTaken.length > 0) return res.status(409).json({ error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+
+            await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+
+            // --- Vérification et réservation du trajet RETOUR (si applicable) ---
+            if (reservationData.returnRoute) {
+                if (!reservationData.returnRoute.id) return res.status(400).json({ error: "Données de route retour invalides." });
+                const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
+                if (!returnTrip) {
+                    // Annuler l'occupation des sièges aller en cas d'erreur
+                    await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+                    return res.status(404).json({ error: "Voyage retour introuvable." });
+                }
+                const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
+                const returnAlreadyTaken = returnTrip.seats.filter(s => returnSeatNumbers.includes(s.number) && s.status !== "available");
+                if (returnAlreadyTaken.length > 0) {
+                    await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+                    return res.status(409).json({ error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+                }
+                await tripsCollection.updateOne({ _id: returnTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] });
+            }
+
+            // --- Génération du code agence ---
+            if (reservationData.paymentMethod === "AGENCY") {
+                reservationData.agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
+                console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
+            }
+
+            // --- Insertion en base de données et envoi de l'email ---
+            const result = await reservationsCollection.insertOne(reservationData);
+            if (reservationData.status === "En attente de paiement") {
+                sendPendingPaymentEmail(reservationData);
+            }
+
+            // --- Réponse au client ---
+            res.status(201).json({
+                success: true,
+                message: "Réservation créée.",
+                reservationId: result.insertedId,
+                agencyPaymentCode: reservationData.agencyPaymentCode || null
+            });
+
+        } catch (error) {
+            console.error("❌ Erreur réservation:", error);
+            res.status(500).json({ error: "Erreur serveur." });
+        }
     }
-    
-    try {
-      const reservationData = req.body;
-      
-      // --- Vérification et réservation du trajet ALLER ---
-      if (!reservationData.route || !reservationData.route.id) {
-          return res.status(400).json({ error: "Données de route aller invalides." });
-      }
-      const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
-      if (!trip) return res.status(404).json({ error: "Voyage aller introuvable." });
-        
-      const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
-      const alreadyTaken = trip.seats.filter(s => seatNumbersToOccupy.includes(s.number) && s.status !== "available");
-      if (alreadyTaken.length > 0) return res.status(409).json({ error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
-
-      await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
-      
-      // --- Vérification et réservation du trajet RETOUR (si applicable) ---
-      if (reservationData.returnRoute) {
-          if (!reservationData.returnRoute.id) return res.status(400).json({ error: "Données de route retour invalides." });
-          const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
-          if (!returnTrip) {
-              // Annuler l'occupation des sièges aller en cas d'erreur
-              await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
-              return res.status(404).json({ error: "Voyage retour introuvable." });
-          }
-          const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
-          const returnAlreadyTaken = returnTrip.seats.filter(s => returnSeatNumbers.includes(s.number) && s.status !== "available");
-          if (returnAlreadyTaken.length > 0) {
-              await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
-              return res.status(409).json({ error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
-          }
-          await tripsCollection.updateOne({ _id: returnTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] });
-      }
-
-      // --- Génération du code agence ---
-      if (reservationData.paymentMethod === "AGENCY") {
-        reservationData.agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
-        console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
-      }
-
-      // --- Insertion en base de données et envoi de l'email ---
-      const result = await reservationsCollection.insertOne(reservationData);
-      if (reservationData.status === "En attente de paiement") {
-        sendPendingPaymentEmail(reservationData);
-      }
-
-      // --- Réponse au client ---
-      res.status(201).json({
-          success: true,
-          message: "Réservation créée.",
-          reservationId: result.insertedId,
-          agencyPaymentCode: reservationData.agencyPaymentCode || null
-      });
-
-    } catch (error) {
-      console.error("❌ Erreur réservation:", error);
-      res.status(500).json({ error: "Erreur serveur." });
-    }
-  }
 );
 
 
 
 app.patch(
-  "/api/reservations/:bookingNumber/transaction-id",
-  strictLimiter,
-  [body("transactionId").notEmpty().isString().trim()],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ errors: errors.array() });
-    try {
-      const { bookingNumber } = req.params;
-      const { transactionId } = req.body;
-      const result = await reservationsCollection.updateOne(
-        { bookingNumber },
-        {
-          $set: {
-            "paymentDetails.clientTransactionId": transactionId,
-            "paymentDetails.submittedAt": new Date(),
-          },
+    "/api/reservations/:bookingNumber/transaction-id",
+    strictLimiter,
+    [body("transactionId").notEmpty().isString().trim()],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty())
+            return res.status(400).json({ errors: errors.array() });
+        try {
+            const { bookingNumber } = req.params;
+            const { transactionId } = req.body;
+            const result = await reservationsCollection.updateOne(
+                { bookingNumber },
+                {
+                    $set: {
+                        "paymentDetails.clientTransactionId": transactionId,
+                        "paymentDetails.submittedAt": new Date(),
+                    },
+                }
+            );
+            if (result.matchedCount === 0)
+                return res.status(404).json({ error: "Réservation non trouvée." });
+            res.json({ success: true, message: "ID de transaction enregistré." });
+        } catch (error) {
+            res.status(500).json({ error: "Erreur serveur." });
         }
-      );
-      if (result.matchedCount === 0)
-        return res.status(404).json({ error: "Réservation non trouvée." });
-      res.json({ success: true, message: "ID de transaction enregistré." });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
     }
-  }
 );
 
 
@@ -1024,49 +1026,49 @@ app.patch(
 // 🔄 ROUTES DE REPORT DE VOYAGE (CLIENT)
 // ============================================
 app.get("/api/reservations/:bookingNumber/can-report", async (req, res) => {
-  try {
-    const { bookingNumber } = req.params;
-    const reservation = await reservationsCollection.findOne({ bookingNumber });
-    if (!reservation)
-      return res.status(404).json({ error: "Réservation introuvable." });
-    const settings = await systemSettingsCollection.findOne({
-      key: "reportSettings",
-    });
-    const config = settings?.value || {
-      maxReportsAllowed: 3,
-      minHoursBeforeDeparture: 48,
-    };
-    const canReport = { allowed: true, reasons: [] };
-    if (reservation.status !== "Confirmé") {
-      canReport.allowed = false;
-      canReport.reasons.push(
-        `Statut "${reservation.status}" ne permet pas le report.`
-      );
+    try {
+        const { bookingNumber } = req.params;
+        const reservation = await reservationsCollection.findOne({ bookingNumber });
+        if (!reservation)
+            return res.status(404).json({ error: "Réservation introuvable." });
+        const settings = await systemSettingsCollection.findOne({
+            key: "reportSettings",
+        });
+        const config = settings?.value || {
+            maxReportsAllowed: 3,
+            minHoursBeforeDeparture: 48,
+        };
+        const canReport = { allowed: true, reasons: [] };
+        if (reservation.status !== "Confirmé") {
+            canReport.allowed = false;
+            canReport.reasons.push(
+                `Statut "${reservation.status}" ne permet pas le report.`
+            );
+        }
+        const hoursUntilDeparture =
+            (new Date(reservation.date) - new Date()) / 36e5;
+        if (hoursUntilDeparture < config.minHoursBeforeDeparture) {
+            canReport.allowed = false;
+            canReport.reasons.push(
+                `Report impossible moins de ${config.minHoursBeforeDeparture}h avant le départ.`
+            );
+        }
+        const reportCount = reservation.reportCount || 0;
+        if (reportCount >= config.maxReportsAllowed) {
+            canReport.allowed = false;
+            canReport.reasons.push(
+                `Nombre maximum de reports atteint (${config.maxReportsAllowed}).`
+            );
+        }
+        res.json({
+            success: true,
+            canReport: canReport.allowed,
+            reasons: canReport.reasons,
+            currentReportCount: reportCount,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
     }
-    const hoursUntilDeparture =
-      (new Date(reservation.date) - new Date()) / 36e5;
-    if (hoursUntilDeparture < config.minHoursBeforeDeparture) {
-      canReport.allowed = false;
-      canReport.reasons.push(
-        `Report impossible moins de ${config.minHoursBeforeDeparture}h avant le départ.`
-      );
-    }
-    const reportCount = reservation.reportCount || 0;
-    if (reportCount >= config.maxReportsAllowed) {
-      canReport.allowed = false;
-      canReport.reasons.push(
-        `Nombre maximum de reports atteint (${config.maxReportsAllowed}).`
-      );
-    }
-    res.json({
-      success: true,
-      canReport: canReport.allowed,
-      reasons: canReport.reasons,
-      currentReportCount: reportCount,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur." });
-  }
 });
 
 
@@ -1085,7 +1087,7 @@ app.get("/api/user/reservations", authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "Utilisateur introuvable." });
         }
-        
+
         // On récupère toutes les réservations où l'un des passagers a l'email OU le téléphone de l'utilisateur.
         // C'est une manière robuste de lier les réservations.
         const userReservations = await reservationsCollection.find({
@@ -1113,7 +1115,7 @@ app.get("/api/user/reservations", authenticateToken, async (req, res) => {
 app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => {
     try {
         const { bookingNumber } = req.params;
-        
+
         // 1. Récupérer la réservation
         const reservation = await reservationsCollection.findOne({ bookingNumber });
         if (!reservation) return res.status(404).json({ error: "Réservation introuvable." });
@@ -1129,7 +1131,7 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
         const config = settings?.value || { maxDaysInFuture: 60 };
 
         const minDateStr = new Date().toISOString().split("T")[0]; // Aujourd'hui YYYY-MM-DD
-        
+
         const maxDateObj = new Date();
         maxDateObj.setDate(maxDateObj.getDate() + (config.maxDaysInFuture || 60));
         const maxDateStr = maxDateObj.toISOString().split("T")[0];
@@ -1182,8 +1184,8 @@ app.get("/api/reservations/:bookingNumber/available-trips", async (req, res) => 
 
         res.json({
             success: true,
-            currentTrip: { 
-                date: reservation.date, 
+            currentTrip: {
+                date: reservation.date,
                 price: reservation.totalPriceNumeric || reservation.route.price // Fallback si totalPriceNumeric manque
             },
             availableTrips: formattedTrips,
@@ -1216,270 +1218,270 @@ app.get("/api/admin/debug/schedules", authenticateToken, async (req, res) => {
 // 💰 ROUTE CALCUL COÛT REPORT (CORRIGÉE)
 // ============================================
 app.post(
-  "/api/reservations/:bookingNumber/calculate-report-cost",
-  strictLimiter,
-  [body("newTripId").notEmpty()],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ errors: errors.array() });
+    "/api/reservations/:bookingNumber/calculate-report-cost",
+    strictLimiter,
+    [body("newTripId").notEmpty()],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty())
+            return res.status(400).json({ errors: errors.array() });
 
-    try {
-      const { newTripId } = req.body;
-      
-      // 1. Récupération réservation
-      const reservation = await reservationsCollection.findOne({
-        bookingNumber: req.params.bookingNumber,
-      });
-      if (!reservation)
-        return res.status(404).json({ error: "Réservation introuvable." });
+        try {
+            const { newTripId } = req.body;
 
-      // 2. Récupération nouveau voyage
-      const newTrip = await tripsCollection.findOne({
-        _id: new ObjectId(newTripId),
-      });
-      if (!newTrip)
-        return res.status(404).json({ error: "Voyage cible introuvable." });
-// 3. Config frais (VERSION SÉCURISÉE)
-let settings = null;
-try {
-    settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-} catch (e) {
-    console.warn("⚠️ Impossible de lire les settings report, utilisation défaut.");
-}
+            // 1. Récupération réservation
+            const reservation = await reservationsCollection.findOne({
+                bookingNumber: req.params.bookingNumber,
+            });
+            if (!reservation)
+                return res.status(404).json({ error: "Réservation introuvable." });
 
-// Valeurs par défaut obligatoires si la DB est vide ou settings.value est null
-const defaults = { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
-const config = (settings && settings.value) ? settings.value : defaults;
+            // 2. Récupération nouveau voyage
+            const newTrip = await tripsCollection.findOne({
+                _id: new ObjectId(newTripId),
+            });
+            if (!newTrip)
+                return res.status(404).json({ error: "Voyage cible introuvable." });
+            // 3. Config frais (VERSION SÉCURISÉE)
+            let settings = null;
+            try {
+                settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+            } catch (e) {
+                console.warn("⚠️ Impossible de lire les settings report, utilisation défaut.");
+            }
 
-// S'assurer que les valeurs sont bien des nombres
-config.secondReportFee = parseInt(config.secondReportFee) || 2000;
-config.thirdReportFee = parseInt(config.thirdReportFee) || 5000;
+            // Valeurs par défaut obligatoires si la DB est vide ou settings.value est null
+            const defaults = { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
+            const config = (settings && settings.value) ? settings.value : defaults;
 
-const reportCount = reservation.reportCount || 0;
+            // S'assurer que les valeurs sont bien des nombres
+            config.secondReportFee = parseInt(config.secondReportFee) || 2000;
+            config.thirdReportFee = parseInt(config.thirdReportFee) || 5000;
 
-// Calcul des frais (garanti d'être un nombre)
-let reportFee = 0;
-if (reportCount === 0 && config.firstReportFree) {
-    reportFee = 0;
-} else if (reportCount === 1) {
-    reportFee = config.secondReportFee;
-} else {
-    reportFee = config.thirdReportFee;
-}
+            const reportCount = reservation.reportCount || 0;
 
-      // 4. ✅ NETTOYAGE PRIX ACTUEL (OLD)
-      let currentPrice = reservation.totalPriceNumeric;
-      // Si pas de numérique, on nettoie la chaîne (ex: "10 000 FCFA" -> 10000)
-      if ((currentPrice === undefined || currentPrice === null) && reservation.totalPrice) {
-          currentPrice = parseInt(reservation.totalPrice.toString().replace(/\D/g, '')); 
-      }
-      currentPrice = Number.isFinite(currentPrice) ? currentPrice : 0;
+            // Calcul des frais (garanti d'être un nombre)
+            let reportFee = 0;
+            if (reportCount === 0 && config.firstReportFree) {
+                reportFee = 0;
+            } else if (reportCount === 1) {
+                reportFee = config.secondReportFee;
+            } else {
+                reportFee = config.thirdReportFee;
+            }
 
-      // 5. ✅ NETTOYAGE PRIX NOUVEAU (NEW)
-      let rawNewPrice = newTrip.route.price;
-      // Si c'est une chaîne, on enlève les espaces et lettres
-      if (typeof rawNewPrice === 'string') {
-          rawNewPrice = rawNewPrice.replace(/\D/g, '');
-      }
-      const seatPrice = parseInt(rawNewPrice) || 0;
+            // 4. ✅ NETTOYAGE PRIX ACTUEL (OLD)
+            let currentPrice = reservation.totalPriceNumeric;
+            // Si pas de numérique, on nettoie la chaîne (ex: "10 000 FCFA" -> 10000)
+            if ((currentPrice === undefined || currentPrice === null) && reservation.totalPrice) {
+                currentPrice = parseInt(reservation.totalPrice.toString().replace(/\D/g, ''));
+            }
+            currentPrice = Number.isFinite(currentPrice) ? currentPrice : 0;
 
-      // Sécurité passagers
-      const passengersCount = (reservation.passengers && Array.isArray(reservation.passengers)) 
-          ? reservation.passengers.length 
-          : 1; 
-      
-      const newPrice = seatPrice * passengersCount;
+            // 5. ✅ NETTOYAGE PRIX NOUVEAU (NEW)
+            let rawNewPrice = newTrip.route.price;
+            // Si c'est une chaîne, on enlève les espaces et lettres
+            if (typeof rawNewPrice === 'string') {
+                rawNewPrice = rawNewPrice.replace(/\D/g, '');
+            }
+            const seatPrice = parseInt(rawNewPrice) || 0;
 
-      // 6. Calculs finaux
-      const priceDifference = newPrice - currentPrice;
-// On force (reportFee || 0) pour éviter undefined + number = NaN
-const totalCost = (reportFee || 0) + priceDifference; 
+            // Sécurité passagers
+            const passengersCount = (reservation.passengers && Array.isArray(reservation.passengers))
+                ? reservation.passengers.length
+                : 1;
 
-      // Debug (visible dans les logs Render)
-      console.log(`💰 Calcul Report: Old=${currentPrice}, New=${newPrice} (Seat:${seatPrice} x ${passengersCount}), Diff=${priceDifference}, Fee=${reportFee}, Total=${totalCost}`);
+            const newPrice = seatPrice * passengersCount;
 
-      res.json({
-        success: true,
-        calculation: {
-          reportFee: reportFee,
-          currentPrice: currentPrice,
-          newPrice: newPrice,
-          priceDifference: priceDifference,
-          totalCost: totalCost,
-          isPaymentRequired: totalCost > 0, // Si > 0, le front affichera le paiement
-          isCreditGenerated: totalCost < 0,
-          creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0,
-        },
-        reportNumber: reportCount + 1,
-      });
+            // 6. Calculs finaux
+            const priceDifference = newPrice - currentPrice;
+            // On force (reportFee || 0) pour éviter undefined + number = NaN
+            const totalCost = (reportFee || 0) + priceDifference;
 
-    } catch (error) {
-      console.error("❌ Erreur API calculate-report-cost:", error);
-      res.status(500).json({ error: "Erreur serveur lors du calcul." });
+            // Debug (visible dans les logs Render)
+            console.log(`💰 Calcul Report: Old=${currentPrice}, New=${newPrice} (Seat:${seatPrice} x ${passengersCount}), Diff=${priceDifference}, Fee=${reportFee}, Total=${totalCost}`);
+
+            res.json({
+                success: true,
+                calculation: {
+                    reportFee: reportFee,
+                    currentPrice: currentPrice,
+                    newPrice: newPrice,
+                    priceDifference: priceDifference,
+                    totalCost: totalCost,
+                    isPaymentRequired: totalCost > 0, // Si > 0, le front affichera le paiement
+                    isCreditGenerated: totalCost < 0,
+                    creditAmount: totalCost < 0 ? Math.abs(totalCost) : 0,
+                },
+                reportNumber: reportCount + 1,
+            });
+
+        } catch (error) {
+            console.error("❌ Erreur API calculate-report-cost:", error);
+            res.status(500).json({ error: "Erreur serveur lors du calcul." });
+        }
     }
-  }
 );
 // ============================================
 // ✅ ROUTE CONFIRMATION REPORT (CORRIGÉE)
 // ============================================
 app.post(
-  "/api/reservations/:bookingNumber/confirm-report",
-  strictLimiter,
-  [
-    body("newTripId").notEmpty(),
-    body("paymentMethod").optional().isString(),
-    body("transactionId").optional({ nullable: true }),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    "/api/reservations/:bookingNumber/confirm-report",
+    strictLimiter,
+    [
+        body("newTripId").notEmpty(),
+        body("paymentMethod").optional().isString(),
+        body("transactionId").optional({ nullable: true }),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    try {
-      const { newTripId, paymentMethod, transactionId } = req.body;
-      const reservation = await reservationsCollection.findOne({ bookingNumber: req.params.bookingNumber });
-      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
+        try {
+            const { newTripId, paymentMethod, transactionId } = req.body;
+            const reservation = await reservationsCollection.findOne({ bookingNumber: req.params.bookingNumber });
+            const newTrip = await tripsCollection.findOne({ _id: new ObjectId(newTripId) });
 
-      if (!reservation || !newTrip) return res.status(404).json({ error: "Données introuvables." });
+            if (!reservation || !newTrip) return res.status(404).json({ error: "Données introuvables." });
 
-      // 1. Config & Frais
-      const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
-      const config = settings?.value || { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
-      const reportCount = reservation.reportCount || 0;
-      
-      // Conversion forcée en nombres pour la config
-      config.secondReportFee = parseInt(config.secondReportFee) || 2000;
-      config.thirdReportFee = parseInt(config.thirdReportFee) || 5000;
+            // 1. Config & Frais
+            const settings = await systemSettingsCollection.findOne({ key: "reportSettings" });
+            const config = settings?.value || { firstReportFree: true, secondReportFee: 2000, thirdReportFee: 5000 };
+            const reportCount = reservation.reportCount || 0;
 
-      let reportFee = 0;
-      if (reportCount === 0 && config.firstReportFree) reportFee = 0;
-      else if (reportCount === 1) reportFee = config.secondReportFee;
-      else reportFee = config.thirdReportFee;
+            // Conversion forcée en nombres pour la config
+            config.secondReportFee = parseInt(config.secondReportFee) || 2000;
+            config.thirdReportFee = parseInt(config.thirdReportFee) || 5000;
 
-      // 2. 🧹 FONCTION DE NETTOYAGE (Indispensable)
-      const cleanPrice = (val) => {
-          if (typeof val === 'number') return val;
-          if (typeof val === 'string') return parseInt(val.replace(/\D/g, ''), 10) || 0;
-          return 0;
-      };
+            let reportFee = 0;
+            if (reportCount === 0 && config.firstReportFree) reportFee = 0;
+            else if (reportCount === 1) reportFee = config.secondReportFee;
+            else reportFee = config.thirdReportFee;
 
-      // 3. Calcul des prix (Nettoyés)
-      const currentPrice = cleanPrice(reservation.totalPriceNumeric || reservation.totalPrice);
-      const unitPrice = cleanPrice(newTrip.route.price);
-      const paxCount = (reservation.passengers && reservation.passengers.length) || 1;
-      const newPrice = unitPrice * paxCount;
+            // 2. 🧹 FONCTION DE NETTOYAGE (Indispensable)
+            const cleanPrice = (val) => {
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string') return parseInt(val.replace(/\D/g, ''), 10) || 0;
+                return 0;
+            };
 
-      const totalCost = reportFee + (newPrice - currentPrice);
+            // 3. Calcul des prix (Nettoyés)
+            const currentPrice = cleanPrice(reservation.totalPriceNumeric || reservation.totalPrice);
+            const unitPrice = cleanPrice(newTrip.route.price);
+            const paxCount = (reservation.passengers && reservation.passengers.length) || 1;
+            const newPrice = unitPrice * paxCount;
 
-      console.log(`📝 CONFIRMATION REPORT: Cost=${totalCost} (Fee:${reportFee} + Diff:${newPrice - currentPrice})`);
+            const totalCost = reportFee + (newPrice - currentPrice);
 
-      // 4. LOGIQUE DE DÉCISION
-      // Si le coût est positif, on demande validation Admin
-      if (totalCost > 0) {
-        console.log("   -> Paiement requis. Mise en attente validation Admin.");
-        
-        let agencyPaymentCode = null;
-        if (paymentMethod?.toUpperCase() === "AGENCY") {
-          agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
+            console.log(`📝 CONFIRMATION REPORT: Cost=${totalCost} (Fee:${reportFee} + Diff:${newPrice - currentPrice})`);
+
+            // 4. LOGIQUE DE DÉCISION
+            // Si le coût est positif, on demande validation Admin
+            if (totalCost > 0) {
+                console.log("   -> Paiement requis. Mise en attente validation Admin.");
+
+                let agencyPaymentCode = null;
+                if (paymentMethod?.toUpperCase() === "AGENCY") {
+                    agencyPaymentCode = `AG-${Math.floor(10000 + Math.random() * 90000)}`;
+                }
+
+                const reportRequest = {
+                    requestedAt: new Date(),
+                    targetTrip: {
+                        id: newTrip._id.toString(),
+                        date: newTrip.date,
+                        route: newTrip.route,
+                    },
+                    cost: { reportFee, totalCost, newPrice, currentPrice },
+                    paymentMethod: paymentMethod?.toUpperCase() || "MTN",
+                    transactionId: transactionId || null,
+                    agencyPaymentCode,
+                    status: "En attente de validation admin",
+                };
+
+                // MISE À JOUR STATUT : "En attente de report"
+                await reservationsCollection.updateOne(
+                    { _id: reservation._id },
+                    { $set: { reportRequest, status: "En attente de report" } }
+                );
+
+                return res.status(200).json({
+                    success: true,
+                    message: "Demande envoyée. En attente de validation.",
+                    requiresPayment: true,
+                    paymentAmount: totalCost
+                });
+            }
+
+            // SINON (Gratuit ou Moins cher) : Validation Automatique
+            else {
+                console.log("   -> Gratuit/Moins cher. Validation automatique.");
+
+                const requiredSeats = reservation.passengers.length;
+                const availableSeats = newTrip.seats.filter((s) => s.status === "available").slice(0, requiredSeats).map((s) => s.number);
+
+                if (availableSeats.length < requiredSeats) return res.status(409).json({ error: "Plus assez de sièges disponibles." });
+
+                // Libérer anciens sièges
+                await tripsCollection.updateOne(
+                    { _id: new ObjectId(reservation.route.id) },
+                    { $set: { "seats.$[elem].status": "available" } },
+                    { arrayFilters: [{ "elem.number": { $in: reservation.seats.map((s) => parseInt(s)) } }] }
+                );
+
+                // Occuper nouveaux sièges
+                await tripsCollection.updateOne(
+                    { _id: newTrip._id },
+                    { $set: { "seats.$[elem].status": "occupied" } },
+                    { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
+                );
+
+                // Créer nouvelle résa
+                const newBookingNumber = generateBookingNumber();
+                const newReservation = {
+                    ...reservation,
+                    _id: new ObjectId(),
+                    bookingNumber: newBookingNumber,
+                    route: { ...newTrip.route, id: newTrip._id.toString() },
+                    busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || null,
+                    date: newTrip.date,
+                    seats: availableSeats,
+                    passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
+                    totalPriceNumeric: newPrice,
+                    totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+                    status: "Confirmé", // Directement confirmé
+                    reportCount: (reservation.reportCount || 0) + 1,
+                    originalReservation: reservation._id.toString(),
+                    createdAt: new Date(),
+                    // Crédit client si moins cher
+                    clientCredit: totalCost < 0 ? Math.abs(totalCost) + (reservation.clientCredit || 0) : (reservation.clientCredit || 0),
+                    reportHistory: [...(reservation.reportHistory || []), { from: reservation.date, to: newTrip.date, totalCost, initiatedBy: "client", type: "auto" }]
+                };
+
+                delete newReservation.reportedAt;
+                delete newReservation.replacementReservation;
+                delete newReservation.reportRequest;
+
+                await reservationsCollection.insertOne(newReservation);
+
+                await reservationsCollection.updateOne(
+                    { _id: reservation._id },
+                    { $set: { status: "Reporté", reportedAt: new Date(), replacementReservation: newReservation._id.toString(), replacementBookingNumber: newBookingNumber } }
+                );
+
+                return res.status(201).json({
+                    success: true,
+                    message: "Voyage reporté avec succès !",
+                    newBookingNumber,
+                    requiresPayment: false
+                });
+            }
+
+        } catch (error) {
+            console.error("❌ Erreur confirm-report:", error);
+            res.status(500).json({ error: "Erreur serveur." });
         }
-
-        const reportRequest = {
-          requestedAt: new Date(),
-          targetTrip: {
-            id: newTrip._id.toString(),
-            date: newTrip.date,
-            route: newTrip.route,
-          },
-          cost: { reportFee, totalCost, newPrice, currentPrice },
-          paymentMethod: paymentMethod?.toUpperCase() || "MTN",
-          transactionId: transactionId || null,
-          agencyPaymentCode,
-          status: "En attente de validation admin",
-        };
-
-        // MISE À JOUR STATUT : "En attente de report"
-        await reservationsCollection.updateOne(
-          { _id: reservation._id },
-          { $set: { reportRequest, status: "En attente de report" } }
-        );
-
-        return res.status(200).json({
-            success: true,
-            message: "Demande envoyée. En attente de validation.",
-            requiresPayment: true,
-            paymentAmount: totalCost
-        });
-      } 
-      
-      // SINON (Gratuit ou Moins cher) : Validation Automatique
-      else {
-        console.log("   -> Gratuit/Moins cher. Validation automatique.");
-        
-        const requiredSeats = reservation.passengers.length;
-        const availableSeats = newTrip.seats.filter((s) => s.status === "available").slice(0, requiredSeats).map((s) => s.number);
-        
-        if (availableSeats.length < requiredSeats) return res.status(409).json({ error: "Plus assez de sièges disponibles." });
-
-        // Libérer anciens sièges
-        await tripsCollection.updateOne(
-          { _id: new ObjectId(reservation.route.id) },
-          { $set: { "seats.$[elem].status": "available" } },
-          { arrayFilters: [{ "elem.number": { $in: reservation.seats.map((s) => parseInt(s)) } }] }
-        );
-
-        // Occuper nouveaux sièges
-        await tripsCollection.updateOne(
-          { _id: newTrip._id },
-          { $set: { "seats.$[elem].status": "occupied" } },
-          { arrayFilters: [{ "elem.number": { $in: availableSeats } }] }
-        );
-
-        // Créer nouvelle résa
-        const newBookingNumber = generateBookingNumber();
-        const newReservation = {
-          ...reservation,
-          _id: new ObjectId(),
-          bookingNumber: newBookingNumber,
-          route: { ...newTrip.route, id: newTrip._id.toString() },
-          busIdentifier: newTrip.busIdentifier || newTrip.route?.trackerId || null,
-          date: newTrip.date,
-          seats: availableSeats,
-          passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
-          totalPriceNumeric: newPrice,
-          totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
-          status: "Confirmé", // Directement confirmé
-          reportCount: (reservation.reportCount || 0) + 1,
-          originalReservation: reservation._id.toString(),
-          createdAt: new Date(),
-          // Crédit client si moins cher
-          clientCredit: totalCost < 0 ? Math.abs(totalCost) + (reservation.clientCredit || 0) : (reservation.clientCredit || 0),
-          reportHistory: [...(reservation.reportHistory || []), { from: reservation.date, to: newTrip.date, totalCost, initiatedBy: "client", type: "auto" }]
-        };
-
-        delete newReservation.reportedAt;
-        delete newReservation.replacementReservation;
-        delete newReservation.reportRequest;
-
-        await reservationsCollection.insertOne(newReservation);
-        
-        await reservationsCollection.updateOne(
-          { _id: reservation._id },
-          { $set: { status: "Reporté", reportedAt: new Date(), replacementReservation: newReservation._id.toString(), replacementBookingNumber: newBookingNumber } }
-        );
-
-        return res.status(201).json({
-            success: true,
-            message: "Voyage reporté avec succès !",
-            newBookingNumber,
-            requiresPayment: false
-        });
-      }
-
-    } catch (error) {
-      console.error("❌ Erreur confirm-report:", error);
-      res.status(500).json({ error: "Erreur serveur." });
     }
-  }
 );
 
 
@@ -1489,8 +1491,8 @@ app.post(
 app.get("/api/admin/needs-setup", async (req, res) => {
     try {
         // On compte le nombre d'utilisateurs qui ont la permission 'manage_settings' (un bon indicateur d'un admin)
-        const adminCount = await crewCollection.countDocuments({ 
-            permissions: 'manage_settings' 
+        const adminCount = await crewCollection.countDocuments({
+            permissions: 'manage_settings'
         });
 
         // S'il n'y a aucun admin, une configuration est nécessaire
@@ -1521,10 +1523,12 @@ app.get("/api/admin/attendance/week-stats", authenticateToken, async (req, res) 
 
         const stats = await db.collection('attendance').aggregate([
             // 1. Filtrer les pointages dans la plage de dates
-            { $match: { 
-                date: { $gte: start, $lte: end },
-                status: 'completed' // On ne compte que les journées terminées
-            } },
+            {
+                $match: {
+                    date: { $gte: start, $lte: end },
+                    status: 'completed' // On ne compte que les journées terminées
+                }
+            },
             // 2. Regrouper par employé
             {
                 $group: {
@@ -1548,60 +1552,60 @@ app.get("/api/admin/attendance/week-stats", authenticateToken, async (req, res) 
 // DANS server.js
 
 app.post(
-  "/api/admin/login",
-  loginLimiter,
-  [body("username").notEmpty(), body("password").notEmpty()],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    
-    const { username, password } = req.body;
-
-    try {
-        // Étape 1 : Chercher l'utilisateur par son nom d'utilisateur dans la collection 'crew'
-        const user = await crewCollection.findOne({ username: username });
-
-        // Étape 2 : Vérifier si l'utilisateur existe ET si son compte est 'Actif'
-        if (!user || user.status !== 'Actif') {
-            // Message d'erreur générique pour la sécurité
-            return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+    "/api/admin/login",
+    loginLimiter,
+    [body("username").notEmpty(), body("password").notEmpty()],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // Étape 3 : Comparer le mot de passe fourni avec le mot de passe hashé en base de données
-        const isMatch = await bcrypt.compare(password, user.password);
+        const { username, password } = req.body;
 
-        if (!isMatch) {
-            // Message d'erreur générique
-            return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+        try {
+            // Étape 1 : Chercher l'utilisateur par son nom d'utilisateur dans la collection 'crew'
+            const user = await crewCollection.findOne({ username: username });
+
+            // Étape 2 : Vérifier si l'utilisateur existe ET si son compte est 'Actif'
+            if (!user || user.status !== 'Actif') {
+                // Message d'erreur générique pour la sécurité
+                return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+            }
+
+            // Étape 3 : Comparer le mot de passe fourni avec le mot de passe hashé en base de données
+            const isMatch = await bcrypt.compare(password, user.password);
+
+            if (!isMatch) {
+                // Message d'erreur générique
+                return res.status(401).json({ error: "Identifiants incorrects ou compte inactif." });
+            }
+
+            // Étape 4 : Si tout est bon, créer le "payload" du token
+            const tokenPayload = {
+                userId: user._id,
+                username: user.username,
+                role: user.role,
+                permissions: user.permissions || [] // Crucial : on inclut les permissions !
+            };
+
+            // Étape 5 : Signer le token avec le payload et la clé secrète
+            const token = jwt.sign(
+                tokenPayload,
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+            );
+
+            console.log(`✅ Connexion réussie pour l'utilisateur: ${user.username}`);
+
+            // Étape 6 : Envoyer le token au client
+            res.json({ success: true, token });
+
+        } catch (error) {
+            console.error("❌ Erreur de login:", error);
+            res.status(500).json({ error: "Erreur serveur lors de la connexion." });
         }
-
-        // Étape 4 : Si tout est bon, créer le "payload" du token
-        const tokenPayload = {
-            userId: user._id,
-            username: user.username,
-            role: user.role,
-            permissions: user.permissions || [] // Crucial : on inclut les permissions !
-        };
-        
-        // Étape 5 : Signer le token avec le payload et la clé secrète
-        const token = jwt.sign(
-            tokenPayload,
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-        );
-        
-        console.log(`✅ Connexion réussie pour l'utilisateur: ${user.username}`);
-        
-        // Étape 6 : Envoyer le token au client
-        res.json({ success: true, token });
-
-    } catch (error) {
-        console.error("❌ Erreur de login:", error);
-        res.status(500).json({ error: "Erreur serveur lors de la connexion." });
     }
-  }
 );
 
 
@@ -1666,7 +1670,7 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                 lastActionTime: now
             };
             await db.collection('attendance').insertOne(newEntry);
-            
+
             return res.json({ success: true, action: "check-in", message: `Bienvenue, ${employee.name} !` });
         }
 
@@ -1674,7 +1678,7 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
         // Sauf si on force la sortie
         const lastActionTime = attendance.lastActionTime || attendance.checkIn;
         const diffMinutes = (now - new Date(lastActionTime)) / 60000;
-        
+
         if (diffMinutes < 1 && mode !== 'exit') {
             return res.status(429).json({ error: "Badge déjà scanné à l'instant." });
         }
@@ -1706,17 +1710,17 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
 
             await db.collection('attendance').updateOne(
                 { _id: attendance._id },
-                { 
-                    $set: { 
-                        checkOut: now, 
+                {
+                    $set: {
+                        checkOut: now,
                         breaks: breaks,
                         status: 'completed',
                         durationMinutes: effectiveWorkMinutes,
                         totalBreakMinutes: totalBreak
-                    } 
+                    }
                 }
             );
-            
+
             const hours = Math.floor(effectiveWorkMinutes / 60);
             const minutes = effectiveWorkMinutes % 60;
             return res.json({ success: true, action: "check-out", message: `Au revoir ${employee.name}. (Travail: ${hours}h${minutes})` });
@@ -1727,12 +1731,12 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
         // ========================================================
         // ✅ CORRECTION : On accepte 'working' OU 'present' (pour compatibilité)
         if (currentStatus === 'working' || currentStatus === 'present') {
-            
+
             // Si on demande explicitement une pause, ou si on est en mode auto (bascule)
             if (mode === 'break' || mode === 'auto') {
                 await db.collection('attendance').updateOne(
                     { _id: attendance._id },
-                    { 
+                    {
                         $set: { status: 'on_break', lastActionTime: now },
                         $push: { breaks: { start: now, end: null } }
                     }
@@ -1745,7 +1749,7 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
         // CAS 4 : RETOUR DE PAUSE (REPRISE)
         // ========================================================
         if (currentStatus === 'on_break') {
-            
+
             // Si on demande une pause ALORS qu'on y est déjà -> Erreur
             if (mode === 'break') {
                 return res.status(400).json({ error: "Vous êtes déjà en pause. Sélectionnez 'Auto' ou 'Fin'." });
@@ -1757,14 +1761,14 @@ app.post("/api/admin/attendance/scan", authenticateToken, async (req, res) => {
                 if (!lastBreak.end) {
                     lastBreak.end = now;
                     const breakDuration = Math.round((now - new Date(lastBreak.start)) / 60000);
-                    
+
                     await db.collection('attendance').updateOne(
                         { _id: attendance._id },
-                        { 
-                            $set: { 
-                                status: 'working', 
-                                breaks: breaks, 
-                                lastActionTime: now 
+                        {
+                            $set: {
+                                status: 'working',
+                                breaks: breaks,
+                                lastActionTime: now
                             },
                             $inc: { totalBreakMinutes: breakDuration }
                         }
@@ -1811,7 +1815,7 @@ app.post("/api/auth/google-signin", async (req, res) => {
     } catch (firebaseError) {
         // Si ça échoue, ce n'est pas grave, on essaie la deuxième méthode
         console.warn("⚠️ Échec validation Firebase Admin, on essaie avec Google Auth Library (cas Natif)...");
-        
+
         try {
             // --- MÉTHODE 2 : On essaie de valider avec GOOGLE AUTH LIBRARY (pour le NATIF) ---
             const ticket = await client.verifyIdToken({
@@ -1844,7 +1848,7 @@ app.post("/api/auth/google-signin", async (req, res) => {
         if (!email) {
             return res.status(400).json({ error: "L'email est manquant dans le token." });
         }
-        
+
         console.log(`Utilisateur authentifié : ${email}`);
 
         // Le reste de la logique (création/recherche utilisateur, création token JWT) est inchangé
@@ -1873,14 +1877,14 @@ app.post("/api/auth/google-signin", async (req, res) => {
                 { $set: { name: name, profilePicture: picture, updatedAt: new Date(), googleId: uid } }
             );
         }
-        
+
         const tokenPayload = {
             userId: user._id,
             username: user.username,
             role: user.role,
             permissions: user.permissions || []
         };
-        
+
         const appToken = jwt.sign(
             tokenPayload,
             process.env.JWT_SECRET,
@@ -1901,7 +1905,7 @@ app.post("/api/auth/google-signin", async (req, res) => {
 
 
 app.get("/api/admin/verify", authenticateToken, (req, res) =>
-  res.json({ valid: true, user: req.user })
+    res.json({ valid: true, user: req.user })
 );
 
 
@@ -1951,13 +1955,16 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
                     from: "schedules",
                     let: { crew_id: "$crewId", attendance_date: "$date" },
                     pipeline: [
-                        { $match: 
-                            { $expr: 
-                                { $and:
-                                    [
-                                        { $eq: [ "$crewId",  "$$crew_id" ] },
-                                        { $eq: [ "$date", "$$attendance_date" ] }
-                                    ]
+                        {
+                            $match:
+                            {
+                                $expr:
+                                {
+                                    $and:
+                                        [
+                                            { $eq: ["$crewId", "$$crew_id"] },
+                                            { $eq: ["$date", "$$attendance_date"] }
+                                        ]
                                 }
                             }
                         }
@@ -1970,20 +1977,20 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
                 $project: {
                     _id: 1,
                     crewId: 1,
-                    crewName: { $ifNull: [ { $arrayElemAt: ["$crewDetails.name", 0] }, "Employé Supprimé" ] },
-                    crewRole: { $ifNull: [ { $arrayElemAt: ["$crewDetails.role", 0] }, "N/A" ] },
-                    agencyName: { $ifNull: [ { $arrayElemAt: ["$crewDetails.agencyName", 0] }, null ] },
+                    crewName: { $ifNull: [{ $arrayElemAt: ["$crewDetails.name", 0] }, "Employé Supprimé"] },
+                    crewRole: { $ifNull: [{ $arrayElemAt: ["$crewDetails.role", 0] }, "N/A"] },
+                    agencyName: { $ifNull: [{ $arrayElemAt: ["$crewDetails.agencyName", 0] }, null] },
                     checkIn: 1, checkOut: 1, status: 1, lastActionTime: 1, durationMinutes: 1,
                     scheduledStart: { $ifNull: [{ $arrayElemAt: ["$scheduleDetails.startTime", 0] }, null] },
                     scheduledEnd: { $ifNull: [{ $arrayElemAt: ["$scheduleDetails.endTime", 0] }, null] }
                 }
             }
         ]).toArray();
-        
+
         // 2. Calcul des anomalies (retards et absences)
         const schedules = await db.collection('schedules').find({ date: todayStr, type: { $nin: ['Repos', 'Congé'] } }).toArray();
         const anomalies = [];
-        
+
         for (const schedule of schedules) {
             const scan = records.find(r => r.crewId.toString() === schedule.crewId.toString());
             const crewMember = await db.collection('crew').findOne({ _id: schedule.crewId });
@@ -2000,7 +2007,7 @@ app.get("/api/admin/attendance/today", authenticateToken, async (req, res) => {
                 const checkInTime = new Date(scan.checkIn);
                 if (checkInTime > new Date(scheduledStart.getTime() + 10 * 60000)) {
                     const diffMinutes = Math.floor((checkInTime - scheduledStart) / 60000);
-                    anomalies.push({ type: 'RETARD', crewName: name, expected: schedule.startTime, actual: checkInTime.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}), message: `${diffMinutes} min` });
+                    anomalies.push({ type: 'RETARD', crewName: name, expected: schedule.startTime, actual: checkInTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), message: `${diffMinutes} min` });
                 }
             }
         }
@@ -2089,14 +2096,14 @@ app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
         if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: "ID de rapport invalide" });
         }
-        
+
         const updates = { $set: { updatedAt: new Date() } };
-        
+
         // Mise à jour du statut
         if (status) {
             updates.$set.status = status;
         }
-        
+
         // Mise à jour de l'assignation
         if (assignedToId !== undefined) {
             if (assignedToId && ObjectId.isValid(assignedToId)) {
@@ -2111,7 +2118,7 @@ app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
                 updates.$set.assignedToName = null;
             }
         }
-        
+
         // Ajout d'un commentaire
         if (comment && comment.trim() !== '') {
             updates.$push = {
@@ -2125,11 +2132,11 @@ app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
         }
 
         const result = await db.collection('maintenance_reports').updateOne({ _id: new ObjectId(id) }, updates);
-        
+
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Rapport de maintenance introuvable" });
         }
-        
+
         res.json({ success: true, message: "Rapport mis à jour avec succès." });
 
     } catch (error) {
@@ -2145,12 +2152,12 @@ app.patch("/api/admin/maintenance/:id", authenticateToken, async (req, res) => {
 app.get("/api/admin/analytics/buses", authenticateToken, async (req, res) => {
     try {
         // Récupérer tous les numéros de bus uniques (en excluant les null)
-        const buses = await tripsCollection.distinct("busIdentifier", { 
-            busIdentifier: { $exists: true, $ne: null, $ne: "" } 
+        const buses = await tripsCollection.distinct("busIdentifier", {
+            busIdentifier: { $exists: true, $ne: null, $ne: "" }
         });
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             buses: buses.sort() // Trier par ordre alphabétique
         });
     } catch (error) {
@@ -2163,7 +2170,7 @@ app.get("/api/admin/analytics/buses", authenticateToken, async (req, res) => {
 app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) => {
     try {
         const { busId } = req.params;
-        
+
         if (!busId) {
             return res.status(400).json({ error: "Numéro de bus manquant" });
         }
@@ -2171,8 +2178,8 @@ app.get("/api/admin/analytics/bus/:busId", authenticateToken, async (req, res) =
         console.log(`📊 Calcul des statistiques pour le bus: ${busId}`);
 
         // 1. Récupérer TOUS les voyages de ce bus
-        const allTrips = await tripsCollection.find({ 
-            busIdentifier: busId 
+        const allTrips = await tripsCollection.find({
+            busIdentifier: busId
         }).sort({ date: -1 }).toArray();
 
         if (allTrips.length === 0) {
@@ -2313,7 +2320,7 @@ const allowFirstAdminCreation = async (req, res, next) => {
 app.get("/api/admin/schedules", authenticateToken, async (req, res) => {
     try {
         const { start, end, agencyId } = req.query; // start=2023-11-27&end=2023-12-03
-        
+
         const db = getDb();
         const query = {
             date: { $gte: start, $lte: end }
@@ -2424,7 +2431,7 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
 
     try {
         const { id } = req.params;
-        
+
         if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: "ID de membre invalide" });
         }
@@ -2436,7 +2443,7 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
         if (name) updates.name = name;
         if (phone) updates.phone = phone;
         if (status) updates.status = status;
-        
+
         // ========================================================
         // ✅ GESTION DE L'AFFECTATION AGENCE
         // ========================================================
@@ -2446,7 +2453,7 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
                 // Cas 1 : On affecte une nouvelle agence
                 const db = getDb();
                 const agency = await db.collection('agencies').findOne({ _id: new ObjectId(agencyId) });
-                
+
                 if (agency) {
                     updates.agencyId = agency._id;
                     updates.agencyName = agency.name; // On stocke aussi le nom pour l'affichage facile
@@ -2490,7 +2497,7 @@ app.patch("/api/admin/crew/:id", authenticateToken, [
 app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: "ID invalide" });
         }
@@ -2499,11 +2506,11 @@ app.delete("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         // ✅ LIGNE MODIFIÉE
         const result = await crewCollection.updateOne(
             { _id: new ObjectId(id) },
-            { 
-                $set: { 
+            {
+                $set: {
                     status: 'Inactif',
                     updatedAt: new Date()
-                } 
+                }
             }
         );
 
@@ -2551,7 +2558,7 @@ app.delete("/api/admin/maintenance/:id", authenticateToken, async (req, res) => 
 
         const db = getDb();
         const result = await db.collection('maintenance_reports').deleteOne({ _id: new ObjectId(id) });
-        
+
         if (result.deletedCount === 0) return res.status(404).json({ error: "Rapport introuvable" });
 
         res.json({ success: true, message: "Rapport de maintenance archivé." });
@@ -2565,7 +2572,7 @@ app.delete("/api/admin/maintenance/:id", authenticateToken, async (req, res) => 
 app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: "ID de membre invalide" });
         }
@@ -2573,7 +2580,7 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
         // 1. Récupérer le profil du membre
         // ✅ LIGNE MODIFIÉE
         const member = await crewCollection.findOne({ _id: new ObjectId(id) });
-        
+
         if (!member) {
             return res.status(404).json({ error: "Membre du personnel introuvable" });
         }
@@ -2586,11 +2593,11 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
                 { "crew.controllers.id": id }
             ],
             // On ne prend que les voyages terminés pour l'historique
-            "liveStatus.status": "ARRIVED" 
+            "liveStatus.status": "ARRIVED"
         })
-        .sort({ date: -1 }) // Trie par date la plus récente
-        .limit(5)           // Limite à 5 résultats
-        .toArray();
+            .sort({ date: -1 }) // Trie par date la plus récente
+            .limit(5)           // Limite à 5 résultats
+            .toArray();
 
         // 3. Formater l'historique pour le frontend
         const history = recentTrips.map(trip => ({
@@ -2620,29 +2627,29 @@ app.get("/api/admin/crew/:id", authenticateToken, async (req, res) => {
 
 
 app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
-  try {
-    const reservations = await reservationsCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
-    const stats = {
-      total: reservations.length,
-      confirmed: reservations.filter((r) => r.status === "Confirmé").length,
-      pending: reservations.filter((r) => r.status === "En attente de paiement")
-        .length,
-      cancelled: reservations.filter(
-        (r) => r.status === "Annulé" || r.status === "Expiré"
-      ).length,
-    };
-    res.json({
-      success: true,
-      count: reservations.length,
-      stats,
-      reservations,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
+    try {
+        const reservations = await reservationsCollection
+            .find({})
+            .sort({ createdAt: -1 })
+            .toArray();
+        const stats = {
+            total: reservations.length,
+            confirmed: reservations.filter((r) => r.status === "Confirmé").length,
+            pending: reservations.filter((r) => r.status === "En attente de paiement")
+                .length,
+            cancelled: reservations.filter(
+                (r) => r.status === "Annulé" || r.status === "Expiré"
+            ).length,
+        };
+        res.json({
+            success: true,
+            count: reservations.length,
+            stats,
+            reservations,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 
@@ -2652,7 +2659,7 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
 
 // Fonction qui génère le template HTML de la facture
 function generateInvoiceHTML(reservation, lang = 'fr') {
-  
+
     // Mini-traductions pour la facture
     const t = {
         fr: {
@@ -2690,10 +2697,10 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
             adult_ticket_desc: "Adult Ticket(s)"  // ✅ Ajouté
         }
     };
-     
+
     // ✅ CORRECTION ICI : Utilise 't' pas 'translations'
     const texts = t[lang] || t.fr;
-    
+
     const passenger = reservation.passengers[0];
     const adultTickets = reservation.passengers.length;
     const ticketPrice = reservation.route.price;
@@ -2784,24 +2791,24 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
         if (!reservation) {
             return res.status(404).send('Reservation not found');
         }
-        
+
         if (reservation.status !== 'Confirmé') {
             return res.status(403).send('Invoice is only available for confirmed bookings.');
         }
 
         const htmlContent = generateInvoiceHTML(reservation, lang);
-        
+
         const html_pdf = require('html-pdf-node');
-                const options = { 
+        const options = {
             format: 'A4',
             // ✅ AJOUTER CETTE PARTIE POUR LA COMPATIBILITÉ SERVEUR
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox'
             ]
-        }; 
+        };
         const file = { content: htmlContent };
-        
+
         html_pdf.generatePdf(file, options).then(pdfBuffer => {
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename=facture-${bookingNumber}.pdf`);
@@ -2819,12 +2826,12 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
 // ============================================
 
 app.get("/api/admin/route-templates", authenticateToken, async (req, res) => {
-  try {
-    const templates = await routeTemplatesCollection.find({}).toArray();
-    res.json({ success: true, templates });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
-  }
+    try {
+        const templates = await routeTemplatesCollection.find({}).toArray();
+        res.json({ success: true, templates });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 
@@ -2832,15 +2839,15 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
     try {
         // 1. On récupère les paramètres de l'URL (envoyés par le frontend)
         const { date, route, bus } = req.query;
-        
+
         // 2. On construit l'objet de requête pour MongoDB
         const query = {};
-        
+
         // Si une date est fournie, on filtre par cette date exacte
         if (date) {
             query.date = date;
         }
-        
+
         // Si un texte de route est fourni...
         if (route) {
             // On cherche ce texte dans la ville de départ OU la ville d'arrivée
@@ -2850,7 +2857,7 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
                 { "route.to": { $regex: route, $options: 'i' } }
             ];
         }
-        
+
         // Si un numéro de bus est fourni
         if (bus) {
             query.busIdentifier = { $regex: bus, $options: 'i' };
@@ -2858,7 +2865,7 @@ app.get("/api/admin/trips", authenticateToken, async (req, res) => {
 
         // 3. On exécute la recherche avec les filtres et on trie par date la plus récente
         const trips = await tripsCollection.find(query).sort({ date: -1 }).toArray();
-        
+
         res.json({ success: true, trips });
 
     } catch (error) {
@@ -2885,7 +2892,7 @@ app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
         if (search) {
             query.$and = [
                 // On garde la condition de base
-                { ...query }, 
+                { ...query },
                 // Et on ajoute la condition de recherche
                 {
                     $or: [
@@ -2914,16 +2921,16 @@ app.get("/api/admin/reports/history", authenticateToken, async (req, res) => {
 
 
 app.get("/api/admin/settings/report", authenticateToken, async (req, res) => {
-  try {
-    const settings = await systemSettingsCollection.findOne({
-      key: "reportSettings",
-    });
-    if (!settings)
-      return res.status(404).json({ error: "Paramètres introuvables." });
-    res.json({ success: true, settings: settings.value });
-  } catch (error) {
-    res.status(500).json({ error: "Erreur serveur." });
-  }
+    try {
+        const settings = await systemSettingsCollection.findOne({
+            key: "reportSettings",
+        });
+        if (!settings)
+            return res.status(404).json({ error: "Paramètres introuvables." });
+        res.json({ success: true, settings: settings.value });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur serveur." });
+    }
 });
 
 
@@ -2944,7 +2951,7 @@ app.get("/api/settings/ticketing-rules", async (req, res) => {
                 }
             });
         }
-        
+
         res.json({ success: true, rules: settings.value });
 
     } catch (error) {
@@ -2970,20 +2977,20 @@ app.get("/api/admin/settings/ticketing-rules", authenticateToken, async (req, re
             // ========================================================
             // Si le document n'existe pas, on renvoie un objet complet
             // avec TOUTES les valeurs par défaut pour pré-remplir le formulaire.
-            return res.json({ 
-                success: true, 
-                settings: { 
-                    childMaxAge: 6, 
+            return res.json({
+                success: true,
+                settings: {
+                    childMaxAge: 6,
                     childPricingMode: 'percentage', // Mode par défaut
-                    childFixedPrice: 5000, 
-                    childDiscountPercentage: 50 
+                    childFixedPrice: 5000,
+                    childDiscountPercentage: 50
                 }
             });
             // ========================================================
             // ✅ FIN DE LA CORRECTION
             // ========================================================
         }
-        
+
         // Si le document existe, on renvoie sa valeur
         res.json({ success: true, settings: settings.value });
 
@@ -3008,11 +3015,11 @@ app.get("/api/admin/agencies", authenticateToken, async (req, res) => {
     try {
         const db = getDb(); // On récupère l'instance de la DB
         const agencies = await db.collection('agencies').find({}).sort({ city: 1, name: 1 }).toArray();
-        
+
         for (const agency of agencies) {
             agency.employeeCount = await db.collection('crew').countDocuments({ agencyId: agency._id });
         }
-        
+
         res.json({ success: true, agencies });
     } catch (error) {
         console.error("❌ Erreur lors de la récupération des agences:", error);
@@ -3092,23 +3099,23 @@ app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
             childFixedPrice: req.body.childFixedPrice,
             childDiscountPercentage: req.body.childDiscountPercentage
         };
-        
+
         // ========================================================
         // ✅ FIN DE LA CORRECTION
         // ========================================================
 
         await systemSettingsCollection.updateOne(
             { key: "ticketingRules" },
-            { 
-                $set: { 
+            {
+                $set: {
                     value: newRules, // On sauvegarde le nouvel objet complet
                     updatedAt: new Date(),
-                    updatedBy: req.user.username 
-                } 
+                    updatedBy: req.user.username
+                }
             },
             { upsert: true }
         );
-        
+
         console.log(`✅ Règles de billetterie mises à jour par ${req.user.username}`);
         res.json({ success: true, message: "Règles de tarification mises à jour." });
 
@@ -3126,7 +3133,7 @@ app.patch("/api/admin/settings/ticketing-rules", authenticateToken, [
 app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
     try {
         let template = req.body;
-        
+
         // --- 1. Gestion des options de bagages (votre code est conservé) ---
         template.baggageOptions = {
             standard: {
@@ -3157,7 +3164,7 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 
         // --- 3. Insertion en base de données ---
         await routeTemplatesCollection.insertOne(template);
-        
+
         res.status(201).json({ success: true, message: "Modèle créé avec succès." });
 
     } catch (error) {
@@ -3170,175 +3177,175 @@ app.post("/api/admin/route-templates", authenticateToken, async (req, res) => {
 // server.js
 
 app.post(
-  "/api/admin/trips",
-  authenticateToken,
-  [
-    body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
-    body("startDate").isISO8601().withMessage("La date de début est invalide."),
-    body("endDate").isISO8601().withMessage("La date de fin est invalide."),
-    body("daysOfWeek").isArray({ min: 1 }).withMessage("Au moins un jour de la semaine doit être sélectionné."),
-    body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
-    body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
-    body('highlightBadge').optional({ checkFalsy: true }).isString().trim(),
-    body("isNightTrip").isBoolean().withMessage("Le statut de voyage de nuit doit être un booléen."),
-    body("arrivalDaysOffset").isInt({ min: 0, max: 5 }).withMessage("Le décalage de jour d'arrivée est invalide.")
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array()[0].msg });
-    }
-    
-    try {
-      const {
-        routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier, highlightBadge,
-        driver1Id, driver1Name, driver2Id, driver2Name,
-        controller1Id, controller1Name, controller2Id, controller2Name,
-        isNightTrip, arrivalDaysOffset
-      } = req.body;
-
-      if (!ObjectId.isValid(routeId)) {
-        return res.status(400).json({ error: "ID de modèle de trajet invalide." });
-      }
-
-      const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
-      if (!routeTemplate) {
-        return res.status(404).json({ error: "Modèle de trajet non trouvé." });
-      }
-
-      let newTrips = [];
-      let currentDate = new Date(startDate);
-      const lastDate = new Date(endDate);
-      const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-      
-      // Préparation de l'équipage
-      const drivers = [];
-      if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
-      if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
-
-      const controllers = [];
-      if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
-      if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
-
-      // Boucle de création des voyages
-      while (currentDate <= lastDate) {
-        const dayName = dayMap[currentDate.getUTCDay()];
-        
-        if (daysOfWeek.includes(dayName)) {
-          const seats = Array.from({ length: seatCount }, (_, i) => ({
-            number: i + 1,
-            status: "available",
-          }));
-
-          // On génère l'objet voyage
-          const tripToInsert = {
-            date: currentDate.toISOString().split("T")[0],
-            route: routeTemplate,
-            seats: seats,
-            busIdentifier: busIdentifier || null,
-            highlightBadge: highlightBadge || null,
-            crew: {
-                drivers: drivers.length > 0 ? drivers : null,
-                controllers: controllers.length > 0 ? controllers : null
-            },
-            createdAt: new Date(),
-            isNightTrip: isNightTrip || false,
-            arrivalDaysOffset: parseInt(arrivalDaysOffset) || 0
-          };
-
-          newTrips.push(tripToInsert);
+    "/api/admin/trips",
+    authenticateToken,
+    [
+        body("routeId").notEmpty().withMessage("Le modèle de trajet est requis."),
+        body("startDate").isISO8601().withMessage("La date de début est invalide."),
+        body("endDate").isISO8601().withMessage("La date de fin est invalide."),
+        body("daysOfWeek").isArray({ min: 1 }).withMessage("Au moins un jour de la semaine doit être sélectionné."),
+        body("seatCount").isInt({ min: 10, max: 100 }).withMessage("Le nombre de sièges doit être entre 10 et 100."),
+        body("busIdentifier").optional({ checkFalsy: true }).isString().trim(),
+        body('highlightBadge').optional({ checkFalsy: true }).isString().trim(),
+        body("isNightTrip").isBoolean().withMessage("Le statut de voyage de nuit doit être un booléen."),
+        body("arrivalDaysOffset").isInt({ min: 0, max: 5 }).withMessage("Le décalage de jour d'arrivée est invalide.")
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array()[0].msg });
         }
-        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-      }
 
-      if (newTrips.length > 0) {
-        // 1. Insertion des voyages
-        const result = await tripsCollection.insertMany(newTrips);
-        console.log(`✅ ${result.insertedCount} voyage(s) créé(s) avec succès.`);
+        try {
+            const {
+                routeId, startDate, endDate, daysOfWeek, seatCount, busIdentifier, highlightBadge,
+                driver1Id, driver1Name, driver2Id, driver2Name,
+                controller1Id, controller1Name, controller2Id, controller2Name,
+                isNightTrip, arrivalDaysOffset
+            } = req.body;
 
-        // ========================================================
-        // ✅ 2. GÉNÉRATION AUTOMATIQUE DU PLANNING
-        // ========================================================
-        const scheduleEntries = [];
-        const db = getDb();
-
-        // On récupère les IDs insérés (car insertMany ne renvoie pas les docs complets avec ID dans certaines versions du driver)
-        // Mais ici on peut itérer sur newTrips car on a les dates et les équipages
-        // Pour lier l'ID du trip au schedule, c'est plus complexe avec insertMany.
-        // Simplification : On va créer les schedules sans lier l'ID du trip pour l'instant, ou on fait une requête.
-        // Pour faire propre et simple : On crée le schedule basé sur la date et l'équipage.
-
-        // Note : Si on veut l'ID du trip, il faut récupérer les documents insérés. 
-        // MongoDB driver >= 4 renvoie `insertedIds` (map : index -> ObjectId)
-        
-        newTrips.forEach((trip, index) => {
-            // Récupération de l'ID généré
-            console.log(`--- DEBUG VOYAGE ${index} ---`);
-            console.log("ID inséré:", result.insertedIds[index]);
-            console.log("Date:", trip.date);
-            console.log("Équipage Brut:", JSON.stringify(trip.crew));
-            const tripId = result.insertedIds[index]; 
-
-            // Calcul horaire estimé (Départ -> +8h par défaut ou durée du modèle)
-            const startT = trip.route.departure; 
-            let [h, m] = startT.split(':').map(Number);
-            
-            // Tentative de calcul de durée réelle
-            let durationMinutes = 480; // 8h par défaut
-            if (trip.route.duration) {
-                // Parsing sommaire "Xh Ym"
-                const parts = trip.route.duration.match(/(\d+)h\s*(\d+)?/);
-                if (parts) durationMinutes = (parseInt(parts[1]) * 60) + (parseInt(parts[2] || 0));
+            if (!ObjectId.isValid(routeId)) {
+                return res.status(400).json({ error: "ID de modèle de trajet invalide." });
             }
 
-            let endTotalMinutes = (h * 60 + m) + durationMinutes;
-            let endH = Math.floor(endTotalMinutes / 60) % 24;
-            let endM = endTotalMinutes % 60;
-            
-            const endT = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+            const routeTemplate = await routeTemplatesCollection.findOne({ _id: new ObjectId(routeId) });
+            if (!routeTemplate) {
+                return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+            }
 
-            // Génération des entrées pour chaque membre
-            if (trip.crew) {
-                const allCrew = [...(trip.crew.drivers || []), ...(trip.crew.controllers || [])];
-                
-                allCrew.forEach(member => {
-                    if (member.id) {
-                        scheduleEntries.push({
-                            crewId: new ObjectId(member.id),
-                            date: trip.date,
-                            startTime: startT,
-                            endTime: endT,
-                            type: 'Voyage',
-                            note: `${trip.route.from} > ${trip.route.to} (${trip.busIdentifier || 'Bus?'})`,
-                            source: 'auto',
-                            tripId: tripId, // Lien fort vers le voyage
-                            createdAt: new Date(),
-                            createdBy: 'system'
+            let newTrips = [];
+            let currentDate = new Date(startDate);
+            const lastDate = new Date(endDate);
+            const dayMap = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+            // Préparation de l'équipage
+            const drivers = [];
+            if (driver1Id) drivers.push({ id: driver1Id, name: driver1Name });
+            if (driver2Id) drivers.push({ id: driver2Id, name: driver2Name });
+
+            const controllers = [];
+            if (controller1Id) controllers.push({ id: controller1Id, name: controller1Name });
+            if (controller2Id) controllers.push({ id: controller2Id, name: controller2Name });
+
+            // Boucle de création des voyages
+            while (currentDate <= lastDate) {
+                const dayName = dayMap[currentDate.getUTCDay()];
+
+                if (daysOfWeek.includes(dayName)) {
+                    const seats = Array.from({ length: seatCount }, (_, i) => ({
+                        number: i + 1,
+                        status: "available",
+                    }));
+
+                    // On génère l'objet voyage
+                    const tripToInsert = {
+                        date: currentDate.toISOString().split("T")[0],
+                        route: routeTemplate,
+                        seats: seats,
+                        busIdentifier: busIdentifier || null,
+                        highlightBadge: highlightBadge || null,
+                        crew: {
+                            drivers: drivers.length > 0 ? drivers : null,
+                            controllers: controllers.length > 0 ? controllers : null
+                        },
+                        createdAt: new Date(),
+                        isNightTrip: isNightTrip || false,
+                        arrivalDaysOffset: parseInt(arrivalDaysOffset) || 0
+                    };
+
+                    newTrips.push(tripToInsert);
+                }
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+
+            if (newTrips.length > 0) {
+                // 1. Insertion des voyages
+                const result = await tripsCollection.insertMany(newTrips);
+                console.log(`✅ ${result.insertedCount} voyage(s) créé(s) avec succès.`);
+
+                // ========================================================
+                // ✅ 2. GÉNÉRATION AUTOMATIQUE DU PLANNING
+                // ========================================================
+                const scheduleEntries = [];
+                const db = getDb();
+
+                // On récupère les IDs insérés (car insertMany ne renvoie pas les docs complets avec ID dans certaines versions du driver)
+                // Mais ici on peut itérer sur newTrips car on a les dates et les équipages
+                // Pour lier l'ID du trip au schedule, c'est plus complexe avec insertMany.
+                // Simplification : On va créer les schedules sans lier l'ID du trip pour l'instant, ou on fait une requête.
+                // Pour faire propre et simple : On crée le schedule basé sur la date et l'équipage.
+
+                // Note : Si on veut l'ID du trip, il faut récupérer les documents insérés. 
+                // MongoDB driver >= 4 renvoie `insertedIds` (map : index -> ObjectId)
+
+                newTrips.forEach((trip, index) => {
+                    // Récupération de l'ID généré
+                    console.log(`--- DEBUG VOYAGE ${index} ---`);
+                    console.log("ID inséré:", result.insertedIds[index]);
+                    console.log("Date:", trip.date);
+                    console.log("Équipage Brut:", JSON.stringify(trip.crew));
+                    const tripId = result.insertedIds[index];
+
+                    // Calcul horaire estimé (Départ -> +8h par défaut ou durée du modèle)
+                    const startT = trip.route.departure;
+                    let [h, m] = startT.split(':').map(Number);
+
+                    // Tentative de calcul de durée réelle
+                    let durationMinutes = 480; // 8h par défaut
+                    if (trip.route.duration) {
+                        // Parsing sommaire "Xh Ym"
+                        const parts = trip.route.duration.match(/(\d+)h\s*(\d+)?/);
+                        if (parts) durationMinutes = (parseInt(parts[1]) * 60) + (parseInt(parts[2] || 0));
+                    }
+
+                    let endTotalMinutes = (h * 60 + m) + durationMinutes;
+                    let endH = Math.floor(endTotalMinutes / 60) % 24;
+                    let endM = endTotalMinutes % 60;
+
+                    const endT = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+                    // Génération des entrées pour chaque membre
+                    if (trip.crew) {
+                        const allCrew = [...(trip.crew.drivers || []), ...(trip.crew.controllers || [])];
+
+                        allCrew.forEach(member => {
+                            if (member.id) {
+                                scheduleEntries.push({
+                                    crewId: new ObjectId(member.id),
+                                    date: trip.date,
+                                    startTime: startT,
+                                    endTime: endT,
+                                    type: 'Voyage',
+                                    note: `${trip.route.from} > ${trip.route.to} (${trip.busIdentifier || 'Bus?'})`,
+                                    source: 'auto',
+                                    tripId: tripId, // Lien fort vers le voyage
+                                    createdAt: new Date(),
+                                    createdBy: 'system'
+                                });
+                            }
                         });
                     }
                 });
+
+                if (scheduleEntries.length > 0) {
+                    await db.collection('schedules').insertMany(scheduleEntries);
+                    console.log(`📅 ${scheduleEntries.length} créneaux de planning générés automatiquement.`);
+                }
+                // ========================================================
+            } else {
+                console.log("⚠️ Aucun voyage créé (jours incompatibles).");
             }
-        });
 
-        if (scheduleEntries.length > 0) {
-            await db.collection('schedules').insertMany(scheduleEntries);
-            console.log(`📅 ${scheduleEntries.length} créneaux de planning générés automatiquement.`);
+            res.status(201).json({
+                success: true,
+                message: `${newTrips.length} voyage(s) ont été programmé(s) et les plannings mis à jour.`,
+            });
+
+        } catch (error) {
+            console.error("❌ Erreur lors de la création des voyages:", error);
+            res.status(500).json({ error: "Erreur serveur." });
         }
-        // ========================================================
-      } else {
-        console.log("⚠️ Aucun voyage créé (jours incompatibles).");
-      }
-
-      res.status(201).json({
-          success: true,
-          message: `${newTrips.length} voyage(s) ont été programmé(s) et les plannings mis à jour.`,
-      });
-
-    } catch (error) {
-      console.error("❌ Erreur lors de la création des voyages:", error);
-      res.status(500).json({ error: "Erreur serveur." });
     }
-  }
 );
 
 
@@ -3353,7 +3360,7 @@ app.post("/api/admin/destinations", authenticateToken, [
     body('country').notEmpty().withMessage("Le pays est requis."),
     // On rend le champ 'coords' complètement optionnel et on accepte qu'il soit vide
     // On supprime .isString() pour accepter aussi les tableaux
-body('coords').optional({ checkFalsy: true }).isString()
+    body('coords').optional({ checkFalsy: true }).isString()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3363,9 +3370,9 @@ body('coords').optional({ checkFalsy: true }).isString()
 
     try {
         const { name, country, coords } = req.body;
-        
+
         let coordsArray = [];
-        
+
         // On ne traite la chaîne que si elle existe et n'est pas vide
         if (coords && coords.trim() !== '') {
             const parts = coords.split(',').map(c => parseFloat(c.trim()));
@@ -3375,11 +3382,11 @@ body('coords').optional({ checkFalsy: true }).isString()
                 return res.status(400).json({ error: "Format des coordonnées invalide." });
             }
         }
-        
+
         const newDestination = {
             name, country, coords: coordsArray, isActive: true, createdAt: new Date()
         };
-        
+
         await destinationsCollection.insertOne(newDestination);
         res.status(201).json({ success: true, message: "Destination ajoutée." });
 
@@ -3396,123 +3403,123 @@ body('coords').optional({ checkFalsy: true }).isString()
 // DANS server.js
 
 app.post("/api/admin/report-requests/:bookingNumber/approve",
-  authenticateToken,
-  [
-    body('transactionProof').optional().isString().trim()
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-      const { bookingNumber } = req.params;
-      let { transactionProof } = req.body;
-      const adminUsername = req.user.username; // On récupère le nom de l'admin dès le début
-
-      console.log(`✅ Validation de la demande de report pour ${bookingNumber} par ${adminUsername}`);
-
-      const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
-      if (!reservation || !reservation.reportRequest) {
-        return res.status(404).json({ error: "Demande de report introuvable ou déjà traitée." });
-      }
-
-      const request = reservation.reportRequest;
-
-      // --- Logique de validation de la preuve de paiement ---
-      if (request.cost.totalCost > 0) { // On ne vérifie la preuve que si un paiement était requis
-        if (request.paymentMethod === 'AGENCY') {
-            transactionProof = transactionProof || `AGENCE-PAY-${Date.now()}`;
-            console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
-        } else if (!transactionProof || transactionProof.trim() === '') {
-            return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
+    authenticateToken,
+    [
+        body('transactionProof').optional().isString().trim()
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
-      }
 
-      const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
-      if (!newTrip) {
-        return res.status(404).json({ error: "Le voyage cible n'existe plus." });
-      }
+        try {
+            const { bookingNumber } = req.params;
+            let { transactionProof } = req.body;
+            const adminUsername = req.user.username; // On récupère le nom de l'admin dès le début
 
-      const requiredSeatsCount = reservation.passengers.length;
-      const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
-      if (availableSeats.length < requiredSeatsCount) {
-        return res.status(409).json({ error: `Pas assez de sièges disponibles.` });
-      }
+            console.log(`✅ Validation de la demande de report pour ${bookingNumber} par ${adminUsername}`);
 
-      // Libérer les anciens sièges et occuper les nouveaux
-      await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
-      await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
+            const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
+            if (!reservation || !reservation.reportRequest) {
+                return res.status(404).json({ error: "Demande de report introuvable ou déjà traitée." });
+            }
 
-      // Création de la nouvelle réservation
-      const newBookingNumber = generateBookingNumber();
-      const newPrice = newTrip.route.price * requiredSeatsCount;
-      const newReservation = {
-        ...reservation,
-        _id: new ObjectId(),
-        bookingNumber: newBookingNumber,
-        route: { ...newTrip.route, id: newTrip._id.toString() },
-        date: newTrip.date,
-        seats: availableSeats,
-        passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
-        totalPriceNumeric: newPrice,
-        totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
-        status: "Confirmé",
-        reportCount: (reservation.reportCount || 0) + 1,
-        originalReservation: reservation._id.toString(),
-        busIdentifier: newTrip.busIdentifier || null,
-        reportHistory: [
-          ...(reservation.reportHistory || []),
-          {
-            from: { date: reservation.date, tripId: reservation.route.id.toString() },
-            to: { date: newTrip.date, tripId: newTrip._id.toString() },
-            reportedAt: new Date(),
-            totalCost: request.cost.totalCost,
-            initiatedBy: "client",
-            approvedBy: adminUsername, // On utilise la variable définie plus haut
-            transactionProof: transactionProof || null
-          }
-        ],
-        createdAt: new Date()
-      };
-      
-      // Nettoyage de l'objet pour la nouvelle réservation
-      delete newReservation.reportedAt;
-      delete newReservation.replacementReservation;
-      delete newReservation.reportRequest;
-      delete newReservation.replacementBookingNumber;
+            const request = reservation.reportRequest;
 
-      await reservationsCollection.insertOne(newReservation);
-      
-      // Mise à jour de l'ancienne réservation pour la lier à la nouvelle
-      await reservationsCollection.updateOne(
-        { _id: reservation._id },
-        { 
-          $set: { 
-            status: "Reporté", 
-            reportedAt: new Date(), 
-            replacementReservation: newReservation._id.toString(), 
-            replacementBookingNumber: newReservation.bookingNumber,
-            'reportRequest.status': 'Approuvé', 
-            'reportRequest.approvedAt': new Date(), 
-            'reportRequest.approvedBy': adminUsername, // On utilise la variable
-            'reportRequest.transactionProof': transactionProof || null
-          }
+            // --- Logique de validation de la preuve de paiement ---
+            if (request.cost.totalCost > 0) { // On ne vérifie la preuve que si un paiement était requis
+                if (request.paymentMethod === 'AGENCY') {
+                    transactionProof = transactionProof || `AGENCE-PAY-${Date.now()}`;
+                    console.log(`Paiement agence validé. Preuve interne générée: ${transactionProof}`);
+                } else if (!transactionProof || transactionProof.trim() === '') {
+                    return res.status(400).json({ error: "La preuve de paiement (ID de transaction) est requise pour Mobile Money." });
+                }
+            }
+
+            const newTrip = await tripsCollection.findOne({ _id: new ObjectId(request.targetTrip.id) });
+            if (!newTrip) {
+                return res.status(404).json({ error: "Le voyage cible n'existe plus." });
+            }
+
+            const requiredSeatsCount = reservation.passengers.length;
+            const availableSeats = newTrip.seats.filter(s => s.status === 'available').slice(0, requiredSeatsCount).map(s => s.number);
+            if (availableSeats.length < requiredSeatsCount) {
+                return res.status(409).json({ error: `Pas assez de sièges disponibles.` });
+            }
+
+            // Libérer les anciens sièges et occuper les nouveaux
+            await tripsCollection.updateOne({ _id: new ObjectId(reservation.route.id) }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: reservation.seats.map(s => parseInt(s)) } }] });
+            await tripsCollection.updateOne({ _id: newTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: availableSeats } }] });
+
+            // Création de la nouvelle réservation
+            const newBookingNumber = generateBookingNumber();
+            const newPrice = newTrip.route.price * requiredSeatsCount;
+            const newReservation = {
+                ...reservation,
+                _id: new ObjectId(),
+                bookingNumber: newBookingNumber,
+                route: { ...newTrip.route, id: newTrip._id.toString() },
+                date: newTrip.date,
+                seats: availableSeats,
+                passengers: reservation.passengers.map((p, i) => ({ ...p, seat: availableSeats[i] })),
+                totalPriceNumeric: newPrice,
+                totalPrice: `${newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`,
+                status: "Confirmé",
+                reportCount: (reservation.reportCount || 0) + 1,
+                originalReservation: reservation._id.toString(),
+                busIdentifier: newTrip.busIdentifier || null,
+                reportHistory: [
+                    ...(reservation.reportHistory || []),
+                    {
+                        from: { date: reservation.date, tripId: reservation.route.id.toString() },
+                        to: { date: newTrip.date, tripId: newTrip._id.toString() },
+                        reportedAt: new Date(),
+                        totalCost: request.cost.totalCost,
+                        initiatedBy: "client",
+                        approvedBy: adminUsername, // On utilise la variable définie plus haut
+                        transactionProof: transactionProof || null
+                    }
+                ],
+                createdAt: new Date()
+            };
+
+            // Nettoyage de l'objet pour la nouvelle réservation
+            delete newReservation.reportedAt;
+            delete newReservation.replacementReservation;
+            delete newReservation.reportRequest;
+            delete newReservation.replacementBookingNumber;
+
+            await reservationsCollection.insertOne(newReservation);
+
+            // Mise à jour de l'ancienne réservation pour la lier à la nouvelle
+            await reservationsCollection.updateOne(
+                { _id: reservation._id },
+                {
+                    $set: {
+                        status: "Reporté",
+                        reportedAt: new Date(),
+                        replacementReservation: newReservation._id.toString(),
+                        replacementBookingNumber: newReservation.bookingNumber,
+                        'reportRequest.status': 'Approuvé',
+                        'reportRequest.approvedAt': new Date(),
+                        'reportRequest.approvedBy': adminUsername, // On utilise la variable
+                        'reportRequest.transactionProof': transactionProof || null
+                    }
+                }
+            );
+
+            console.log(`✅✅ Report validé par ${adminUsername}. Ancien: ${bookingNumber}, Nouveau: ${newBookingNumber}`);
+
+            sendReportConfirmedEmail(reservation, newReservation);
+
+            res.json({ success: true, message: "Demande de report validée avec succès.", newBookingNumber });
+
+        } catch (error) {
+            console.error("❌ Erreur validation report:", error);
+            res.status(500).json({ error: "Erreur serveur." });
         }
-      );
-      
-      console.log(`✅✅ Report validé par ${adminUsername}. Ancien: ${bookingNumber}, Nouveau: ${newBookingNumber}`);
-      
-      sendReportConfirmedEmail(reservation, newReservation);
-
-      res.json({ success: true, message: "Demande de report validée avec succès.", newBookingNumber });
-      
-    } catch (error) {
-      console.error("❌ Erreur validation report:", error);
-      res.status(500).json({ error: "Erreur serveur." });
     }
-  }
 );
 
 
@@ -3522,12 +3529,12 @@ app.post("/api/admin/report-requests/:bookingNumber/approve",
 app.post("/api/admin/report-requests/:bookingNumber/reject", authenticateToken, async (req, res) => {
     try {
         const { bookingNumber } = req.params;
-        
+
         console.log(`🚫 Tentative de refus pour ${bookingNumber}`);
 
         // 1. Trouver la réservation en attente
         const reservation = await reservationsCollection.findOne({ bookingNumber, status: "En attente de report" });
-        
+
         if (!reservation) {
             return res.status(404).json({ error: "Demande introuvable ou déjà traitée." });
         }
@@ -3536,13 +3543,13 @@ app.post("/api/admin/report-requests/:bookingNumber/reject", authenticateToken, 
         // (On annule juste la demande, le billet original reste valide)
         await reservationsCollection.updateOne(
             { _id: reservation._id },
-            { 
-                $set: { 
+            {
+                $set: {
                     status: "Confirmé", // Retour au statut normal
                     "reportRequest.status": "Refusé",
                     "reportRequest.rejectedAt": new Date(),
                     "reportRequest.rejectedBy": req.user.username
-                } 
+                }
             }
         );
 
@@ -3576,7 +3583,7 @@ app.post("/api/reviews", authenticateToken, [
         const { tripId, bookingNumber, rating, comment } = req.body;
         const userId = req.user.userId;
         const userName = req.user.username;
-        
+
         // ==========================================================
         // ✅ CORRECTION APPLIQUÉE ICI
         // ==========================================================
@@ -3602,7 +3609,7 @@ app.post("/api/reviews", authenticateToken, [
         // On utilise notre variable de collection
         await reviewsCollection.insertOne(newReview);
         // ==========================================================
-        
+
         // TODO (Optionnel) : Mettre à jour la note moyenne du voyage dans la collection 'trips'
 
         res.status(201).json({ success: true, message: "Merci pour votre avis !" });
@@ -3632,9 +3639,9 @@ app.post("/api/admin/agencies", authenticateToken, [
 
     try {
         const { name, city, address, phone, openingHours, managerId, coords } = req.body;
-        
+
         // On récupère l'instance de la DB
-        const db = getDb(); 
+        const db = getDb();
         const agenciesCollection = db.collection('agencies');
 
         // On vérifie si une agence avec le même nom existe déjà pour éviter les doublons
@@ -3657,7 +3664,7 @@ app.post("/api/admin/agencies", authenticateToken, [
         };
 
         await agenciesCollection.insertOne(newAgency);
-        
+
         res.status(201).json({ success: true, message: "Agence créée avec succès." });
 
     } catch (error) {
@@ -3729,26 +3736,26 @@ app.post("/api/admin/schedules", authenticateToken, [
 
 
 app.patch(
-  "/api/admin/trips/:id/reset-seats",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
-      if (!trip) return res.status(404).json({ error: "Voyage non trouvé." });
-      const newSeats = Array.from({ length: trip.seats.length }, (_, i) => ({
-        number: i + 1,
-        status: "available",
-      }));
-      await tripsCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { seats: newSeats } }
-      );
-      res.json({ success: true, message: "Sièges réinitialisés." });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+    "/api/admin/trips/:id/reset-seats",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const trip = await tripsCollection.findOne({ _id: new ObjectId(id) });
+            if (!trip) return res.status(404).json({ error: "Voyage non trouvé." });
+            const newSeats = Array.from({ length: trip.seats.length }, (_, i) => ({
+                number: i + 1,
+                status: "available",
+            }));
+            await tripsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { seats: newSeats } }
+            );
+            res.json({ success: true, message: "Sièges réinitialisés." });
+        } catch (error) {
+            res.status(500).json({ error: "Erreur serveur." });
+        }
     }
-  }
 );
 
 app.patch("/api/admin/route-templates/:id/toggle-popular", authenticateToken, async (req, res) => {
@@ -3776,167 +3783,167 @@ app.patch("/api/admin/route-templates/:id/toggle-popular", authenticateToken, as
 
 
 app.patch(
-  "/api/admin/trips/:tripId/seats/:seatNumber",
-  authenticateToken,
-  [body("status").isIn(["available", "blocked"])],
-  async (req, res) => {
-    try {
-      const { tripId, seatNumber } = req.params;
-      const { status } = req.body;
-      const result = await tripsCollection.updateOne(
-        { _id: new ObjectId(tripId), "seats.number": parseInt(seatNumber) },
-        { $set: { "seats.$.status": status } }
-      );
-      if (result.matchedCount === 0)
-        return res.status(404).json({ error: "Voyage ou siège non trouvé." });
-      res.json({ success: true, message: `Siège ${seatNumber} mis à jour` });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
+    "/api/admin/trips/:tripId/seats/:seatNumber",
+    authenticateToken,
+    [body("status").isIn(["available", "blocked"])],
+    async (req, res) => {
+        try {
+            const { tripId, seatNumber } = req.params;
+            const { status } = req.body;
+            const result = await tripsCollection.updateOne(
+                { _id: new ObjectId(tripId), "seats.number": parseInt(seatNumber) },
+                { $set: { "seats.$.status": status } }
+            );
+            if (result.matchedCount === 0)
+                return res.status(404).json({ error: "Voyage ou siège non trouvé." });
+            res.json({ success: true, message: `Siège ${seatNumber} mis à jour` });
+        } catch (error) {
+            res.status(500).json({ error: "Erreur serveur." });
+        }
     }
-  }
 );
 
 
 
 app.patch(
-  "/api/admin/reservations/:id/seats",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { newSeats } = req.body;
+    "/api/admin/reservations/:id/seats",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { newSeats } = req.body;
 
-      console.log("--- 🔄 Début de la modification des sièges ---");
-      console.log(
-        `ID Réservation: ${id}, Nouveaux sièges demandés: ${newSeats}`
-      );
+            console.log("--- 🔄 Début de la modification des sièges ---");
+            console.log(
+                `ID Réservation: ${id}, Nouveaux sièges demandés: ${newSeats}`
+            );
 
-      if (!ObjectId.isValid(id)) {
-        console.log("-> Erreur: ID invalide.");
-        return res.status(400).json({ error: "ID de réservation invalide." });
-      }
+            if (!ObjectId.isValid(id)) {
+                console.log("-> Erreur: ID invalide.");
+                return res.status(400).json({ error: "ID de réservation invalide." });
+            }
 
-      if (!Array.isArray(newSeats) || newSeats.length === 0) {
-        console.log("-> Erreur: 'newSeats' n'est pas un tableau valide.");
-        return res.status(400).json({ error: "Format de sièges invalide." });
-      }
+            if (!Array.isArray(newSeats) || newSeats.length === 0) {
+                console.log("-> Erreur: 'newSeats' n'est pas un tableau valide.");
+                return res.status(400).json({ error: "Format de sièges invalide." });
+            }
 
-      // 1. Récupérer la réservation
-      const reservation = await reservationsCollection.findOne({
-        _id: new ObjectId(id),
-      });
-      if (!reservation) {
-        console.log("-> Erreur: Réservation introuvable.");
-        return res.status(404).json({ error: "Réservation introuvable." });
-      }
-      console.log(`-> Réservation trouvée: ${reservation.bookingNumber}`);
+            // 1. Récupérer la réservation
+            const reservation = await reservationsCollection.findOne({
+                _id: new ObjectId(id),
+            });
+            if (!reservation) {
+                console.log("-> Erreur: Réservation introuvable.");
+                return res.status(404).json({ error: "Réservation introuvable." });
+            }
+            console.log(`-> Réservation trouvée: ${reservation.bookingNumber}`);
 
-      // 2. Vérifier la cohérence (nombre de sièges vs passagers)
-      if (newSeats.length !== reservation.passengers.length) {
-        console.log(
-          "-> Erreur: Nombre de sièges ne correspond pas au nombre de passagers."
-        );
-        return res
-          .status(400)
-          .json({
-            error: `Le nombre de sièges (${newSeats.length}) doit correspondre au nombre de passagers (${reservation.passengers.length}).`,
-          });
-      }
+            // 2. Vérifier la cohérence (nombre de sièges vs passagers)
+            if (newSeats.length !== reservation.passengers.length) {
+                console.log(
+                    "-> Erreur: Nombre de sièges ne correspond pas au nombre de passagers."
+                );
+                return res
+                    .status(400)
+                    .json({
+                        error: `Le nombre de sièges (${newSeats.length}) doit correspondre au nombre de passagers (${reservation.passengers.length}).`,
+                    });
+            }
 
-      // 3. Vérifier que la réservation a bien un voyage associé
-      if (
-        !reservation.route ||
-        !reservation.route.id ||
-        !ObjectId.isValid(reservation.route.id)
-      ) {
-        console.log(
-          "-> Erreur: ID de voyage manquant ou invalide dans la réservation."
-        );
-        return res
-          .status(400)
-          .json({ error: "Données de voyage corrompues dans la réservation." });
-      }
+            // 3. Vérifier que la réservation a bien un voyage associé
+            if (
+                !reservation.route ||
+                !reservation.route.id ||
+                !ObjectId.isValid(reservation.route.id)
+            ) {
+                console.log(
+                    "-> Erreur: ID de voyage manquant ou invalide dans la réservation."
+                );
+                return res
+                    .status(400)
+                    .json({ error: "Données de voyage corrompues dans la réservation." });
+            }
 
-      // 4. Récupérer le voyage associé
-      const trip = await tripsCollection.findOne({
-        _id: new ObjectId(reservation.route.id),
-      });
-      if (!trip) {
-        console.log("-> Erreur: Voyage associé introuvable.");
-        return res
-          .status(404)
-          .json({ error: "Le voyage associé est introuvable." });
-      }
-      console.log(`-> Voyage associé trouvé (Date: ${trip.date})`);
+            // 4. Récupérer le voyage associé
+            const trip = await tripsCollection.findOne({
+                _id: new ObjectId(reservation.route.id),
+            });
+            if (!trip) {
+                console.log("-> Erreur: Voyage associé introuvable.");
+                return res
+                    .status(404)
+                    .json({ error: "Le voyage associé est introuvable." });
+            }
+            console.log(`-> Voyage associé trouvé (Date: ${trip.date})`);
 
-      // 5. Vérifier la disponibilité des nouveaux sièges
-      const oldSeats = reservation.seats.map((s) => parseInt(s));
-      const unavailable = trip.seats.filter(
-        (s) =>
-          newSeats.includes(s.number) &&
-          s.status !== "available" &&
-          !oldSeats.includes(s.number)
-      );
+            // 5. Vérifier la disponibilité des nouveaux sièges
+            const oldSeats = reservation.seats.map((s) => parseInt(s));
+            const unavailable = trip.seats.filter(
+                (s) =>
+                    newSeats.includes(s.number) &&
+                    s.status !== "available" &&
+                    !oldSeats.includes(s.number)
+            );
 
-      if (unavailable.length > 0) {
-        console.log(
-          `-> Erreur: Conflit, sièges indisponibles: ${unavailable
-            .map((s) => s.number)
-            .join(", ")}`
-        );
-        return res
-          .status(409)
-          .json({
-            error: `Conflit : Le(s) siège(s) ${unavailable
-              .map((s) => s.number)
-              .join(", ")} est/sont déjà pris.`,
-          });
-      }
-      console.log("-> Tous les nouveaux sièges sont disponibles.");
+            if (unavailable.length > 0) {
+                console.log(
+                    `-> Erreur: Conflit, sièges indisponibles: ${unavailable
+                        .map((s) => s.number)
+                        .join(", ")}`
+                );
+                return res
+                    .status(409)
+                    .json({
+                        error: `Conflit : Le(s) siège(s) ${unavailable
+                            .map((s) => s.number)
+                            .join(", ")} est/sont déjà pris.`,
+                    });
+            }
+            console.log("-> Tous les nouveaux sièges sont disponibles.");
 
-      // 6. Mettre à jour la base de données (libérer les anciens, occuper les nouveaux)
-      console.log("-> Libération des anciens sièges...");
-      await tripsCollection.updateOne(
-        { _id: trip._id },
-        { $set: { "seats.$[elem].status": "available" } },
-        { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
-      );
+            // 6. Mettre à jour la base de données (libérer les anciens, occuper les nouveaux)
+            console.log("-> Libération des anciens sièges...");
+            await tripsCollection.updateOne(
+                { _id: trip._id },
+                { $set: { "seats.$[elem].status": "available" } },
+                { arrayFilters: [{ "elem.number": { $in: oldSeats } }] }
+            );
 
-      console.log("-> Occupation des nouveaux sièges...");
-      await tripsCollection.updateOne(
-        { _id: trip._id },
-        { $set: { "seats.$[elem].status": "occupied" } },
-        { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
-      );
+            console.log("-> Occupation des nouveaux sièges...");
+            await tripsCollection.updateOne(
+                { _id: trip._id },
+                { $set: { "seats.$[elem].status": "occupied" } },
+                { arrayFilters: [{ "elem.number": { $in: newSeats } }] }
+            );
 
-      console.log("-> Mise à jour de la réservation...");
-      await reservationsCollection.updateOne(
-        { _id: new ObjectId(id) },
-        {
-          $set: {
-            seats: newSeats,
-            passengers: reservation.passengers.map((p, i) => ({
-              ...p,
-              seat: newSeats[i],
-            })),
-            updatedAt: new Date(),
-          },
+            console.log("-> Mise à jour de la réservation...");
+            await reservationsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                {
+                    $set: {
+                        seats: newSeats,
+                        passengers: reservation.passengers.map((p, i) => ({
+                            ...p,
+                            seat: newSeats[i],
+                        })),
+                        updatedAt: new Date(),
+                    },
+                }
+            );
+
+            console.log("--- ✅ Modification des sièges terminée avec succès ---");
+            res.json({
+                success: true,
+                message: "Les sièges ont été modifiés avec succès.",
+            });
+        } catch (error) {
+            console.error(
+                "❌ ERREUR FATALE lors de la modification des sièges:",
+                error
+            );
+            res.status(500).json({ error: "Erreur serveur inattendue." });
         }
-      );
-
-      console.log("--- ✅ Modification des sièges terminée avec succès ---");
-      res.json({
-        success: true,
-        message: "Les sièges ont été modifiés avec succès.",
-      });
-    } catch (error) {
-      console.error(
-        "❌ ERREUR FATALE lors de la modification des sièges:",
-        error
-      );
-      res.status(500).json({ error: "Erreur serveur inattendue." });
     }
-  }
 );
 
 // ============================================
@@ -3961,22 +3968,22 @@ app.patch("/api/admin/settings/report", authenticateToken, [
             maxReportsAllowed: parseInt(req.body.maxReportsAllowed),
             minHoursBeforeDeparture: parseInt(req.body.minHoursBeforeDeparture),
             // On peut ajouter la valeur par défaut pour firstReportFree
-            firstReportFree: true 
+            firstReportFree: true
         };
 
         // Requête MongoDB simplifiée : on remplace tout l'objet 'value'
         await systemSettingsCollection.updateOne(
             { key: "reportSettings" },
-            { 
-                $set: { 
+            {
+                $set: {
                     value: newSettingsValue, // Remplace tout l'objet d'un coup
                     updatedAt: new Date(),
-                    updatedBy: req.user.username 
-                } 
+                    updatedBy: req.user.username
+                }
             },
             { upsert: true } // Crée le document s'il n'existe pas
         );
-        
+
         console.log("✅ Paramètres mis à jour par", req.user.username);
         res.json({ success: true, message: "Paramètres mis à jour." });
 
@@ -4035,7 +4042,7 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
         // ==========================================================
         if (status === 'ARRIVED') {
             console.log(`🏁 Voyage ${tripId} marqué "Arrivé". Tentative de mise à jour des stats du personnel...`);
-            
+
             const trip = await tripsCollection.findOne({ _id: new ObjectId(tripId) });
             const distance = trip?.route?.distance;
             const crew = trip?.crew;
@@ -4049,22 +4056,22 @@ app.patch("/api/admin/trips/:tripId/status", authenticateToken, [
                         .map(member => member.id)
                         .filter(id => id && ObjectId.isValid(id)) // Filtre les ID invalides
                         .map(id => new ObjectId(id));
-                    
+
                     console.log(`   -> IDs de l'équipage à mettre à jour:`, crewIds);
-                    
+
                     if (crewIds.length > 0) {
                         // ==========================================================
                         // ✅ CORRECTION APPLIQUÉE ICI
                         // ==========================================================
                         // On récupère l'instance de la base de données via la fonction getDb()
-                        const db = getDb(); 
+                        const db = getDb();
                         // On exécute la mise à jour sur la collection 'crew'
                         const updateResult = await db.collection('crew').updateMany(
                             { _id: { $in: crewIds } },
                             { $inc: { totalTrips: 1, totalKm: distance } }
                         );
                         // ==========================================================
-                        
+
                         console.log(`   -> ✅ Succès ! ${updateResult.modifiedCount} membre(s) d'équipage mis à jour.`);
                     }
                 }
@@ -4185,7 +4192,7 @@ app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
     if (!errors.isEmpty()) {
         return res.status(400).json({ error: errors.array()[0].msg });
     }
-    
+
     const { crewId } = req.params;
     const { agencyId } = req.body;
 
@@ -4197,7 +4204,7 @@ app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
     try {
         let agencyName = null;
         let finalAgencyId = null;
-        
+
         // On récupère l'instance de la DB
         const db = getDb();
 
@@ -4223,7 +4230,7 @@ app.patch("/api/admin/crew/:crewId/assign-agency", authenticateToken, [
         }
 
         res.json({ success: true, message: "Affectation de l'employé mise à jour." });
-        
+
     } catch (error) {
         console.error("❌ Erreur lors de l'affectation de l'employé:", error);
         res.status(500).json({ error: "Erreur serveur." });
@@ -4326,7 +4333,7 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             // ✅ CORRECTION MAJEURE : On récupère l'utilisateur ICI
             // `req.user.username` vient du token JWT décodé par `authenticateToken`
             const user = await crewCollection.findOne({ username: req.user.username });
-            
+
             // Sécurité : si l'utilisateur a été supprimé entre temps
             if (!user) {
                 console.error("Utilisateur introuvable lors de la confirmation:", req.user.username);
@@ -4336,7 +4343,7 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             if (reservation.status !== "En attente de paiement") {
                 return res.status(400).json({ error: "Cette réservation n'est pas en attente de paiement." });
             }
-            
+
             const { transactionProof } = req.body;
             if (!transactionProof || transactionProof.trim() === '') {
                 return res.status(400).json({ error: "Une preuve de transaction est requise." });
@@ -4355,29 +4362,29 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             // Mise à jour en base de données
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
-                { 
-                    $set: { 
-                        status: "Confirmé", 
-                        confirmedAt: new Date(), 
+                {
+                    $set: {
+                        status: "Confirmé",
+                        confirmedAt: new Date(),
                         "paymentDetails.transactionProof": transactionProof.trim(),
                         // On enregistre le nom de l'employé qui valide
                         "paymentDetails.confirmedByAdmin": req.user.username,
                         // On enregistre l'agence qui encaisse (pour les stats)
                         "paymentDetails.collectedByAgencyId": collectingAgencyId,
                         "paymentDetails.collectedByAgencyName": collectingAgencyName
-                    } 
+                    }
                 }
             );
-            
+
             // Préparation de l'objet pour l'email (données fraîches)
-            reservation.status = "Confirmé"; 
+            reservation.status = "Confirmé";
             reservation.confirmedAt = new Date();
-            if(!reservation.paymentDetails) reservation.paymentDetails = {};
+            if (!reservation.paymentDetails) reservation.paymentDetails = {};
             reservation.paymentDetails.confirmedByAdmin = req.user.username;
-            
+
             // Envoi de l'email
-            sendPaymentConfirmedEmail(reservation); 
-            
+            sendPaymentConfirmedEmail(reservation);
+
             return res.json({ success: true, message: "Paiement confirmé !" });
         }
 
@@ -4386,7 +4393,7 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             if (['Annulé', 'Expiré'].includes(reservation.status)) {
                 return res.status(400).json({ error: "Cette réservation est déjà annulée ou expirée." });
             }
-            
+
             // Libérer les sièges du trajet aller
             await tripsCollection.updateOne(
                 { _id: new ObjectId(reservation.route.id) },
@@ -4406,15 +4413,15 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
             // Mise à jour du statut
             await reservationsCollection.updateOne(
                 { _id: new ObjectId(id) },
-                { 
-                    $set: { 
-                        status: "Annulé", 
-                        cancelledAt: new Date(), 
+                {
+                    $set: {
+                        status: "Annulé",
+                        cancelledAt: new Date(),
                         cancelledBy: req.user.username
-                    } 
+                    }
                 }
             );
-            
+
             return res.json({ success: true, message: "Réservation annulée avec succès." });
         }
 
@@ -4434,14 +4441,14 @@ app.patch("/api/admin/reservations/:id/:action", authenticateToken, async (req, 
 app.get("/api/admin/analytics/revenue-by-agency", authenticateToken, async (req, res) => {
     try {
         const db = getDb();
-        
+
         // Agrégation MongoDB puissante
         const revenueStats = await db.collection('reservations').aggregate([
-            { 
-                $match: { 
+            {
+                $match: {
                     status: "Confirmé",
                     "paymentDetails.collectedByAgencyId": { $ne: null } // On ne prend que ce qui est encaissé en agence
-                } 
+                }
             },
             {
                 $group: {
@@ -4488,72 +4495,72 @@ app.patch("/api/admin/destinations/:id", authenticateToken, async (req, res) => 
 // ============================================
 
 app.post(
-  "/api/admin/trips",
-  authenticateToken,
-  [
-    /* ... validations ... */
-  ],
-  async (req, res) => {
-    try {
-      const {
-        routeId,
-        startDate,
-        endDate,
-        daysOfWeek,
-        seatCount,
-        busIdentifier,
-        highlightBadge,
-      } = req.body;
-      const routeTemplate = await routeTemplatesCollection.findOne({
-        _id: new ObjectId(routeId),
-      });
-      if (!routeTemplate)
-        return res.status(404).json({ error: "Modèle de trajet non trouvé." });
+    "/api/admin/trips",
+    authenticateToken,
+    [
+        /* ... validations ... */
+    ],
+    async (req, res) => {
+        try {
+            const {
+                routeId,
+                startDate,
+                endDate,
+                daysOfWeek,
+                seatCount,
+                busIdentifier,
+                highlightBadge,
+            } = req.body;
+            const routeTemplate = await routeTemplatesCollection.findOne({
+                _id: new ObjectId(routeId),
+            });
+            if (!routeTemplate)
+                return res.status(404).json({ error: "Modèle de trajet non trouvé." });
 
-      let newTrips = [];
-      let currentDate = new Date(startDate);
-      const lastDate = new Date(endDate);
-      const dayMap = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
+            let newTrips = [];
+            let currentDate = new Date(startDate);
+            const lastDate = new Date(endDate);
+            const dayMap = [
+                "sunday",
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+            ];
 
-      while (currentDate <= lastDate) {
-        if (daysOfWeek.includes(dayMap[currentDate.getUTCDay()])) {
-          const seats = Array.from({ length: seatCount }, (_, i) => ({
-            number: i + 1,
-            status: "available",
-          }));
-          newTrips.push({
-            date: currentDate.toISOString().split("T")[0],
-            route: routeTemplate,
-            seats: seats,
-            busIdentifier: busIdentifier || null,
-            highlightBadge: highlightBadge || null,
-            createdAt: new Date(),
-          });
+            while (currentDate <= lastDate) {
+                if (daysOfWeek.includes(dayMap[currentDate.getUTCDay()])) {
+                    const seats = Array.from({ length: seatCount }, (_, i) => ({
+                        number: i + 1,
+                        status: "available",
+                    }));
+                    newTrips.push({
+                        date: currentDate.toISOString().split("T")[0],
+                        route: routeTemplate,
+                        seats: seats,
+                        busIdentifier: busIdentifier || null,
+                        highlightBadge: highlightBadge || null,
+                        createdAt: new Date(),
+                    });
+                }
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            }
+
+            if (newTrips.length > 0) {
+                await tripsCollection.insertMany(newTrips);
+            }
+            res
+                .status(201)
+                .json({
+                    success: true,
+                    message: `${newTrips.length} voyage(s) créé(s).`,
+                });
+        } catch (error) {
+            res.status(500).json({ error: "Erreur serveur." });
         }
-        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-      }
-
-      if (newTrips.length > 0) {
-        await tripsCollection.insertMany(newTrips);
-      }
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: `${newTrips.length} voyage(s) créé(s).`,
-        });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur serveur." });
     }
-  }
 );
 
 
@@ -4563,13 +4570,13 @@ app.post(
 
 // --- CRON JOB & WEBSOCKET ---
 if (
-  process.env.NODE_ENV === "production" &&
-  process.env.CRON_ENABLED === "true"
+    process.env.NODE_ENV === "production" &&
+    process.env.CRON_ENABLED === "true"
 ) {
-  cron.schedule("*/5 * * * *", async () => {
-    /* ... votre logique cron ... */
-  });
-  console.log("✅ Cron jobs activés.");
+    cron.schedule("*/5 * * * *", async () => {
+        /* ... votre logique cron ... */
+    });
+    console.log("✅ Cron jobs activés.");
 }
 
 const io = new Server(server, { cors: { origin: allowedOrigins } });
@@ -4579,39 +4586,39 @@ const io = new Server(server, { cors: { origin: allowedOrigins } });
 // --- LOGIQUE WEBSOCKET POUR LE SUIVI DE BUS ---
 // ============================================
 io.on("connection", (socket) => {
-  console.log(`🛰️  Nouvelle connexion WebSocket: ${socket.id}`);
+    console.log(`🛰️  Nouvelle connexion WebSocket: ${socket.id}`);
 
-  // Un client (navigateur) s'abonne pour suivre un bus spécifique
-  socket.on("subscribeToBus", async (busId) => {
-    if (!busId) return;
+    // Un client (navigateur) s'abonne pour suivre un bus spécifique
+    socket.on("subscribeToBus", async (busId) => {
+        if (!busId) return;
 
-    console.log(`[Socket ${socket.id}] s'abonne au bus: ${busId}`);
-    socket.join(busId); // Le client rejoint un "canal" spécifique à ce bus
+        console.log(`[Socket ${socket.id}] s'abonne au bus: ${busId}`);
+        socket.join(busId); // Le client rejoint un "canal" spécifique à ce bus
 
-    // On lui envoie immédiatement la dernière position connue
-    try {
-      const lastPosition = await positionsCollection.findOne(
-        { busId: busId },
-        { sort: { timestamp: -1 } }
-      );
+        // On lui envoie immédiatement la dernière position connue
+        try {
+            const lastPosition = await positionsCollection.findOne(
+                { busId: busId },
+                { sort: { timestamp: -1 } }
+            );
 
-      if (lastPosition) {
-        socket.emit("updatePosition", lastPosition);
-        console.log(
-          ` -> Dernière position envoyée à [Socket ${socket.id}] pour le bus ${busId}`
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Erreur lors de la récupération de la dernière position:",
-        error
-      );
-    }
-  });
+            if (lastPosition) {
+                socket.emit("updatePosition", lastPosition);
+                console.log(
+                    ` -> Dernière position envoyée à [Socket ${socket.id}] pour le bus ${busId}`
+                );
+            }
+        } catch (error) {
+            console.error(
+                "Erreur lors de la récupération de la dernière position:",
+                error
+            );
+        }
+    });
 
-  socket.on("disconnect", () => {
-    console.log(`🔌 Connexion WebSocket fermée: ${socket.id}`);
-  });
+    socket.on("disconnect", () => {
+        console.log(`🔌 Connexion WebSocket fermée: ${socket.id}`);
+    });
 });
 
 
@@ -4632,9 +4639,9 @@ app.post('/api/admin/notifications/send-to-all', authenticateToken, async (req, 
 app.post('/api/admin/notifications/send-to-trip/:tripId', authenticateToken, async (req, res) => {
     const { title, body } = req.body;
     try {
-        const tokens = await getDb().collection('reservations').distinct('fcmToken', { 
-            'route.id': req.params.tripId, 
-            fcmToken: { $exists: true } 
+        const tokens = await getDb().collection('reservations').distinct('fcmToken', {
+            'route.id': req.params.tripId,
+            fcmToken: { $exists: true }
         });
         const count = await sendPush(tokens, title, body);
         res.json({ success: true, message: `${count} notifications envoyées.` });
@@ -4647,7 +4654,7 @@ app.post('/api/admin/notifications/send-to-booking/:bookingNumber', authenticate
     try {
         const reser = await getDb().collection('reservations').findOne({ bookingNumber: req.params.bookingNumber });
         if (!reser?.fcmToken) return res.status(404).json({ error: "Pas de token pour ce client." });
-        
+
         await sendPush([reser.fcmToken], title, body);
         res.json({ success: true, message: "Notification envoyée." });
     } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
@@ -4665,39 +4672,209 @@ app.post('/api/notifications/register', async (req, res) => {
 // ============================================
 // Cette route est appelée par le tracker GPS dans le bus
 app.post("/track/update", async (req, res) => {
-  const { tid, lat, lon, tst } = req.body; // tid = trackerId, lat = latitude, lon = longitude, tst = timestamp
+    const { tid, lat, lon, tst } = req.body; // tid = trackerId, lat = latitude, lon = longitude, tst = timestamp
 
-  if (!tid || !lat || !lon) {
-    return res.status(400).json({ error: "Données de suivi invalides" });
-  }
+    if (!tid || !lat || !lon) {
+        return res.status(400).json({ error: "Données de suivi invalides" });
+    }
 
-  const newPosition = {
-    busId: tid,
-    lat: parseFloat(lat),
-    lon: parseFloat(lon),
-    timestamp: new Date(parseInt(tst) * 1000), // Convertir le timestamp Unix en date
-  };
+    const newPosition = {
+        busId: tid,
+        lat: parseFloat(lat),
+        lon: parseFloat(lon),
+        timestamp: new Date(parseInt(tst) * 1000), // Convertir le timestamp Unix en date
+    };
 
+    try {
+        // Sauvegarder la position en base de données
+        await positionsCollection.updateOne(
+            { busId: tid },
+            { $set: newPosition },
+            { upsert: true } // Crée le document s'il n'existe pas
+        );
+
+        // Diffuser la nouvelle position à tous les clients qui suivent ce bus
+        io.to(tid).emit("updatePosition", newPosition);
+        console.log(
+            `📍 Position mise à jour pour le bus ${tid} -> diffusée sur le canal ${tid}`
+        );
+
+        res.sendStatus(200); // Répondre au tracker GPS que tout est OK
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour de la position:", error);
+        res.sendStatus(500);
+    }
+});
+
+
+
+// ============================================
+// ✅ FEDAPAY - ROUTES À AJOUTER ICI
+// ============================================
+
+// 💳 CRÉER UNE TRANSACTION FEDAPAY
+app.post("/api/payments/fedapay/create-transaction", [
+  body('bookingNumber').notEmpty(),
+  body('amount').isInt({ min: 100 }),
+  body('phone').notEmpty(),
+  body('customerEmail').isEmail(),
+  body('customerName').notEmpty()
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+  
   try {
-    // Sauvegarder la position en base de données
-    await positionsCollection.updateOne(
-      { busId: tid },
-      { $set: newPosition },
-      { upsert: true } // Crée le document s'il n'existe pas
-    );
-
-    // Diffuser la nouvelle position à tous les clients qui suivent ce bus
-    io.to(tid).emit("updatePosition", newPosition);
-    console.log(
-      `📍 Position mise à jour pour le bus ${tid} -> diffusée sur le canal ${tid}`
-    );
-
-    res.sendStatus(200); // Répondre au tracker GPS que tout est OK
+    const { bookingNumber, amount, phone, customerEmail, customerName } = req.body;
+    
+    console.log(`💳 Création transaction FedaPay pour ${bookingNumber}`);
+    
+    // Appel à l'API FedaPay
+    const fedapayResponse = await axios.post('https://api.fedapay.com/v1/transactions', {
+      amount: Math.round(amount * 100), // FedaPay veut le montant en centimes
+      description: `Réservation ${bookingNumber}`,
+      customer: {
+        firstname: customerName.split(' ')[0] || 'Client',
+        lastname: customerName.split(' ')[1] || '',
+        email: customerEmail,
+        phone: phone
+      },
+      callback_url: `${process.env.FRONTEND_URL}?booking=${bookingNumber}`
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.FEDAPAY_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const transaction = fedapayResponse.data.data;
+    
+    console.log(`✅ Transaction créée: ${transaction.id}`);
+    
+    // Sauvegarder la transaction en base
+    const db = getDb();
+    await db.collection('fedapay_transactions').insertOne({
+      bookingNumber,
+      fedapayTransactionId: transaction.id,
+      amount: Math.round(amount),
+      phone,
+      status: 'PENDING',
+      createdAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      transactionId: transaction.id,
+      publicKey: process.env.FEDAPAY_PUBLIC_KEY
+    });
+    
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la position:", error);
-    res.sendStatus(500);
+    console.error('❌ Erreur FedaPay création:', error.response?.data || error.message);
+    res.status(500).json({ error: "Erreur création transaction FedaPay" });
   }
 });
+
+// ✅ WEBHOOK FEDAPAY
+app.post("/webhooks/fedapay", async (req, res) => {
+  try {
+    const { transaction } = req.body;
+    
+    console.log(`🔔 Webhook FedaPay reçu: ${transaction.id} - Status: ${transaction.status}`);
+    
+    // Ignorer si pas complété
+    if (transaction.status !== 'completed') {
+      console.log(`   -> Statut ignoré: ${transaction.status}`);
+      return res.json({ success: true });
+    }
+    
+    const db = getDb();
+    
+    // Trouver la transaction FedaPay dans notre DB
+    const fedapayTx = await db.collection('fedapay_transactions').findOne({
+      fedapayTransactionId: transaction.id
+    });
+    
+    if (!fedapayTx) {
+      console.warn(`⚠️ Transaction FedaPay ${transaction.id} non trouvée en BD`);
+      return res.json({ success: true });
+    }
+    
+    console.log(`   -> Booking trouvé: ${fedapayTx.bookingNumber}`);
+    
+    // Mettre à jour la réservation
+    const updateResult = await db.collection('reservations').updateOne(
+      { bookingNumber: fedapayTx.bookingNumber },
+      {
+        $set: {
+          status: 'Confirmé',
+          paymentMethod: 'FEDAPAY',
+          confirmedAt: new Date(),
+          'paymentDetails.fedapayTransactionId': transaction.id,
+          'paymentDetails.confirmedByFedapay': true
+        }
+      }
+    );
+    
+    if (updateResult.matchedCount === 0) {
+      console.warn(`⚠️ Réservation ${fedapayTx.bookingNumber} non trouvée`);
+      return res.json({ success: true });
+    }
+    
+    console.log(`   -> Réservation mise à jour: ${fedapayTx.bookingNumber}`);
+    
+    // Mettre à jour la transaction FedaPay
+    await db.collection('fedapay_transactions').updateOne(
+      { fedapayTransactionId: transaction.id },
+      { $set: { status: 'COMPLETED', completedAt: new Date() } }
+    );
+    
+    // Envoyer email de confirmation
+    const reservation = await db.collection('reservations').findOne({ 
+      bookingNumber: fedapayTx.bookingNumber 
+    });
+    
+    if (reservation) {
+      console.log(`   -> Envoi email confirmation...`);
+      sendPaymentConfirmedEmail(reservation);
+    }
+    
+    console.log(`✅ Paiement FedaPay confirmé pour ${fedapayTx.bookingNumber}`);
+    res.json({ success: true });
+    
+  } catch (error) {
+    console.error('❌ Erreur webhook FedaPay:', error);
+    res.status(500).json({ error: "Erreur traitement webhook" });
+  }
+});
+
+// 🔍 VÉRIFIER LE STATUT DU PAIEMENT FEDAPAY
+app.get("/api/payments/fedapay/verify/:transactionId", async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    
+    const response = await axios.get(
+      `https://api.fedapay.com/v1/transactions/${transactionId}`, 
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.FEDAPAY_SECRET_KEY}`
+        }
+      }
+    );
+    
+    const transaction = response.data.data;
+    
+    res.json({
+      success: true,
+      status: transaction.status,
+      amount: transaction.amount / 100 // Convertir de centimes
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur vérification FedaPay:', error);
+    res.status(500).json({ error: "Erreur vérification paiement" });
+  }
+});
+
+// ✅ FIN ROUTES FEDAPAY
 
 // --- Démarrage ---
 // server.js - à la fin du fichier
@@ -4705,32 +4882,32 @@ app.post("/track/update", async (req, res) => {
 // --- Démarrage ---
 const PORT = process.env.PORT || 3000;
 (async () => {
-  try {
-    // 1. On se connecte à la base de données
-    await connectToDb();
-    console.log("✅ Connexion à la DB réussie depuis server.js.");
+    try {
+        // 1. On se connecte à la base de données
+        await connectToDb();
+        console.log("✅ Connexion à la DB réussie depuis server.js.");
 
-    // 2. ✅ ON REMPLIT LES VARIABLES GLOBALES
-    const db = getDb();
-    reservationsCollection = db.collection("reservations");
-    tripsCollection = db.collection("trips");
-    routeTemplatesCollection = db.collection("route_templates");
-    destinationsCollection = db.collection("destinations");
-    systemSettingsCollection = db.collection("system_settings");
-    positionsCollection = db.collection("positions");
-    crewCollection = db.collection("crew");
-    agenciesCollection = db.collection("agencies"); // ✅ AJOUTEZ CETTE LIGNE
-    console.log("✅ Collections MongoDB assignées aux variables globales.");
-    
-    
-    console.log("✅ Collections MongoDB assignées aux variables globales.");
+        // 2. ✅ ON REMPLIT LES VARIABLES GLOBALES
+        const db = getDb();
+        reservationsCollection = db.collection("reservations");
+        tripsCollection = db.collection("trips");
+        routeTemplatesCollection = db.collection("route_templates");
+        destinationsCollection = db.collection("destinations");
+        systemSettingsCollection = db.collection("system_settings");
+        positionsCollection = db.collection("positions");
+        crewCollection = db.collection("crew");
+        agenciesCollection = db.collection("agencies"); // ✅ AJOUTEZ CETTE LIGNE
+        console.log("✅ Collections MongoDB assignées aux variables globales.");
 
-    // 3. On démarre le serveur
-    server.listen(PORT, () =>
-      console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`)
-    );
-  } catch (error) {
-    console.error("❌ Échec critique du démarrage du serveur:", error);
-    process.exit(1);
-  }
+
+        console.log("✅ Collections MongoDB assignées aux variables globales.");
+
+        // 3. On démarre le serveur
+        server.listen(PORT, () =>
+            console.log(`\n🚀 Backend En-Bus démarré sur le port ${PORT}\n`)
+        );
+    } catch (error) {
+        console.error("❌ Échec critique du démarrage du serveur:", error);
+        process.exit(1);
+    }
 })();

@@ -886,6 +886,37 @@
                   </ul>
                 </div>
               </div>
+
+
+                   <!-- ✅ ============================================ -->
+          <!-- ✅ AJOUTER LE BLOC FEDAPAY ICI -->
+          <!-- ✅ ============================================ -->
+          <label class="payment-method">
+            <input type="radio" name="payment" value="fedapay" />
+            <div class="method-content">
+              <div class="method-icon">💳</div>
+              <div class="method-info">
+                <strong>Paiement Automatique <span class="method-badge" data-i18n="payment_badge_automatic">Automatique</span></strong>
+                <span data-i18n="payment_fedapay_desc">💳 Carte bancaire, Mobile Money (Orange, Airtel, Moov)</span>
+              </div>
+            </div>
+          </label>
+
+          <div class="payment-details-form" id="fedapay-details" style="display: none">
+            <div class="form-group">
+              <label data-i18n="payment_fedapay_amount">💰 Montant à payer (TTC)</label>
+              <input type="text" id="fedapay-amount" class="form-control" readonly />
+              <small id="fedapay-fee-info" style="color: var(--color-text-secondary); margin-top: 8px;"></small>
+            </div>
+            <div class="form-group">
+              <label for="fedapay-phone" data-i18n="payment_fedapay_phone">📱 Numéro de téléphone</label>
+              <input type="tel" id="fedapay-phone" class="form-control" placeholder="Ex: 242061234567" />
+            </div>
+            <button type="button" class="btn btn-primary" onclick="initiateFedapayPayment()" style="width: 100%; margin-top: 16px;">
+              <span data-i18n="payment_fedapay_button">💳 Passer au paiement sécurisé</span>
+            </button>
+          </div>
+          <!-- ✅ FIN DU BLOC FEDAPAY -->
             </div>
           </div>
         </div>

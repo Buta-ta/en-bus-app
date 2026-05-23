@@ -28,14 +28,14 @@ const CONFIG = {
     SEAT_TOTAL: 61,
     OCCUPANCY_RATE: { min: 0.3, max: 0.5 },
     STORAGE_KEY: 'enbus_reservations',
-    
+
     MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES: 30,
-    AGENCY_PAYMENT_DEADLINE_HOURS: 10, 
+    AGENCY_PAYMENT_DEADLINE_HOURS: 10,
     AGENCY_PAYMENT_MIN_HOURS: 12,
-    
+
     MTN_MERCHANT_NUMBER: '+242 06 150 79 47',
     AIRTEL_MERCHANT_NUMBER: '+242 05 150 79 47',
-    
+
     SCANNER_FPS: 10,
     SCANNER_QRBOX: 250,
 
@@ -55,12 +55,12 @@ const CONFIG = {
 
 // Collez l'objet firebaseConfig que vous avez récupéré à l'étape 1
 const firebaseConfig = {
-  apiKey: "AIzaSyD-JrXsi5pMyb2qsR2XVxZ7gagmsdyawSk",
-  authDomain: "en-bus-app.firebaseapp.com",
-  projectId: "en-bus-app",
-  storageBucket: "en-bus-app.firebasestorage.app",
-  messagingSenderId: "518160239652",
-  appId: "1:518160239652:web:e00017bec1bb8034af5cb1",
+    apiKey: "AIzaSyD-JrXsi5pMyb2qsR2XVxZ7gagmsdyawSk",
+    authDomain: "en-bus-app.firebaseapp.com",
+    projectId: "en-bus-app",
+    storageBucket: "en-bus-app.firebasestorage.app",
+    messagingSenderId: "518160239652",
+    appId: "1:518160239652:web:e00017bec1bb8034af5cb1",
 };
 
 // On initialise Firebase
@@ -92,7 +92,7 @@ let appRules = {
 
 const ALL_PERMISSIONS = {
     // ... vos autres permissions
-    manage_agencies: "Gérer les agences" 
+    manage_agencies: "Gérer les agences"
 };
 // =============================================
 // GOOGLE AUTH NATIF
@@ -103,24 +103,24 @@ let googleAuthReady = false;
 
 // Vérifie si on est sur mobile natif
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-  isNativePlatform = true;
+    isNativePlatform = true;
 }
 
 // Initialisation Google Auth pour mobile
 async function initGoogleAuth() {
-  if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
-    try {
-      await window.Capacitor.Plugins.SocialLogin.initialize({
-        google: {
-          webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', // ⬅️ Utilise celui-ci (client_type: 3)
-        },
-      });
-      googleAuthReady = true;
-      console.log('✅ Google Auth initialisé');
-    } catch (error) {
-      console.error('❌ Erreur init Google Auth:', error);
+    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+        try {
+            await window.Capacitor.Plugins.SocialLogin.initialize({
+                google: {
+                    webClientId: '518160239652-r8nir369fnkur0id4a51dj4rju1ug754.apps.googleusercontent.com', // ⬅️ Utilise celui-ci (client_type: 3)
+                },
+            });
+            googleAuthReady = true;
+            console.log('✅ Google Auth initialisé');
+        } catch (error) {
+            console.error('❌ Erreur init Google Auth:', error);
+        }
     }
-  }
 }
 
 // Appelle l'initialisation
@@ -131,122 +131,122 @@ initGoogleAuth();
 // DANS app.js, REMPLACEZ ENTIÈREMENT votre fonction signInWithGoogle
 
 async function signInWithGoogle() {
-  const lang = getLanguage();
-  const translation = translations[lang] || translations.fr;
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
-  try {
-    let idToken;
-    let userInfo;
+    try {
+        let idToken;
+        let userInfo;
 
-    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
-      // --- Partie NATIVE ---
-      console.log('📱 Connexion native Google...');
-      if (!googleAuthReady) {
-        await initGoogleAuth();
-        if (!googleAuthReady) throw new Error("Init Google Auth a échoué.");
-      }
-      
-      const result = await window.Capacitor.Plugins.SocialLogin.login({ provider: 'google' });
-      
-      // =======================================================================
-      // ✅ EXTRACTION FINALE BASÉE SUR LES LOGS DE DÉBOGAGE
-      // =======================================================================
-      const loginData = result.result;
-      if (!loginData) {
-          throw new Error("La réponse du plugin ne contient pas de sous-objet 'result'.");
-      }
-      
-      // Extraction de l'idToken
-      idToken = loginData.idToken;
+        if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+            // --- Partie NATIVE ---
+            console.log('📱 Connexion native Google...');
+            if (!googleAuthReady) {
+                await initGoogleAuth();
+                if (!googleAuthReady) throw new Error("Init Google Auth a échoué.");
+            }
 
-      // Extraction des informations de profil
-      const profileData = loginData.profile;
-      
-      if (typeof idToken !== 'string' || !idToken) {
-          throw new Error("L'idToken est manquant ou invalide dans la réponse.");
-      }
-      if (!profileData || typeof profileData.email !== 'string' || !profileData.email) {
-          throw new Error("Les données de profil (surtout l'email) sont manquantes.");
-      }
-      
-      console.log("🔑 idToken et 👤 Profil extraits avec succès !");
+            const result = await window.Capacitor.Plugins.SocialLogin.login({ provider: 'google' });
 
-      // On construit notre objet userInfo directement
-      userInfo = {
-        displayName: profileData.name,
-        email: profileData.email,
-        uid: profileData.id
-      };
-      // =======================================================================
-      
-    } else {
-      // --- Partie WEB (inchangée) ---
-      console.log('🌐 Connexion web Google...');
-      const webResult = await auth.signInWithPopup(googleProvider);
-      const user = webResult.user;
-      idToken = await user.getIdToken();
-      userInfo = user;
+            // =======================================================================
+            // ✅ EXTRACTION FINALE BASÉE SUR LES LOGS DE DÉBOGAGE
+            // =======================================================================
+            const loginData = result.result;
+            if (!loginData) {
+                throw new Error("La réponse du plugin ne contient pas de sous-objet 'result'.");
+            }
+
+            // Extraction de l'idToken
+            idToken = loginData.idToken;
+
+            // Extraction des informations de profil
+            const profileData = loginData.profile;
+
+            if (typeof idToken !== 'string' || !idToken) {
+                throw new Error("L'idToken est manquant ou invalide dans la réponse.");
+            }
+            if (!profileData || typeof profileData.email !== 'string' || !profileData.email) {
+                throw new Error("Les données de profil (surtout l'email) sont manquantes.");
+            }
+
+            console.log("🔑 idToken et 👤 Profil extraits avec succès !");
+
+            // On construit notre objet userInfo directement
+            userInfo = {
+                displayName: profileData.name,
+                email: profileData.email,
+                uid: profileData.id
+            };
+            // =======================================================================
+
+        } else {
+            // --- Partie WEB (inchangée) ---
+            console.log('🌐 Connexion web Google...');
+            const webResult = await auth.signInWithPopup(googleProvider);
+            const user = webResult.user;
+            idToken = await user.getIdToken();
+            userInfo = user;
+        }
+
+        // --- Le reste du flux vers votre backend est inchangé et fonctionnera ---
+        if (!userInfo || !userInfo.email) {
+            throw new Error("Impossible de récupérer l'adresse email de l'utilisateur.");
+        }
+
+        console.log(`🚀 Infos utilisateur prêtes: ${userInfo.email}. Envoi au backend...`);
+
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            }
+        });
+
+        const responseBody = await response.text();
+        if (!response.ok) {
+            console.error(`❌ Le backend a rejeté la requête:`, responseBody);
+            throw new Error("Échec de la validation du compte sur le serveur.");
+        }
+
+        const appData = JSON.parse(responseBody);
+        if (appData.success && appData.token) {
+            localStorage.setItem('enbus_usertoken', appData.token);
+            handleAuthStateChanged(userInfo);
+            Utils.showToast(translation.toast_login_success, "success");
+        } else {
+            throw new Error(appData.error || "Le serveur a refusé la connexion.");
+        }
+
+    } catch (error) {
+        console.error("❌ Erreur globale de connexion Google:", error.message);
+        Utils.showToast(translation.toast_login_failed, "error");
     }
-
-    // --- Le reste du flux vers votre backend est inchangé et fonctionnera ---
-    if (!userInfo || !userInfo.email) {
-        throw new Error("Impossible de récupérer l'adresse email de l'utilisateur.");
-    }
-
-    console.log(`🚀 Infos utilisateur prêtes: ${userInfo.email}. Envoi au backend...`);
-    
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/google-signin`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      }
-    });
-
-    const responseBody = await response.text();
-    if (!response.ok) {
-        console.error(`❌ Le backend a rejeté la requête:`, responseBody);
-        throw new Error("Échec de la validation du compte sur le serveur.");
-    }
-
-    const appData = JSON.parse(responseBody);
-    if (appData.success && appData.token) {
-      localStorage.setItem('enbus_usertoken', appData.token);
-      handleAuthStateChanged(userInfo);
-      Utils.showToast(translation.toast_login_success, "success");
-    } else {
-      throw new Error(appData.error || "Le serveur a refusé la connexion.");
-    }
-
-  } catch (error) {
-    console.error("❌ Erreur globale de connexion Google:", error.message);
-    Utils.showToast(translation.toast_login_failed, "error");
-  }
 }
 
 
 
 async function signOut() {
-  const lang = getLanguage();
-  const translation = translations[lang] || translations.fr;
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
-  try {
-    // Déconnexion Firebase (web)
-    await auth.signOut();
-    
-    // Déconnexion native (mobile)
-    if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
-      await window.Capacitor.Plugins.SocialLogin.logout({ provider: 'google' });
+    try {
+        // Déconnexion Firebase (web)
+        await auth.signOut();
+
+        // Déconnexion native (mobile)
+        if (isNativePlatform && window.Capacitor.Plugins.SocialLogin) {
+            await window.Capacitor.Plugins.SocialLogin.logout({ provider: 'google' });
+        }
+
+        localStorage.removeItem('enbus_usertoken');
+        currentUser = null;
+        updateAuthUI(null);
+        Utils.showToast(translation.toast_logout_success, "info");
+
+    } catch (error) {
+        console.error("❌ Erreur déconnexion:", error);
     }
-    
-    localStorage.removeItem('enbus_usertoken');
-    currentUser = null;
-    updateAuthUI(null);
-    Utils.showToast(translation.toast_logout_success, "info");
-    
-  } catch (error) {
-    console.error("❌ Erreur déconnexion:", error);
-  }
 }
 // DANS app.js (remplacez votre fonction updateAuthUI)
 
@@ -257,12 +257,12 @@ function updateAuthUI(user) {
     // On récupère les traductions au début
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     if (user) {
         // Utilisateur connecté
         // On utilise la clé de traduction pour le message d'accueil
         const welcomeMessage = translation.auth_welcome_message(user.displayName.split(' ')[0]);
-        
+
         if (desktopBtn) {
             // On utilise la clé de traduction pour le bouton
             desktopBtn.textContent = translation.auth_logout_button;
@@ -271,7 +271,7 @@ function updateAuthUI(user) {
         if (mobileLink) {
             mobileLink.innerHTML = `<span>${welcomeMessage}</span>`;
             // On peut aussi changer l'action pour déconnecter
-            mobileLink.onclick = signOut; 
+            mobileLink.onclick = signOut;
         }
     } else {
         // Utilisateur déconnecté
@@ -350,7 +350,7 @@ async function initNotifications() {
             name: 'Rappels de voyage',
             importance: 5,
             sound: 'notification_sound.mp3'
-        }).catch(() => {});
+        }).catch(() => { });
 
         // PUSH NOTIFICATIONS
         let perm = await PushNotifications.checkPermissions();
@@ -376,7 +376,7 @@ async function initNotifications() {
         // ✅ Réception push - Afficher dans status bar même si app ouverte
         PushNotifications.addListener('pushNotificationReceived', async (notification) => {
             console.log("📩 Push reçue:", notification);
-            
+
             // Créer une local notification pour afficher dans la status bar
             try {
                 await LocalNotifications.schedule({
@@ -388,7 +388,7 @@ async function initNotifications() {
                         channelId: 'reminders',
                         extra: notification.data,
                         smallIcon: 'ic_notification',
-                        
+
                         // ===============================================
                         // ✅ CORRECTION AJOUTÉE ICI
                         // ===============================================
@@ -436,7 +436,7 @@ async function scheduleReminderNotifications(reservation) {
             schedule: { at: j1 },
             channelId: 'reminders',
             smallIcon: 'ic_notification',
-            
+
             // ===============================================
             // ✅ CORRECTION AJOUTÉE ICI
             // ===============================================
@@ -473,14 +473,14 @@ async function scheduleReminderNotifications(reservation) {
 
 async function registerTokenWithBooking(bookingNumber, busId) {
     console.log(`--- [PUSH] Tentative d'enregistrement du token pour la réservation ${bookingNumber} ---`);
-    
+
     const token = localStorage.getItem('fcm_token');
-    
+
     if (!token) {
         console.warn(`   -> ⚠️ Token non trouvé dans localStorage. Enregistrement annulé.`);
         return;
     }
-    
+
     // Assure-toi que APP_CONFIG est bien défini par ton fichier config.js
     const apiUrl = `${APP_CONFIG.API_URL}/api/notifications/register`;
     console.log(`   -> Token trouvé. Envoi vers l'URL : ${apiUrl}`);
@@ -488,12 +488,12 @@ async function registerTokenWithBooking(bookingNumber, busId) {
     try {
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ token, bookingNumber, busId })
         });
-        
+
         // On vérifie la réponse du serveur
         if (response.ok) {
             const result = await response.json();
@@ -541,40 +541,40 @@ const companies = [
 
 
 const agencies = [
-    { 
-        city: 'Brazzaville', 
+    {
+        city: 'Brazzaville',
         name: 'Agence En-Bus Brazzaville Centre',
         address: 'Avenue de l\'Indépendance, en face du marché Total',
         phone: '+242 06 123 4567',
         hours: 'Lun-Sam : 7h - 19h / Dim : 8h - 14h',
         coords: [-4.2634, 15.2429]
     },
-    { 
-        city: 'Pointe-Noire', 
+    {
+        city: 'Pointe-Noire',
         name: 'Agence En-Bus Pointe-Noire',
         address: 'Rue Loango, près de la Poste Centrale',
         phone: '+242 06 765 4321',
         hours: 'Lun-Sam : 7h - 18h',
         coords: [-4.7947, 11.8634]
     },
-    { 
-        city: 'Dolisie', 
+    {
+        city: 'Dolisie',
         name: 'Agence En-Bus Dolisie',
         address: 'Avenue Patrice Lumumba, gare routière',
         phone: '+242 06 555 1234',
         hours: 'Lun-Sam : 7h - 17h',
         coords: [-4.2064, 12.6686]
     },
-    { 
-        city: 'Yaoundé', 
+    {
+        city: 'Yaoundé',
         name: 'Agence En-Bus Yaoundé',
         address: 'Boulevard du 20 Mai, quartier du Lac',
         phone: '+237 6 77 88 99 00',
         hours: 'Lun-Sam : 7h - 18h',
         coords: [3.8480, 11.5021]
     },
-    { 
-        city: 'Douala', 
+    {
+        city: 'Douala',
         name: 'Agence En-Bus Douala',
         address: 'Avenue de la Liberté, Akwa',
         phone: '+237 6 99 88 77 66',
@@ -590,13 +590,13 @@ let placeholderAnimationStarted = false;
 // ============================================
 
 // --- Variables pour les timers ---
-let frontendCountdownInterval = null; 
+let frontendCountdownInterval = null;
 // --- Données dynamiques ---
 let allRouteTemplates = []; // Pour les suggestions de la barre de recherche
 let allReservations = []; // Pour la page "Mes réservations"
 let fuse = null;
 let allDestinations = [];
-let fuseDestinations = null;         
+let fuseDestinations = null;
 
 
 
@@ -616,10 +616,10 @@ let appState = {
     baggageCounts: {},
     currentResults: [],
     displayedResults: [],
-   
+
     currentReservation: null,
-      // ✅ NOUVELLE PROPRIÉTÉ
-   
+    // ✅ NOUVELLE PROPRIÉTÉ
+
 };
 
 // --- État des filtres de la page de résultats ---
@@ -633,33 +633,33 @@ let activeFilters = {
     departureLocation: 'all'
 };
 // ✅ AJOUTEZ CETTE LIGNE
-let refreshPassengerSelectorUI = () => {}; // Variable globale initialisée avec une fonction vide
+let refreshPassengerSelectorUI = () => { }; // Variable globale initialisée avec une fonction vide
 
 
 // ============================================
 // UTILITAIRES
 // ============================================
 const Utils = {
-   // DANS app.js, objet Utils
+    // DANS app.js, objet Utils
 
-formatPrice(price) {
-    // Sécurité : Si price est null, undefined ou pas un nombre, on met 0
-    if (price === undefined || price === null || isNaN(price)) {
-        console.warn("⚠️ formatPrice a reçu une valeur invalide:", price);
-        return "0";
-    }
-    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-},
+    formatPrice(price) {
+        // Sécurité : Si price est null, undefined ou pas un nombre, on met 0
+        if (price === undefined || price === null || isNaN(price)) {
+            console.warn("⚠️ formatPrice a reçu une valeur invalide:", price);
+            return "0";
+        }
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    },
 
     formatDate(date, lang = 'fr') { // On ajoute 'lang' comme paramètre
-    const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; // On choisit la locale
-    return new Date(date).toLocaleDateString(locale, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-},
+        const locale = (lang === 'en') ? 'en-US' : 'fr-FR'; // On choisit la locale
+        return new Date(date).toLocaleDateString(locale, {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    },
 
 
     formatDateTime(date) {
@@ -677,11 +677,11 @@ formatPrice(price) {
 
 
     generateBookingNumber() {
-    const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `EB-${timestamp.slice(-6)}${random}`;
-},
-    
+        const timestamp = Date.now().toString();
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `EB-${timestamp.slice(-6)}${random}`;
+    },
+
 
     validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -695,7 +695,7 @@ formatPrice(price) {
             /^\d{2,4}\s?\d{3,4}\s?\d{3,4}$/,
             /^\d{10,15}$/
         ];
-        
+
         return patterns.some(pattern => pattern.test(phone.trim()));
     },
 
@@ -713,13 +713,13 @@ formatPrice(price) {
                 <span class="toast-message">${message}</span>
             </div>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         setTimeout(() => {
             toast.classList.add('show');
         }, 100);
-        
+
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
@@ -766,45 +766,45 @@ formatPrice(price) {
         let ticketsPrice = 0;
         let returnTicketsPrice = 0;
         let baggagePrice = 0;
-        
+
         // --- 1. Calcul du prix des billets pour le trajet ALLER ---
         if (state.selectedBus && state.selectedSeats?.length > 0) {
             const adultPrice = state.selectedBus.price || 0;
             const childPrice = getChildPrice(adultPrice); // Utilise notre fonction helper
-            
+
             const numAdults = state.passengerCounts.adults || 0;
             const numSeats = state.selectedSeats.length;
-            
+
             const adultsSeats = Math.min(numSeats, numAdults);
             const childrenSeats = numSeats - adultsSeats;
-            
+
             ticketsPrice = (adultsSeats * adultPrice) + (childrenSeats * childPrice);
         }
-        
+
         // --- 2. Calcul du prix des billets pour le trajet RETOUR ---
         if (state.currentSearch.tripType === "round-trip" && state.selectedReturnBus && state.selectedReturnSeats?.length > 0) {
             const returnAdultPrice = state.selectedReturnBus.price || 0;
             const returnChildPrice = getChildPrice(returnAdultPrice); // Utilise notre fonction helper
-            
+
             const numAdults = state.passengerCounts.adults || 0;
             const numSeats = state.selectedReturnSeats.length;
 
             const adultsSeats = Math.min(numSeats, numAdults);
             const childrenSeats = numSeats - adultsSeats;
-            
+
             returnTicketsPrice = (adultsSeats * returnAdultPrice) + (childrenSeats * returnChildPrice);
         }
-        
+
         // --- 3. Calcul du prix des BAGAGES ---
         if (state.baggageCounts && Object.keys(state.baggageCounts).length > 0 && state.selectedBus?.baggageOptions) {
-             Object.values(state.baggageCounts).forEach(paxBaggage => {
+            Object.values(state.baggageCounts).forEach(paxBaggage => {
                 baggagePrice += (paxBaggage.standard || 0) * (state.selectedBus.baggageOptions.standard.price || 0);
                 baggagePrice += (paxBaggage.oversized || 0) * (state.selectedBus.baggageOptions.oversized.price || 0);
             });
         }
-        
+
         totalPrice = ticketsPrice + returnTicketsPrice + baggagePrice;
-        
+
         // On retourne un objet détaillé avec les prix arrondis
         return {
             total: Math.round(totalPrice),
@@ -819,131 +819,131 @@ formatPrice(price) {
 
 
 
-// Dans app.js, à l'intérieur de const Utils = { ... }
+    // Dans app.js, à l'intérieur de const Utils = { ... }
 
-// ✅ 1. FONCTION DE GÉNÉRATION DE LA CHAÎNE POUR LE QR CODE
-// Dans app.js, à l'intérieur de const Utils = { ... }
+    // ✅ 1. FONCTION DE GÉNÉRATION DE LA CHAÎNE POUR LE QR CODE
+    // Dans app.js, à l'intérieur de const Utils = { ... }
 
-generateQRCodeData(reservation, isReturn = false) {
-    // 1. Récupérer les informations de base
-    const bookingNumber = reservation.bookingNumber;
-    const mainPassengerName = reservation.passengers[0]?.name || 'N/A';
-    const totalPassengers = reservation.passengers.length;
+    generateQRCodeData(reservation, isReturn = false) {
+        // 1. Récupérer les informations de base
+        const bookingNumber = reservation.bookingNumber;
+        const mainPassengerName = reservation.passengers[0]?.name || 'N/A';
+        const totalPassengers = reservation.passengers.length;
 
-    let travelDate, travelType, busIdentifier; // ✅ Déclaration ici
+        let travelDate, travelType, busIdentifier; // ✅ Déclaration ici
 
-    // 2. Déterminer les données pour l'aller ou le retour
-    if (isReturn && reservation.returnDate) {
-        travelDate = reservation.returnDate;
-        travelType = 'R'; // Retour
-        busIdentifier = reservation.returnBusIdentifier || 'N/A'; // On lit le bon champ
-    } else {
-        travelDate = reservation.date;
-        travelType = 'A'; // Aller
-        busIdentifier = reservation.busIdentifier || 'N/A'; // On lit le bon champ
-    }
+        // 2. Déterminer les données pour l'aller ou le retour
+        if (isReturn && reservation.returnDate) {
+            travelDate = reservation.returnDate;
+            travelType = 'R'; // Retour
+            busIdentifier = reservation.returnBusIdentifier || 'N/A'; // On lit le bon champ
+        } else {
+            travelDate = reservation.date;
+            travelType = 'A'; // Aller
+            busIdentifier = reservation.busIdentifier || 'N/A'; // On lit le bon champ
+        }
 
-    // 3. Assembler la chaîne de caractères
-    const qrString = [
-        bookingNumber,
-        travelDate,
-        mainPassengerName,
-        totalPassengers,
-        travelType,
-        busIdentifier // Maintenant, cette variable existe
-    ].join('|');
+        // 3. Assembler la chaîne de caractères
+        const qrString = [
+            bookingNumber,
+            travelDate,
+            mainPassengerName,
+            totalPassengers,
+            travelType,
+            busIdentifier // Maintenant, cette variable existe
+        ].join('|');
 
-    console.log(`✅ Chaîne QR Code générée (v4.0 avec Bus ID):`, qrString);
-    
-    return qrString;
-},
-// ✅ 2. FONCTION DE DÉCODAGE (MISE À JOUR POUR LE NOUVEAU FORMAT)
-decodeQRCodeData(qrString) {
-    try {
-        const parts = qrString.split('|');
-        
-        if (parts.length === 6) {
+        console.log(`✅ Chaîne QR Code générée (v4.0 avec Bus ID):`, qrString);
+
+        return qrString;
+    },
+    // ✅ 2. FONCTION DE DÉCODAGE (MISE À JOUR POUR LE NOUVEAU FORMAT)
+    decodeQRCodeData(qrString) {
+        try {
+            const parts = qrString.split('|');
+
+            if (parts.length === 6) {
+                return {
+                    valid: true,
+                    version: "4.0",
+                    bookingNumber: parts[0],
+                    travelDate: parts[1],
+                    mainPassengerName: parts[2],
+                    totalPassengers: parseInt(parts[3]),
+                    travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
+                    busIdentifier: parts[5]
+                };
+            }
+
+            const data = JSON.parse(qrString);
+            if (data.v === "2.0") {
+                // logique pour l'ancien format
+            }
+
+            throw new Error('Format de QR Code inconnu ou invalide.');
+
+        } catch (error) {
             return {
-                valid: true,
-                version: "4.0",
-                bookingNumber: parts[0],
-                travelDate: parts[1],
-                mainPassengerName: parts[2],
-                totalPassengers: parseInt(parts[3]),
-                travelType: parts[4] === 'A' ? 'Aller' : 'Retour',
-                busIdentifier: parts[5]
+                valid: false,
+                error: error.message
             };
         }
-        
-        const data = JSON.parse(qrString);
-        if (data.v === "2.0") {
-            // logique pour l'ancien format
-        }
-        
-        throw new Error('Format de QR Code inconnu ou invalide.');
+    },
 
-    } catch (error) {
-        return {
-            valid: false,
-            error: error.message
-        };
-    }
-},
+    // ✅ 3. FONCTION DE GÉNÉRATION DE L'IMAGE (CORRIGÉE)
+    async generateQRCodeBase64(text, size = 300) {
+        return new Promise((resolve, reject) => {
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.cssText = 'position:fixed; left:-9999px; top:-9999px; background:#FFFFFF; padding:10px;';
+                document.body.appendChild(tempDiv);
 
-// ✅ 3. FONCTION DE GÉNÉRATION DE L'IMAGE (CORRIGÉE)
-async generateQRCodeBase64(text, size = 300) {
-    return new Promise((resolve, reject) => {
-        try {
-            const tempDiv = document.createElement('div');
-            tempDiv.style.cssText = 'position:fixed; left:-9999px; top:-9999px; background:#FFFFFF; padding:10px;';
-            document.body.appendChild(tempDiv);
-            
-            if (typeof QRCode === 'undefined') {
-                document.body.removeChild(tempDiv);
-                reject(new Error('QRCode not loaded'));
-                return;
-            }
-            
-            new QRCode(tempDiv, {
-                text: text,
-                width: size,
-                height: size,
-                colorDark: "#000000",
-                colorLight: "#FFFFFF",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            setTimeout(() => {
-                try {
-                    const canvas = tempDiv.querySelector('canvas');
-                    const img = tempDiv.querySelector('img');
-                    
-                    let base64 = null;
-                    
-                    if (canvas) {
-                        base64 = canvas.toDataURL('image/png');
-                    } else if (img && img.src) {
-                        base64 = img.src;
-                    }
-                    
+                if (typeof QRCode === 'undefined') {
                     document.body.removeChild(tempDiv);
-                    
-                    if (base64) {
-                        resolve(base64);
-                    } else {
-                        reject(new Error('QR Code non genere'));
-                    }
-                } catch (err) {
-                    document.body.removeChild(tempDiv);
-                    reject(err);
+                    reject(new Error('QRCode not loaded'));
+                    return;
                 }
-            }, 300);
-            
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
+
+                new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: "#000000",
+                    colorLight: "#FFFFFF",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                setTimeout(() => {
+                    try {
+                        const canvas = tempDiv.querySelector('canvas');
+                        const img = tempDiv.querySelector('img');
+
+                        let base64 = null;
+
+                        if (canvas) {
+                            base64 = canvas.toDataURL('image/png');
+                        } else if (img && img.src) {
+                            base64 = img.src;
+                        }
+
+                        document.body.removeChild(tempDiv);
+
+                        if (base64) {
+                            resolve(base64);
+                        } else {
+                            reject(new Error('QR Code non genere'));
+                        }
+                    } catch (err) {
+                        document.body.removeChild(tempDiv);
+                        reject(err);
+                    }
+                }, 300);
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
 
 };  // ← ✅ ACCOLADE FERMANTE DE Utils ICI
 
@@ -959,7 +959,7 @@ function getLiveStatusIcon(status) {
 }
 function getLiveStatusText(liveStatus, translation) {
     if (!liveStatus || !liveStatus.status) return '';
-    
+
     switch (liveStatus.status) {
         case 'ON_TIME':
             return translation.live_status_on_time || "À l'heure";
@@ -1010,10 +1010,10 @@ function applyLanguage(lang = getLanguage()) {
 
     // --- 1. Traduction de tous les éléments statiques ---
     if (translation.page_title) document.title = translation.page_title;
-    
+
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-       // On vérifie que la clé existe ET que ce n'est PAS une fonction
+        // On vérifie que la clé existe ET que ce n'est PAS une fonction
         if (translation[key] && typeof translation[key] !== 'function') {
             el.innerHTML = translation[key];
         }
@@ -1023,18 +1023,18 @@ function applyLanguage(lang = getLanguage()) {
     if (smartSearchInput && translation.smart_search_placeholder) {
         smartSearchInput.placeholder = translation.smart_search_placeholder;
     }
-    
+
     // --- 2. Lancement des fonctions de configuration (UNE SEULE FOIS) ---
     // Ces fonctions créent des éléments ou attachent des écouteurs. On ne veut pas les dupliquer.
     if (!hasInitialSetupRun) {
         console.log("🚀 Exécution de la configuration initiale de l'interface...");
-        
-        
+
+
         setupTripTypeToggle();
         setupPassengerSelector();
         setupAmenitiesFilters();
         animateCountersOnScroll();
-        
+
         hasInitialSetupRun = true; // On met le drapeau à vrai pour ne pas ré-exécuter
     }
 
@@ -1050,34 +1050,34 @@ function applyLanguage(lang = getLanguage()) {
         placeholderAnimationStarted = true;
     }
 }
-    // ====================================================
-    // ✅ LA MODIFICATION EST ICI
-    // ====================================================
-    // Met à jour tous les composants dont l'affichage dépend de la langue
+// ====================================================
+// ✅ LA MODIFICATION EST ICI
+// ====================================================
+// Met à jour tous les composants dont l'affichage dépend de la langue
 
-    // 1. Met à jour le sélecteur de passagers
-    if (typeof refreshPassengerSelectorUI === 'function') {
-        refreshPassengerSelectorUI();
-    }
-    
-    // 2. Met à jour les destinations populaires
-    if (typeof populatePopularDestinations === 'function') {
-        populatePopularDestinations();
-    }
-    
-    // 3. Met à jour le calendrier
-    if (typeof setupDatePickers === 'function') {
-        setupDatePickers();
-    }
+// 1. Met à jour le sélecteur de passagers
+if (typeof refreshPassengerSelectorUI === 'function') {
+    refreshPassengerSelectorUI();
+}
+
+// 2. Met à jour les destinations populaires
+if (typeof populatePopularDestinations === 'function') {
+    populatePopularDestinations();
+}
+
+// 3. Met à jour le calendrier
+if (typeof setupDatePickers === 'function') {
+    setupDatePickers();
+}
 
 // Mettez cette fonction avec vos autres fonctions globales
 
 function updateDynamicTexts(lang) {
     // Sécurité : ne rien faire si les traductions ne sont pas prêtes
     if (typeof translations === 'undefined') return;
-    
+
     const translation = translations[lang] || translations.fr;
-    
+
     // --- 1. Traduction du résumé des passagers ---
     const summaryEl = document.getElementById('passenger-summary');
     if (summaryEl && typeof translation.passenger_summary === 'function') {
@@ -1086,27 +1086,27 @@ function updateDynamicTexts(lang) {
             appState.passengerCounts.children
         );
     }
-    
+
     // --- 2. Traduction des labels DANS le dropdown ---
     const adultsLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_adults"]');
     if (adultsLabel && translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
     }
-    
+
     const childrenLabel = document.querySelector('#passenger-dropdown label[data-i18n="search_form_children"]');
-if (childrenLabel && translation.search_form_children) {
-    // Remplacer l'ancienne version par celle-ci
-    const maxAge = appRules.ticketing.childMaxAge;
-    childrenLabel.innerHTML = `Enfants <small>(0-${maxAge} ans)</small>`;
-}
+    if (childrenLabel && translation.search_form_children) {
+        // Remplacer l'ancienne version par celle-ci
+        const maxAge = appRules.ticketing.childMaxAge;
+        childrenLabel.innerHTML = `Enfants <small>(0-${maxAge} ans)</small>`;
+    }
 
     // --- 3. (Futur) Traduction d'autres textes dynamiques ---
     // ...
 }
 // Fonction globale pour changer la langue
-window.changeLanguage = function(lang) {
+window.changeLanguage = function (lang) {
     setLanguage(lang); // setLanguage contient applyLanguage
-    
+
     // ✅ On force la reconstruction du calendrier avec la nouvelle langue
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
@@ -1165,13 +1165,13 @@ async function geolocateUser() {
                 throw new Error(translation.geolocation_permission_denied);
             }
             position = await Geolocation.getCurrentPosition(geolocationOptions);
-        } 
+        }
         // CAS 2 : Web
         else if (navigator.geolocation) {
             position = await new Promise((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, geolocationOptions);
             });
-        } 
+        }
         // CAS 3 : Non supporté
         else {
             throw new Error(translation.geolocation_not_supported);
@@ -1180,7 +1180,7 @@ async function geolocateUser() {
         // --- Traitement de la position obtenue ---
         const { latitude, longitude } = position.coords;
         console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
-        
+
         const rawCityName = await reverseGeocode(latitude, longitude);
 
         if (rawCityName) {
@@ -1230,7 +1230,7 @@ async function processPosition(positionPromise) {
     const lang = getLanguage(); // On récupère la langue pour les traductions
     const translation = translations[lang] || translations.fr;
 
-    if(geolocateBtn) {
+    if (geolocateBtn) {
         geolocateBtn.classList.add('loading');
         geolocateBtn.disabled = true;
     }
@@ -1241,7 +1241,7 @@ async function processPosition(positionPromise) {
         const position = await positionPromise;
         const { latitude, longitude } = position.coords;
         console.log(`📍 Coordonnées trouvées : ${latitude}, ${longitude}`);
-        
+
         const rawCityName = await reverseGeocode(latitude, longitude);
 
         if (rawCityName) {
@@ -1272,7 +1272,7 @@ async function processPosition(positionPromise) {
                 // Si aucune correspondance, on affiche l'alerte
                 Utils.showToast(translation.geolocation_city_not_served(cleanedCityName), "warning");
             }
-            
+
             // ========================================================
             // ✅ FIN DE LA CORRECTION
             // ========================================================
@@ -1288,7 +1288,7 @@ async function processPosition(positionPromise) {
         console.error("❌ Erreur de géolocalisation:", error);
         Utils.showToast(errorMessage, "error");
     } finally {
-        if(geolocateBtn) {
+        if (geolocateBtn) {
             geolocateBtn.classList.remove('loading');
             geolocateBtn.disabled = false;
         }
@@ -1324,7 +1324,7 @@ function updatePassengerSelectorUI() {
     const summary = document.getElementById("passenger-summary");
     const adultsLabel = dropdown.querySelector('label[data-i18n="search_form_adults"]');
     const childrenLabel = dropdown.querySelector('label[data-i18n="search_form_children_dynamic"]');
-    
+
     // Si un des éléments manque, on arrête.
     if (!adultsCount || !childrenCount || !summary || !adultsLabel || !childrenLabel) {
         console.warn("[updatePassengerSelectorUI] Un ou plusieurs éléments du DOM sont manquants.");
@@ -1336,17 +1336,17 @@ function updatePassengerSelectorUI() {
     childrenCount.textContent = appState.passengerCounts.children;
     dropdown.querySelector('[data-type="adults"][data-action="decrement"]').disabled = appState.passengerCounts.adults <= 1;
     dropdown.querySelector('[data-type="children"][data-action="decrement"]').disabled = appState.passengerCounts.children <= 0;
-    
+
     // --- Logique de traduction ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     const rules = appRules.ticketing;
-    
+
     // 1. Résumé principal
     if (typeof translation.passenger_summary === 'function') {
         summary.textContent = translation.passenger_summary(appState.passengerCounts.adults, appState.passengerCounts.children);
     }
-    
+
     // 2. Label Adultes (statique)
     if (translation.search_form_adults) {
         adultsLabel.innerHTML = translation.search_form_adults;
@@ -1378,7 +1378,7 @@ function startFrontendCountdown() {
 
     // On lance UN SEUL intervalle qui va mettre à jour TOUS les décompteurs trouvés
     frontendCountdownInterval = setInterval(() => {
-        
+
         countdownContainers.forEach(container => {
             const timerElement = container.querySelector('#payment-countdown-timer');
 
@@ -1390,7 +1390,7 @@ function startFrontendCountdown() {
             const deadline = new Date(container.dataset.deadline);
             const now = new Date();
             const timeLeft = deadline - now;
-            
+
             // On récupère la traduction à chaque cycle (au cas où la langue change)
             const lang = getLanguage();
             const translation = translations[lang] || translations.fr;
@@ -1405,7 +1405,7 @@ function startFrontendCountdown() {
                 timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             }
         });
-        
+
         // Si tous les décompteurs sont expirés, on arrête l'intervalle
         const allExpired = Array.from(countdownContainers).every(
             c => new Date(c.dataset.deadline) - new Date() <= 0
@@ -1453,12 +1453,12 @@ async function removeBookingFromLocalHistory(bookingNumber) {
     // 1. Traductions
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     // 2. Appel de la modale (C'est ici que ça bloquait avant)
     const confirmed = await showCustomConfirm({
         title: translation.confirm_remove_booking_title || "Confirmation",
-        message: (typeof translation.confirm_remove_booking_desc === 'function') 
-            ? translation.confirm_remove_booking_desc(bookingNumber) 
+        message: (typeof translation.confirm_remove_booking_desc === 'function')
+            ? translation.confirm_remove_booking_desc(bookingNumber)
             : `Voulez-vous supprimer la réservation ${bookingNumber} ?`,
         icon: '🗑️',
         iconClass: 'danger',
@@ -1469,13 +1469,13 @@ async function removeBookingFromLocalHistory(bookingNumber) {
 
     // 3. Si l'utilisateur annule, on arrête tout
     if (!confirmed) return;
-    
+
     // 4. Suppression
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         const newHistory = history.filter(bn => bn !== bookingNumber);
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(newHistory));
-        
+
         Utils.showToast(translation.toast_booking_removed || "Réservation supprimée", "success");
         displayReservations(); // Rafraîchir l'écran
 
@@ -1504,14 +1504,14 @@ function startAgencyCountdown() {
     if (!subtitleElement || !deadlineInputElement || !rule1Element) {
         return;
     }
-    
+
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     // --- 2. Calcul du délai (votre logique est conservée) ---
     const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
     console.log(`⏱️ Décompteur AGENCE démarré. Cible : ${deadline.toISOString()}`);
-    
+
     // --- 3. Traduire la règle d'annulation immédiatement ---
     if (typeof translation.payment_agency_rule1 === 'function') {
         rule1Element.innerHTML = translation.payment_agency_rule1(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
@@ -1532,12 +1532,12 @@ function startAgencyCountdown() {
 
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        
+
         // On utilise la fonction de traduction pour le décompte
         if (typeof translation.payment_agency_desc_countdown === 'function') {
             subtitleElement.textContent = translation.payment_agency_desc_countdown(hours, minutes);
         }
-        
+
         // On formate la date de fin en fonction de la langue
         const fullDeadlineText = deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`, {
             weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
@@ -1608,12 +1608,12 @@ function canPayAtAgency() {
 }
 function getNearestAgency(cityName) {
     let agency = agencies.find(a => a.city === cityName);
-    
+
     if (!agency) {
         agency = agencies[0];
         console.log(`⚠️ Pas d'agence à ${cityName}, utilisation de ${agency.city}`);
     }
-    
+
     return agency;
 }
 
@@ -1646,7 +1646,7 @@ function startAgencySpecificCountdown() {
 
     // Calcul du délai de 10 heures
     const deadline = new Date(Date.now() + CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS * 60 * 60 * 1000);
-    
+
     // Démarrage de la boucle de mise à jour
     agencySpecificCountdown = setInterval(() => {
         const now = new Date();
@@ -1662,7 +1662,7 @@ function startAgencySpecificCountdown() {
 
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        
+
         const countdownText = `Payez dans les ${hours}h ${minutes.toString().padStart(2, '0')}m`;
         const fullDeadlineText = `Le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
 
@@ -1718,7 +1718,7 @@ function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, con
         const wrapper = document.createElement('div');
         wrapper.id = modalId;
         wrapper.className = 'custom-modal-overlay';
-        
+
         // ========================================================
         // ✅ LE HTML COMPLET EST MAINTENANT ICI
         // ========================================================
@@ -1766,11 +1766,11 @@ function showCustomConfirm({ title, message, icon = '⚠️', onOpen = null, con
             console.error("Bouton de confirmation introuvable !");
             cleanup(false); // On ferme et on annule
         }
-        
+
         if (btnCancel) {
             btnCancel.onclick = () => cleanup(false);
         }
-        
+
         if (onOpen && typeof onOpen === 'function') {
             try {
                 onOpen();
@@ -1793,16 +1793,16 @@ function calculateMobileMoneyDeadline() {
 // GESTION DES RÉSERVATIONS AVEC BACKEND
 // ============================================
 
-    // Dans Frontend/app.js
+// Dans Frontend/app.js
 
 
 
-    // DANS app.js, ASSUREZ-VOUS d'avoir cette version de saveReservationToBackend
+// DANS app.js, ASSUREZ-VOUS d'avoir cette version de saveReservationToBackend
 
 async function saveReservationToBackend(reservation) {
     const API_URL = API_CONFIG.baseUrl;
     console.log(`📤 Tentative d'envoi vers : ${API_URL}/api/reservations`);
-    
+
     try {
         const response = await fetch(`${API_URL}/api/reservations`, {
             method: 'POST',
@@ -1823,7 +1823,7 @@ async function saveReservationToBackend(reservation) {
             // On retourne un objet d'erreur clair, au lieu de planter
             return { success: false, error: errorData.error || `Erreur serveur ${response.status}` };
         }
-        
+
         console.log('✅ Réponse OK du serveur.');
         const savedData = JSON.parse(responseBody);
 
@@ -1834,16 +1834,16 @@ async function saveReservationToBackend(reservation) {
             // Si le serveur dit success:false, on propage l'erreur
             return { success: false, error: savedData.error || "Le serveur a refusé la réservation." };
         }
-        
+
         return savedData; // Retourne { success: true, ... }
 
     } catch (error) {
         console.error('❌ Erreur FONDAMENTALE dans la requête fetch :', error);
-        
+
         if (error.name === 'TypeError') {
             return { success: false, error: 'Impossible de joindre le serveur. Vérifiez votre connexion.' };
         }
-        
+
         return { success: false, error: error.message };
     }
 }
@@ -1853,49 +1853,49 @@ async function loadReservationsFromBackend(userPhone) {
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/reservations/user/${encodeURIComponent(userPhone)}`
         );
-        
+
         const result = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(result.error || 'Erreur lors du chargement');
         }
-        
+
         console.log(`✅ ${result.reservations.length} réservations chargées`);
         return result.reservations;
-        
+
     } catch (error) {
         console.error('❌ Erreur chargement backend:', error);
         return [];
     }
 }
 
-window.cancelReservation = async function(bookingNumber) {
+window.cancelReservation = async function (bookingNumber) {
     const confirm = window.confirm(
         `Voulez-vous vraiment annuler la réservation ${bookingNumber} ?`
     );
-    
+
     if (!confirm) return;
-    
+
     try {
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/cancel`,
-            { 
+            {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             }
         );
-        
+
         const result = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(result.error || 'Erreur lors de l\'annulation');
         }
-        
+
         Utils.showToast('Réservation annulée avec succès', 'success');
         displayReservations();
-        
+
     } catch (error) {
         console.error('Erreur annulation:', error);
         Utils.showToast('Erreur lors de l\'annulation', 'error');
@@ -1909,13 +1909,13 @@ window.cancelReservation = async function(bookingNumber) {
 
 // Dans app.js
 
-window.downloadTicket = async function(isReturn = false) {
+window.downloadTicket = async function (isReturn = false) {
     // ✅ On récupère l'objet de traduction au tout début
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
 
     const reservation = appState.currentReservation;
-    
+
     if (!reservation) {
         // ✅ On utilise la traduction pour le message d'erreur
         Utils.showToast(translation.error_no_booking_to_download || "Aucune réservation à télécharger.", "error");
@@ -1927,10 +1927,10 @@ window.downloadTicket = async function(isReturn = false) {
         Utils.showToast(translation.error_no_return_ticket || "Il n'y a pas de billet retour pour cette réservation.", "warning");
         return;
     }
-    
+
     // Le reste de ta fonction est déjà correct
     Utils.showToast(translation.toast_generating_ticket || 'Génération du billet en cours...', 'info');
-    
+
     await generateTicketPDF(reservation, isReturn);
 };
 
@@ -1941,7 +1941,7 @@ window.downloadTicket = async function(isReturn = false) {
 // DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
 function displayPaymentInstructions(reservation) {
     console.log('📄 Affichage des instructions de paiement pour:', reservation.bookingNumber);
-    
+
     // --- 1. Récupération des traductions et des données ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
@@ -2067,23 +2067,23 @@ function displayPaymentInstructions(reservation) {
             </div>
         </div>
     `;
-    
+
     // --- 4. Affichage et démarrage du décompteur ---
     const instructionsPage = document.getElementById('payment-instructions-page');
     if (!instructionsPage) {
         console.error('❌ Élément #payment-instructions-page introuvable.');
         return;
     }
-    
+
     instructionsPage.innerHTML = instructionsHTML;
 
     // ✅ On force la traduction des nouveaux éléments injectés
     applyLanguage();
     showPage('payment-instructions');
-    
+
     // On appelle la fonction qui va trouver les éléments du décompteur et le lancer
     startFrontendCountdown();
-    
+
     appState.currentReservation = reservation;
 }
 
@@ -2124,7 +2124,7 @@ async function submitTransactionId(bookingNumber) {
 
         // Utilisation de la traduction pour le message de succès
         Utils.showToast(translation.toast_proof_received, 'success');
-        
+
         // La logique pour désactiver les champs reste la même
         transactionIdInput.disabled = true;
         const submitButton = document.querySelector('.transaction-submission-box button');
@@ -2143,43 +2143,43 @@ async function submitTransactionId(bookingNumber) {
 // ============================================
 // Dans app.js - REMPLACER la fonction checkPaymentStatus()
 
-window.checkPaymentStatus = async function(bookingNumber) {
+window.checkPaymentStatus = async function (bookingNumber) {
     // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     console.log(`🔍 Vérification du statut pour : ${bookingNumber}`);
     Utils.showToast(translation.toast_checking_status, 'info'); // Message de début
-    
+
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${bookingNumber}`);
         const data = await response.json();
-        
+
         if (!data.success) {
             Utils.showToast(translation.error_booking_not_found || 'Réservation introuvable', 'error');
             return;
         }
-        
+
         console.log('📊 Statut actuel :', data.status);
-        
+
         if (data.status === 'Confirmé') {
             Utils.showToast(translation.toast_payment_confirmed_redirect, 'success');
-            
+
             // La logique pour récupérer et afficher la confirmation est correcte
             const reservationResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
             const reservationData = await reservationResponse.json();
-            
+
             if (reservationData.success) {
                 appState.currentReservation = reservationData.reservation;
                 displayConfirmation(appState.currentReservation);
                 showPage('confirmation');
             }
-            
+
         } else if (data.status === 'En attente de paiement') {
             Utils.showToast(translation.toast_payment_pending_check, 'info');
-        } 
-        
-       
+        }
+
+
         // ========================================================
         // ✅ DÉBUT DE LA CORRECTION
         // ========================================================
@@ -2194,20 +2194,20 @@ window.checkPaymentStatus = async function(bookingNumber) {
                     translatedStatus = 'expired';
                 }
             }
-            
+
             // On appelle la fonction de traduction avec le statut déjà traduit
             Utils.showToast(translation.toast_booking_cancelled_status(translatedStatus), 'error');
-        } 
+        }
         // ========================================================
         // ✅ FIN DE LA CORRECTION
         // ========================================================
 
-        
-        
+
+
         else {
             Utils.showToast(`${translation.toast_current_status || 'Statut actuel :'} ${data.status}`, 'info');
         }
-        
+
     } catch (error) {
         console.error('❌ Erreur vérification statut:', error);
         Utils.showToast(translation.error_check_status || 'Erreur lors de la vérification.', 'error');
@@ -2268,7 +2268,7 @@ async function shareTicket() {
                 .then(() => Utils.showToast("Détails copiés dans le presse-papiers !", 'success'))
                 .catch(err => console.error("Échec de la copie de secours:", err));
         }
-    } 
+    }
     // CAS 2 : On est sur un navigateur web qui supporte l'API de Partage (la plupart des mobiles)
     else if (navigator.share) {
         console.log("🌐 Tentative de partage avec l'API Web Share...");
@@ -2279,7 +2279,7 @@ async function shareTicket() {
             // L'utilisateur a probablement annulé le partage, ce n'est pas une erreur critique.
             console.log("Partage web annulé par l'utilisateur.", error);
         }
-    } 
+    }
     // CAS 3 : Fallback pour les navigateurs de bureau ou anciens navigateurs
     else {
         console.log("📋 Fallback : Copie dans le presse-papiers...");
@@ -2310,10 +2310,10 @@ async function generateTicketPDF(reservation, isReturn = false) {
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
-        
+
         const qrDataString = Utils.generateQRCodeData(reservation, isReturn);
         const qrCodeBase64 = await Utils.generateQRCodeBase64(qrDataString, 300);
-        
+
         const route = isReturn ? reservation.returnRoute : reservation.route;
         const date = isReturn ? reservation.returnDate : reservation.date;
 
@@ -2332,8 +2332,8 @@ async function generateTicketPDF(reservation, isReturn = false) {
         const busIdentifier = (isReturn ? reservation.returnBusIdentifier : reservation.busIdentifier) || 'N/A';
         const ticketType = isReturn ? translation.confirmation_ticket_return : translation.confirmation_ticket_outbound;
 
-        const fileName = isReturn 
-            ? `Billet_Retour_${reservation.bookingNumber}.pdf` 
+        const fileName = isReturn
+            ? `Billet_Retour_${reservation.bookingNumber}.pdf`
             : `Billet_Aller_${reservation.bookingNumber}.pdf`;
 
         const { jsPDF } = window.jspdf;
@@ -2432,7 +2432,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
         let pName = reservation.passengers[0].name;
         if (pName.length > 16) pName = pName.substring(0, 15) + '...';
         pdf.text(pName, qrX + 25, qrY + 78, { align: 'center' });
-        
+
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
@@ -2515,7 +2515,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
         pdf.setFillColor(115, 215, 0);
         pdf.rect(margin, y + 2, 35, 1.5, 'F');
         y += 10;
-        
+
         const paxHeight = reservation.passengers.length * 8 + 10;
         pdf.setFillColor(250, 250, 250);
         pdf.roundedRect(margin, y, 180, paxHeight, 2, 2, 'F');
@@ -2610,13 +2610,13 @@ async function generateTicketPDF(reservation, isReturn = false) {
         const footerMsg = translation.ticket_footer_instruction || 'Presentez-vous 30 min avant le depart avec une piece d identite';
         const splitText = pdf.splitTextToSize('IMPORTANT : ' + footerMsg, pageWidth - (margin * 2));
         pdf.text(splitText, pageWidth / 2, footerY, { align: 'center' });
-        
+
         footerY += (splitText.length * 5) + 3; // Augmente la position en fonction du nombre de lignes
 
         pdf.setTextColor(140, 140, 140);
         pdf.setFontSize(8);
         pdf.text(`EN-BUS - ${translation.pdf_footer_tagline || 'Votre partenaire de voyage'}`, pageWidth / 2, footerY, { align: 'center' });
-        
+
         // ========================================
         // SAUVEGARDE
         // ========================================
@@ -2635,7 +2635,7 @@ async function generateTicketPDF(reservation, isReturn = false) {
 
             if (LocalNotifications) {
                 try {
-                   const permResult = await LocalNotifications.requestPermissions();
+                    const permResult = await LocalNotifications.requestPermissions();
                     if (permResult.display === 'granted') {
                         await LocalNotifications.schedule({
                             notifications: [{
@@ -2692,7 +2692,7 @@ async function initApp() {
         setupMobileFilterToggle();
         setupSocialLinks();
         loadAllDestinations();
-        setupNotificationListeners(); 
+        setupNotificationListeners();
         // ✅ AJOUTER CES DEUX LIGNES
         setupAutocomplete('origin-input', 'origin-suggestions');
         setupAutocomplete('destination-input', 'destination-suggestions');
@@ -2710,7 +2710,7 @@ async function initApp() {
         if (proceedButton) {
             proceedButton.addEventListener('click', () => {
                 // On appelle la fonction globale qui est déjà 'async'
-                window.proceedToPayment(); 
+                window.proceedToPayment();
             });
             console.log("✅ Écouteur d'événement ajouté au bouton 'Continuer vers Paiement'.");
         }
@@ -2741,10 +2741,10 @@ async function initApp() {
 
         // --- On attend que les données essentielles soient chargées ---
         await Promise.all([
-            loadAllRouteTemplates(), 
+            loadAllRouteTemplates(),
             loadTicketingRules()
         ]);
-        
+
         console.log("✅ Données de fond (modèles et règles) chargées.");
 
         // --- Maintenant que les données sont là, on met à jour l'UI ---
@@ -2809,12 +2809,12 @@ function displaySuggestions(destinations, query, container, inputElement) {
         destinations.forEach(dest => {
             const item = document.createElement('div');
             item.className = 'suggestion-item';
-            
+
             // On met en gras la partie qui correspond à la recherche (si recherche il y a)
             const boldedName = query ? dest.name.replace(new RegExp(query, 'gi'), '<strong>$&</strong>') : dest.name;
-            
+
             item.innerHTML = `${boldedName}, ${dest.country} ${dest.isPopular ? '<small>★ Populaire</small>' : ''}`;
-            
+
             item.addEventListener('click', () => {
                 inputElement.value = dest.name;
                 container.style.display = 'none';
@@ -2836,7 +2836,7 @@ function animateCountersOnScroll() {
             if (entry.isIntersecting) {
                 const counter = entry.target;
                 const target = +counter.getAttribute('data-target');
-                
+
                 const updateCount = () => {
                     const count = +counter.innerText;
                     const inc = target / speed;
@@ -2886,7 +2886,7 @@ function swapDestinations() {
     // Inverser les valeurs
     originSelect.value = destinationValue;
     destinationSelect.value = originValue;
-    
+
     // Animer le bouton pour donner un retour visuel
     const btn = document.getElementById('swap-destinations-btn');
     if (btn) {
@@ -2917,12 +2917,12 @@ async function initInteractiveMap() {
             fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`),
             fetch(`${API_CONFIG.baseUrl}/api/destinations`)
         ]);
-        
+
         const popularData = await popularRes.json();
         const allDestinationsData = await allDestinationsRes.json();
 
         if (!popularData.success || !allDestinationsData.success) throw new Error("Données API invalides.");
-        
+
         const popularRoutes = popularData.destinations;
         const allCities = allDestinationsData.destinations;
 
@@ -2991,7 +2991,7 @@ async function initInteractiveMap() {
                         lineOptions: {
                             styles: [{ color: '#73d700', opacity: 0.7, weight: 4 }]
                         },
-                        createMarker: function() { return null; } // Pas de marqueurs par défaut
+                        createMarker: function () { return null; } // Pas de marqueurs par défaut
                     }).addTo(map);
                 } catch (e) {
                     // Fallback : Ligne simple si Routing Machine plante
@@ -3048,7 +3048,7 @@ function setupContactPage() {
         });
     });
 
-       // Logique pour le formulaire de contact avec Formspree
+    // Logique pour le formulaire de contact avec Formspree
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
         contactForm.addEventListener('submit', handleFormspreeSubmit);
@@ -3059,7 +3059,7 @@ async function handleFormspreeSubmit(event) {
 
     const form = event.target;
     const submitButton = form.querySelector('button[type="submit"]');
-    
+
     // Récupérer les traductions au début
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
@@ -3448,7 +3448,7 @@ function addSwapButtonStyles() {
 function setupMobileMenu() {
     const hamburgerBtn = document.getElementById("hamburger-btn");
     const mobileNavMenu = document.getElementById("mobile-nav-menu");
-    
+
     if (hamburgerBtn && mobileNavMenu) {
         hamburgerBtn.addEventListener("click", () => {
             const isExpanded = hamburgerBtn.getAttribute("aria-expanded") === "true";
@@ -3472,21 +3472,21 @@ function closeMenuAndShowPage(pageName) {
 }
 
 function showPage(pageName) {
-      if (pageName !== "payment-instructions") {
+    if (pageName !== "payment-instructions") {
         // ✅ À AJOUTER AU TOUT DÉBUT DE LA FONCTION :
-       stopAgencyCountdown();
+        stopAgencyCountdown();
 
     }
     document.querySelectorAll(".page").forEach(page => {
         page.classList.remove("active");
     });
-    
+
     const targetPage = document.getElementById(`${pageName}-page`);
     if (targetPage) {
         targetPage.classList.add("active");
         window.scrollTo(0, 0);
     }
-    
+
     if (pageName === "reservations") {
         displayReservations();
     }
@@ -3522,11 +3522,11 @@ async function loadAllRouteTemplates() {
 
             const options = {
                 keys: ['from', 'to'],
-                includeScore: true, 
-                threshold: 0.4 
+                includeScore: true,
+                threshold: 0.4
             };
             fuse = new Fuse(allRouteTemplates, options);
-            
+
             // ... (logique pour activer la barre de recherche) ...
         }
     } catch (error) {
@@ -3597,12 +3597,12 @@ async function populatePopularDestinations() {
     try {
         // --- 2. FAIRE L'APPEL API ---
         const response = await fetch(`${API_CONFIG.baseUrl}/api/popular-destinations`);
-        
+
         // On vérifie si la réponse réseau est OK avant de continuer
         if (!response.ok) {
             throw new Error(`Le serveur a répondu avec le statut : ${response.status}`);
         }
-        
+
         const data = await response.json();
 
         // --- 3. GÉRER LA RÉPONSE ---
@@ -3612,11 +3612,11 @@ async function populatePopularDestinations() {
             console.log("ℹ️ Aucune destination populaire à afficher.");
             return;
         }
-        
+
         const destinations = data.destinations;
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
-        
+
         // On génère le HTML des vraies cartes, qui va remplacer les squelettes.
         grid.innerHTML = destinations.map(route => {
             const formattedPrice = Utils.formatPrice(route.price);
@@ -3632,7 +3632,7 @@ async function populatePopularDestinations() {
 
     } catch (error) {
         console.error("❌ Erreur lors du chargement des destinations populaires:", error);
-        
+
         // --- 4. AFFICHER LE MESSAGE D'ERREUR ANIMÉ ---
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
@@ -3647,7 +3647,7 @@ async function populatePopularDestinations() {
         `;
     }
 }
-window.searchFromPopular = function(from, to) {
+window.searchFromPopular = function (from, to) {
     document.getElementById("origin").value = from;
     document.getElementById("destination").value = to;
     const oneWayOption = document.querySelector('.trip-type-toggle [data-value="one-way"]');
@@ -3658,9 +3658,9 @@ window.searchFromPopular = function(from, to) {
 function setupTripTypeToggle() {
     const toggle = document.querySelector(".trip-type-toggle");
     if (!toggle) return;
-    
+
     const options = toggle.querySelectorAll(".toggle-option");
-    
+
     options.forEach(option => {
         option.addEventListener("click", () => {
             toggle.setAttribute("data-mode", option.dataset.value);
@@ -3701,7 +3701,7 @@ function setupDatePickers() {
 
     // Détermine si on est en mode "Aller-retour" ou "Aller simple"
     const isRoundTrip = document.querySelector(".trip-type-toggle")?.getAttribute("data-mode") === "round-trip";
-    
+
     // Initialise le calendrier Flatpickr
     appState.departurePicker = flatpickr(displayInput, {
         dateFormat: "Y-m-d",        // Format interne
@@ -3712,8 +3712,8 @@ function setupDatePickers() {
         altFormat: "d F",           // Format lisible (ex: 04 Décembre)
 
         // C'est ici que la magie opère. Cette fonction s'exécute quand l'utilisateur ferme le calendrier.
-        onClose: function(selectedDates) {
-            
+        onClose: function (selectedDates) {
+
             // Si l'utilisateur n'a rien sélectionné, on vide les champs et on arrête
             if (selectedDates.length === 0) {
                 departureValueInput.value = "";
@@ -3723,7 +3723,7 @@ function setupDatePickers() {
 
             // S'assure que les dates sont dans le bon ordre (départ avant retour)
             selectedDates.sort((a, b) => a - b);
-            
+
             // ================================================
             // ✅ DÉBUT DE LA CORRECTION : FORMATAGE SANS FUSEAU HORAIRE
             // ================================================
@@ -3740,10 +3740,10 @@ function setupDatePickers() {
             // On prend la première date sélectionnée comme date de départ
             const departureDate = selectedDates[0];
             const departureDateString = formatDateToString(departureDate);
-            
+
             // On met la chaîne correcte dans le champ de valeur caché
             departureValueInput.value = departureDateString;
-            
+
             // Si on est en mode aller-retour
             if (isRoundTrip) {
                 // On prend la deuxième date comme date de retour (s'il y en a une)
@@ -3755,8 +3755,8 @@ function setupDatePickers() {
                     returnValueInput.value = departureDateString;
                 }
             } else {
-                 // Si on est en aller-simple, on s'assure que le champ de retour est vide
-                 returnValueInput.value = "";
+                // Si on est en aller-simple, on s'assure que le champ de retour est vide
+                returnValueInput.value = "";
             }
             // ================================================
             // ✅ FIN DE LA CORRECTION
@@ -3773,7 +3773,7 @@ function setupDatePickers() {
 function setupPassengerSelector() {
     const input = document.getElementById("passenger-input");
     const dropdown = document.getElementById("passenger-dropdown");
-    
+
     // Si les éléments de base n'existent pas, on ne fait rien.
     if (!input || !dropdown) {
         return;
@@ -3792,7 +3792,7 @@ function setupPassengerSelector() {
             } else if (action === "decrement") {
                 appState.passengerCounts[type]--;
             }
-            
+
             // On s'assure que les adultes sont au moins 1 et les enfants au moins 0
             appState.passengerCounts.adults = Math.max(1, appState.passengerCounts.adults);
             appState.passengerCounts.children = Math.max(0, appState.passengerCounts.children);
@@ -3826,9 +3826,9 @@ function setupPaymentMethodToggle() {
     const mtnDetails = document.getElementById("mtn-details");
     const airtelDetails = document.getElementById("airtel-details");
     const agencyDetails = document.getElementById("agency-details");
-    
+
     if (!radios.length) return;
-    
+
     // --- Traduire le texte initial pour l'option agence ---
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
@@ -3836,7 +3836,7 @@ function setupPaymentMethodToggle() {
     if (agencySubtitle && typeof translation.payment_agency_desc === 'function') {
         agencySubtitle.textContent = translation.payment_agency_desc(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
     }
-    
+
     // ========================================================
     // ✅ DÉBUT DE LA CORRECTION : Refactorisation de la logique
     // ========================================================
@@ -3852,7 +3852,7 @@ function setupPaymentMethodToggle() {
         if (mtnDetails) mtnDetails.style.display = "none";
         if (airtelDetails) airtelDetails.style.display = "none";
         if (agencyDetails) agencyDetails.style.display = "none";
-        
+
         // Afficher le bon détail
         if (selectedValue === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
         else if (selectedValue === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
@@ -3897,7 +3897,7 @@ function setupAmenitiesFilters() {
         { value: 'prise', labelKey: 'amenity_plugs' },
         { value: 'clim', labelKey: 'amenity_ac' }
     ];
-    
+
     container.innerHTML = amenities.map(amenity => {
         // On va chercher la traduction correspondante
         const labelText = translation[amenity.labelKey] || amenity.value;
@@ -3929,14 +3929,14 @@ function setupAmenitiesFilters() {
 
 // DANS app.js, REMPLACEZ votre fonction searchBuses par celle-ci
 
-window.searchBuses = async function() {
+window.searchBuses = async function () {
     console.log("1️⃣ Lancement de searchBuses...");
     resetBookingState();
 
     if (typeof resetFilters === 'function') {
         resetFilters(true); // Réinitialise les filtres en mode silencieux
     }
-    
+
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
@@ -3945,7 +3945,7 @@ window.searchBuses = async function() {
         const destination = document.getElementById("destination-input").value.trim();
         const departureDate = document.getElementById("departure-date-value").value;
         let returnDate = document.getElementById("return-date-value").value;
-        
+
         const tripType = document.querySelector(".trip-type-toggle").getAttribute("data-mode");
         if (tripType === "round-trip" && departureDate && !returnDate) {
             returnDate = departureDate;
@@ -3968,11 +3968,11 @@ window.searchBuses = async function() {
             Utils.showToast(translation.error_same_origin_destination, 'error');
             return;
         }
-        
-        appState.currentSearch = { 
-            origin, destination, date: departureDate, returnDate, 
-            passengers: appState.passengerCounts.adults + appState.passengerCounts.children, 
-            tripType 
+
+        appState.currentSearch = {
+            origin, destination, date: departureDate, returnDate,
+            passengers: appState.passengerCounts.adults + appState.passengerCounts.children,
+            tripType
         };
 
         // ========================================================
@@ -3980,8 +3980,8 @@ window.searchBuses = async function() {
         // ========================================================
 
         // On affiche la page de résultats immédiatement
-        showPage("results"); 
-        
+        showPage("results");
+
         const resultsList = document.getElementById("results-list");
         const summary = document.getElementById("search-summary");
 
@@ -4006,9 +4006,9 @@ window.searchBuses = async function() {
             resultsList.innerHTML = skeletonHTML;
         }
         // ========================================================
-        
+
         console.log("3️⃣ Envoi de la requête API...");
-        
+
         const response = await fetch(`${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${departureDate}`);
         console.log("4️⃣ Réponse reçue du serveur :", response.status);
 
@@ -4016,7 +4016,7 @@ window.searchBuses = async function() {
             const errorData = await response.json().catch(() => ({ error: "Réponse non JSON" }));
             throw new Error(errorData.error || translation.error_search_failed);
         }
-        
+
         const data = await response.json();
         console.log("5️⃣ Données JSON parsées:", data);
 
@@ -4071,10 +4071,10 @@ function displayAlternativeTrips(alternatives) {
     if (summary) {
         // 1. On récupère la chaîne de traduction
         let summaryText = translation.no_trips_found_for_date || "Aucun trajet trouvé pour le {date}";
-        
+
         // 2. On formate la date que l'on veut insérer
         const formattedDate = Utils.formatDate(appState.currentSearch.date, lang);
-        
+
         // 3. On remplace le placeholder {date} par la date formatée
         summary.innerHTML = summaryText.replace('{date}', `<strong>${formattedDate}</strong>`);
     }
@@ -4091,8 +4091,8 @@ function displayAlternativeTrips(alternatives) {
 
     alternatives.forEach(alt => {
         // Cette partie est déjà correcte car elle utilise une fonction
-        const tripCountText = (typeof translation.trips_available === 'function') 
-            ? translation.trips_available(alt.tripCount) 
+        const tripCountText = (typeof translation.trips_available === 'function')
+            ? translation.trips_available(alt.tripCount)
             : `${alt.tripCount} trajet(s) disponible(s)`;
 
         alternativesHTML += `
@@ -4111,22 +4111,22 @@ function displayAlternativeTrips(alternatives) {
 }
 
 // Fonction helper pour relancer la recherche
- 
+
 function searchForAlternativeDate(newDate) {
     console.log(`🔄 Relance de la recherche pour la date alternative : ${newDate}`);
-    
+
     // Mettre à jour la valeur cachée utilisée pour la recherche
     const departureValueInput = document.getElementById('departure-date-value');
     if (departureValueInput) {
         departureValueInput.value = newDate;
     }
-    
+
     // Mettre à jour la valeur visible dans le calendrier Flatpickr
     const displayInput = document.getElementById('travel-date');
     if (displayInput && displayInput._flatpickr) {
         displayInput._flatpickr.setDate(newDate, true); // 'true' déclenche l'événement onChange pour mettre à jour l'affichage
     }
-    
+
     // Relancer la recherche
     searchBuses();
 }
@@ -4166,7 +4166,7 @@ function setupSmartSearch() {
     submitBtn.addEventListener('click', () => {
         triggerDetailedSearch({ to: searchInput.value.trim() });
     });
-    
+
     // Touche "Entrée"
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -4179,7 +4179,7 @@ function setupSmartSearch() {
             }
         }
     });
-        
+
     // Auto-complétion pendant la frappe
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
@@ -4189,11 +4189,11 @@ function setupSmartSearch() {
             resultsContainer.style.display = 'none';
             return;
         }
-        
+
         // ========================================================
         // ✅ DÉBUT DU BLOC DE DIAGNOSTIC
         // ========================================================
-        
+
         // LOG 1 : On vérifie si l'instance de Fuse est prête
         if (!fuse) {
             console.warn("[DIAG] L'instance de Fuse.js est 'null'. La recherche ne peut pas se faire. Le chargement des données n'est probablement pas terminé.");
@@ -4203,17 +4203,17 @@ function setupSmartSearch() {
 
         // On lance la recherche floue
         const fuseResults = fuse.search(query);
-        
+
         // LOG 2 : On affiche le résultat brut de la recherche
         console.log(`[DIAG] Fuse.js a cherché "${query}". ${fuseResults.length} résultat(s) brut(s) trouvé(s) :`, fuseResults);
 
         const filteredRoutes = fuseResults.map(result => result.item);
-        
+
         // LOG 3 : On vérifie si on a bien des trajets à afficher
         if (filteredRoutes.length === 0) {
             console.log("[DIAG] Aucun trajet à afficher après mapping. La fonction displaySmartSearchResults ne sera pas appelée avec des données.");
         }
-        
+
         // ========================================================
         // ✅ FIN DU BLOC DE DIAGNOSTIC
         // ========================================================
@@ -4308,7 +4308,7 @@ function displaySmartSearchResults(results) {
         resultsContainer.style.display = 'none';
         return;
     }
-    
+
     // --- Calcul de la position ---
     const inputRect = searchInput.getBoundingClientRect();
     resultsContainer.style.left = `${inputRect.left}px`;
@@ -4341,7 +4341,7 @@ async function showDetailedSearch(prefillData = {}) {
         console.error("Erreur: Conteneurs de recherche introuvables.");
         return;
     }
-    
+
     // Cacher la barre intelligente et afficher le formulaire
     smartSearchContainer.style.display = 'none';
     detailedSearchBox.style.display = 'block';
@@ -4355,7 +4355,7 @@ async function showDetailedSearch(prefillData = {}) {
     const originInput = document.getElementById('origin-input');
     const destinationInput = document.getElementById('destination-input');
     const travelDateInput = document.getElementById('travel-date');
-    
+
     // --- On ne peuple plus les <select>, donc on supprime cette partie ---
     // if (typeof populateCitySelects === 'function') {
     //     await populateCitySelects();
@@ -4370,7 +4370,7 @@ async function showDetailedSearch(prefillData = {}) {
     if (destinationInput && translation.search_city_placeholder) {
         destinationInput.placeholder = translation.search_city_placeholder;
     }
-    
+
     // --- On pré-remplit les valeurs avec les bons ID ---
     if (prefillData) {
         if (prefillData.from && originInput) {
@@ -4385,7 +4385,7 @@ async function showDetailedSearch(prefillData = {}) {
     if (typeof setupDatePickers === 'function') {
         setupDatePickers();
     }
-    
+
     // --- Logique de focus plus robuste qui vérifie l'existence des éléments ---
     if (prefillData.from && prefillData.to && travelDateInput) {
         travelDateInput.focus();
@@ -4412,27 +4412,27 @@ async function showDetailedSearch(prefillData = {}) {
 function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
     // ✅ Utilise les résultats passés en paramètre (ou ceux de l'état global par défaut)
     let filteredResults = [...results];
-    
+
     // ✅ Filtre par compagnie
     if (activeFilters.company !== 'all') {
-        filteredResults = filteredResults.filter(route => 
+        filteredResults = filteredResults.filter(route =>
             route.company === activeFilters.company
         );
     }
-    
+
     // ✅ Filtre par type de trajet
     if (activeFilters.tripType !== 'all') {
-        filteredResults = filteredResults.filter(route => 
+        filteredResults = filteredResults.filter(route =>
             route.tripType === activeFilters.tripType
         );
     }
-    
+
     // ✅ Filtre par plage de prix
-    filteredResults = filteredResults.filter(route => 
-        route.price >= activeFilters.priceRange.min && 
+    filteredResults = filteredResults.filter(route =>
+        route.price >= activeFilters.priceRange.min &&
         route.price <= activeFilters.priceRange.max
     );
-    
+
     // ✅ Filtre par heure de départ
     if (activeFilters.departureTime !== 'all') {
         filteredResults = filteredResults.filter(route => {
@@ -4446,11 +4446,11 @@ function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
             }
         });
     }
-    
+
     // ✅ Filtre par équipements
     if (activeFilters.amenities.length > 0) {
         filteredResults = filteredResults.filter(route =>
-            activeFilters.amenities.every(amenity => 
+            activeFilters.amenities.every(amenity =>
                 route.amenities.includes(amenity)
             )
         );
@@ -4458,11 +4458,11 @@ function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
 
     // ✅ Filtre par lieu de départ
     if (activeFilters.departureLocation !== 'all') {
-        filteredResults = filteredResults.filter(route => 
+        filteredResults = filteredResults.filter(route =>
             route.departureLocation === activeFilters.departureLocation
         );
     }
-    
+
     // ✅ Tri
     filteredResults.sort((a, b) => {
         switch (activeFilters.sortBy) {
@@ -4477,7 +4477,7 @@ function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
                 return a.departure.localeCompare(b.departure);
         }
     });
-    
+
     return filteredResults;
 }
 
@@ -4489,7 +4489,7 @@ function applyFiltersAndSort(results) { // ✅ Paramètre ajouté
 
 // DANS app.js (remplacez votre fonction updateFilter)
 
-window.updateFilter = function(filterType, value) {
+window.updateFilter = function (filterType, value) {
     // La première partie de la fonction qui met à jour l'objet 'activeFilters' est correcte et reste inchangée.
     switch (filterType) {
         case 'company':
@@ -4499,7 +4499,7 @@ window.updateFilter = function(filterType, value) {
         case 'departureLocation':
             activeFilters[filterType] = value;
             break;
-        
+
         case 'priceMin':
             activeFilters.priceRange.min = parseInt(value) || 0;
             // On s'assure que l'élément existe avant de le modifier
@@ -4508,7 +4508,7 @@ window.updateFilter = function(filterType, value) {
                 priceMinDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.min);
             }
             break;
-        
+
         case 'priceMax':
             activeFilters.priceRange.max = parseInt(value) || 100000;
             // On s'assure que l'élément existe avant de le modifier
@@ -4517,7 +4517,7 @@ window.updateFilter = function(filterType, value) {
                 priceMaxDisplay.textContent = Utils.formatPrice(activeFilters.priceRange.max);
             }
             break;
-        
+
         case 'amenity':
             const index = activeFilters.amenities.indexOf(value);
             if (index > -1) {
@@ -4527,7 +4527,7 @@ window.updateFilter = function(filterType, value) {
             }
             break;
     }
-    
+
     // ========================================================
     // ✅ DÉBUT DE LA MISE À JOUR DE LA LOGIQUE
     // ========================================================
@@ -4535,7 +4535,7 @@ window.updateFilter = function(filterType, value) {
     // On rafraîchit l'affichage en appelant displayResults.
     // On lui passe TOUJOURS la liste complète et non filtrée des résultats de la recherche initiale.
     displayResults(appState.currentResults, appState.isSelectingReturn);
-    
+
     // On vérifie le nombre de résultats APRÈS que displayResults ait fait son travail de filtrage.
     // 'appState.displayedResults' contient maintenant la liste réellement affichée.
     if (appState.displayedResults.length === 0) {
@@ -4543,7 +4543,7 @@ window.updateFilter = function(filterType, value) {
         const translation = translations[lang] || translations.fr;
         Utils.showToast(translation.info_no_trips_match_filters, 'info');
     }
-    
+
     // ========================================================
     // ✅ FIN DE LA MISE À JOUR
     // ========================================================
@@ -4557,7 +4557,7 @@ window.updateFilter = function(filterType, value) {
 // ============================================
 function setupMobileFilterToggle() {
     const filterContainer = document.querySelector('.filters-bar-enhanced');
-    
+
     // Sécurité : si pas de filtres, on arrête
     if (!filterContainer) return;
 
@@ -4588,7 +4588,7 @@ function setupMobileFilterToggle() {
     // 3. Gestion du clic
     toggleBtn.addEventListener('click', () => {
         const isOpen = filterContainer.classList.contains('open');
-        
+
         if (isOpen) {
             filterContainer.classList.remove('open');
             toggleBtn.classList.remove('active');
@@ -4608,7 +4608,7 @@ function setupMobileFilterToggle() {
 // DANS app.js (remplacez votre fonction resetFilters)
 // DANS app.js (remplacez votre fonction resetFilters)
 
-window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
+window.resetFilters = function (isSilent = false) { // ✅ Paramètre ajouté
     // 1. Réinitialiser l'objet des filtres actifs
     activeFilters = {
         company: 'all',
@@ -4635,26 +4635,26 @@ window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
 
     const sortBySelect = document.getElementById('sort-by');
     if (sortBySelect) sortBySelect.value = 'departure';
-    
+
     const priceMinInput = document.getElementById('price-min');
     if (priceMinInput) priceMinInput.value = 0;
-    
+
     const priceMaxInput = document.getElementById('price-max');
     if (priceMaxInput) priceMaxInput.value = 100000;
-    
+
     const priceMinDisplay = document.getElementById('price-min-display');
     if (priceMinDisplay) priceMinDisplay.textContent = '0';
-    
+
     const priceMaxDisplay = document.getElementById('price-max-display');
     if (priceMaxDisplay) priceMaxDisplay.textContent = '100 000';
-    
+
     document.querySelectorAll('.amenity-checkbox').forEach(cb => {
         cb.checked = false;
     });
-    
+
     // 3. Rafraîchir l'affichage en utilisant la liste BRUTE originale
     displayResults(appState.currentResults, appState.isSelectingReturn);
-    
+
     // ========================================================
     // ✅ CORRECTION ICI : Affichage conditionnel du toast
     // ========================================================
@@ -4678,7 +4678,7 @@ window.resetFilters = function(isSilent = false) { // ✅ Paramètre ajouté
 function displayResults(results, isReturn = false) {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     const summary = document.getElementById("search-summary");
     const resultsList = document.getElementById("results-list");
     const legendContainer = document.getElementById("amenities-legend");
@@ -4687,7 +4687,7 @@ function displayResults(results, isReturn = false) {
 
     const filteredAndSortedResults = applyFiltersAndSort(results);
     appState.displayedResults = filteredAndSortedResults;
-    
+
     let summaryText = isReturn
         ? translation.results_summary_return(filteredAndSortedResults.length, appState.currentSearch.destination, appState.currentSearch.origin)
         : translation.results_summary_outbound(filteredAndSortedResults.length, appState.currentSearch.origin, appState.currentSearch.destination);
@@ -4762,14 +4762,14 @@ function displayResults(results, isReturn = false) {
             badgeHTML = `<div class="highlight-badge fastest">${translation.badge_fastest}</div>`;
         }
 
-        const amenitiesHTML = route.amenities.map(amenity => 
+        const amenitiesHTML = route.amenities.map(amenity =>
             `<div class="amenity-item" title="${(translation.amenity_labels || {})[amenity] || amenity}">${Utils.getAmenityIcon(amenity)}</div>`
         ).join("");
-        
-        const departureLocationHTML = route.departureLocation 
-            ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>` 
+
+        const departureLocationHTML = route.departureLocation
+            ? `<div class="bus-card-location">${translation.departure_location_label(route.departureLocation)}</div>`
             : '';
-        
+
         let tripDetailsHTML = '';
         if (route.stops && route.stops.length > 0) {
             tripDetailsHTML += `<div class="trip-details-accordion"><div class="accordion-header" onclick="toggleTripDetails(this)"><span class="bus-card-trip-details"><span class="accordion-icon">▶</span><span>${translation.details_stops_planned} </span><strong class="bus-card-stops">${translation.details_stops_count(route.stops.length)}</strong></span></div><div class="accordion-content">${route.stops.map(stop => `<div class="accordion-content-item">🛑 <strong>${stop.city}</strong> (${stop.duration})</div>`).join('')}</div></div>`;
@@ -4780,7 +4780,7 @@ function displayResults(results, isReturn = false) {
         if (tripDetailsHTML === '') {
             tripDetailsHTML = `<div class="bus-card-trip-details" style="color: #73d700;">${Utils.getAmenityIcon('direct')}<span>${translation.details_direct_trip}</span></div>`;
         }
-        
+
         const arrivalDisplay = route.isNightTrip && route.arrivalDaysOffset > 0
             ? `<div class="arrival-time-wrapper"><span>${route.arrival}</span><small>+${route.arrivalDaysOffset}j</small></div>`
             : `<div class="arrival-time-wrapper"><span>${route.arrival}</span></div>`;
@@ -4805,12 +4805,13 @@ function displayResults(results, isReturn = false) {
         let seatsInfoHTML = '';
 
         if (route.availableSeats > 0) {
+            // Si sièges dispo: bouton normal
             buttonHTML = `<button class="btn btn-primary" onclick="selectBus('${route.id}')">${translation.button_select}</button>`;
             seatsInfoHTML = `<strong>${route.availableSeats}</strong> ${translation.seats_available}`;
         } else {
-            // Si le bus est plein, on met un bouton désactivé et un texte différent
-            buttonHTML = `<button class="btn btn-disabled" disabled>COMPLET</button>`;
-            seatsInfoHTML = `<strong style="color: #ef5350;">COMPLET</strong>`;
+            // Si bus plein: bouton désactivé avec texte "COMPLET" traduit
+            buttonHTML = `<button class="btn btn-disabled" disabled>${translation.button_full || 'COMPLET'}</button>`;
+            seatsInfoHTML = `<strong style="color: #ef5350;">${translation.button_full || 'COMPLET'}</strong>`;
         }
         // ============================================
 
@@ -4848,7 +4849,7 @@ function displayResults(results, isReturn = false) {
 
     if (legendContainer) {
         const amenityLabels = translation.amenity_labels || {};
-        legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) => 
+        legendContainer.innerHTML = Object.entries(amenityLabels).map(([key, label]) =>
             `<div class="legend-amenity">${Utils.getAmenityIcon(key)}<span>${label}</span></div>`
         ).join('');
     }
@@ -4860,13 +4861,13 @@ function displayResults(results, isReturn = false) {
  * Gère l'ouverture et la fermeture d'un accordéon pour les détails de trajet.
  * @param {HTMLElement} element - L'élément sur lequel on a cliqué.
  */
-window.toggleTripDetails = function(element) {
+window.toggleTripDetails = function (element) {
     // On trouve le panneau de contenu qui est juste après l'en-tête cliqué
     const content = element.nextElementSibling;
-    
+
     // On ajoute ou on enlève la classe 'open' sur l'en-tête
     element.classList.toggle('open');
-    
+
     if (content.style.maxHeight) {
         // Si le panneau est ouvert (a un maxHeight), on le ferme
         content.style.maxHeight = null;
@@ -4877,11 +4878,11 @@ window.toggleTripDetails = function(element) {
         content.style.maxHeight = content.scrollHeight + "px";
     }
 }
-    
+
 // Dans app.js
-window.selectBus = async function(busId) {
+window.selectBus = async function (busId) {
     console.log('🚌 Sélection du bus ID :', busId);
-    
+
     // ===================================
     // ✅ CORRECTION : On récupère les traductions
     // ===================================
@@ -4897,19 +4898,19 @@ window.selectBus = async function(busId) {
     if (appState.isSelectingReturn) {
         appState.selectedReturnBus = selectedRoute;
         appState.selectedReturnSeats = [];
-        
+
         Utils.showToast(translation.toast_select_return_seats, "info");
-        
+
         await loadRealSeats();
         displaySeats();
         showPage("seats");
-        
+
     } else {
         appState.selectedBus = selectedRoute;
         appState.selectedSeats = [];
-        
+
         Utils.showToast(translation.toast_select_outbound_seats, "info");
-        
+
         await loadRealSeats();
         displaySeats();
         showPage("seats");
@@ -4924,17 +4925,17 @@ async function searchReturnTrips() {
         const translation = translations[lang] || translations.fr;
 
         Utils.showToast(translation.toast_select_return_bus, 'info');
-        
+
         const response = await fetch(
             `${API_CONFIG.baseUrl}/api/search?from=${encodeURIComponent(appState.currentSearch.destination)}&to=${encodeURIComponent(appState.currentSearch.origin)}&date=${appState.currentSearch.returnDate}`
         );
-        
+
         if (!response.ok) {
             throw new Error('Erreur lors de la recherche des trajets retour');
         }
-        
+
         const data = await response.json();
-        
+
         if (data.count === 0) {
             // ===============================================
             // ✅ DÉBUT DE LA CORRECTION
@@ -4968,7 +4969,7 @@ async function searchReturnTrips() {
             // Utilisons une clé de traduction pour ce toast aussi
             Utils.showToast(translation.success_trips_found(data.count), 'success');
         }
-        
+
     } catch (error) {
         console.error('❌ Erreur recherche retour:', error);
         Utils.showToast(error.message, 'error');
@@ -4977,45 +4978,45 @@ async function searchReturnTrips() {
 
 async function loadRealSeats() {
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
-    
+
     if (!currentBus || !currentBus.id) {
         console.error('❌ Aucun bus sélectionné');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/trips/${currentBus.id}/seats`);
-        
+
         if (!response.ok) {
             throw new Error('Erreur récupération des sièges');
         }
-        
+
         const data = await response.json();
-        
+
         // ✅ RÉCUPÉRER LES VRAIS SIÈGES OCCUPÉS
         const occupiedSeatNumbers = data.seats
             .filter(s => s.status === 'occupied' || s.status === 'blocked')
             .map(s => s.number);
-        
+
         if (appState.isSelectingReturn) {
             appState.occupiedReturnSeats = occupiedSeatNumbers;
         } else {
             appState.occupiedSeats = occupiedSeatNumbers;
         }
-        
+
         console.log(`💺 ${occupiedSeatNumbers.length} sièges occupés chargés depuis le serveur`);
-        
+
     } catch (error) {
         console.error('❌ Erreur chargement sièges:', error);
         Utils.showToast('Erreur de chargement des sièges', 'error');
     }
 }
 
-window.toggleSeat = function(seatNumber) {
+window.toggleSeat = function (seatNumber) {
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     const index = currentSeats.indexOf(seatNumber);
     const maxSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
-    
+
     // Logique pour ajouter/retirer le siège (votre code est correct)
     if (index > -1) {
         currentSeats.splice(index, 1);
@@ -5031,15 +5032,15 @@ window.toggleSeat = function(seatNumber) {
         }
         currentSeats.push(seatNumber);
     }
-    
+
     currentSeats.sort((a, b) => a - b);
-    
+
     if (appState.isSelectingReturn) {
         appState.selectedReturnSeats = currentSeats;
     } else {
         appState.selectedSeats = currentSeats;
     }
-    
+
     // ===================================
     // ✅ CORRECTION 2 : OPTIMISATION DE L'AFFICHAGE
     // ===================================
@@ -5068,29 +5069,29 @@ async function displaySeats() { // ✅ On ajoute "async" ici
     // 1. Récupération des traductions avec une sécurité
     const lang = getLanguage();
     const translation = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
-    
+
     // 2. Récupération des données et des éléments DOM
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     const currentOccupied = appState.isSelectingReturn ? appState.occupiedReturnSeats : appState.occupiedSeats;
-    
+
     const busInfo = document.getElementById("bus-info");
     const seatGrid = document.getElementById("pro-seat-grid");
     const occupancyInfo = document.getElementById("trip-occupancy-info");
 
     if (!busInfo || !seatGrid || !occupancyInfo) return;
-    
+
     // ========================================================
     // ✅ DÉBUT DE LA CORRECTION
     // ========================================================
 
     // 3. Calcul dynamique des prix et traduction de l'en-tête du bus
     const tripLabel = appState.isSelectingReturn ? (translation.trip_badge_return || "RETOUR") : (translation.trip_badge_outbound || "ALLER");
-    
+
     const adultPrice = currentBus.price || 0;
-    
+
     // On ATTEND que la fonction asynchrone getChildPrice nous retourne le bon prix
-    const childPrice = await getChildPrice(adultPrice); 
+    const childPrice = await getChildPrice(adultPrice);
 
     busInfo.innerHTML = `
         <div class="bus-info-header">
@@ -5103,7 +5104,7 @@ async function displaySeats() { // ✅ On ajoute "async" ici
             </div>
         </div>
     `;
-    
+
     // ========================================================
     // ✅ FIN DE LA CORRECTION
     // ========================================================
@@ -5124,12 +5125,12 @@ async function displaySeats() { // ✅ On ajoute "async" ici
     } else {
         occupancyInfo.style.display = 'none';
     }
-    
+
     // 5. Génération de la grille des sièges (inchangé)
     const hasWC = currentBus.amenities.includes("wc");
     const seatsPerRow = 4;
     const backRowSeatsCount = 5;
-    
+
     let mainRows = Math.floor((totalSeats - backRowSeatsCount) / seatsPerRow);
     if ((totalSeats - backRowSeatsCount) % seatsPerRow !== 0) mainRows++;
 
@@ -5141,10 +5142,10 @@ async function displaySeats() { // ✅ On ajoute "async" ici
             </div>
             <div class="modern-seat-grid">
     `;
-    
+
     let seatNumber = 1;
     const seatsInMainRows = totalSeats - backRowSeatsCount;
-    
+
     for (let row = 1; row <= mainRows; row++) {
         seatHTML += `<div class="seat-row" data-row="${row}">`;
         if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `A${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
@@ -5154,23 +5155,23 @@ async function displaySeats() { // ✅ On ajoute "async" ici
         if (seatNumber <= seatsInMainRows) seatHTML += generateModernSeat(seatNumber++, `D${row}`, currentSeats, currentOccupied); else seatHTML += '<div class="modern-seat empty"></div>';
         seatHTML += `<div class="row-indicator">${row}</div></div>`;
     }
-    
+
     seatHTML += `</div>`;
-    
+
     if (hasWC) {
         seatHTML += `<div class="toilet-section"><div class="toilet-icon">🚻</div><span class="toilet-label">${translation.seats_restroom || 'Toilettes'}</span></div>`;
     }
-    
+
     seatHTML += `<div class="back-row-container"><div class="back-row-label">${translation.seats_back_row || 'Rangée arrière'}</div><div class="back-row-seats">`;
-    
+
     for (let i = 0; i < backRowSeatsCount; i++) {
         if (seatNumber <= totalSeats) {
             seatHTML += generateModernSeat(seatNumber++, `R${i + 1}`, currentSeats, currentOccupied);
         }
     }
-    
+
     seatHTML += `</div></div></div>`;
-    
+
     seatGrid.innerHTML = seatHTML;
 
     // 6. Appel final pour mettre à jour le résumé (inchangé)
@@ -5191,7 +5192,7 @@ async function displaySeats() { // ✅ On ajoute "async" ici
 function getChildPrice(adultPrice) {
     const rules = appRules.ticketing;
     console.log(`5️⃣ [DIAG] Calcul du prix enfant. Mode actif : '${rules.childPricingMode}'`);
-    
+
     if (rules.childPricingMode === 'fixed') {
         console.log(`   -> [DIAG] Utilisation du prix fixe : ${rules.childFixedPrice}`);
         return rules.childFixedPrice || 0;
@@ -5212,7 +5213,7 @@ function getChildPrice(adultPrice) {
 function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     const isOccupied = occupiedSeats.includes(seatNumber);
     const isSelected = selectedSeats.includes(seatNumber);
-    
+
     let seatClass = 'modern-seat ';
     if (isOccupied) {
         seatClass += 'occupied';
@@ -5221,10 +5222,10 @@ function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats)
     } else {
         seatClass += 'available';
     }
-    
+
     const clickHandler = isOccupied ? '' : `onclick="toggleSeat(${seatNumber})"`;
     const ariaLabel = `Siège ${seatLabel}, ${isOccupied ? 'occupé' : isSelected ? 'sélectionné' : 'disponible'}`;
-    
+
     return `
         <div class="${seatClass}" 
              ${clickHandler}
@@ -5243,7 +5244,7 @@ function generateModernSeat(seatNumber, seatLabel, selectedSeats, occupiedSeats)
 function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     const isOccupied = occupiedSeats.includes(seatNumber);
     const isSelected = selectedSeats.includes(seatNumber);
-    
+
     let seatClass = 'bus-seat ';
     if (isOccupied) {
         seatClass += 'occupied';
@@ -5252,10 +5253,10 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
     } else {
         seatClass += 'available';
     }
-    
+
     const clickHandler = isOccupied ? '' : `onclick="toggleSeat(${seatNumber})"`;
     const ariaLabel = `Siège ${seatLabel}, ${isOccupied ? 'occupé' : isSelected ? 'sélectionné' : 'disponible'}`;
-    
+
     return `
         <div class="${seatClass}" 
              ${clickHandler}
@@ -5277,13 +5278,13 @@ function generateSeatHTML(seatNumber, seatLabel, selectedSeats, occupiedSeats) {
 async function updateSeatSummary() {
     const lang = getLanguage();
     const translation = (translations && translations[lang]) ? translations[lang] : {};
-    
+
     const currentBus = appState.isSelectingReturn ? appState.selectedReturnBus : appState.selectedBus;
     const currentSeats = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
-    
+
     const seatsDisplay = document.getElementById("selected-seats-display");
     const priceDisplay = document.getElementById("total-price-display");
-    
+
     if (!seatsDisplay || !priceDisplay) {
         console.error("ERREUR FATALE: Les éléments seatsDisplay ou priceDisplay sont introuvables.");
         return;
@@ -5300,25 +5301,25 @@ async function updateSeatSummary() {
         priceDisplay.textContent = "0 FCFA";
     } else {
         seatsDisplay.textContent = currentSeats.join(", ");
-        
+
         // ========================================================
         // ✅ DÉBUT DE LA CORRECTION
         // ========================================================
-        
+
         const adultPrice = currentBus.price;
-        
+
         // On utilise la fonction helper qui contient la logique 'if/else'
         // pour déterminer si on doit utiliser le prix fixe ou le pourcentage.
-       const childPrice = await getChildPrice(adultPrice); 
-        
+        const childPrice = await getChildPrice(adultPrice);
+
         const numSeats = currentSeats.length;
         const numAdults = appState.passengerCounts.adults;
-        
+
         const adultsSelected = Math.min(numSeats, numAdults);
         const childrenSelected = numSeats - adultsSelected;
-        
+
         const totalPrice = (adultsSelected * adultPrice) + (childrenSelected * childPrice);
-        
+
         priceDisplay.textContent = Utils.formatPrice(Math.round(totalPrice)) + " FCFA";
 
         // ========================================================
@@ -5327,7 +5328,7 @@ async function updateSeatSummary() {
     }
 }
 // Dans app.js
-window.proceedToPassengerInfo = async function() {
+window.proceedToPassengerInfo = async function () {
     // ===================================
     // ✅ CORRECTION : On récupère les traductions
     // ===================================
@@ -5335,26 +5336,26 @@ window.proceedToPassengerInfo = async function() {
     const translation = translations[lang] || translations.fr;
 
     const expectedSeats = appState.passengerCounts.adults + appState.passengerCounts.children;
-    
+
     if (appState.currentSearch.tripType === "round-trip" && !appState.isSelectingReturn) {
         if (appState.selectedSeats.length !== expectedSeats) {
             Utils.showToast(translation.error_max_seats(expectedSeats), 'error');
             return;
         }
-        
+
         appState.isSelectingReturn = true;
-        
+
         Utils.showToast(translation.toast_select_return_bus, 'info');
         await searchReturnTrips();
         return;
     }
-    
+
     const seatsToCheck = appState.isSelectingReturn ? appState.selectedReturnSeats : appState.selectedSeats;
     if (seatsToCheck.length !== expectedSeats) {
         Utils.showToast(translation.error_max_seats(expectedSeats), 'error');
         return;
     }
-    
+
     displayPassengerForms();
     showPage("passengers");
 };
@@ -5375,7 +5376,7 @@ function displayPassengerForms() {
     let formsHTML = "";
     let baggageHTML = "";
     appState.baggageCounts = {};
-    
+
     const baggageOptions = appState.selectedBus.baggageOptions || {
         standard: { included: 1, max: 5, price: 2000 },
         oversized: { max: 2, price: 5000 }
@@ -5390,11 +5391,11 @@ function displayPassengerForms() {
     }
 
     for (let i = 0; i < appState.currentSearch.passengers; i++) {
-        const passengerType = i < appState.passengerCounts.adults 
-            ? (translation.passenger_type_adult || "Adulte") 
+        const passengerType = i < appState.passengerCounts.adults
+            ? (translation.passenger_type_adult || "Adulte")
             : (translation.passenger_type_child || "Enfant");
         const seatNumber = appState.selectedSeats[i];
-        
+
         formsHTML += `
             <div class="passenger-form">
                 <h3>${translation.passenger_form_title(i + 1, passengerType, seatNumber)}</h3>
@@ -5412,9 +5413,9 @@ function displayPassengerForms() {
                     <input type="email" id="email-${i}" class="form-control" placeholder="${translation.passengers_email_placeholder}">
                 </div>
             </div>`;
-        
+
         appState.baggageCounts[i] = { standard: 0, oversized: 0 };
-        
+
         baggageHTML += `
             <div class="baggage-passenger-section">
                 <h4>${translation.baggage_options_for(i + 1, seatNumber)}</h4>
@@ -5444,11 +5445,11 @@ function displayPassengerForms() {
 
     formsContainer.innerHTML = formsHTML;
     baggageContainer.innerHTML = baggageHTML;
-    
+
     document.querySelectorAll("#baggage-options .counter-btn").forEach(btn => {
         btn.addEventListener("click", handleBaggageChange);
     });
-    
+
     updateBookingSummary();
 }
 // Dans app.js
@@ -5470,7 +5471,7 @@ function handleBaggageChange(event) {
     }
 
     document.getElementById(`baggage-count-${passengerIndex}-${baggageType}`).textContent = appState.baggageCounts[passengerIndex][baggageType];
-    
+
     // Mettre à jour l'état des boutons
     document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-type="${baggageType}"][data-action="decrement"]`).disabled = appState.baggageCounts[passengerIndex][baggageType] <= 0;
     document.querySelector(`button[data-passenger-index="${passengerIndex}"][data-type="${baggageType}"][data-action="increment"]`).disabled = appState.baggageCounts[passengerIndex][baggageType] >= max;
@@ -5511,16 +5512,16 @@ function updateBookingSummary() {
     // ========================================================
     // ✅ NOUVELLE LOGIQUE DE CALCUL
     // ========================================================
-    
+
     // --- Calcul du prix des billets ---
     const adultPrice = bus.price;
     const childPrice = getChildPrice(adultPrice); // Utilise la fonction helper (fixe ou %)
 
     const numAdultsSeats = Math.min(seats.length, passengers.adults);
     const numChildrenSeats = seats.length - numAdultsSeats;
-    
+
     const ticketsPrice = (numAdultsSeats * adultPrice) + (numChildrenSeats * childPrice);
-    
+
     // --- Calcul du prix des bagages ---
     const baggageOptions = bus.baggageOptions || { standard: { price: 0 }, oversized: { price: 0 } };
     let totalStandardBaggage = 0;
@@ -5539,11 +5540,11 @@ function updateBookingSummary() {
 
     // --- Calcul du prix total ---
     const totalPrice = ticketsPrice + totalBaggagePrice;
-    
+
     // ========================================================
     // ✅ FIN DE LA NOUVELLE LOGIQUE
     // ========================================================
-    
+
     // --- Mise à jour de l'affichage ---
     summaryContainer.innerHTML = `
         <div class="detail-row"><span>Itinéraire:</span><strong>${bus.from} → ${bus.to}</strong></div>
@@ -5561,7 +5562,7 @@ function updateBookingSummary() {
     // --- Mise à jour des champs de paiement (inchangé) ---
     const bookingRef = document.getElementById("mtn-booking-ref")?.value || Utils.generateBookingNumber();
     const amountStr = `${Utils.formatPrice(Math.round(totalPrice))} FCFA`;
-    
+
     ['mtn', 'airtel', 'agency'].forEach(method => {
         const amountInput = document.getElementById(`${method}-amount`);
         const refInput = document.getElementById(`${method}-booking-ref`);
@@ -5577,9 +5578,9 @@ function updateBookingSummary() {
 // DANS app.js (restaurez la version finale)
 // DANS app.js (remplacez cette fonction)
 
-window.proceedToPayment = async function() {
+window.proceedToPayment = async function () {
     console.log('🟢 proceedToPayment() appelée. Étape 1: Validation des passagers...');
-    
+
     // --- 1. Validation et remplissage de appState.passengerInfo ---
     appState.passengerInfo = []; // On réinitialise la liste
     let allFieldsValid = true;
@@ -5602,27 +5603,27 @@ window.proceedToPayment = async function() {
         const name = nameInput.value.trim();
         const phone = phoneInput.value.trim();
         const email = emailInput.value.trim();
-        
+
         if (!name || !phone) {
             Utils.showToast(`Veuillez remplir le nom et le téléphone pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
             break;
         }
-        
+
         if (!Utils.validatePhone(phone)) {
             Utils.showToast(`Numéro de téléphone invalide pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
             break;
         }
-        
+
         if (email && !Utils.validateEmail(email)) {
             Utils.showToast(`Email invalide pour le passager ${i + 1}.`, 'error');
             allFieldsValid = false;
             break;
         }
-        
+
         const passengerBaggage = appState.baggageCounts[i] || { standard: 0, oversized: 0 };
-        
+
         // On remplit le tableau 'passengerInfo'
         appState.passengerInfo.push({
             seat: appState.selectedSeats[i],
@@ -5642,11 +5643,11 @@ window.proceedToPayment = async function() {
     // --- 2. Affichage de la modale de confirmation des documents ---
     console.log("   Étape 2: Affichage de la checklist des documents...");
     const documentsConfirmed = await showDocumentChecklist();
-    
+
     // --- 3. Navigation vers le paiement si confirmé ---
     if (documentsConfirmed) {
         console.log("   Étape 3: Documents confirmés. Navigation vers la page de paiement.");
-        displayBookingSummary(); 
+        displayBookingSummary();
         showPage("payment");
     } else {
         console.log("❌ L'utilisateur a annulé la confirmation des documents.");
@@ -5662,11 +5663,11 @@ async function showDocumentChecklist() {
     try {
         const lang = getLanguage();
         const translation = translations[lang] || translations.fr;
-        
+
         // ========================================================
         // ✅ DÉBUT DE LA CORRECTION : Logique de juridiction améliorée
         // ========================================================
-        
+
         let isInternational = false;
 
         // 1. On vérifie si le trajet aller est international
@@ -5678,9 +5679,9 @@ async function showDocumentChecklist() {
         if (appState.selectedReturnBus?.route?.jurisdiction === 'international') {
             isInternational = true;
         }
-        
+
         console.log(`   -> [DIAG] Juridiction finale calculée : ${isInternational ? 'international' : 'national'}`);
-        
+
         // ========================================================
         // ✅ FIN DE LA CORRECTION
         // ========================================================
@@ -5705,7 +5706,7 @@ async function showDocumentChecklist() {
                 </ul>
             `;
         }
-        
+
         const modalContent = `
             <p>${translation.docs_checklist_intro}</p>
             ${checklistItemsHTML}
@@ -5716,7 +5717,7 @@ async function showDocumentChecklist() {
         `;
 
         console.log("   -> [DIAG] Contenu de la modale généré. Appel de showCustomConfirm...");
-        
+
         const confirmed = await showCustomConfirm({
             title: translation.docs_checklist_title,
             message: modalContent,
@@ -5728,12 +5729,12 @@ async function showDocumentChecklist() {
                     console.log("3️⃣ [DIAG] La fonction 'onOpen' s'exécute...");
                     const checkbox = document.getElementById('docs-confirm-checkbox');
                     const confirmBtn = document.querySelector('.custom-modal-card button[id^="btn-confirm-"]');
-                    
+
                     if (!checkbox || !confirmBtn) {
                         console.error("  -> [DIAG] ERREUR FATALE dans onOpen : la checkbox ou le bouton de confirmation est INTROUVABLE !");
                         return;
                     }
-                    
+
                     console.log("  -> [DIAG] Éléments checkbox et bouton trouvés.");
                     confirmBtn.disabled = true;
                     checkbox.onchange = () => {
@@ -5767,7 +5768,7 @@ async function showDocumentChecklist() {
 
 function displayBookingSummary() {
     console.log("📊 Affichage du récapitulatif de réservation...");
-    
+
     // --- 1. Récupération des traductions et des règles ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
@@ -5809,7 +5810,7 @@ function displayBookingSummary() {
             <div class="detail-row"><span>${translation.summary_return_date}:</span><strong>${Utils.formatDate(appState.currentSearch.returnDate, lang)}</strong></div>
         `;
     }
-    
+
     summaryHTML += `<div class="detail-row"><span>Passagers :</span><strong>${passengersSummary}</strong></div>`;
 
     summaryHTML += `
@@ -5842,9 +5843,9 @@ function displayBookingSummary() {
                 if (availableSeats < 10) {
                     seatsLeftHTML = `<span class="urgency-value danger">🔥 ${availableSeats}</span>`;
                 }
-                
+
                 const deadline = new Date(Date.now() + CONFIG.MOBILE_MONEY_PAYMENT_DEADLINE_MINUTES * 60 * 1000);
-                
+
                 urgencyBox.innerHTML = `
                     <div class="urgency-item">
                         <span class="urgency-label">${translation.urgency_seats_left}</span>
@@ -5856,17 +5857,17 @@ function displayBookingSummary() {
                     </div>
                 `;
                 urgencyBox.style.display = 'grid';
-                
+
                 startFrontendCountdown();
             } else {
-                 urgencyBox.style.display = 'none';
+                urgencyBox.style.display = 'none';
             }
         } catch (e) {
             console.error("Erreur affichage urgence:", e);
-            if(urgencyBox) urgencyBox.style.display = 'none';
+            if (urgencyBox) urgencyBox.style.display = 'none';
         }
     })();
-    
+
     // --- 7. Gestion du paiement à l'agence ---
     const agencyOption = document.getElementById('agency-payment-option');
     if (agencyOption) {
@@ -5879,15 +5880,15 @@ function displayBookingSummary() {
             agencyOption.title = translation.payment_agency_unavailable_tooltip || "Agency payment not available (too close to departure)";
         }
     }
-    
+
     setupPaymentMethodToggle();
     console.log("✅ Récapitulatif affiché et mis à jour.");
 }
 // DANS app.js, REMPLACEZ la fonction confirmBooking
 
-window.confirmBooking = async function(buttonElement) {
+window.confirmBooking = async function (buttonElement) {
     console.group('💳 DÉBUT PROCESSUS DE RÉSERVATION');
-    
+
     // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
@@ -5895,7 +5896,7 @@ window.confirmBooking = async function(buttonElement) {
     const originalButtonText = buttonElement.innerHTML;
     buttonElement.disabled = true;
     const showLoading = (message) => { buttonElement.innerHTML = `<span style="animation: spin 1s linear infinite; ..."></span>${message}`; };
-    
+
     // Utilisation de la traduction pour le message de chargement
     showLoading(translation.toast_booking_creation);
 
@@ -5942,7 +5943,7 @@ window.confirmBooking = async function(buttonElement) {
             status: 'En attente de paiement',
             customerPhone: customerPhone,
             paymentDeadline: paymentDeadline,
-            lang:getLanguage()
+            lang: getLanguage()
 
         };
 
@@ -5952,23 +5953,23 @@ window.confirmBooking = async function(buttonElement) {
             reservation.returnSeats = appState.selectedReturnSeats;
             reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
         }
-        
+
         if (paymentMethod === 'agency') {
             reservation.agency = getNearestAgency(appState.selectedBus.from);
         }
 
         const savedReservationResponse = await saveReservationToBackend(reservation);
-        
+
         if (savedReservationResponse && savedReservationResponse.success) {
             if (savedReservationResponse.agencyPaymentCode) {
                 reservation.agencyPaymentCode = savedReservationResponse.agencyPaymentCode;
             }
-            
+
             appState.currentReservation = reservation;
             addBookingToLocalHistory(reservation.bookingNumber);
-            
+
             displayPaymentInstructions(reservation);
-            
+
             Utils.showToast(translation.toast_booking_saved_success, 'success');
 
         } else {
@@ -6047,7 +6048,7 @@ async function displayConfirmation(reservation) {
         confirmationTitle.textContent = translation.confirmation_title_pending || "Finalisez votre paiement";
         confirmationSubtitle.textContent = translation.confirmation_subtitle_pending || "Réservation en attente";
         if (statusBadge) statusBadge.textContent = translation.status_pending;
-        outboundSection.innerHTML = ''; 
+        outboundSection.innerHTML = '';
         // ... (votre logique pour afficher les instructions de paiement est correcte)
         return;
     }
@@ -6064,7 +6065,7 @@ async function displayConfirmation(reservation) {
         const route = tripData.route;
         const lang = getLanguage();
 
-   
+
         // ===================================
         // ✅ HTML COMPLET RÉINTÉGRÉ
         // ===================================
@@ -6136,9 +6137,9 @@ async function displayConfirmation(reservation) {
 
         let actionsHTML = `<button class="btn-modern btn-download" onclick="downloadTicket(false)"><span class="btn-icon">📥</span><span class="btn-text">${translation.button_download_outbound}</span></button>`;
 
-         // ✅ AJOUTER LE BOUTON FACTURE ICI
-       actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
-       // ========================================================
+        // ✅ AJOUTER LE BOUTON FACTURE ICI
+        actionsHTML += `<button class="btn-modern btn-invoice" onclick="downloadInvoice('${reservation.bookingNumber}')"><span class="btn-icon">📄</span><span class="btn-text">${translation.button_download_invoice}</span></button>`;
+        // ========================================================
         // ✅ AJOUT DU BOUTON "PARTAGER"
         // ========================================================
         actionsHTML += `<button class="btn-modern btn-share" onclick="shareTicket()"><span class="btn-icon">↗️</span><span class="btn-text">${translation.button_share_ticket}</span></button>`;
@@ -6155,18 +6156,18 @@ async function displayConfirmation(reservation) {
             }
         }
         actionsHTML += `<button class="btn-modern btn-home" onclick="resetAndGoHome()"><span class="btn-icon">🏠</span><span class="btn-text">${translation.button_new_booking_alt}</span></button>`;
-        
+
         actionsContainer.innerHTML = actionsHTML;
-    // ✅ NOTIFICATIONS - Programmer après confirmation réussie
+        // ✅ NOTIFICATIONS - Programmer après confirmation réussie
         if (reservation.status !== 'En attente de paiement') {
             try {
                 // Rappels locaux
                 await scheduleReminderNotifications(reservation);
-                
+
                 // Enregistrer pour push
                 const busId = reservation.busIdentifier || 'N/A';
                 await registerTokenWithBooking(reservation.bookingNumber, busId);
-                
+
                 console.log("✅ Notifications programmées pour", reservation.bookingNumber);
             } catch (notifError) {
                 console.warn("⚠️ Erreur notifications:", notifError);
@@ -6186,7 +6187,7 @@ async function displayReservations() {
 
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     // Étape 1 : Afficher un état de chargement
     listContainer.innerHTML = `<div class="loading-spinner">${translation.loading_bookings || 'Chargement...'}</div>`;
 
@@ -6242,11 +6243,11 @@ async function displayReservations() {
         console.log(`🔍 Récupération des détails pour ${uniqueBookingNumbers.length} réservation(s) unique(s).`);
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/details?ids=${uniqueBookingNumbers.join(',')}`);
         const data = await response.json();
-        
+
         if (!data.success || !Array.isArray(data.reservations)) {
             throw new Error("Réponse API invalide pour les détails des réservations.");
         }
-        
+
         allReservations = data.reservations;
 
         // Étape 6 : Gérer les cas où les réservations locales n'existent plus sur le serveur
@@ -6260,7 +6261,7 @@ async function displayReservations() {
                 </div>`;
             return;
         }
-        
+
         // Étape 7 : Synchroniser l'historique local avec les données du serveur (pour les cas de report)
         let historyChanged = false;
         const currentHistorySet = new Set(JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || []);
@@ -6273,7 +6274,7 @@ async function displayReservations() {
         if (historyChanged) {
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(Array.from(currentHistorySet)));
             // On relance la fonction pour s'assurer que le nouveau billet de report est bien affiché
-            return displayReservations(); 
+            return displayReservations();
         }
 
         // Étape 8 : Afficher les cartes de réservation (VOTRE CODE DE RENDU, INCHANGÉ)
@@ -6285,7 +6286,7 @@ async function displayReservations() {
                 const isReportPending = res.status === 'En attente de report';
                 const isReported = res.status === 'Reporté';
                 const isCancelled = res.status === 'Annulé' || res.status === 'Expiré';
-                
+
                 let statusHTML = '';
                 if (isConfirmed) {
                     statusHTML = `<span style="color: #73d700;">${translation.status_confirmed}</span>`;
@@ -6331,9 +6332,9 @@ async function displayReservations() {
 
                 let deleteButton = '';
                 if (!isPending && !isReportPending) {
-                     deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title}">🗑️</button>`;
+                    deleteButton = `<button class="btn-delete-local" onclick="removeBookingFromLocalHistory('${res.bookingNumber}')" title="${translation.button_delete_title}">🗑️</button>`;
                 }
-                
+
                 const formattedDate = Utils.formatDate(res.date, lang);
                 const dateTimeString = (translation.date_at_time || ((d, t) => `${d} à ${t}`))(formattedDate, res.route.departure);
 
@@ -6375,13 +6376,13 @@ async function displayReservations() {
 // ============================================
 function openTrackerPage(busId, bookingNumber) {
     const url = `/suivi/suivi.html?bus=${busId}&booking=${bookingNumber}`;
-    
+
     console.log(`🚌 Navigation vers : ${url}`);
 
     // Natif : Navigation interne
     if (window.Capacitor?.isNativePlatform()) {
         window.location.href = url;
-    } 
+    }
     // Web : Ouvrir dans nouvel onglet
     else {
         window.open(url, '_blank');
@@ -6435,7 +6436,7 @@ async function viewTicket(bookingNumber) {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     Utils.showToast(translation.loading_ticket || "Chargement du billet...", "info");
-    
+
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
         const data = await response.json();
@@ -6446,7 +6447,7 @@ async function viewTicket(bookingNumber) {
         } else {
             throw new Error(data.error || "Impossible de récupérer les détails du billet.");
         }
-    } catch(err) {
+    } catch (err) {
         Utils.showToast(err.message, "error");
     }
 }
@@ -6462,7 +6463,7 @@ async function viewPaymentInstructions(bookingNumber) {
         } else {
             throw new Error(data.error || "Impossible de récupérer les instructions.");
         }
-    } catch(err) {
+    } catch (err) {
         Utils.showToast(err.message, "error");
     }
 }
@@ -6475,44 +6476,44 @@ async function viewPaymentInstructions(bookingNumber) {
 // 🔄 FONCTIONNALITÉ DE REPORT DE VOYAGE
 // ============================================
 
-window.initiateReport = async function(bookingNumber) {
+window.initiateReport = async function (bookingNumber) {
     console.log('🔄 Initiation du report pour:', bookingNumber);
-    
+
     // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     try {
         // --- 2. Vérifier si le report est autorisé ---
         Utils.showToast(translation.toast_checking_conditions, 'info');
-        
+
         const canReportResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/can-report`);
         const canReportData = await canReportResponse.json();
-        
+
         if (!canReportData.success || !canReportData.canReport) {
             const reasons = canReportData.reasons?.join('\n') || translation.error_report_not_allowed;
             Utils.showToast(reasons, 'error');
             return;
         }
-        
+
         console.log('✅ Report autorisé. Nombre de reports:', canReportData.currentReportCount);
-        
+
         // --- 3. Récupérer les voyages disponibles ---
         Utils.showToast(translation.toast_searching_available_trips, 'info');
-        
+
         const tripsResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/available-trips`);
         const tripsData = await tripsResponse.json();
-        
+
         if (!tripsData.success || tripsData.count === 0) {
             Utils.showToast(translation.info_no_trips_found_report, 'warning');
             return;
         }
-        
+
         console.log(`✅ ${tripsData.count} voyage(s) disponible(s)`);
-        
+
         // --- 4. Afficher la modale ---
         displayReportModal(bookingNumber, tripsData.currentTrip, tripsData.availableTrips, canReportData.currentReportCount);
-        
+
     } catch (error) {
         console.error('❌ Erreur initiation report:', error);
         Utils.showToast(error.message || translation.error_generic, 'error');
@@ -6527,7 +6528,7 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
     // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     const modalTitle = document.getElementById('report-modal-title');
     const modalBody = document.getElementById('report-modal-body');
     if (modalTitle) modalTitle.textContent = translation.report_modal_title;
@@ -6549,10 +6550,10 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
         </div>
         
         <div class="report-warning">
-            ${reportCount === 0 
-                ? translation.report_first_free 
-                : (typeof translation.report_fee_applies === 'function' ? translation.report_fee_applies(reportCount + 1) : '')
-            }
+            ${reportCount === 0
+            ? translation.report_first_free
+            : (typeof translation.report_fee_applies === 'function' ? translation.report_fee_applies(reportCount + 1) : '')
+        }
         </div>
         
         <h3 style="margin-top: 24px; margin-bottom: 12px; color: var(--color-accent-glow);">
@@ -6561,12 +6562,12 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
         
         <div class="report-trips-list">
     `;
-    
+
     availableTrips.forEach(trip => {
         const availabilityClass = trip.availableSeats < 10 ? 'low' : '';
         const priceDiff = trip.route.price - currentTrip.price;
         let priceDiffHTML = '', priceDiffClass = 'neutral';
-        
+
         if (priceDiff > 0) {
             priceDiffHTML = translation.report_price_diff_positive(Utils.formatPrice(priceDiff));
             priceDiffClass = 'positive';
@@ -6576,7 +6577,7 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
         } else {
             priceDiffHTML = translation.report_price_diff_neutral;
         }
-        
+
         html += `
             <div class="report-trip-card" onclick="selectReportTrip('${trip.id}', '${bookingNumber}', ${reportCount})">
                 <div class="report-trip-header">
@@ -6592,45 +6593,45 @@ function displayReportModal(bookingNumber, currentTrip, availableTrips, reportCo
             </div>
         `;
     });
-    
+
     html += `
         </div>
         <div class="report-actions">
             <button class="btn btn-secondary" onclick="closeReportModal()">${translation.button_cancel}</button>
         </div>
     `;
-    
+
     modalBody.innerHTML = html;
     document.getElementById('report-modal').classList.add('active');
 }
 // ============================================
 // ✅ SÉLECTION D'UN VOYAGE POUR LE REPORT
 // ============================================
-window.selectReportTrip = async function(tripId, bookingNumber, currentReportCount) {
+window.selectReportTrip = async function (tripId, bookingNumber, currentReportCount) {
     console.log('🎯 Voyage sélectionné:', tripId);
-    
+
     // --- Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     document.querySelectorAll('.report-trip-card').forEach(card => card.classList.remove('selected'));
     event.currentTarget.classList.add('selected');
-    
+
     try {
         // ✅ TOAST TRADUIT
         Utils.showToast(translation.toast_report_calculating_cost, 'info');
-        
+
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/calculate-report-cost`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ newTripId: tripId })
         });
-        
+
         const data = await response.json();
         if (!data.success) throw new Error(data.error || translation.error_generic);
-        
+
         displayReportSummary(bookingNumber, tripId, data.calculation, currentReportCount);
-        
+
     } catch (error) {
         console.error('❌ Erreur calcul coût:', error);
         Utils.showToast(error.message, 'error');
@@ -6705,7 +6706,7 @@ function setupNotificationListeners() {
     // C'est le listener le plus important pour la navigation.
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
         console.log("👆 Action sur une notification Push:", action);
-        
+
         // Les données personnalisées que nous avons envoyées depuis le backend se trouvent ici :
         const data = action.notification.data;
 
@@ -6787,12 +6788,12 @@ function showRatingPage(tripId, bookingNumber) {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     const commentTextarea = document.getElementById('rating-comment');
-    
+
     // On met à jour le placeholder du champ de commentaire avec la bonne langue
     if (commentTextarea) {
         commentTextarea.placeholder = translation.rating_comment_placeholder || "Décrivez votre expérience...";
     }
-    
+
     // On réinitialise le formulaire (effacer les anciens commentaires et étoiles)
     const form = document.getElementById('rating-form');
     if (form) form.reset();
@@ -6813,11 +6814,11 @@ function showRatingPage(tripId, bookingNumber) {
     } else {
         console.error("La fonction setupStarRating() est manquante.");
     }
-    
+
     // On s'assure qu'il n'y a qu'un seul écouteur d'événement sur le formulaire
     // pour éviter les soumissions multiples.
     if (form) {
-        form.removeEventListener('submit', handleRatingSubmit); 
+        form.removeEventListener('submit', handleRatingSubmit);
         form.addEventListener('submit', handleRatingSubmit);
     }
 }
@@ -6829,13 +6830,13 @@ function showRatingPage(tripId, bookingNumber) {
  */
 async function handleRatingSubmit(event) {
     event.preventDefault(); // Empêche la page de se recharger
-    
+
     const submitButton = event.target.querySelector('button[type="submit"]');
     submitButton.disabled = true; // Désactive le bouton pour éviter les double-clics
 
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     // Récupération de la note globale (qui est obligatoire)
     const overallRatingValue = document.querySelector('.star-rating[data-category="overall"]').dataset.ratingValue;
     if (!overallRatingValue) {
@@ -6870,7 +6871,7 @@ async function handleRatingSubmit(event) {
         rating: rating,
         comment: document.getElementById('rating-comment').value.trim()
     };
-    
+
     console.log("📤 Envoi des données de l'avis au backend :", JSON.stringify(reviewData, null, 2));
 
     try {
@@ -6894,7 +6895,7 @@ async function handleRatingSubmit(event) {
             // Affiche l'erreur spécifique renvoyée par le serveur (ex: "Vous avez déjà noté ce voyage.")
             throw new Error(result.error || "Une erreur est survenue lors de l'envoi.");
         }
-        
+
         Utils.showToast(result.message, 'success');
         showPage('reservations'); // Redirige l'utilisateur vers la liste de ses réservations après succès
 
@@ -6918,7 +6919,7 @@ async function handleRatingSubmit(event) {
 // ============================================
 function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
     console.log("📊 Données reçues pour affichage:", calculation);
-    
+
     // --- 1. Récupération des traductions ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
@@ -6936,7 +6937,7 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
 
     // --- 3. Construction de la section de paiement ---
     let paymentSectionHTML = '';
-    
+
     if (isPaymentNeeded) {
         console.log("   -> Génération du formulaire de paiement...");
         paymentSectionHTML = `
@@ -6984,7 +6985,7 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
     // --- 4. Construction du récapitulatif HTML ---
     const diffColor = calculation.priceDifference >= 0 ? '#ff9800' : '#73d700';
     const diffSign = calculation.priceDifference >= 0 ? '+' : '';
-    
+
     let summaryHTML = `
         <div class="report-summary">
             <h3 style="margin-bottom: 16px; color: var(--color-accent-glow);">${translation.report_summary_title || "Récapitulatif"}</h3>
@@ -7026,22 +7027,22 @@ function displayReportSummary(bookingNumber, tripId, calculation, reportCount) {
             </button>
         </div>
     `;
-    
+
     // --- 5. Nettoyage et Injection ---
     const existingSummary = modalBody.querySelector('.report-summary');
     if (existingSummary) existingSummary.remove();
     const existingActions = modalBody.querySelector('.report-actions');
     if (existingActions) existingActions.remove();
-    
+
     modalBody.insertAdjacentHTML('beforeend', summaryHTML);
 }
 
 
 // Helper pour afficher/masquer les infos selon le mode de paiement
-window.toggleReportAgencyInfo = function(showAgency) {
+window.toggleReportAgencyInfo = function (showAgency) {
     const txInput = document.getElementById('report-transaction-input');
     const agencyInfo = document.getElementById('report-agency-info');
-    
+
     if (txInput && agencyInfo) {
         txInput.style.display = showAgency ? 'none' : 'block';
         agencyInfo.style.display = showAgency ? 'block' : 'none';
@@ -7051,10 +7052,10 @@ window.toggleReportAgencyInfo = function(showAgency) {
 // ✅ CONFIRMATION DU REPORT (VERSION FINALE)
 // ============================================
 
-window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, totalCost) {
+window.confirmReport = async function (bookingNumber, tripId, isPaymentRequired, totalCost) {
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
-    
+
     let transactionId = null;
     let paymentMethod = 'MTN';
 
@@ -7073,19 +7074,19 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
             transactionId = txInput.value.trim();
         }
     }
-    
+
     Utils.showToast(translation.toast_report_confirming, 'info');
-    
+
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}/confirm-report`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ newTripId: tripId, paymentMethod: paymentMethod, transactionId: transactionId })
         });
-        
+
         const data = await response.json();
         if (!data.success) throw new Error(data.error || translation.error_generic);
-        
+
         closeReportModal();
 
         if (data.requiresPayment) {
@@ -7095,7 +7096,7 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
             } else {
                 message = translation.confirm_request_sent_mm_desc(transactionId);
             }
-            
+
             await showCustomConfirm({
                 title: translation.confirm_request_sent_title,
                 message: message,
@@ -7107,9 +7108,9 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
             Utils.showToast(translation.toast_report_confirmed, 'success');
             if (data.newBookingNumber) addBookingToLocalHistory(data.newBookingNumber);
         }
-        
+
         displayReservations();
-        
+
     } catch (error) {
         console.error('❌ Erreur confirmation report:', error);
         Utils.showToast(error.message, 'error');
@@ -7132,7 +7133,7 @@ window.confirmReport = async function(bookingNumber, tripId, isPaymentRequired, 
 // 🚪 FERMETURE DE LA MODALE
 // ============================================
 
-window.closeReportModal = function() {
+window.closeReportModal = function () {
     document.getElementById('report-modal').classList.remove('active');
 };
 
@@ -7149,7 +7150,7 @@ async function loadTicketingRules() {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/settings/ticketing-rules`);
         const data = await response.json();
-        
+
         if (data.success && data.rules) {
             appRules.ticketing = { ...appRules.ticketing, ...data.rules };
             console.log("✅ Règles de tarification mises à jour :", appRules.ticketing);
@@ -7159,7 +7160,7 @@ async function loadTicketingRules() {
             // ========================================================
             updatePassengerSelectorUI();
             // ========================================================
-        } 
+        }
     } catch (error) {
         console.error("❌ Erreur chargement des règles:", error);
         // Même en cas d'erreur, on met à jour l'UI avec les valeurs par défaut
@@ -7173,7 +7174,7 @@ function addBookingToLocalHistory(bookingNumber) {
     try {
         let history = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         if (!history.includes(bookingNumber)) {
-            history.unshift(bookingNumber); 
+            history.unshift(bookingNumber);
             localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(history));
             console.log(`💾 Réservation ${bookingNumber} ajoutée à l'historique local.`);
         }
@@ -7203,11 +7204,11 @@ function resetBookingState() {
     appState.passengerInfo = [];
     appState.baggageCounts = {};
     appState.currentReservation = null;
-    
+
     console.log('✅ État de réservation réinitialisé');
 }
 
-window.resetAndGoHome = function() {
+window.resetAndGoHome = function () {
     resetBookingState();
     showPage('home');
 }
@@ -7239,17 +7240,17 @@ if (window.Capacitor?.isNativePlatform()) {
  * À appeler depuis la console du navigateur.
  * Exemple d'appel : testRatingPage('ID_DU_VOYAGE', 'NUMERO_DE_RESERVATION')
  */
-window.testRatingPage = function(tripId, bookingNumber) {
+window.testRatingPage = function (tripId, bookingNumber) {
     if (!tripId || !bookingNumber) {
         console.error("Veuillez fournir un tripId et un bookingNumber valides.");
         alert("Veuillez fournir un tripId et un bookingNumber valides.");
         return;
     }
-    
+
     console.log(`🚀 DÉBOGAGE : Forçage de l'ouverture de la page de notation...`);
     console.log(`   -> Trip ID: ${tripId}`);
     console.log(`   -> Booking Number: ${bookingNumber}`);
-    
+
     // On s'assure que l'utilisateur est connecté, car la soumission d'un avis le requiert.
     if (!currentUser) {
         alert("Veuillez vous connecter avec un compte Google avant de tester la notation.");
@@ -7297,7 +7298,7 @@ function setupSocialLinks() {
         twitter: `<svg viewBox="0 0 24 24"><path d="M12 2.04c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10-4.48-10-10-10zm5.2 7.74c.01.17.01.34.01.51 0 5.23-3.99 11.26-11.26 11.26-2.24 0-4.32-.66-6.08-1.78.31.04.62.06.94.06 1.85 0 3.56-.63 4.91-1.7-1.73-.03-3.19-1.18-3.69-2.76.24.04.49.07.74.07.36 0 .71-.05 1.05-.14-1.81-.36-3.18-1.96-3.18-3.8v-.05c.53.3 1.14.47 1.78.49-1.06-.71-1.75-1.92-1.75-3.26 0-.72.19-1.39.54-1.96 1.95 2.39 4.86 3.96 8.13 4.12-.07-.3-.1-.6-.1-.91 0-2.21 1.79-4 4-4 .58 0 1.15.25 1.54.64.46-.09.9-.26 1.29-.49-.15.47-.47.86-.88 1.11.41-.05.8-.16 1.17-.32-.28.4-.63.75-1.03 1.03z"/></svg>`,
         instagram: `<svg viewBox="0 0 24 24"><path d="M12 2.16c-2.7 0-3.04.01-4.1.06-1.06.05-1.79.22-2.42.47-.64.25-1.17.59-1.71 1.14-.54.54-.88 1.07-1.13 1.71-.25.63-.42 1.36-.47 2.42-.05 1.06-.06 1.4-.06 4.1s.01 3.04.06 4.1c.05 1.06.22 1.79.47 2.42.25.64.59 1.17 1.13 1.71.54.54 1.07.88 1.71 1.13.63.25 1.36.42 2.42.47 1.06.05 1.4.06 4.1.06s3.04-.01 4.1-.06c1.06-.05 1.79-.22 2.42-.47.64-.25 1.17-.59 1.71-1.13.54-.54.88-1.07 1.13-1.71.25-.63.42-1.36-.47-2.42.05-1.06.06-1.4.06-4.1s-.01-3.04-.06-4.1c-.05-1.06-.22-1.79-.47-2.42-.25-.64-.59-1.17-1.13-1.71-.54-.54-1.07-.88-1.71-1.13-.63-.25-1.36-.42-2.42-.47-1.06-.05-1.4-.06-4.1-.06zm0 1.8c2.61 0 2.94.01 3.98.06.96.04 1.5.21 1.9.38.48.2.8.45 1.17.82.37.37.62.7.82 1.17.17.4.34.94.38 1.9.05 1.04.06 1.37.06 3.98s-.01 2.94-.06 3.98c-.04.96-.21 1.5-.38 1.9-.2.48-.45.8-.82 1.17-.37.37-.7.62-1.17.82-.4.17-.94.34-1.9.38-1.04.05-1.37.06-3.98.06s-2.94-.01-3.98-.06c-.96-.04-1.5-.21-1.9-.38-.48-.2-.8-.45-1.17-.82-.37-.37-.62-.7-.82-1.17-.17-.4-.34-.94-.38-1.9-.05-1.04-.06-1.37-.06-3.98s.01-2.94.06-3.98c.04-.96.21-1.5.38-1.9.2-.48.45-.8.82-1.17.37-.37.7-.62-1.17-.82.4-.17.94-.34-1.9-.38 1.04-.05 1.37-.06 3.98-.06zM12 6.8c-2.87 0-5.2 2.33-5.2 5.2s2.33 5.2 5.2 5.2 5.2-2.33 5.2-5.2-2.33-5.2-5.2-5.2zm0 8.6c-1.88 0-3.4-1.52-3.4-3.4s1.52-3.4 3.4-3.4 3.4 1.52 3.4 3.4-1.52 3.4-3.4 3.4zM16.95 6.26c-.78 0-1.41.63-1.41 1.41s.63 1.41 1.41 1.41 1.41-.63 1.41-1.41-.63-1.41-1.41-1.41z"/></svg>`
     };
-    
+
     // ============================================
     // ✅ FIN DE LA MISE À JOUR
     // ============================================
@@ -7319,7 +7320,7 @@ function setupSocialLinks() {
 // ============================================
 if (window.Capacitor?.isNativePlatform()) {
     const { Keyboard } = Capacitor.Plugins;
-    
+
     // Quand le clavier s'ouvre, on remonte la vue
     Keyboard.addListener('keyboardWillShow', (info) => {
         document.body.style.paddingBottom = `${info.keyboardHeight}px`;

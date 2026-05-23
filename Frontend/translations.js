@@ -309,6 +309,20 @@ const translations = {
     summary_total_price: "PRIX TOTAL",
     payment_agency_desc_countdown: (h, m) => `⏰ Payez dans les ${h}h ${String(m).padStart(2, '0')}m`,
 
+    // ✅ ============================================
+    // ✅ AJOUTER CES TRADUCTIONS ICI
+    // ✅ ============================================
+    payment_badge_automatic: "Automatique",
+    payment_fedapay_desc: "💳 Carte bancaire, Mobile Money (Orange, Airtel, Moov)",
+    payment_fedapay_amount: "💰 Montant à payer (TTC)",
+    payment_fedapay_phone: "📱 Numéro de téléphone",
+    payment_fedapay_button: "💳 Passer au paiement sécurisé",
+    payment_fedapay_fee_info: (fee, total) => `Frais FedaPay : ${fee} FCFA | Total : ${total} FCFA`,
+    
+    error_fedapay_init: "Erreur lors de l'initialisation du paiement",
+    error_fedapay_phone_invalid: "Numéro de téléphone invalide",
+    toast_fedapay_redirecting: "Redirection vers le formulaire de paiement...",
+
 
     // --- Page Instructions de Paiement ---
     payment_instructions_title_agency: "Paiement à l'agence",
@@ -916,6 +930,20 @@ button_full: "COMPLET", // ✅ AJOUTER CETTE LIGNE
     summary_total_price: "TOTAL PRICE",
     payment_agency_desc_countdown: (h, m) => `⏰ Pay within ${h}h ${String(m).padStart(2, '0')}m`,
 
+
+     // ✅ ============================================
+    // ✅ AJOUTER CES TRADUCTIONS EN ANGLAIS
+    // ✅ ============================================
+    payment_badge_automatic: "Automatic",
+    payment_fedapay_desc: "💳 Bank card, Mobile Money (Orange, Airtel, Moov)",
+    payment_fedapay_amount: "💰 Total amount to pay (inc. fees)",
+    payment_fedapay_phone: "📱 Phone number",
+    payment_fedapay_button: "💳 Proceed to secure payment",
+    payment_fedapay_fee_info: (fee, total) => `FedaPay fees: ${fee} FCFA | Total: ${total} FCFA`,
+    
+    error_fedapay_init: "Error initializing payment",
+    error_fedapay_phone_invalid: "Invalid phone number",
+    toast_fedapay_redirecting: "Redirecting to payment form...",
 
     // --- Payment Instructions Page ---
     payment_instructions_title_agency: "Pay at Agency",
