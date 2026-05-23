@@ -1,11 +1,4 @@
 
-// ============================================
-// IMPORTATIONS EXTERNES
-// ============================================
-
-// ✅ Script FedaPay - À AJOUTER
-<script src="https://cdn.fedapay.com/checkout/checkout.js"></script>
-
 
 // ============================================
 // CONFIGURATION ET CONSTANTES
@@ -2245,7 +2238,7 @@ async function shareTicket() {
     const time = reservation.route.departure;
     const seat = reservation.seats.join(', ');
     const bookingNum = reservation.bookingNumber;
-    const url = `https://incomparable-llama-84897e.netlify.app/?booking=${bookingNum}`;
+    const url = `https://en-bus.netlify.app//?booking=${bookingNum}`;
 
     const shareData = {
         title: translation.share_message_subject(bookingNum),
