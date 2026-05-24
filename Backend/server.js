@@ -4729,22 +4729,26 @@ app.post("/api/payments/fedapay/create-transaction", [
     console.log(`💳 Création transaction FedaPay pour ${bookingNumber}`);
     
     // Appel à l'API FedaPay
-    const fedapayResponse = await axios.post('https://api.fedapay.com/v1/transactions', {
-      amount: Math.round(amount * 100), // FedaPay veut le montant en centimes
-      description: `Réservation ${bookingNumber}`,
-      customer: {
+   // ✅ CODE CORRIGÉ - Avec currency + montant corrigé
+const fedapayResponse = await axios.post('https://api.fedapay.com/v1/transactions', {
+    amount: Math.round(amount),        // ✅ Sans × 100 (FedaPay = XOF direct)
+    description: `Réservation ${bookingNumber}`,
+    currency: {                         // ✅ AJOUT OBLIGATOIRE
+        iso: 'XOF'                      // Franc CFA Ouest-Africain
+    },
+    customer: {
         firstname: customerName.split(' ')[0] || 'Client',
         lastname: customerName.split(' ')[1] || '',
         email: customerEmail,
         phone: phone
-      },
-      callback_url: `${process.env.FRONTEND_URL}?booking=${bookingNumber}`
-    }, {
-      headers: {
+    },
+    callback_url: `${process.env.FRONTEND_URL}?booking=${bookingNumber}`
+}, {
+    headers: {
         'Authorization': `Bearer ${process.env.FEDAPAY_SECRET_KEY}`,
         'Content-Type': 'application/json'
-      }
-    });
+    }
+});
     
     const transaction = fedapayResponse.data.data;
     
