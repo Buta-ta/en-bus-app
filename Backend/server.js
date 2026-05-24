@@ -4728,13 +4728,17 @@ app.post("/api/payments/fedapay/create-transaction", [
     
     console.log(`💳 Création transaction FedaPay pour ${bookingNumber}`);
     
+
+console.log('🔗 FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('🔗 callback_url:', `${process.env.FRONTEND_URL}?booking=${bookingNumber}`);
+
     // Appel à l'API FedaPay
-   // ✅ CODE CORRIGÉ - Avec currency + montant corrigé
+// ✅ CODE CORRIGÉ - callback_url sécurisé
 const fedapayResponse = await axios.post('https://api.fedapay.com/v1/transactions', {
-    amount: Math.round(amount),        // ✅ Sans × 100 (FedaPay = XOF direct)
+    amount: Math.round(amount),
     description: `Réservation ${bookingNumber}`,
-    currency: {                         // ✅ AJOUT OBLIGATOIRE
-        iso: 'XOF'                      // Franc CFA Ouest-Africain
+    currency: {
+        iso: 'XOF'
     },
     customer: {
         firstname: customerName.split(' ')[0] || 'Client',
@@ -4742,7 +4746,9 @@ const fedapayResponse = await axios.post('https://api.fedapay.com/v1/transaction
         email: customerEmail,
         phone: phone
     },
-    callback_url: `${process.env.FRONTEND_URL}?booking=${bookingNumber}`
+    // ✅ URL sécurisée avec fallback
+    callback_url: `${process.env.FRONTEND_URL || 'https://en-bus-app.onrender.com'}?booking=${bookingNumber}`
+    
 }, {
     headers: {
         'Authorization': `Bearer ${process.env.FEDAPAY_SECRET_KEY}`,
