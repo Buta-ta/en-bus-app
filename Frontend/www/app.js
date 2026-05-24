@@ -3825,6 +3825,8 @@ function setupPaymentMethodToggle() {
     const mtnDetails = document.getElementById("mtn-details");
     const airtelDetails = document.getElementById("airtel-details");
     const agencyDetails = document.getElementById("agency-details");
+    const fedapayDetails = document.getElementById("fedapay-details"); // ✅ AJOUTER CETTE LIGNE
+
 
     if (!radios.length) return;
 
@@ -3840,10 +3842,10 @@ function setupPaymentMethodToggle() {
     // ✅ DÉBUT DE LA CORRECTION : Refactorisation de la logique
     // ========================================================
 
-    // Fonction interne pour gérer la logique d'affichage
+      
     const updateDisplay = () => {
         const selectedRadio = document.querySelector('input[name="payment"]:checked');
-        if (!selectedRadio) return; // Sécurité si rien n'est coché
+        if (!selectedRadio) return;
 
         const selectedValue = selectedRadio.value;
 
@@ -3851,11 +3853,16 @@ function setupPaymentMethodToggle() {
         if (mtnDetails) mtnDetails.style.display = "none";
         if (airtelDetails) airtelDetails.style.display = "none";
         if (agencyDetails) agencyDetails.style.display = "none";
+        if (fedapayDetails) fedapayDetails.style.display = "none"; // ✅ AJOUTER
 
         // Afficher le bon détail
         if (selectedValue === "mtn" && mtnDetails) mtnDetails.style.display = "flex";
         else if (selectedValue === "airtel" && airtelDetails) airtelDetails.style.display = "flex";
         else if (selectedValue === "agency" && agencyDetails) agencyDetails.style.display = "flex";
+        else if (selectedValue === "fedapay" && fedapayDetails) { // ✅ AJOUTER
+            fedapayDetails.style.display = "flex";
+            updateFedapayFeeDisplay(); // ✅ AJOUTER
+        }
 
         // Gérer le décompteur de l'agence
         if (selectedValue === 'agency') {
@@ -3878,6 +3885,95 @@ function setupPaymentMethodToggle() {
     // ✅ FIN DE LA CORRECTION
     // ========================================================
 }
+
+
+
+// ============================================
+// ✅ FONCTIONS FEDAPAY - À AJOUTER ICI
+// ============================================
+
+function updateFedapayFeeDisplay() {
+  const fedapayAmountInput = document.getElementById('fedapay-amount');
+  const fedapayFeeInfo = document.getElementById('fedapay-fee-info');
+  
+  if (!fedapayAmountInput) return;
+  
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+  
+  // Récupère le prix total calculé
+  const priceDetails = Utils.calculateTotalPrice(appState);
+  const basePrice = priceDetails.total;
+  
+  // Frais FedaPay : 2.5%
+  const feePercentage = 2.5;
+  const fee = Math.round(basePrice * feePercentage / 100);
+  const totalWithFee = basePrice + fee;
+  
+  fedapayAmountInput.value = Utils.formatPrice(totalWithFee) + ' FCFA';
+  
+  if (typeof translation.payment_fedapay_fee_info === 'function') {
+    fedapayFeeInfo.innerHTML = translation.payment_fedapay_fee_info(
+      Utils.formatPrice(fee),
+      Utils.formatPrice(totalWithFee)
+    );
+  }
+}
+
+async function initiateFedapayPayment() {
+  const lang = getLanguage();
+  const translation = translations[lang] || translations.fr;
+  
+  const phone = document.getElementById('fedapay-phone').value.trim();
+  
+  if (!phone || !Utils.validatePhone(phone)) {
+    Utils.showToast(translation.error_fedapay_phone_invalid, 'error');
+    return;
+  }
+  
+  Utils.showToast(translation.toast_fedapay_redirecting, 'info');
+  
+  try {
+    const priceDetails = Utils.calculateTotalPrice(appState);
+    const feePercentage = 2.5;
+    const fee = Math.round(priceDetails.total * feePercentage / 100);
+    const totalWithFee = priceDetails.total + fee;
+    
+    // Appel au backend pour créer la transaction
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/create-transaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bookingNumber: Utils.generateBookingNumber(),
+        amount: totalWithFee,
+        phone: phone,
+        customerEmail: appState.passengerInfo[0]?.email || '',
+        customerName: appState.passengerInfo[0]?.name || ''
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || translation.error_fedapay_init);
+    }
+    
+    // Ouvrir le formulaire de paiement FedaPay
+    window.FedaPay.checkout({
+      publicKey: data.publicKey,
+      transaction: {
+        id: data.transactionId
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur FedaPay:', error);
+    Utils.showToast(error.message, 'error');
+  }
+}
+
+// ✅ FIN FONCTIONS FEDAPAY
+
 
 // ============================================
 // ✅ INITIALISATION DES FILTRES ÉQUIPEMENTS

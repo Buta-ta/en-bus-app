@@ -273,7 +273,7 @@
         </div>
 
 
-       
+
 
         <!-- 2. DROITE : Logo -->
         <div class="logo" onclick="showPage('home')">
@@ -332,9 +332,9 @@
 
         <div class="nav-actions">
           <!-- ✅ Bouton de connexion/déconnexion -->
-           <button id="auth-button-desktop" class="btn btn-secondary btn-sm">
-        <!-- Géré par JavaScript -->
-    </button>
+          <button id="auth-button-desktop" class="btn btn-secondary btn-sm">
+            <!-- Géré par JavaScript -->
+          </button>
         </div>
         <!-- 3. DROITE : Boutons langues (Desktop) -->
         <div class="language-selector desktop-only">
@@ -342,7 +342,7 @@
           <button class="lang-btn" onclick="changeLanguage('en')" aria-label="English">🇬🇧</button>
         </div>
 
-        
+
 
         <!-- 4. HAMBURGER : Mobile uniquement -->
         <button id="hamburger-btn" class="hamburger" aria-label="Ouvrir le menu" aria-expanded="false">
@@ -370,7 +370,7 @@
 
         </div>
 
-         
+
       </div>
     </div>
   </nav>
@@ -888,35 +888,37 @@
               </div>
 
 
-                   <!-- ✅ ============================================ -->
-          <!-- ✅ AJOUTER LE BLOC FEDAPAY ICI -->
-          <!-- ✅ ============================================ -->
-          <label class="payment-method">
-            <input type="radio" name="payment" value="fedapay" />
-            <div class="method-content">
-              <div class="method-icon">💳</div>
-              <div class="method-info">
-                <strong>Paiement Automatique <span class="method-badge" data-i18n="payment_badge_automatic">Automatique</span></strong>
-                <span data-i18n="payment_fedapay_desc">💳 Carte bancaire, Mobile Money (Orange, Airtel, Moov)</span>
-              </div>
-            </div>
-          </label>
+              <!-- ✅ ============================================ -->
+              <!-- ✅ AJOUTER LE BLOC FEDAPAY ICI -->
+              <!-- ✅ ============================================ -->
+              <label class="payment-method">
+                <input type="radio" name="payment" value="fedapay" />
+                <div class="method-content">
+                  <div class="method-icon">💳</div>
+                  <div class="method-info">
+                    <strong>Paiement Automatique <span class="method-badge"
+                        data-i18n="payment_badge_automatic">Automatique</span></strong>
+                    <span data-i18n="payment_fedapay_desc">💳 Carte bancaire, Mobile Money (Orange, Airtel, Moov)</span>
+                  </div>
+                </div>
+              </label>
 
-          <div class="payment-details-form" id="fedapay-details" style="display: none">
-            <div class="form-group">
-              <label data-i18n="payment_fedapay_amount">💰 Montant à payer (TTC)</label>
-              <input type="text" id="fedapay-amount" class="form-control" readonly />
-              <small id="fedapay-fee-info" style="color: var(--color-text-secondary); margin-top: 8px;"></small>
-            </div>
-            <div class="form-group">
-              <label for="fedapay-phone" data-i18n="payment_fedapay_phone">📱 Numéro de téléphone</label>
-              <input type="tel" id="fedapay-phone" class="form-control" placeholder="Ex: 242061234567" />
-            </div>
-            <button type="button" class="btn btn-primary" onclick="initiateFedapayPayment()" style="width: 100%; margin-top: 16px;">
-              <span data-i18n="payment_fedapay_button">💳 Passer au paiement sécurisé</span>
-            </button>
-          </div>
-          <!-- ✅ FIN DU BLOC FEDAPAY -->
+              <div class="payment-details-form" id="fedapay-details" style="display: none">
+                <div class="form-group">
+                  <label data-i18n="payment_fedapay_amount">💰 Montant à payer (TTC)</label>
+                  <input type="text" id="fedapay-amount" class="form-control" readonly />
+                  <small id="fedapay-fee-info" style="color: var(--color-text-secondary); margin-top: 8px;"></small>
+                </div>
+                <div class="form-group">
+                  <label for="fedapay-phone" data-i18n="payment_fedapay_phone">📱 Numéro de téléphone</label>
+                  <input type="tel" id="fedapay-phone" class="form-control" placeholder="Ex: 242061234567" />
+                </div>
+                <button type="button" class="btn btn-primary" onclick="initiateFedapayPayment()"
+                  style="width: 100%; margin-top: 16px;">
+                  <span data-i18n="payment_fedapay_button">💳 Passer au paiement sécurisé</span>
+                </button>
+              </div>
+              <!-- ✅ FIN DU BLOC FEDAPAY -->
             </div>
           </div>
         </div>
@@ -1219,82 +1221,115 @@
 
     <!-- DANS LE BODY DE index.html (client) -->
 
- <!-- ============================================
+    <!-- ============================================
      ⭐ PAGE DE NOTATION (Mise à jour)
      ============================================ -->
-<div id="rating-page" class="page">
-    <div class="page-header">
+    <div id="rating-page" class="page">
+      <div class="page-header">
         <h2 data-i18n="rating_page_title">Notez votre voyage</h2>
         <p id="rating-trip-info" data-i18n="rating_page_subtitle">Partagez votre expérience pour aider la communauté</p>
-    </div>
+      </div>
 
-    <form id="rating-form" class="content-card">
+      <form id="rating-form" class="content-card">
         <input type="hidden" id="rating-trip-id">
         <input type="hidden" id="rating-booking-number">
 
         <!-- Note Globale (Obligatoire) -->
         <div class="rating-group">
-            <label data-i18n="rating_label_overall">Note globale</label>
-            <div class="star-rating" data-category="overall">
-                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
-            </div>
+          <label data-i18n="rating_label_overall">Note globale</label>
+          <div class="star-rating" data-category="overall">
+            <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star"
+              data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star"
+              data-value="5">☆</span>
+          </div>
         </div>
 
         <!-- Ponctualité -->
         <div class="rating-group">
-            <label data-i18n="rating_label_punctuality">Ponctualité</label>
-            <div class="star-rating" data-category="punctuality">
-                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
-            </div>
+          <label data-i18n="rating_label_punctuality">Ponctualité</label>
+          <div class="star-rating" data-category="punctuality">
+            <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star"
+              data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star"
+              data-value="5">☆</span>
+          </div>
         </div>
 
         <!-- Chauffeur -->
         <div class="rating-group">
-            <label data-i18n="rating_label_driver">Chauffeur (amabilité, conduite)</label>
-            <div class="star-rating" data-category="driver">
-                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
-            </div>
+          <label data-i18n="rating_label_driver">Chauffeur (amabilité, conduite)</label>
+          <div class="star-rating" data-category="driver">
+            <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star"
+              data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star"
+              data-value="5">☆</span>
+          </div>
         </div>
-        
+
         <!-- ======================================================== -->
         <!-- ✅ BLOC AJOUTÉ POUR LA NOTE DU CONTRÔLEUR -->
         <!-- ======================================================== -->
         <div class="rating-group">
-            <label data-i18n="rating_label_controller">Contrôleur (accueil, service)</label>
-            <div class="star-rating" data-category="controller">
-                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
-            </div>
+          <label data-i18n="rating_label_controller">Contrôleur (accueil, service)</label>
+          <div class="star-rating" data-category="controller">
+            <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star"
+              data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star"
+              data-value="5">☆</span>
+          </div>
         </div>
         <!-- ======================================================== -->
 
         <!-- Confort -->
         <div class="rating-group">
-            <label data-i18n="rating_label_comfort">Confort & Propreté du bus</label>
-            <div class="star-rating" data-category="comfort">
-                <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star" data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star" data-value="5">☆</span>
-            </div>
+          <label data-i18n="rating_label_comfort">Confort & Propreté du bus</label>
+          <div class="star-rating" data-category="comfort">
+            <span class="star" data-value="1">☆</span><span class="star" data-value="2">☆</span><span class="star"
+              data-value="3">☆</span><span class="star" data-value="4">☆</span><span class="star"
+              data-value="5">☆</span>
+          </div>
         </div>
-        
+
         <!-- Commentaire -->
         <div class="form-group">
-            <label for="rating-comment" data-i18n="rating_label_comment">Votre commentaire (optionnel)</label>
-            <textarea id="rating-comment" class="form-control" rows="4"></textarea>
+          <label for="rating-comment" data-i18n="rating_label_comment">Votre commentaire (optionnel)</label>
+          <textarea id="rating-comment" class="form-control" rows="4"></textarea>
         </div>
 
         <!-- Bouton de soumission -->
         <button type="submit" class="btn btn-primary" data-i18n="rating_submit_button">Envoyer mon avis</button>
-    </form>
-</div>
+      </form>
+    </div>
 
-<!-- Ajoutez ce CSS -->
-<style>
-.star-rating { display: flex; font-size: 2.5rem; color: #ccc; cursor: pointer; }
-.star-rating .star { transition: color 0.2s; }
-.star-rating .star:hover, .star-rating .star.hover { color: #ffc107; }
-.star-rating .star.selected { color: #ff9800; }
-.rating-group { margin-bottom: 1.5rem; }
-.rating-group label { font-weight: 600; display: block; margin-bottom: 0.5rem; }
-</style>
+    <!-- Ajoutez ce CSS -->
+    <style>
+      .star-rating {
+        display: flex;
+        font-size: 2.5rem;
+        color: #ccc;
+        cursor: pointer;
+      }
+
+      .star-rating .star {
+        transition: color 0.2s;
+      }
+
+      .star-rating .star:hover,
+      .star-rating .star.hover {
+        color: #ffc107;
+      }
+
+      .star-rating .star.selected {
+        color: #ff9800;
+      }
+
+      .rating-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .rating-group label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+    </style>
   </main>
 
   <footer class="footer">
@@ -1363,72 +1398,72 @@
   <script src="translations.js"></script>
   <script src="app.js"></script>
   // ============================================
-// IMPORTATIONS EXTERNES
-// ============================================
+  // IMPORTATIONS EXTERNES
+  // ============================================
 
-// ✅ Script FedaPay - À AJOUTER
-<script src="https://cdn.fedapay.com/checkout/checkout.js"></script>
+  // ✅ Script FedaPay - À AJOUTER
+  <script src="https://cdn.fedapay.com/checkout/checkout.js"></script>
 
 
 
   <script>
     if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-            // --- 1. Enregistrement de votre Service Worker de cache (sw.js) ---
-            navigator.serviceWorker.register('/sw.js')
-                .then((registration) => {
-                    console.log("✅ Service Worker de cache enregistré:", registration.scope);
-                    
-                    // Votre logique de mise à jour existante est conservée
-                    registration.addEventListener("updatefound", () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener("statechange", () => {
-                            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                                // On pourrait afficher un toast personnalisé ici au lieu d'un confirm()
-                                const updateNotif = confirm("Une nouvelle version est disponible ! Mettre à jour maintenant ?");
-                                if (updateNotif) {
-                                    newWorker.postMessage({ type: "SKIP_WAITING" });
-                                    // Le 'controllerchange' s'occupera du rechargement
-                                }
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error("❌ Erreur enregistrement SW de cache:", error);
-                });
+      window.addEventListener("load", () => {
+        // --- 1. Enregistrement de votre Service Worker de cache (sw.js) ---
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log("✅ Service Worker de cache enregistré:", registration.scope);
 
-            // ========================================================
-            // ✅ DÉBUT DE L'AJOUT : Enregistrement du SW Firebase
-            // ========================================================
-            // On enregistre le deuxième Service Worker, dédié à Firebase Messaging.
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                .then((registration) => {
-                    console.log('✅ Service Worker Firebase enregistré:', registration.scope);
-                    // On vérifie que la bibliothèque Firebase est bien chargée avant de l'utiliser
-                    if (typeof firebase !== 'undefined' && typeof firebase.messaging === 'function') {
-                        const messaging = firebase.messaging();
-                        messaging.useServiceWorker(registration);
-                        console.log("Firebase Messaging utilise ce Service Worker.");
-                    } else {
-                        console.warn("La bibliothèque Firebase Messaging n'est pas prête au moment d'enregistrer le SW.");
-                    }
-                })
-                .catch((error) => {
-                    console.error('❌ Erreur enregistrement SW Firebase:', error);
-                });
-            // ========================================================
-            // ✅ FIN DE L'AJOUT
-            // ========================================================
-        });
+            // Votre logique de mise à jour existante est conservée
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  // On pourrait afficher un toast personnalisé ici au lieu d'un confirm()
+                  const updateNotif = confirm("Une nouvelle version est disponible ! Mettre à jour maintenant ?");
+                  if (updateNotif) {
+                    newWorker.postMessage({ type: "SKIP_WAITING" });
+                    // Le 'controllerchange' s'occupera du rechargement
+                  }
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.error("❌ Erreur enregistrement SW de cache:", error);
+          });
 
-        // Votre logique de rechargement automatique reste la même
-        let refreshing;
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (refreshing) return;
-            refreshing = true;
-            window.location.reload();
-        });
+        // ========================================================
+        // ✅ DÉBUT DE L'AJOUT : Enregistrement du SW Firebase
+        // ========================================================
+        // On enregistre le deuxième Service Worker, dédié à Firebase Messaging.
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log('✅ Service Worker Firebase enregistré:', registration.scope);
+            // On vérifie que la bibliothèque Firebase est bien chargée avant de l'utiliser
+            if (typeof firebase !== 'undefined' && typeof firebase.messaging === 'function') {
+              const messaging = firebase.messaging();
+              messaging.useServiceWorker(registration);
+              console.log("Firebase Messaging utilise ce Service Worker.");
+            } else {
+              console.warn("La bibliothèque Firebase Messaging n'est pas prête au moment d'enregistrer le SW.");
+            }
+          })
+          .catch((error) => {
+            console.error('❌ Erreur enregistrement SW Firebase:', error);
+          });
+        // ========================================================
+        // ✅ FIN DE L'AJOUT
+        // ========================================================
+      });
+
+      // Votre logique de rechargement automatique reste la même
+      let refreshing;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
     }
 
     // --- Le reste de votre code (prompt d'installation, online/offline) reste inchangé ---
