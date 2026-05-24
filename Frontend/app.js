@@ -3958,17 +3958,95 @@ async function initiateFedapayPayment() {
       throw new Error(data.error || translation.error_fedapay_init);
     }
     
-    // Ouvrir le formulaire de paiement FedaPay
-    window.FedaPay.checkout({
-      publicKey: data.publicKey,
-      transaction: {
-        id: data.transactionId
+    console.log('✅ Transaction créée:', data);
+    
+    // 🎯 Option 1: Redirection directe vers la page de paiement (plus fiable)
+    if (data.paymentUrl) {
+      console.log('🔗 Redirection vers:', data.paymentUrl);
+      // Sauvegarder le bookingNumber en sessionStorage pour le récupérer après paiement
+      sessionStorage.setItem('pendingBooking', Utils.generateBookingNumber());
+      window.location.href = data.paymentUrl;
+      return;
+    }
+    
+    // 🎯 Option 2: Utiliser le SDK FedaPay (si disponible)
+    if (window.FedaPay && typeof window.FedaPay.checkout === 'function') {
+      window.FedaPay.checkout({
+        publicKey: data.publicKey,
+        transaction: {
+          id: data.transactionId
+        },
+        // Callback optionnel après paiement
+        onClose: function() {
+          console.log('🔒 Modal FedaPay fermée');
+          // Optionnel: vérifier le statut du paiement après fermeture
+          setTimeout(() => checkPaymentStatus(data.transactionId), 3000);
+        }
+      });
+    } else {
+      // 🎯 Option 3: Fallback - charger le SDK dynamiquement puis rediriger
+      console.log('⚠️ SDK FedaPay non chargé, tentative de chargement...');
+      
+      await loadFedapaySDK(data.publicKey);
+      
+      if (window.FedaPay && typeof window.FedaPay.checkout === 'function') {
+        window.FedaPay.checkout({
+          publicKey: data.publicKey,
+          transaction: { id: data.transactionId }
+        });
+      } else {
+        // Dernier fallback: redirection directe
+        console.warn('⚠️ SDK toujours indisponible, redirection directe...');
+        window.location.href = `https://process.fedapay.com/${data.transactionId}`;
       }
-    });
+    }
     
   } catch (error) {
     console.error('❌ Erreur FedaPay:', error);
-    Utils.showToast(error.message, 'error');
+    Utils.showToast(error.message || translation.error_fedapay_init, 'error');
+  }
+}
+
+// 🎯 Helper: Charger le SDK FedaPay dynamiquement
+function loadFedapaySDK(publicKey) {
+  return new Promise((resolve, reject) => {
+    // Si déjà chargé, on résout immédiatement
+    if (window.FedaPay) {
+      return resolve();
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://js.fedapay.com/v1/fedapay.js';
+    script.async = true;
+    script.onload = () => {
+      // Initialiser le SDK avec la public key
+      if (window.FedaPay && typeof window.FedaPay.init === 'function') {
+        window.FedaPay.init({ publicKey: publicKey });
+      }
+      resolve();
+    };
+    script.onerror = () => {
+      console.error('❌ Échec chargement SDK FedaPay');
+      reject(new Error('Impossible de charger le module de paiement'));
+    };
+    
+    document.head.appendChild(script);
+  });
+}
+
+// 🎯 Helper: Vérifier le statut du paiement après retour
+async function checkPaymentStatus(transactionId) {
+  try {
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/verify/${transactionId}`);
+    const data = await response.json();
+    
+    if (data.success && data.status === 'completed') {
+      Utils.showToast('✅ Paiement confirmé !', 'success');
+      // Rediriger vers la page de confirmation
+      window.location.href = `/confirmation?booking=${sessionStorage.getItem('pendingBooking')}`;
+    }
+  } catch (error) {
+    console.error('❌ Erreur vérification statut:', error);
   }
 }
 
