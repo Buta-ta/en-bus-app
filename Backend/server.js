@@ -4723,18 +4723,22 @@ function parseFedapayResponse(responseData) {
 
 // 💳 CRÉER UNE TRANSACTION FEDAPAY
 app.post("/api/payments/fedapay/create-transaction", [
-  body('bookingNumber').notEmpty(),
-  body('amount').isInt({ min: 100 }),
-  body('phone').notEmpty(),
-  body('customerEmail').optional().isEmail(),
-  body('customerName').notEmpty()
+  body('bookingNumber').notEmpty().withMessage("Numéro de réservation requis"),
+  body('amount').isInt({ min: 100 }).withMessage("Montant minimum : 100 FCFA"),
+  body('phone').notEmpty().withMessage("Numéro de téléphone requis")
+    .matches(/^\+?[1-9]\d{7,14}$/).withMessage("Format téléphone invalide (ex: +22997001234)"),
+  body('customerEmail').optional().isEmail().withMessage("Email invalide"),
+  body('customerName').notEmpty().withMessage("Nom du client requis")
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     console.warn('⚠️ Validation échouée:', errors.array());
-    return res.status(400).json({ error: errors.array()[0].msg });
+    // Retourner TOUS les erreurs pour débogage frontend
+    return res.status(400).json({ 
+      error: "Données invalides",
+      details: errors.array().map(e => ({ field: e.path, message: e.msg }))
+    });
   }
-
   try {
     const { bookingNumber, amount, phone, customerEmail, customerName } = req.body;
 
@@ -4888,22 +4892,44 @@ app.get("/api/payments/fedapay/verify/:transactionId", async (req, res) => {
 });
 
 // ✅ WEBHOOK FEDAPAY - Notification de paiement
+// ✅ WEBHOOK FEDAPAY - Notification de paiement
 app.post("/webhooks/fedapay", async (req, res) => {
     try {
-        // 🎯 Parsing robuste du payload webhook
         const rawData = req.body;
-        const transaction = parseFedapayResponse(rawData);
 
-        if (!transaction?.id) {
-            console.warn('⚠️ Webhook reçu sans ID transaction:', rawData);
-            return res.status(400).json({ error: "Payload webhook invalide" });
+        // ========================================================
+        // ✅ FedaPay webhook structure : { name, object, entity, account }
+        // Les données de la transaction sont dans rawData.entity
+        // ========================================================
+        const entity = rawData?.entity;
+        const eventName = rawData?.name;
+
+        // Parsing robuste : essayer entity, puis parseFedapayResponse
+        let transaction = null;
+
+        if (entity && entity.id) {
+            transaction = entity;
+        } else {
+            transaction = parseFedapayResponse(rawData);
         }
 
-        console.log(`🔔 Webhook FedaPay reçu: ${transaction.id} - Status: ${transaction.status}`);
+        if (!transaction?.id) {
+            console.warn('⚠️ Webhook reçu sans ID transaction:', JSON.stringify({
+                name: eventName,
+                entity: entity ? { id: entity.id, status: entity.status } : null
+            }));
+            return res.status(200).json({ success: true });
+        }
+
+        const transactionId = transaction.id;
+        const status = transaction.status;
+
+        console.log(`🔔 Webhook FedaPay reçu: ${eventName || 'unknown'}`);
+        console.log(`   -> ID: ${transactionId}, Status: ${status}`);
 
         // Ignorer les statuts non finaux
-        if (!['completed', 'approved'].includes(transaction.status)) {
-            console.log(`   -> Statut ignoré (en attente): ${transaction.status}`);
+        if (!['completed', 'approved'].includes(status)) {
+            console.log(`   -> Statut ignoré: ${status}`);
             return res.json({ success: true });
         }
 
@@ -4911,16 +4937,31 @@ app.post("/webhooks/fedapay", async (req, res) => {
 
         // 🔍 Trouver la transaction dans notre DB
         const fedapayTx = await db.collection('fedapay_transactions').findOne({
-            fedapayTransactionId: transaction.id
+            fedapayTransactionId: transactionId
         });
 
         if (!fedapayTx) {
-            console.warn(`⚠️ Transaction FedaPay ${transaction.id} non trouvée en BD`);
-            // On retourne quand même 200 pour éviter les retries inutiles
+            console.warn(`⚠️ Transaction FedaPay ${transactionId} non trouvée en BD`);
             return res.json({ success: true });
         }
 
         console.log(`   -> Booking associé: ${fedapayTx.bookingNumber}`);
+
+        // 🔍 Vérifier si la réservation existe
+        const existingReservation = await db.collection('reservations').findOne({
+            bookingNumber: fedapayTx.bookingNumber
+        });
+
+        if (!existingReservation) {
+            console.warn(`⚠️ Réservation ${fedapayTx.bookingNumber} non trouvée`);
+            return res.json({ success: true });
+        }
+
+        // 🔍 Vérifier si déjà confirmé (éviter double traitement)
+        if (existingReservation.status === 'Confirmé') {
+            console.log(`   -> Déjà confirmé, on ignore`);
+            return res.json({ success: true });
+        }
 
         // 🔄 Mettre à jour la réservation
         const updateResult = await db.collection('reservations').updateOne(
@@ -4929,61 +4970,103 @@ app.post("/webhooks/fedapay", async (req, res) => {
                 $set: {
                     status: 'Confirmé',
                     paymentMethod: 'FEDAPAY',
-                    paymentStatus: 'paid',
                     confirmedAt: new Date(),
-                    'paymentDetails.fedapayTransactionId': transaction.id,
+                    'paymentDetails.fedapayTransactionId': transactionId,
                     'paymentDetails.confirmedByFedapay': true,
                     'paymentDetails.paidAt': new Date(),
-                    'paymentDetails.amount': transaction.amount / 100
+                    'paymentDetails.fedapayStatus': status
                 }
             }
         );
 
-        if (updateResult.matchedCount === 0) {
-            console.warn(`⚠️ Réservation ${fedapayTx.bookingNumber} non trouvée`);
+        if (updateResult.modifiedCount === 0) {
+            console.warn(`⚠️ Mise à jour échouée pour ${fedapayTx.bookingNumber}`);
             return res.json({ success: true });
         }
 
-        console.log(`   -> Réservation mise à jour: ${fedapayTx.bookingNumber}`);
+        console.log(`   -> ✅ Réservation confirmée: ${fedapayTx.bookingNumber}`);
 
         // 🔄 Mettre à jour la transaction FedaPay locale
         await db.collection('fedapay_transactions').updateOne(
-            { fedapayTransactionId: transaction.id },
-            { 
-                $set: { 
-                    status: 'COMPLETED', 
+            { fedapayTransactionId: transactionId },
+            {
+                $set: {
+                    status: 'COMPLETED',
                     completedAt: new Date(),
-                    fedapayData: transaction // Sauvegarde des données brutes pour audit
-                } 
+                    webhookData: {
+                        eventName: eventName,
+                        status: status,
+                        amount: transaction.amount,
+                        reference: transaction.reference
+                    }
+                }
             }
         );
 
         // 📧 Envoyer email de confirmation
-        const reservation = await db.collection('reservations').findOne({
-            bookingNumber: fedapayTx.bookingNumber
-        });
+        try {
+            const reservation = await db.collection('reservations').findOne({
+                bookingNumber: fedapayTx.bookingNumber
+            });
 
-        if (reservation?.customerEmail) {
-            console.log(`   -> Envoi email confirmation à ${reservation.customerEmail}...`);
-            try {
+            if (reservation) {
+                console.log(`   -> Envoi email confirmation...`);
                 await sendPaymentConfirmedEmail(reservation);
-                console.log(`   -> Email envoyé avec succès`);
-            } catch (emailError) {
-                console.error('❌ Erreur envoi email:', emailError);
-                // On ne bloque pas le webhook pour une erreur d'email
+                console.log(`   -> Email envoyé`);
             }
+        } catch (emailError) {
+            console.error('   -> ❌ Erreur email (non bloquant):', emailError.message);
         }
 
-        console.log(`✅ Paiement FedaPay confirmé pour ${fedapayTx.bookingNumber}`);
+        console.log(`✅ Webhook FedaPay traité avec succès pour ${fedapayTx.bookingNumber}`);
         res.json({ success: true });
 
     } catch (error) {
-        console.error('❌ Erreur webhook FedaPay:', {
-            message: error.message,
-            stack: error.stack
-        });
-        // Toujours retourner 200 pour éviter les retries infinis de FedaPay
+        console.error('❌ Erreur webhook FedaPay:', error.message);
         res.status(200).json({ success: false, error: "Erreur traitement webhook" });
+    }
+});
+
+
+
+// 🔍 VÉRIFIER LE STATUT D'UNE RÉSERVATION (pour le callback FedaPay)
+app.get("/api/reservations/check/:bookingNumber", async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+
+        if (!bookingNumber) {
+            return res.status(400).json({ error: "Numéro de réservation requis" });
+        }
+
+        const reservation = await getDb().collection('reservations').findOne(
+            { bookingNumber: bookingNumber },
+            {
+                projection: {
+                    bookingNumber: 1,
+                    status: 1,
+                    paymentMethod: 1,
+                    confirmedAt: 1,
+                    'paymentDetails.confirmedByFedapay': 1
+                }
+            }
+        );
+
+        if (!reservation) {
+            return res.status(404).json({ success: false, error: "Réservation non trouvée" });
+        }
+
+        res.json({
+            success: true,
+            bookingNumber: reservation.bookingNumber,
+            status: reservation.status,
+            paymentMethod: reservation.paymentMethod,
+            confirmedAt: reservation.confirmedAt,
+            isPaid: reservation.status === 'Confirmé'
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur vérification réservation:', error.message);
+        res.status(500).json({ error: "Erreur serveur" });
     }
 });
 
