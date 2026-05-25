@@ -3892,11 +3892,84 @@ function setupPaymentMethodToggle() {
 // ✅ FONCTIONS FEDAPAY - À AJOUTER ICI
 // ============================================
 
+// ============================================
+// ✅ FONCTIONS FEDAPAY - BLOC COMPLET CORRIGÉ
+// ============================================
+
+// 🎯 Helper: Valider un téléphone pour FedaPay (format international requis)
+Utils.validateFedapayPhone = function(phone) {
+  if (!phone) return false;
+  
+  // Nettoyer le numéro : supprimer espaces, tirets, points, parenthèses
+  const clean = phone.replace(/[\s\-\.\(\)]/g, '');
+  
+  // Pattern : + ou 00, puis indicatif pays, puis 8-12 chiffres
+  const pattern = /^(\+|00)[1-9]\d{7,14}$/;
+  if (!pattern.test(clean)) return false;
+  
+  // Vérifier indicatifs pays supportés par FedaPay (Afrique de l'Ouest)
+  const countryCode = clean.replace(/^(\+|00)/, '').substring(0, 3);
+  const supportedCountries = ['229', '225', '228', '221', '223', '226', '227', '220', '222', '245'];
+  
+  return supportedCountries.includes(countryCode);
+};
+
+// 🎯 Helper: Attendre que le SDK FedaPay soit chargé et prêt
+function waitForFedapaySDK(timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    // Déjà chargé et prêt ?
+    if (window.FedaPay && typeof window.FedaPay.init === 'function') {
+      return resolve();
+    }
+    
+    const startTime = Date.now();
+    const checkInterval = setInterval(() => {
+      if (window.FedaPay && typeof window.FedaPay.init === 'function') {
+        clearInterval(checkInterval);
+        resolve();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(checkInterval);
+        console.error('❌ Timeout chargement SDK FedaPay');
+        reject(new Error('Module de paiement non disponible'));
+      }
+    }, 100);
+  });
+}
+
+// 🎯 Helper: Vérifier le statut du paiement après retour FedaPay
+async function checkPaymentStatus(transactionId, bookingNumber) {
+  try {
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/verify/${transactionId}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      if (data.status === 'completed' || data.status === 'approved') {
+        Utils.showToast('✅ Paiement confirmé !', 'success');
+        // Nettoyer sessionStorage et rediriger
+        sessionStorage.removeItem('pendingBooking');
+        sessionStorage.removeItem('pendingTransactionId');
+        window.location.href = `/confirmation?booking=${bookingNumber}&status=success`;
+        return true;
+      } else if (data.status === 'pending') {
+        Utils.showToast('⏳ Paiement en cours de validation...', 'info');
+        return false;
+      } else {
+        Utils.showToast('❌ Paiement non validé', 'error');
+        return false;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erreur vérification statut:', error);
+    return false;
+  }
+}
+
+// 🎯 Mise à jour de l'affichage des frais FedaPay
 function updateFedapayFeeDisplay() {
   const fedapayAmountInput = document.getElementById('fedapay-amount');
   const fedapayFeeInfo = document.getElementById('fedapay-fee-info');
   
-  if (!fedapayAmountInput) return;
+  if (!fedapayAmountInput || !fedapayFeeInfo) return;
   
   const lang = getLanguage();
   const translation = translations[lang] || translations.fr;
@@ -3908,7 +3981,15 @@ function updateFedapayFeeDisplay() {
   // Frais FedaPay : 2.5%
   const feePercentage = 2.5;
   const fee = Math.round(basePrice * feePercentage / 100);
-  const totalWithFee = basePrice + fee;
+  let totalWithFee = basePrice + fee;
+  
+  // 🔹 Forcer montant minimum 100 FCFA (requis FedaPay production)
+  if (totalWithFee < 100) {
+    totalWithFee = 100;
+  }
+  
+  // Arrondir à l'entier pour éviter les décimaux
+  totalWithFee = Math.round(totalWithFee);
   
   fedapayAmountInput.value = Utils.formatPrice(totalWithFee) + ' FCFA';
   
@@ -3920,133 +4001,154 @@ function updateFedapayFeeDisplay() {
   }
 }
 
+// 🎯 Fonction principale : Initier un paiement FedaPay
 async function initiateFedapayPayment() {
   const lang = getLanguage();
   const translation = translations[lang] || translations.fr;
   
-  const phone = document.getElementById('fedapay-phone').value.trim();
+  // 🔹 Récupérer et valider le téléphone
+  const phoneInput = document.getElementById('fedapay-phone');
+  const phone = phoneInput?.value.trim() || '';
   
-  if (!phone || !Utils.validatePhone(phone)) {
-    Utils.showToast(translation.error_fedapay_phone_invalid, 'error');
+  if (!phone || !Utils.validateFedapayPhone(phone)) {
+    Utils.showToast('Numéro de téléphone invalide. Exemple: +22997001234', 'error');
+    phoneInput?.focus();
     return;
   }
   
-  Utils.showToast(translation.toast_fedapay_redirecting, 'info');
+  // 🔹 Calculer le montant total avec frais
+  const priceDetails = Utils.calculateTotalPrice(appState);
+  const feePercentage = 2.5;
+  const fee = Math.round(priceDetails.total * feePercentage / 100);
+  let totalWithFee = priceDetails.total + fee;
+  
+  // 🔹 Forcer montant minimum 100 FCFA (requis FedaPay production)
+  if (totalWithFee < 100) {
+    console.warn(`⚠️ Montant ${totalWithFee} FCFA < 100, ajustement à 100 FCFA`);
+    totalWithFee = 100;
+  }
+  
+  // 🔹 Arrondir et convertir en entier (FedaPay attend des centimes ou entiers)
+  totalWithFee = Math.round(totalWithFee);
+  
+  // 🔹 Générer le bookingNumber AVANT l'appel API (pour cohérence frontend/backend)
+  const bookingNumber = Utils.generateBookingNumber();
+  
+  Utils.showToast(translation.toast_fedapay_redirecting || 'Initialisation du paiement...', 'info');
   
   try {
-    const priceDetails = Utils.calculateTotalPrice(appState);
-    const feePercentage = 2.5;
-    const fee = Math.round(priceDetails.total * feePercentage / 100);
-    const totalWithFee = priceDetails.total + fee;
-    
-    // Appel au backend pour créer la transaction
+    // 🔹 Appel au backend pour créer la transaction
     const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/create-transaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        bookingNumber: Utils.generateBookingNumber(),
-        amount: totalWithFee,
+        bookingNumber: bookingNumber,  // ← Utiliser le MÊME bookingNumber
+        amount: totalWithFee,          // ← Montant entier, ≥ 100 FCFA
         phone: phone,
-        customerEmail: appState.passengerInfo[0]?.email || '',
-        customerName: appState.passengerInfo[0]?.name || ''
+        customerEmail: appState.passengerInfo[0]?.email || 'noreply@en-bus.com',
+        customerName: appState.passengerInfo[0]?.name || 'Client'
       })
     });
     
     const data = await response.json();
     
-    if (!data.success) {
-      throw new Error(data.error || translation.error_fedapay_init);
+    // 🔹 Gestion des erreurs de validation backend
+    if (!response.ok || !data.success) {
+      let errorMsg = data.error || translation.error_fedapay_init || 'Erreur de paiement';
+      
+      // Afficher les détails de validation si présents (pour débogage)
+      if (data.details && Array.isArray(data.details)) {
+        errorMsg = data.details.map(d => `${d.field}: ${d.message}`).join(', ');
+        console.warn('⚠️ Erreurs de validation:', data.details);
+      }
+      
+      throw new Error(errorMsg);
     }
     
-    console.log('✅ Transaction créée:', data);
+    console.log('✅ Transaction créée:', {
+      id: data.transactionId,
+      paymentUrl: data.paymentUrl,
+      booking: bookingNumber
+    });
     
-    // 🎯 Option 1: Redirection directe vers la page de paiement (plus fiable)
+    // 🔹 Sauvegarder les infos pour le retour après paiement
+    sessionStorage.setItem('pendingBooking', bookingNumber);
+    sessionStorage.setItem('pendingTransactionId', data.transactionId);
+    
+    // 🔹 OPTION 1 (RECOMMANDÉE) : Redirection directe vers la page de paiement FedaPay
     if (data.paymentUrl) {
       console.log('🔗 Redirection vers:', data.paymentUrl);
-      // Sauvegarder le bookingNumber en sessionStorage pour le récupérer après paiement
-      sessionStorage.setItem('pendingBooking', Utils.generateBookingNumber());
       window.location.href = data.paymentUrl;
       return;
     }
     
-    // 🎯 Option 2: Utiliser le SDK FedaPay (si disponible)
-    if (window.FedaPay && typeof window.FedaPay.checkout === 'function') {
-      window.FedaPay.checkout({
-        publicKey: data.publicKey,
+    // 🔹 OPTION 2 : Utiliser le SDK FedaPay avec modal (si redirection non disponible)
+    try {
+      // Attendre que le SDK soit prêt
+      await waitForFedapaySDK();
+      
+      // Initialiser le widget avec l'API CORRECTE : init() + open()
+      const widget = window.FedaPay.init({
+        public_key: data.publicKey,  // ← Attention : 'public_key' avec underscore
         transaction: {
           id: data.transactionId
         },
-        // Callback optionnel après paiement
-        onClose: function() {
-          console.log('🔒 Modal FedaPay fermée');
-          // Optionnel: vérifier le statut du paiement après fermeture
-          setTimeout(() => checkPaymentStatus(data.transactionId), 3000);
+        // Callbacks optionnels
+        onComplete: function(resp) {
+          console.log('🔔 Paiement terminé:', resp?.reason);
+          
+          if (resp?.reason === window.FedaPay?.CHECKOUT_COMPLETED) {
+            Utils.showToast('✅ Paiement réussi !', 'success');
+            checkPaymentStatus(data.transactionId, bookingNumber);
+          } else if (resp?.reason === window.FedaPay?.DIALOG_DISMISSED) {
+            Utils.showToast('ℹ️ Paiement annulé par l\'utilisateur', 'info');
+          } else {
+            Utils.showToast('⚠️ Paiement interrompu', 'warning');
+          }
+        },
+        onError: function(err) {
+          console.error('❌ Erreur widget FedaPay:', err);
+          Utils.showToast('Erreur technique lors du paiement', 'error');
         }
       });
-    } else {
-      // 🎯 Option 3: Fallback - charger le SDK dynamiquement puis rediriger
-      console.log('⚠️ SDK FedaPay non chargé, tentative de chargement...');
       
-      await loadFedapaySDK(data.publicKey);
+      // Ouvrir la modale de paiement
+      widget.open();
       
-      if (window.FedaPay && typeof window.FedaPay.checkout === 'function') {
-        window.FedaPay.checkout({
-          publicKey: data.publicKey,
-          transaction: { id: data.transactionId }
-        });
-      } else {
-        // Dernier fallback: redirection directe
-        console.warn('⚠️ SDK toujours indisponible, redirection directe...');
-        window.location.href = `https://process.fedapay.com/${data.transactionId}`;
-      }
+    } catch (sdkError) {
+      // 🔹 OPTION 3 (FALLBACK) : Redirection directe en cas d'échec du SDK
+      console.warn('⚠️ Échec SDK FedaPay, fallback vers redirection:', sdkError);
+      
+      // Construire l'URL de paiement manuellement si paymentUrl manquant
+      const fallbackUrl = data.paymentUrl || `https://process.fedapay.com/${data.transactionId}`;
+      window.location.href = fallbackUrl;
     }
     
   } catch (error) {
-    console.error('❌ Erreur FedaPay:', error);
-    Utils.showToast(error.message || translation.error_fedapay_init, 'error');
-  }
-}
-
-// 🎯 Helper: Charger le SDK FedaPay dynamiquement
-function loadFedapaySDK(publicKey) {
-  return new Promise((resolve, reject) => {
-    // Si déjà chargé, on résout immédiatement
-    if (window.FedaPay) {
-      return resolve();
-    }
+    console.error('❌ Erreur FedaPay:', {
+      message: error.message,
+      stack: error.stack
+    });
     
-    const script = document.createElement('script');
-    script.src = 'https://js.fedapay.com/v1/fedapay.js';
-    script.async = true;
-    script.onload = () => {
-      // Initialiser le SDK avec la public key
-      if (window.FedaPay && typeof window.FedaPay.init === 'function') {
-        window.FedaPay.init({ publicKey: publicKey });
+    // Messages utilisateur plus clairs selon le type d'erreur
+    let userMessage = error.message;
+    if (error.message.includes('100 FCFA') || error.message.includes('amount')) {
+      userMessage = 'Montant minimum requis : 100 FCFA';
+    } else if (error.message.includes('téléphone') || error.message.includes('phone')) {
+      userMessage = 'Numéro de téléphone invalide. Format: +22997001234';
+    } else if (error.message.includes('URL') || error.message.includes('callback')) {
+      userMessage = 'Erreur de configuration. Veuillez réessayer.';
+    } else if (error.message.includes('FedaPay non disponible') || error.message.includes('SDK')) {
+      userMessage = 'Module de paiement indisponible. Redirection en cours...';
+      // Tenter une redirection de dernier recours
+      const transactionId = sessionStorage.getItem('pendingTransactionId');
+      if (transactionId) {
+        window.location.href = `https://process.fedapay.com/${transactionId}`;
+        return;
       }
-      resolve();
-    };
-    script.onerror = () => {
-      console.error('❌ Échec chargement SDK FedaPay');
-      reject(new Error('Impossible de charger le module de paiement'));
-    };
-    
-    document.head.appendChild(script);
-  });
-}
-
-// 🎯 Helper: Vérifier le statut du paiement après retour
-async function checkPaymentStatus(transactionId) {
-  try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/verify/${transactionId}`);
-    const data = await response.json();
-    
-    if (data.success && data.status === 'completed') {
-      Utils.showToast('✅ Paiement confirmé !', 'success');
-      // Rediriger vers la page de confirmation
-      window.location.href = `/confirmation?booking=${sessionStorage.getItem('pendingBooking')}`;
     }
-  } catch (error) {
-    console.error('❌ Erreur vérification statut:', error);
+    
+    Utils.showToast(userMessage || translation.error_fedapay_init || 'Erreur de paiement', 'error');
   }
 }
 
