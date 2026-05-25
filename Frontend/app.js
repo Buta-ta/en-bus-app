@@ -4022,28 +4022,47 @@ async function initiateFedapayPayment() {
   const fee = Math.round(priceDetails.total * feePercentage / 100);
   let totalWithFee = priceDetails.total + fee;
   
-  // 🔹 Forcer montant minimum 100 FCFA (requis FedaPay production)
   if (totalWithFee < 100) {
-    console.warn(`⚠️ Montant ${totalWithFee} FCFA < 100, ajustement à 100 FCFA`);
     totalWithFee = 100;
   }
   
-  // 🔹 Arrondir et convertir en entier (FedaPay attend des centimes ou entiers)
   totalWithFee = Math.round(totalWithFee);
   
-  // 🔹 Générer le bookingNumber AVANT l'appel API (pour cohérence frontend/backend)
   const bookingNumber = Utils.generateBookingNumber();
   
-  Utils.showToast(translation.toast_fedapay_redirecting || 'Initialisation du paiement...', 'info');
+  Utils.showToast('Création de la réservation...', 'info');
   
   try {
-    // 🔹 Appel au backend pour créer la transaction
+    // ========================================================
+    // ✅ ÉTAPE 1 : Créer la réservation EN ATTENTE d'abord
+    // ========================================================
+    const reservationData = buildReservationData(bookingNumber, 'FEDAPAY', totalWithFee);
+    
+    const createResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservationData)
+    });
+    
+    const createData = await createResponse.json();
+    
+    if (!createResponse.ok || !createData.success) {
+      throw new Error(createData.error || 'Erreur création réservation');
+    }
+    
+    console.log(`✅ Réservation créée: ${bookingNumber} (en attente)`);
+    
+    // ========================================================
+    // ✅ ÉTAPE 2 : Créer la transaction FedaPay
+    // ========================================================
+    Utils.showToast(translation.toast_fedapay_redirecting || 'Initialisation du paiement...', 'info');
+    
     const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/create-transaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        bookingNumber: bookingNumber,  // ← Utiliser le MÊME bookingNumber
-        amount: totalWithFee,          // ← Montant entier, ≥ 100 FCFA
+        bookingNumber: bookingNumber,
+        amount: totalWithFee,
         phone: phone,
         customerEmail: appState.passengerInfo[0]?.email || 'noreply@en-bus.com',
         customerName: appState.passengerInfo[0]?.name || 'Client'
@@ -4052,58 +4071,41 @@ async function initiateFedapayPayment() {
     
     const data = await response.json();
     
-    // 🔹 Gestion des erreurs de validation backend
     if (!response.ok || !data.success) {
       let errorMsg = data.error || translation.error_fedapay_init || 'Erreur de paiement';
-      
-      // Afficher les détails de validation si présents (pour débogage)
-      if (data.details && Array.isArray(data.details)) {
-        errorMsg = data.details.map(d => `${d.field}: ${d.message}`).join(', ');
-        console.warn('⚠️ Erreurs de validation:', data.details);
-      }
-      
       throw new Error(errorMsg);
     }
     
     console.log('✅ Transaction créée:', {
       id: data.transactionId,
-      paymentUrl: data.paymentUrl,
       booking: bookingNumber
     });
     
-    // 🔹 Sauvegarder les infos pour le retour après paiement
+    // Sauvegarder les infos pour le retour
     sessionStorage.setItem('pendingBooking', bookingNumber);
     sessionStorage.setItem('pendingTransactionId', data.transactionId);
     
-    // 🔹 OPTION 1 (RECOMMANDÉE) : Redirection directe vers la page de paiement FedaPay
+    // ========================================================
+    // ✅ ÉTAPE 3 : Ouvrir le paiement FedaPay
+    // ========================================================
     if (data.paymentUrl) {
-      console.log('🔗 Redirection vers:', data.paymentUrl);
       window.location.href = data.paymentUrl;
       return;
     }
     
-    // 🔹 OPTION 2 : Utiliser le SDK FedaPay avec modal (si redirection non disponible)
+    // Fallback : SDK FedaPay
     try {
-      // Attendre que le SDK soit prêt
       await waitForFedapaySDK();
       
-      // Initialiser le widget avec l'API CORRECTE : init() + open()
       const widget = window.FedaPay.init({
-        public_key: data.publicKey,  // ← Attention : 'public_key' avec underscore
-        transaction: {
-          id: data.transactionId
-        },
-        // Callbacks optionnels
+        public_key: data.publicKey,
+        transaction: { id: data.transactionId },
         onComplete: function(resp) {
-          console.log('🔔 Paiement terminé:', resp?.reason);
-          
           if (resp?.reason === window.FedaPay?.CHECKOUT_COMPLETED) {
             Utils.showToast('✅ Paiement réussi !', 'success');
-            checkPaymentStatus(data.transactionId, bookingNumber);
-          } else if (resp?.reason === window.FedaPay?.DIALOG_DISMISSED) {
-            Utils.showToast('ℹ️ Paiement annulé par l\'utilisateur', 'info');
+            verifyAndRedirectFedapay(bookingNumber, data.transactionId);
           } else {
-            Utils.showToast('⚠️ Paiement interrompu', 'warning');
+            Utils.showToast('ℹ️ Paiement annulé', 'info');
           }
         },
         onError: function(err) {
@@ -4112,44 +4114,57 @@ async function initiateFedapayPayment() {
         }
       });
       
-      // Ouvrir la modale de paiement
       widget.open();
       
     } catch (sdkError) {
-      // 🔹 OPTION 3 (FALLBACK) : Redirection directe en cas d'échec du SDK
-      console.warn('⚠️ Échec SDK FedaPay, fallback vers redirection:', sdkError);
-      
-      // Construire l'URL de paiement manuellement si paymentUrl manquant
-      const fallbackUrl = data.paymentUrl || `https://process.fedapay.com/${data.transactionId}`;
+      const fallbackUrl = `https://process.fedapay.com/${data.transactionId}`;
       window.location.href = fallbackUrl;
     }
     
   } catch (error) {
-    console.error('❌ Erreur FedaPay:', {
-      message: error.message,
-      stack: error.stack
-    });
-    
-    // Messages utilisateur plus clairs selon le type d'erreur
-    let userMessage = error.message;
-    if (error.message.includes('100 FCFA') || error.message.includes('amount')) {
-      userMessage = 'Montant minimum requis : 100 FCFA';
-    } else if (error.message.includes('téléphone') || error.message.includes('phone')) {
-      userMessage = 'Numéro de téléphone invalide. Format: +22997001234';
-    } else if (error.message.includes('URL') || error.message.includes('callback')) {
-      userMessage = 'Erreur de configuration. Veuillez réessayer.';
-    } else if (error.message.includes('FedaPay non disponible') || error.message.includes('SDK')) {
-      userMessage = 'Module de paiement indisponible. Redirection en cours...';
-      // Tenter une redirection de dernier recours
-      const transactionId = sessionStorage.getItem('pendingTransactionId');
-      if (transactionId) {
-        window.location.href = `https://process.fedapay.com/${transactionId}`;
-        return;
-      }
-    }
-    
-    Utils.showToast(userMessage || translation.error_fedapay_init || 'Erreur de paiement', 'error');
+    console.error('❌ Erreur FedaPay:', error);
+    Utils.showToast(error.message, 'error');
   }
+}
+
+// ========================================================
+// ✅ Helper : Construire les données de réservation
+// ========================================================
+function buildReservationData(bookingNumber, paymentMethod, totalPrice) {
+  // Récupère les données du formulaire (adapte selon ton code existant)
+  const passengers = appState.passengerInfo.map((p, i) => ({
+    seat: appState.selectedSeats[i],
+    name: p.name,
+    phone: p.phone,
+    email: p.email,
+    baggage: p.baggage || { standard: 0, oversized: 0 }
+  }));
+  
+  const data = {
+    bookingNumber: bookingNumber,
+    route: appState.selectedTrip,
+    date: appState.selectedTrip.date,
+    passengers: passengers,
+    seats: appState.selectedSeats,
+    totalPrice: Utils.formatPrice(totalPrice) + ' FCFA',
+    totalPriceNumeric: totalPrice,
+    paymentMethod: paymentMethod,
+    busIdentifier: appState.selectedTrip.busIdentifier || null,
+    status: 'En attente de paiement',
+    createdAt: new Date(),
+    customerPhone: passengers[0]?.phone || '',
+    lang: getLanguage()
+  };
+  
+  // Ajouter le retour si applicable
+  if (appState.returnTrip) {
+    data.returnRoute = appState.returnTrip;
+    data.returnDate = appState.returnTrip.date;
+    data.returnSeats = appState.returnSeats || [];
+    data.returnBusIdentifier = appState.returnTrip.busIdentifier || null;
+  }
+  
+  return data;
 }
 
 // ✅ FIN FONCTIONS FEDAPAY
