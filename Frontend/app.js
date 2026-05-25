@@ -4143,36 +4143,45 @@ function handleFedapayCallback() {
 }
 
 // Vérifier via l'API FedaPay puis rediriger
+// Vérifier via FedaPay API puis confirmer et rediriger
 async function verifyAndRedirectFedapay(bookingNumber, transactionId) {
   try {
     let attempts = 0;
     const maxAttempts = 15;
+    let confirmed = false;
 
-    const checkReservation = async () => {
+    const tryConfirm = async () => {
       try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${bookingNumber}`);
+        // ✅ Appeler la route de confirmation manuelle
+        // Elle vérifie directement auprès de FedaPay et confirme si approved
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/confirm/${bookingNumber}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transactionId: transactionId })
+        });
+
         const data = await response.json();
 
-        console.log(`📋 Tentative ${attempts + 1}: Statut = ${data.status}`);
+        console.log(`📋 Tentative ${attempts + 1}: ${data.status} - ${data.message || ''}`);
 
-        if (data.success && data.status === 'Confirmé') {
+        if (data.success && (data.status === 'confirmed' || data.status === 'already_confirmed')) {
           return true;
         }
         return false;
       } catch (e) {
-        console.warn(`⚠️ Erreur vérification tentative ${attempts + 1}:`, e.message);
+        console.warn(`⚠️ Erreur tentative ${attempts + 1}:`, e.message);
         return false;
       }
     };
 
     // Première vérification immédiate
-    let confirmed = await checkReservation();
+    confirmed = await tryConfirm();
 
-    // Réessayer toutes les secondes
+    // Réessayer toutes les 2 secondes
     while (!confirmed && attempts < maxAttempts) {
       attempts++;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      confirmed = await checkReservation();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      confirmed = await tryConfirm();
     }
 
     if (confirmed) {
@@ -4186,9 +4195,11 @@ async function verifyAndRedirectFedapay(bookingNumber, transactionId) {
         displayConfirmationDetails(bookingNumber);
       }, 1000);
     } else {
-      Utils.showToast('⏳ Paiement en cours de validation. Vous recevrez un email.', 'info');
+      Utils.showToast('✅ Paiement reçu ! Vous recevrez un email de confirmation sous peu.', 'info');
+      sessionStorage.removeItem('pendingBooking');
+      sessionStorage.removeItem('pendingTransactionId');
       setTimeout(() => {
-        showPage('reservations');
+        showPage('home');
       }, 3000);
     }
 
@@ -4196,7 +4207,7 @@ async function verifyAndRedirectFedapay(bookingNumber, transactionId) {
     console.error('❌ Erreur vérification:', error);
     Utils.showToast('Erreur vérification. Consultez vos réservations.', 'error');
     setTimeout(() => {
-      showPage('reservations');
+      showPage('home');
     }, 2000);
   }
 }
