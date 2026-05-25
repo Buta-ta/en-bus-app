@@ -5044,6 +5044,115 @@ app.post("/webhooks/fedapay", async (req, res) => {
     }
 });
 
+// ✅ CONFIRMER MANUELLEMENT UNE RÉSERVATION FEDAPAY (si webhook échoue)
+app.post("/api/payments/fedapay/confirm/:bookingNumber", async (req, res) => {
+    try {
+        const { bookingNumber } = req.params;
+        const { transactionId } = req.body;
+
+        if (!bookingNumber || !transactionId) {
+            return res.status(400).json({ error: "Paramètres manquants" });
+        }
+
+        console.log(`🔄 Confirmation manuelle FedaPay pour ${bookingNumber} (tx: ${transactionId})`);
+
+        // 🔍 Vérifier le statut directement auprès de FedaPay
+        const fedapayResponse = await axios.get(
+            `https://api.fedapay.com/v1/transactions/${transactionId}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.FEDAPAY_SECRET_KEY}`
+                },
+                timeout: 10000
+            }
+        );
+
+        // Parsing robuste
+        let transaction = null;
+        const data = fedapayResponse.data;
+        if (data?.['v1/transaction']?.id) {
+            transaction = data['v1/transaction'];
+        } else if (data?.transaction?.id) {
+            transaction = data.transaction;
+        } else if (data?.data?.id) {
+            transaction = data.data;
+        } else if (data?.id) {
+            transaction = data;
+        }
+
+        if (!transaction) {
+            console.error('❌ Structure réponse FedaPay inattendue:', JSON.stringify(data).substring(0, 300));
+            return res.status(500).json({ error: "Format réponse FedaPay invalide" });
+        }
+
+        const status = transaction.status;
+        console.log(`   -> Statut FedaPay: ${status}`);
+
+        // ✅ FedaPay utilise "approved"
+        if (!['completed', 'approved'].includes(status)) {
+            return res.json({
+                success: false,
+                status: status,
+                message: `Paiement pas encore validé (statut: ${status})`
+            });
+        }
+
+        // 🔍 Trouver la réservation
+        const db = getDb();
+        const reservation = await db.collection('reservations').findOne({ bookingNumber });
+
+        if (!reservation) {
+            return res.status(404).json({ error: "Réservation non trouvée" });
+        }
+
+        if (reservation.status === 'Confirmé') {
+            return res.json({ success: true, status: 'already_confirmed', message: "Déjà confirmé" });
+        }
+
+        // 🔄 Confirmer la réservation
+        await db.collection('reservations').updateOne(
+            { bookingNumber },
+            {
+                $set: {
+                    status: 'Confirmé',
+                    paymentMethod: 'FEDAPAY',
+                    confirmedAt: new Date(),
+                    'paymentDetails.fedapayTransactionId': Number(transactionId),
+                    'paymentDetails.confirmedByFedapay': true,
+                    'paymentDetails.paidAt': new Date(),
+                    'paymentDetails.fedapayStatus': status,
+                    'paymentDetails.confirmationMethod': 'manual_poll'
+                }
+            }
+        );
+
+        console.log(`   -> ✅ Réservation ${bookingNumber} CONFIRMÉE (via vérification manuelle)`);
+
+        // 🔄 Mettre à jour la transaction FedaPay
+        await db.collection('fedapay_transactions').updateOne(
+            { fedapayTransactionId: Number(transactionId) },
+            { $set: { status: 'COMPLETED', completedAt: new Date(), confirmationMethod: 'manual_poll' } }
+        );
+
+        // 📧 Envoyer email
+        try {
+            const updatedReservation = await db.collection('reservations').findOne({ bookingNumber });
+            if (updatedReservation) {
+                await sendPaymentConfirmedEmail(updatedReservation);
+                console.log(`   -> Email envoyé`);
+            }
+        } catch (emailError) {
+            console.error('   -> ❌ Erreur email:', emailError.message);
+        }
+
+        res.json({ success: true, status: 'confirmed', message: "Réservation confirmée" });
+
+    } catch (error) {
+        console.error('❌ Erreur confirmation manuelle:', error.response?.data || error.message);
+        res.status(500).json({ error: "Erreur confirmation" });
+    }
+});
+
 
 
 // 🔍 VÉRIFIER LE STATUT D'UNE RÉSERVATION (pour le callback FedaPay)
