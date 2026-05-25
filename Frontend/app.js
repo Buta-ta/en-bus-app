@@ -515,7 +515,7 @@ async function registerTokenWithBooking(bookingNumber, busId) {
     console.log(`--- [PUSH] Fin du processus d'enregistrement. ---`);
 }
 // Initialiser au démarrage
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     handleFedapayCallback(); // ✅ Ajouté ici en premier
     initNotifications();     // Ton code existant
 });
@@ -1940,10 +1940,10 @@ window.downloadTicket = async function (isReturn = false) {
 // ============================================
 
 // DANS app.js, REMPLACEZ la fonction displayPaymentInstructions par celle-ci
+// DANS app.js - REMPLACEZ displayPaymentInstructions par celle-ci
 function displayPaymentInstructions(reservation) {
     console.log('📄 Affichage des instructions de paiement pour:', reservation.bookingNumber);
 
-    // --- 1. Récupération des traductions et des données ---
     const lang = getLanguage();
     const translation = translations[lang] || translations.fr;
     const paymentMethod = reservation.paymentMethod;
@@ -1953,7 +1953,6 @@ function displayPaymentInstructions(reservation) {
     const deadline = new Date(reservation.paymentDeadline);
     const amount = reservation.totalPriceNumeric;
 
-    // --- 2. Construction des blocs HTML traduits ---
     let paymentDetailsContent = '', paymentStepsContent = '';
 
     if (isAgencyPayment) {
@@ -1971,7 +1970,7 @@ function displayPaymentInstructions(reservation) {
                 <div class="detail-warning">${translation.payment_ref_warning_agency}</div>
             </div>
         `;
-    } else { // Mobile Money
+    } else {
         paymentDetailsContent = `
             <div class="detail-row">
                 <span class="detail-label">${translation.your_phone_label(paymentMethod)}</span>
@@ -2017,7 +2016,6 @@ function displayPaymentInstructions(reservation) {
         </div>
     ` : '';
 
-    // --- 3. Template HTML final avec le décompteur ---
     const instructionsHTML = `
         <div class="payment-instructions-card">
             <div class="instruction-header">
@@ -2041,17 +2039,12 @@ function displayPaymentInstructions(reservation) {
                     <span class="detail-label">${translation.payment_deadline_label}</span>
                     <span class="detail-value">${deadline.toLocaleString(`${lang}-${lang.toUpperCase()}`, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <!-- ✅ BLOC POUR LE DÉCOMPTEUR DYNAMIQUE (TRADUIT) -->
-<div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}" style="text-align: center; margin-top: 10px;">
-    
-    <!-- Ce span sera traduit par la fonction applyLanguage -->
-    <span data-i18n="countdown_time_left">Temps restant :</span> 
-    
-    <!-- Ce span sera mis à jour par la fonction startFrontendCountdown -->
-    <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">
-        ${translation.countdown_calculating || 'Calcul...'}
-    </span>
-</div>
+                <div id="payment-countdown-container" class="detail-warning" data-deadline="${deadline.toISOString()}" style="text-align: center; margin-top: 10px;">
+                    <span data-i18n="countdown_time_left">Temps restant :</span> 
+                    <span id="payment-countdown-timer" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">
+                        ${translation.countdown_calculating || 'Calcul...'}
+                    </span>
+                </div>
             </div>
             ${paymentStepsContent}
             ${transactionSubmissionHTML}
@@ -2064,12 +2057,12 @@ function displayPaymentInstructions(reservation) {
             </div>
             <div class="action-buttons">
                 ${!isAgencyPayment ? `<button class="btn btn-primary" onclick="checkPaymentStatus('${reservation.bookingNumber}')">${translation.check_status_button}</button>` : ''}
-                <button class="btn btn-secondary" onclick="showPage('home')">${translation.back_home_button}</button>
+                <!-- ✅ CORRECTION : Retour à la page de paiement, PAS à l'accueil -->
+                <button class="btn btn-secondary" onclick="showPage('payment-method')">↩ ${translation.back_to_payment_button || 'Retour au paiement'}</button>
             </div>
         </div>
     `;
 
-    // --- 4. Affichage et démarrage du décompteur ---
     const instructionsPage = document.getElementById('payment-instructions-page');
     if (!instructionsPage) {
         console.error('❌ Élément #payment-instructions-page introuvable.');
@@ -2077,12 +2070,8 @@ function displayPaymentInstructions(reservation) {
     }
 
     instructionsPage.innerHTML = instructionsHTML;
-
-    // ✅ On force la traduction des nouveaux éléments injectés
     applyLanguage();
     showPage('payment-instructions');
-
-    // On appelle la fonction qui va trouver les éléments du décompteur et le lancer
     startFrontendCountdown();
 
     appState.currentReservation = reservation;
@@ -3839,10 +3828,10 @@ function setupPaymentMethodToggle() {
         agencySubtitle.textContent = translation.payment_agency_desc(CONFIG.AGENCY_PAYMENT_DEADLINE_HOURS);
     }
 
-     // ========================================================
+    // ========================================================
     // ✅ AJOUTER CETTE SECTION (REMPLACER LA FONCTION updateDisplay)
     // ========================================================
-    
+
     const updateDisplay = () => {
         const selectedRadio = document.querySelector('input[name="payment"]:checked');
         if (!selectedRadio) return;
@@ -3899,145 +3888,113 @@ function setupPaymentMethodToggle() {
 // ============================================
 
 // 🎯 Helper: Valider un téléphone pour FedaPay
-Utils.validateFedapayPhone = function(phone) {
-  if (!phone) return false;
-  const clean = phone.replace(/[\s\-\.\(\)]/g, '');
-  const pattern = /^(\+|00)[1-9]\d{7,14}$/;
-  return pattern.test(clean);
+Utils.validateFedapayPhone = function (phone) {
+    if (!phone) return false;
+    const clean = phone.replace(/[\s\-\.\(\)]/g, '');
+    const pattern = /^(\+|00)[1-9]\d{7,14}$/;
+    return pattern.test(clean);
 };
 
 // 🎯 Helper: Attendre que le SDK FedaPay soit chargé
 function waitForFedapaySDK(timeout = 10000) {
-  return new Promise((resolve, reject) => {
-    if (window.FedaPay && typeof window.FedaPay.init === 'function') {
-      return resolve();
-    }
-    const startTime = Date.now();
-    const checkInterval = setInterval(() => {
-      if (window.FedaPay && typeof window.FedaPay.init === 'function') {
-        clearInterval(checkInterval);
-        resolve();
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(checkInterval);
-        reject(new Error('Module de paiement non disponible'));
-      }
-    }, 100);
-  });
+    return new Promise((resolve, reject) => {
+        if (window.FedaPay && typeof window.FedaPay.init === 'function') {
+            return resolve();
+        }
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+            if (window.FedaPay && typeof window.FedaPay.init === 'function') {
+                clearInterval(checkInterval);
+                resolve();
+            } else if (Date.now() - startTime > timeout) {
+                clearInterval(checkInterval);
+                reject(new Error('Module de paiement non disponible'));
+            }
+        }, 100);
+    });
 }
 
 // 🎯 Mise à jour de l'affichage des frais FedaPay
 function updateFedapayFeeDisplay() {
-  const fedapayAmountInput = document.getElementById('fedapay-amount');
-  const fedapayFeeInfo = document.getElementById('fedapay-fee-info');
+    const fedapayAmountInput = document.getElementById('fedapay-amount');
+    const fedapayFeeInfo = document.getElementById('fedapay-fee-info');
 
-  if (!fedapayAmountInput || !fedapayFeeInfo) return;
+    if (!fedapayAmountInput || !fedapayFeeInfo) return;
 
-  const lang = getLanguage();
-  const translation = translations[lang] || translations.fr;
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
 
-  const priceDetails = Utils.calculateTotalPrice(appState);
-  const basePrice = priceDetails.total;
-  const feePercentage = 2.5;
-  const fee = Math.round(basePrice * feePercentage / 100);
-  let totalWithFee = basePrice + fee;
+    const priceDetails = Utils.calculateTotalPrice(appState);
+    const basePrice = priceDetails.total;
+    const feePercentage = 2.5;
+    const fee = Math.round(basePrice * feePercentage / 100);
+    let totalWithFee = basePrice + fee;
 
-  if (totalWithFee < 100) totalWithFee = 100;
-  totalWithFee = Math.round(totalWithFee);
+    if (totalWithFee < 100) totalWithFee = 100;
+    totalWithFee = Math.round(totalWithFee);
 
-  fedapayAmountInput.value = Utils.formatPrice(totalWithFee) + ' FCFA';
+    fedapayAmountInput.value = Utils.formatPrice(totalWithFee) + ' FCFA';
 
-  if (typeof translation.payment_fedapay_fee_info === 'function') {
-    fedapayFeeInfo.innerHTML = translation.payment_fedapay_fee_info(
-      Utils.formatPrice(fee),
-      Utils.formatPrice(totalWithFee)
-    );
-  }
+    if (typeof translation.payment_fedapay_fee_info === 'function') {
+        fedapayFeeInfo.innerHTML = translation.payment_fedapay_fee_info(
+            Utils.formatPrice(fee),
+            Utils.formatPrice(totalWithFee)
+        );
+    }
 }
 
 // 🎯 Fonction principale : Initier un paiement FedaPay
+
+// 🎯 Fonction principale : Initier un paiement FedaPay (version corrigée)
 async function initiateFedapayPayment() {
   const lang = getLanguage();
   const translation = translations[lang] || translations.fr;
-
+  
   // 🔹 Récupérer et valider le téléphone
   const phoneInput = document.getElementById('fedapay-phone');
   const phone = phoneInput?.value.trim() || '';
-
+  
   if (!phone || !Utils.validateFedapayPhone(phone)) {
     Utils.showToast('Numéro de téléphone invalide. Exemple: +22997001234', 'error');
     phoneInput?.focus();
     return;
   }
-
-  // 🔹 Calculer le montant
+  
+  // 🔹 Calculer le montant total avec frais
   const priceDetails = Utils.calculateTotalPrice(appState);
   const feePercentage = 2.5;
   const fee = Math.round(priceDetails.total * feePercentage / 100);
   let totalWithFee = priceDetails.total + fee;
+  
   if (totalWithFee < 100) totalWithFee = 100;
   totalWithFee = Math.round(totalWithFee);
-
-  // 🔹 Générer le bookingNumber
+  
   const bookingNumber = Utils.generateBookingNumber();
-
-  // 🔹 Calculer la date limite de paiement
-  const paymentDeadline = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
-  // 🔹 Récupérer le téléphone client
-  const customerPhone = appState.passengerInfo[0]?.phone || '';
-
+  
   Utils.showToast('Création de la réservation...', 'info');
-
+  
   try {
-    // ========================================================
-    // ✅ ÉTAPE 1 : Construire la réservation (MÊME STRUCTURE que confirmBooking)
-    // ========================================================
-    const reservation = {
-      bookingNumber: bookingNumber,
-      route: appState.selectedBus,
-      date: appState.currentSearch.date,
-      passengers: appState.passengerInfo,
-      seats: appState.selectedSeats,
-      totalPrice: `${Utils.formatPrice(totalWithFee)} FCFA`,
-      totalPriceNumeric: totalWithFee,
-      paymentMethod: 'FEDAPAY',
-      busIdentifier: appState.selectedBus.busIdentifier || appState.selectedBus.trackerId,
-      createdAt: new Date().toISOString(),
-      status: 'En attente de paiement',
-      customerPhone: customerPhone,
-      paymentDeadline: paymentDeadline,
-      lang: getLanguage()
-    };
-
-    // 🔹 Ajouter le retour si aller-retour
-    if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
-      reservation.returnRoute = appState.selectedReturnBus;
-      reservation.returnDate = appState.currentSearch.returnDate;
-      reservation.returnSeats = appState.selectedReturnSeats;
-      reservation.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
+    // ✅ ÉTAPE 1 : Créer la réservation EN ATTENTE d'abord
+    const reservationData = buildReservationData(bookingNumber, 'FEDAPAY', totalWithFee);
+    
+    const createResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservationData)
+    });
+    
+    const createData = await createResponse.json();
+    
+    if (!createResponse.ok || !createData.success) {
+      throw new Error(createData.error || 'Erreur création réservation');
     }
-
-    // ========================================================
-    // ✅ ÉTAPE 2 : Sauvegarder la réservation en base
-    // ========================================================
-    const savedReservationResponse = await saveReservationToBackend(reservation);
-
-    if (!savedReservationResponse || !savedReservationResponse.success) {
-      throw new Error(savedReservationResponse?.error || 'Erreur création réservation');
-    }
-
-    console.log(`✅ Réservation créée: ${bookingNumber}`);
-
-    // Stocker dans appState
-    appState.currentReservation = reservation;
-    addBookingToLocalHistory(reservation.bookingNumber);
-
-    // ========================================================
-    // ✅ ÉTAPE 3 : Créer la transaction FedaPay
-    // ========================================================
+    
+    console.log(`✅ Réservation créée: ${bookingNumber} (en attente)`);
+    
+    // ✅ ÉTAPE 2 : Créer la transaction FedaPay
     Utils.showToast(translation.toast_fedapay_redirecting || 'Initialisation du paiement...', 'info');
-
-    const fedapayResponse = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/create-transaction`, {
+    
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/create-transaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4048,192 +4005,197 @@ async function initiateFedapayPayment() {
         customerName: appState.passengerInfo[0]?.name || 'Client'
       })
     });
-
-    const fedapayData = await fedapayResponse.json();
-
-    if (!fedapayResponse.ok || !fedapayData.success) {
-      let errorMsg = fedapayData.error || translation.error_fedapay_init || 'Erreur de paiement';
-      if (fedapayData.details && Array.isArray(fedapayData.details)) {
-        errorMsg = fedapayData.details.map(d => `${d.field}: ${d.message}`).join(', ');
-      }
+    
+    const data = await response.json();
+    
+    if (!response.ok || !data.success) {
+      let errorMsg = data.error || translation.error_fedapay_init || 'Erreur de paiement';
       throw new Error(errorMsg);
     }
-
-    console.log('✅ Transaction FedaPay créée:', {
-      id: fedapayData.transactionId,
-      booking: bookingNumber
-    });
-
-    // 🔹 Sauvegarder pour le retour
+    
+    console.log('✅ Transaction créée:', { id: data.transactionId, booking: bookingNumber });
+    
+    // Sauvegarder les infos pour le retour
     sessionStorage.setItem('pendingBooking', bookingNumber);
-    sessionStorage.setItem('pendingTransactionId', fedapayData.transactionId);
-
-    // ========================================================
-    // ✅ ÉTAPE 4 : Ouvrir le paiement FedaPay
-    // ========================================================
-
-    // Option A : Redirection vers URL de paiement
-    if (fedapayData.paymentUrl) {
-      console.log('🔗 Redirection vers:', fedapayData.paymentUrl);
-      window.location.href = fedapayData.paymentUrl;
+    sessionStorage.setItem('pendingTransactionId', data.transactionId);
+    
+    // ✅ ÉTAPE 3 : Ouvrir le paiement FedaPay
+    if (data.paymentUrl) {
+      window.location.href = data.paymentUrl;
       return;
     }
-
-    // Option B : SDK FedaPay modal
+    
+    // Fallback : SDK FedaPay avec gestion CORRECTE de l'annulation
     try {
       await waitForFedapaySDK();
-
+      
       const widget = window.FedaPay.init({
-        public_key: fedapayData.publicKey,
-        transaction: { id: fedapayData.transactionId },
+        public_key: data.publicKey,
+        transaction: { id: data.transactionId },
         onComplete: function(resp) {
-          console.log('🔔 Paiement terminé:', resp?.reason);
+          console.log('🔔 FedaPay onComplete:', resp?.reason);
+          
           if (resp?.reason === window.FedaPay?.CHECKOUT_COMPLETED) {
             Utils.showToast('✅ Paiement réussi !', 'success');
-            verifyAndRedirectFedapay(bookingNumber, fedapayData.transactionId);
-          } else {
-            Utils.showToast('ℹ️ Paiement annulé', 'info');
+            verifyAndRedirectFedapay(bookingNumber, data.transactionId);
+          } 
+          // ❌ NE PAS REDIRIGER VERS HOME en cas d'annulation
+          else if (resp?.reason === window.FedaPay?.DIALOG_DISMISSED) {
+            Utils.showToast('ℹ️ Paiement annulé. Vous pouvez réessayer.', 'info');
+            // ← Rester sur la page de paiement, ne pas appeler showPage('home')
+          } 
+          else if (resp?.reason === window.FedaPay?.CHECKOUT_FAILED) {
+            Utils.showToast('❌ Paiement échoué. Vérifiez votre solde et réessayez.', 'error');
+            // ← Rester sur la page de paiement
+          }
+          else {
+            Utils.showToast('⚠️ Paiement interrompu', 'warning');
           }
         },
         onError: function(err) {
           console.error('❌ Erreur widget FedaPay:', err);
-          Utils.showToast('Erreur technique lors du paiement', 'error');
+          Utils.showToast('Erreur technique. Veuillez réessayer.', 'error');
+          // ← Rester sur la page de paiement
         }
       });
-
+      
       widget.open();
-
+      
     } catch (sdkError) {
-      // Option C : Fallback redirection
-      console.warn('⚠️ SDK FedaPay indisponible, fallback:', sdkError);
-      const fallbackUrl = `https://process.fedapay.com/${fedapayData.transactionId}`;
+      console.warn('⚠️ Échec SDK FedaPay, fallback vers redirection:', sdkError);
+      const fallbackUrl = `https://process.fedapay.com/${data.transactionId}`;
       window.location.href = fallbackUrl;
     }
-
+    
   } catch (error) {
-    console.error('❌ Erreur FedaPay:', error.message);
-    Utils.showToast(error.message, 'error');
+    console.error('❌ Erreur FedaPay:', error);
+    Utils.showToast(error.message || 'Erreur de paiement', 'error');
+    // ← En cas d'erreur, rester sur la page actuelle
   }
 }
+
+
+
+
 
 // ============================================
 // ✅ GESTION DU RETOUR FEDAPAY
 // ============================================
 
 function handleFedapayCallback() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const bookingNumber = urlParams.get('booking');
-  const status = urlParams.get('status');
-  const transactionId = urlParams.get('id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingNumber = urlParams.get('booking');
+    const status = urlParams.get('status');
+    const transactionId = urlParams.get('id');
 
-  if (bookingNumber && (status === 'approved' || status === 'completed')) {
-    console.log(`🔔 Retour FedaPay détecté: booking=${bookingNumber}, status=${status}`);
+    if (bookingNumber && (status === 'approved' || status === 'completed')) {
+        console.log(`🔔 Retour FedaPay détecté: booking=${bookingNumber}, status=${status}`);
 
-    // Nettoyer l'URL
-    window.history.replaceState({}, document.title, window.location.pathname);
+        // Nettoyer l'URL
+        window.history.replaceState({}, document.title, window.location.pathname);
 
-    Utils.showToast('✅ Paiement reçu ! Vérification en cours...', 'info');
+        Utils.showToast('✅ Paiement reçu ! Vérification en cours...', 'info');
 
-    if (transactionId) {
-      verifyAndRedirectFedapay(bookingNumber, transactionId);
-    } else {
-      checkBookingStatusAndRedirect(bookingNumber);
+        if (transactionId) {
+            verifyAndRedirectFedapay(bookingNumber, transactionId);
+        } else {
+            checkBookingStatusAndRedirect(bookingNumber);
+        }
     }
-  }
 }
 
 // Vérifier via l'API FedaPay puis rediriger
 // Vérifier via FedaPay API puis confirmer et rediriger
 async function verifyAndRedirectFedapay(bookingNumber, transactionId) {
-  try {
-    let attempts = 0;
-    const maxAttempts = 15;
-    let confirmed = false;
+    try {
+        let attempts = 0;
+        const maxAttempts = 15;
+        let confirmed = false;
 
-    const tryConfirm = async () => {
-      try {
-        // ✅ Appeler la route de confirmation manuelle
-        // Elle vérifie directement auprès de FedaPay et confirme si approved
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/confirm/${bookingNumber}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transactionId: transactionId })
-        });
+        const tryConfirm = async () => {
+            try {
+                // ✅ Appeler la route de confirmation manuelle
+                // Elle vérifie directement auprès de FedaPay et confirme si approved
+                const response = await fetch(`${API_CONFIG.baseUrl}/api/payments/fedapay/confirm/${bookingNumber}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transactionId: transactionId })
+                });
 
-        const data = await response.json();
+                const data = await response.json();
 
-        console.log(`📋 Tentative ${attempts + 1}: ${data.status} - ${data.message || ''}`);
+                console.log(`📋 Tentative ${attempts + 1}: ${data.status} - ${data.message || ''}`);
 
-        if (data.success && (data.status === 'confirmed' || data.status === 'already_confirmed')) {
-          return true;
+                if (data.success && (data.status === 'confirmed' || data.status === 'already_confirmed')) {
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.warn(`⚠️ Erreur tentative ${attempts + 1}:`, e.message);
+                return false;
+            }
+        };
+
+        // Première vérification immédiate
+        confirmed = await tryConfirm();
+
+        // Réessayer toutes les 2 secondes
+        while (!confirmed && attempts < maxAttempts) {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            confirmed = await tryConfirm();
         }
-        return false;
-      } catch (e) {
-        console.warn(`⚠️ Erreur tentative ${attempts + 1}:`, e.message);
-        return false;
-      }
-    };
 
-    // Première vérification immédiate
-    confirmed = await tryConfirm();
+        if (confirmed) {
+            sessionStorage.removeItem('pendingBooking');
+            sessionStorage.removeItem('pendingTransactionId');
 
-    // Réessayer toutes les 2 secondes
-    while (!confirmed && attempts < maxAttempts) {
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      confirmed = await tryConfirm();
+            Utils.showToast('✅ Paiement confirmé ! Redirection...', 'success');
+
+            setTimeout(() => {
+                showPage('confirmation');
+                displayConfirmationDetails(bookingNumber);
+            }, 1000);
+        } else {
+            Utils.showToast('✅ Paiement reçu ! Vous recevrez un email de confirmation sous peu.', 'info');
+            sessionStorage.removeItem('pendingBooking');
+            sessionStorage.removeItem('pendingTransactionId');
+            setTimeout(() => {
+                showPage('home');
+            }, 3000);
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur vérification:', error);
+        Utils.showToast('Erreur vérification. Consultez vos réservations.', 'error');
+        setTimeout(() => {
+            showPage('home');
+        }, 2000);
     }
-
-    if (confirmed) {
-      sessionStorage.removeItem('pendingBooking');
-      sessionStorage.removeItem('pendingTransactionId');
-
-      Utils.showToast('✅ Paiement confirmé ! Redirection...', 'success');
-
-      setTimeout(() => {
-        showPage('confirmation');
-        displayConfirmationDetails(bookingNumber);
-      }, 1000);
-    } else {
-      Utils.showToast('✅ Paiement reçu ! Vous recevrez un email de confirmation sous peu.', 'info');
-      sessionStorage.removeItem('pendingBooking');
-      sessionStorage.removeItem('pendingTransactionId');
-      setTimeout(() => {
-        showPage('home');
-      }, 3000);
-    }
-
-  } catch (error) {
-    console.error('❌ Erreur vérification:', error);
-    Utils.showToast('Erreur vérification. Consultez vos réservations.', 'error');
-    setTimeout(() => {
-      showPage('home');
-    }, 2000);
-  }
 }
 
 // Vérifier directement le statut de la réservation
 async function checkBookingStatusAndRedirect(bookingNumber) {
-  try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${bookingNumber}`);
-    const data = await response.json();
+    try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/check/${bookingNumber}`);
+        const data = await response.json();
 
-    if (data.success && data.status === 'Confirmé') {
-      Utils.showToast('✅ Paiement confirmé !', 'success');
-      setTimeout(() => {
-        showPage('confirmation');
-        displayConfirmationDetails(bookingNumber);
-      }, 1000);
-    } else {
-      Utils.showToast('⏳ Paiement en cours de validation...', 'info');
-      setTimeout(() => {
+        if (data.success && data.status === 'Confirmé') {
+            Utils.showToast('✅ Paiement confirmé !', 'success');
+            setTimeout(() => {
+                showPage('confirmation');
+                displayConfirmationDetails(bookingNumber);
+            }, 1000);
+        } else {
+            Utils.showToast('⏳ Paiement en cours de validation...', 'info');
+            setTimeout(() => {
+                showPage('reservations');
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('❌ Erreur:', error);
         showPage('reservations');
-      }, 3000);
     }
-  } catch (error) {
-    console.error('❌ Erreur:', error);
-    showPage('reservations');
-  }
 }
 
 // ✅ FIN FONCTIONS FEDAPAY
