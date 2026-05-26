@@ -3966,7 +3966,7 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
 
     const reservationData = {
         bookingNumber: bookingNumber,
-        status: 'En attente',
+        status: 'En attente de paiement',
         
         // ✅ CORRECTION MAJEURE : On passe l'objet complet, qui contient déjà l'ID !
         route: appState.selectedBus, 
