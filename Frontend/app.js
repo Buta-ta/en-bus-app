@@ -3949,9 +3949,20 @@ function updateFedapayFeeDisplay() {
 // ============================================
 // 🎯 CONSTRUIRE LES DONNÉES DE RÉSERVATION
 // ============================================
-
 function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     const lang = getLanguage();
+    
+    // 🔹 Récupération défensive des données du trajet
+    const from = appState.selectedRoute?.from || appState.searchFrom || appState.trip?.from || '';
+    const to = appState.selectedRoute?.to || appState.searchTo || appState.trip?.to || '';
+    const price = appState.selectedRoute?.price || appState.trip?.price || 0;
+
+    // 🚨 SÉCURITÉ : Si le trajet est vide, on arrête tout !
+    if (!from || !to) {
+        console.error("❌ appState est vide ou incomplet. Impossible de créer la réservation.", appState);
+        throw new Error("Les informations du trajet sont perdues. Veuillez refaire votre recherche.");
+    }
+
     const passengers = (appState.passengerInfo || []).map((p, i) => ({
         name: p.name || '',
         email: p.email || '',
@@ -3964,12 +3975,10 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
 
     const reservationData = {
         bookingNumber: bookingNumber,
-        status: 'En attente',  // Sera confirmé après paiement
-
-        // ── Trajet ──
+        status: 'En attente',
         route: {
-            from: appState.selectedRoute?.from || appState.searchFrom || '',
-            to: appState.selectedRoute?.to || appState.searchTo || '',
+            from: from,
+            to: to,
             fromId: appState.selectedRoute?.fromId || '',
             toId: appState.selectedRoute?.toId || '',
             date: appState.searchDate || new Date().toISOString().split('T')[0],
@@ -3977,42 +3986,25 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
             arrivalTime: appState.selectedSchedule?.arrivalTime || '',
             busNumber: appState.selectedSchedule?.busNumber || '',
             busId: appState.selectedSchedule?.busId || '',
-            price: appState.selectedRoute?.price || 0
+            price: price
         },
-
-        // ── Passagers ──
         passengers: passengers,
         passengerCount: passengers.length,
-
-        // ── Sièges ──
         selectedSeats: appState.selectedSeats || [],
-
-        // ── Prix ──
         totalPriceNumeric: priceDetails.total,
         totalPrice: Utils.formatPrice(totalWithFee) + ' FCFA',
         basePrice: priceDetails.total,
         fedapayFee: totalWithFee - priceDetails.total,
         totalWithFee: totalWithFee,
-
-        // ── Paiement ──
         paymentMethod: paymentMethod,
         paymentStatus: 'pending',
-
-        // ── Métadonnées ──
         agency: appState.selectedSchedule?.agency || appState.selectedRoute?.agency || '',
         agencyId: appState.selectedSchedule?.agencyId || appState.selectedRoute?.agencyId || '',
         createdAt: new Date().toISOString(),
         lang: lang
     };
 
-    console.log('📋 ReservationData construit:', {
-        booking: bookingNumber,
-        route: `${reservationData.route.from} → ${reservationData.route.to}`,
-        passengers: passengers.length,
-        seats: reservationData.selectedSeats,
-        total: totalWithFee
-    });
-
+    console.log('📋 ReservationData construit:', reservationData);
     return reservationData;
 }
 
@@ -4045,24 +4037,30 @@ async function initiateFedapayPayment() {
   const bookingNumber = Utils.generateBookingNumber();
   
   Utils.showToast('Création de la réservation...', 'info');
-  
-  try {
-    // ✅ ÉTAPE 1 : Créer la réservation EN ATTENTE d'abord
-    const reservationData = buildReservationData(bookingNumber, 'FEDAPAY', totalWithFee);
-    
-    const createResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reservationData)
-    });
-    
-    const createData = await createResponse.json();
-    
-    if (!createResponse.ok || !createData.success) {
-      throw new Error(createData.error || 'Erreur création réservation');
-    }
-    
-    console.log(`✅ Réservation créée: ${bookingNumber} (en attente)`);
+   try {
+        // ✅ ÉTAPE 1 : Créer la réservation EN ATTENTE d'abord
+        const reservationData = buildReservationData(bookingNumber, 'FEDAPAY', totalWithFee);
+        
+        const createResponse = await fetch(`${API_CONFIG.baseUrl}/api/reservations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reservationData)
+        });
+        
+        const createData = await createResponse.json();
+        
+        if (!createResponse.ok || !createData.success) {
+            console.error("❌ Détails erreur backend:", createData);
+            
+            // Si la réservation existe déjà (cas où l'utilisateur a rechargé la page), on continue !
+            if (createData.error && createData.error.includes('existe déjà')) {
+                console.log('ℹ️ Réservation déjà existante, on continue vers FedaPay...');
+            } else {
+                throw new Error(createData.error || 'Erreur création réservation');
+            }
+        } else {
+            console.log(`✅ Réservation créée: ${bookingNumber} (en attente)`);
+        }
     
     // ✅ ÉTAPE 2 : Créer la transaction FedaPay
     Utils.showToast(translation.toast_fedapay_redirecting || 'Initialisation du paiement...', 'info');
@@ -4161,18 +4159,29 @@ function handleFedapayCallback() {
     const status = urlParams.get('status');
     const transactionId = urlParams.get('id');
 
-    if (bookingNumber && (status === 'approved' || status === 'completed')) {
+    if (bookingNumber) {
         console.log(`🔔 Retour FedaPay détecté: booking=${bookingNumber}, status=${status}`);
 
-        // Nettoyer l'URL
+        // Nettoyer l'URL immédiatement pour éviter un rechargement parasite
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        Utils.showToast('✅ Paiement reçu ! Vérification en cours...', 'info');
-
-        if (transactionId) {
-            verifyAndRedirectFedapay(bookingNumber, transactionId);
-        } else {
-            checkBookingStatusAndRedirect(bookingNumber);
+        if (status === 'approved' || status === 'completed') {
+            Utils.showToast('✅ Paiement reçu ! Vérification en cours...', 'info');
+            if (transactionId) {
+                verifyAndRedirectFedapay(bookingNumber, transactionId);
+            } else {
+                checkBookingStatusAndRedirect(bookingNumber);
+            }
+        } 
+        else if (status === 'pending') {
+            // Le paiement est en attente de validation par FedaPay
+            Utils.showToast('⏳ Paiement en cours de validation par FedaPay...', 'info');
+            checkBookingStatusAndRedirect(bookingNumber); // On vérifie quand même la DB
+        }
+        else if (status === 'canceled' || status === 'declined') {
+            Utils.showToast('❌ Paiement annulé ou refusé.', 'error');
+            // Rediriger vers les réservations pour voir le statut
+            setTimeout(() => showPage('reservations'), 2000);
         }
     }
 }
