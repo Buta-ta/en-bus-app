@@ -3956,76 +3956,52 @@ function updateFedapayFeeDisplay() {
 function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     const lang = getLanguage();
     
-    // 🔹 Récupération des données de base
-    const from = appState.currentSearch?.from || appState.selectedBus?.from || appState.selectedRoute?.from || '';
-    const to = appState.currentSearch?.to || appState.selectedBus?.to || appState.selectedRoute?.to || '';
-    const date = appState.currentSearch?.date || appState.searchDate || appState.selectedBus?.date || '';
-    const price = appState.selectedBus?.price || appState.selectedRoute?.price || 0;
-
-    // 🚨 SÉCURITÉ : Si le trajet est vide, on arrête tout
-    if (!from || !to) {
-        console.error("❌ Données du trajet introuvables. Clés manquantes dans appState.", appState);
+    // 🚨 Sécurité : vérifier que les objets principaux existent
+    if (!appState.selectedBus || !appState.currentSearch || !appState.passengerInfo) {
+        console.error("❌ appState est incomplet. Impossible de créer la réservation.", appState);
         throw new Error("Les informations du trajet sont perdues. Veuillez refaire votre recherche.");
     }
-
-    // 🔹 Récupérer l'ID du trajet (exigé par le validateur backend)
-    const routeId = appState.currentSearch?.routeId || appState.selectedBus?.routeId || appState.selectedRoute?.id || appState.selectedRoute?._id || '';
-
-    const passengers = (appState.passengerInfo || []).map((p, i) => ({
-        name: p.name || '',
-        email: p.email || '',
-        phone: p.phone || '',
-        type: i === 0 ? 'adult' : (p.type || 'adult'),
-        seatNumber: appState.selectedSeats?.[i] || null
-    }));
 
     const priceDetails = Utils.calculateTotalPrice(appState);
 
     const reservationData = {
         bookingNumber: bookingNumber,
         status: 'En attente',
-        date: date, // ✅ 1. Ajouté à la racine (exigé par le backend)
         
-        // ── Trajet ──
-        route: {
-            id: routeId, // ✅ 2. Ajouté dans l'objet route (exigé par le backend)
-            from: from,
-            to: to,
-            fromId: appState.currentSearch?.fromId || appState.selectedBus?.fromId || '',
-            toId: appState.currentSearch?.toId || appState.selectedBus?.toId || '',
-            date: date, // On le garde aussi ici par sécurité
-            departureTime: appState.selectedBus?.departureTime || appState.selectedSchedule?.departureTime || '',
-            arrivalTime: appState.selectedBus?.arrivalTime || appState.selectedSchedule?.arrivalTime || '',
-            busNumber: appState.selectedBus?.busNumber || '',
-            busId: appState.selectedBus?.busId || '',
-            price: Number(price) || 0
-        },
+        // ✅ CORRECTION MAJEURE : On passe l'objet complet, qui contient déjà l'ID !
+        route: appState.selectedBus, 
         
-        passengers: passengers,
-        passengerCount: Number(passengers.length) || 1,
-        selectedSeats: appState.selectedSeats || [],
+        date: appState.currentSearch.date,
+        passengers: appState.passengerInfo,
+        seats: appState.selectedSeats,
         
-        // ── Prix ──
+        // ── Prix (FedaPay a besoin de nombres purs, pas de strings avec "FCFA") ──
         totalPriceNumeric: Number(priceDetails.total) || 0,
         totalPrice: Number(totalWithFee) || 0,
         basePrice: Number(priceDetails.total) || 0,
         fedapayFee: Number(totalWithFee - priceDetails.total) || 0,
         totalWithFee: Number(totalWithFee) || 0,
         
-        // ── Paiement ──
+        // ── Paiement & Métadonnées ──
         paymentMethod: paymentMethod,
         paymentStatus: 'pending',
-        
-        // ── Métadonnées ──
-        agency: appState.selectedBus?.agency || appState.selectedSchedule?.agency || '',
-        agencyId: appState.selectedBus?.agencyId || appState.selectedSchedule?.agencyId || '',
+        busIdentifier: appState.selectedBus.busIdentifier || appState.selectedBus.trackerId,
+        customerPhone: appState.passengerInfo[0]?.phone || '',
         createdAt: new Date().toISOString(),
         lang: lang
     };
 
-    console.log('📋 ReservationData construit avec succès :', {
-        routeId: routeId || '⚠️ MANQUANT',
-        date: date || '⚠️ MANQUANT',
+    // ✅ Gestion de l'aller-retour (comme dans confirmBooking)
+    if (appState.currentSearch.tripType === "round-trip" && appState.selectedReturnBus) {
+        reservationData.returnRoute = appState.selectedReturnBus;
+        reservationData.returnDate = appState.currentSearch.returnDate;
+        reservationData.returnSeats = appState.selectedReturnSeats;
+        reservationData.returnBusIdentifier = appState.selectedReturnBus.busIdentifier || appState.selectedReturnBus.trackerId;
+    }
+
+    console.log('📋 ReservationData construit avec succès (mode FedaPay):', {
+        routeId: reservationData.route.id || '⚠️ MANQUANT',
+        date: reservationData.date,
         route: `${reservationData.route.from} → ${reservationData.route.to}`,
         total: totalWithFee
     });
