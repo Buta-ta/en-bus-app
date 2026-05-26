@@ -4282,6 +4282,89 @@ async function checkBookingStatusAndRedirect(bookingNumber) {
     }
 }
 
+
+
+
+// ============================================
+// 🎟️ AFFICHAGE DE LA CONFIRMATION (POST-FEDAPAY)
+// ============================================
+
+async function displayConfirmationDetails(bookingNumber) {
+    const lang = getLanguage();
+    const translation = translations[lang] || translations.fr;
+
+    try {
+        // 🔹 1. Récupérer les données complètes depuis le backend (via votre route existante)
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/reservations/${bookingNumber}`);
+        const data = await response.json();
+
+        if (!data.success || !data.reservation) {
+            throw new Error(data.error || "Réservation introuvable");
+        }
+
+        const reservation = data.reservation;
+
+        // 🔹 2. CRUCIAL : Sauvegarder dans appState (pour le QR Code et downloadTicket)
+        appState.currentReservation = reservation;
+
+        console.log('🎟️ Affichage de la confirmation pour:', reservation.bookingNumber);
+
+        // 🔹 3. Mettre à jour l'interface utilisateur
+        // On cible le conteneur de la page de confirmation
+        const container = document.getElementById('confirmation-details') || document.getElementById('booking-summary');
+        
+        if (container) {
+            const passenger = reservation.passengers?.[0] || {};
+            const route = reservation.route || {};
+            // Utilisation de totalPriceNumeric (calculé) ou fallback sur le prix de la route
+            const price = reservation.totalPriceNumeric || reservation.totalWithFee || route.price || 0;
+
+            container.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 3em;">✅</div>
+                    <h3 style="color: var(--color-success, #22c55e);">${translation.payment_success_title || 'Paiement Confirmé !'}</h3>
+                </div>
+                
+                <div class="detail-row">
+                    <span>${translation.booking_number_label || 'N° Réservation'}:</span>
+                    <strong>${reservation.bookingNumber}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>${translation.summary_outbound_route || 'Trajet'}:</span>
+                    <strong>${route.from || ''} → ${route.to || ''}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>${translation.summary_outbound_date || 'Date'}:</span>
+                    <strong>${Utils.formatDate(reservation.date, lang)}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>${translation.summary_departure_time || 'Départ'}:</span>
+                    <strong>${route.departureTime || ''}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>${translation.summary_passengers || 'Passager'}:</span>
+                    <strong>${passenger.name || ''}</strong>
+                </div>
+                <hr style="border-color: var(--color-border); margin: 12px 0;">
+                <div class="detail-row total-row">
+                    <span>${translation.summary_total_price || 'Total Payé'}:</span>
+                    <strong>${Utils.formatPrice(price)} FCFA</strong>
+                </div>
+                
+                <div style="margin-top: 25px; text-align: center;">
+                    <button onclick="downloadTicket()" class="btn-primary" style="padding: 12px 24px; font-size: 1.1em;">
+                        🎫 ${translation.download_ticket || 'Télécharger le billet'}
+                    </button>
+                </div>
+            `;
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur affichage confirmation:', error);
+        Utils.showToast(translation.error_loading_booking || "Erreur lors du chargement des détails", "error");
+    }
+}
+
 // ✅ FIN FONCTIONS FEDAPAY
 // ============================================
 // ✅ INITIALISATION DES FILTRES ÉQUIPEMENTS
