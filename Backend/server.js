@@ -2657,239 +2657,152 @@ app.get("/api/admin/reservations", authenticateToken, async (req, res) => {
 // 📄 GESTION DES FACTURES (INVOICES) - VERSION RENDER
 // ============================================
 
-// Fonction qui génère le template HTML de la facture
 // ============================================
-// 📄 GESTION DES FACTURES (INVOICES) - VERSION RENDER COMPATIBLE
+// 📄 ROUTE FACTURE — VERSION PDFKIT (fiable, rapide, sans Chromium)
 // ============================================
 
-// Fonction qui génère le template HTML de la facture (TON DESIGN ORIGINAL)
-function generateInvoiceHTML(reservation, lang = 'fr') {
-    // Mini-traductions pour la facture
+const PDFDocument = require('pdfkit');
+
+function generateInvoicePDF(reservation, lang, res) {
     const t = {
         fr: {
-            title: "FACTURE",
-            invoice_nr: "Facture N°",
-            booking_nr: "Réf. Réservation",
-            date: "Date d'émission",
-            billed_to: "Facturé à",
-            description: "Description",
-            qty: "Qté",
-            unit_price: "P.U.",
-            total: "Total",
-            subtotal: "Sous-total",
-            vat: "TVA",
-            total_paid: "TOTAL PAYÉ",
-            payment_method: "Payé via",
-            status_paid: "PAYÉE",
-            adult_ticket_desc: "Billet(s) Adulte"
+            title: "FACTURE", invoice_nr: "Facture N°", booking_nr: "Réf. Réservation",
+            date: "Date d'émission", billed_to: "Facturé à", description: "Description",
+            qty: "Qté", unit_price: "P.U.", total: "Total", subtotal: "Sous-total",
+            vat: "TVA", total_paid: "TOTAL PAYÉ", payment_method: "Payé via",
+            status_paid: "PAYÉE", adult_ticket_desc: "Billet(s) Adulte"
         },
         en: {
-            title: "INVOICE",
-            invoice_nr: "Invoice #",
-            booking_nr: "Booking Ref.",
-            date: "Issue Date",
-            billed_to: "Billed to",
-            description: "Description",
-            qty: "Qty",
-            unit_price: "Unit Price",
-            total: "Total",
-            subtotal: "Subtotal",
-            vat: "VAT",
-            total_paid: "TOTAL PAID",
-            payment_method: "Paid via",
-            status_paid: "PAID",
-            adult_ticket_desc: "Adult Ticket(s)"
+            title: "INVOICE", invoice_nr: "Invoice #", booking_nr: "Booking Ref.",
+            date: "Issue Date", billed_to: "Billed to", description: "Description",
+            qty: "Qty", unit_price: "Unit Price", total: "Total", subtotal: "Subtotal",
+            vat: "VAT", total_paid: "TOTAL PAID", payment_method: "Paid via",
+            status_paid: "PAID", adult_ticket_desc: "Adult Ticket(s)"
         }
     };
 
     const texts = t[lang] || t.fr;
-    const passenger = reservation.passengers[0];
-    const adultTickets = reservation.passengers.length;
-    const ticketPrice = reservation.route.price;
-    const subtotal = reservation.totalPriceNumeric;
+    const passenger = reservation.passengers?.[0] || {};
+    const adultTickets = reservation.passengers?.length || 1;
+    const ticketPrice = reservation.route?.price || 0;
+    const subtotal = reservation.totalPriceNumeric || 0;
+    const invoiceNr = `INV-${reservation.bookingNumber?.slice(3) || '???'}`;
+    const dateStr = new Date(reservation.confirmedAt || reservation.createdAt)
+        .toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US');
 
-    return `
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: sans-serif; color: #333; }
-                .invoice-box {
-                    max-width: 800px;
-                    margin: auto;
-                    padding: 30px;
-                    border: 1px solid #eee;
-                    box-shadow: 0 0 10px rgba(0, 0, 0, .15);
-                    font-size: 16px;
-                    line-height: 24px;
-                }
-                .invoice-box table {
-                    width: 100%;
-                    line-height: inherit;
-                    text-align: left;
-                    border-collapse: collapse;
-                }
-                .invoice-box table td {
-                    padding: 5px;
-                    vertical-align: top;
-                }
-                .invoice-box table tr.top table td {
-                    padding-bottom: 20px;
-                }
-                .invoice-box table tr.top table td.title {
-                    font-size: 45px;
-                    line-height: 45px;
-                    color: #333;
-                }
-                .invoice-box table tr.information table td {
-                    padding-bottom: 40px;
-                }
-                .invoice-box table tr.heading td {
-                    background: #eee;
-                    border-bottom: 1px solid #ddd;
-                    font-weight: 700;
-                }
-                .invoice-box table tr.item td {
-                    border-bottom: 1px solid #eee;
-                }
-                .invoice-box table tr.total td:nth-child(2) {
-                    border-top: 2px solid #eee;
-                    font-weight: 700;
-                }
-                .status {
-                    font-size: 1.5em;
-                    color: #22c55e;
-                    font-weight: bold;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="invoice-box">
-                <table>
-                    <tr class="top">
-                        <td colspan="4">
-                            <table>
-                                <tr>
-                                    <td class="title">En-Bus</td>
-                                    <td style="text-align:right;">
-                                        ${texts.invoice_nr}: INV-${reservation.bookingNumber.slice(3)}<br>
-                                        ${texts.date}: ${new Date(reservation.confirmedAt || reservation.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}<br>
-                                        ${texts.booking_nr}: ${reservation.bookingNumber}
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr class="information">
-                        <td colspan="4">
-                            <table>
-                                <tr>
-                                    <td>
-                                        <strong>En-Bus SAS</strong><br>
-                                        123 Avenue de la République<br>
-                                        Brazzaville, Congo
-                                    </td>
-                                    <td style="text-align:right;">
-                                        <strong>${texts.billed_to}</strong><br>
-                                        ${passenger.name}<br>
-                                        ${passenger.email || passenger.phone}
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr class="heading">
-                        <td>${texts.description}</td>
-                        <td>${texts.qty}</td>
-                        <td>${texts.unit_price}</td>
-                        <td style="text-align:right;">${texts.total}</td>
-                    </tr>
-                    <tr class="item">
-                        <td>${texts.adult_ticket_desc}: ${reservation.route.from} → ${reservation.route.to}</td>
-                        <td>${adultTickets}</td>
-                        <td>${ticketPrice} FCFA</td>
-                        <td style="text-align:right;">${adultTickets * ticketPrice} FCFA</td>
-                    </tr>
-                    <tr class="total">
-                        <td colspan="3" style="text-align:right;"><strong>${texts.subtotal}</strong></td>
-                        <td style="text-align:right;">${subtotal} FCFA</td>
-                    </tr>
-                    <tr class="total">
-                        <td colspan="3" style="text-align:right;"><strong>${texts.vat} (0%)</strong></td>
-                        <td style="text-align:right;">0 FCFA</td>
-                    </tr>
-                    <tr class="total">
-                        <td colspan="3" style="text-align:right;"><strong>${texts.total_paid}</strong></td>
-                        <td style="text-align:right;"><strong>${reservation.totalPrice}</strong></td>
-                    </tr>
-                </table>
-                <div style="text-align:center; margin-top: 40px;">
-                    <p><strong>${texts.payment_method}:</strong> ${reservation.paymentMethod}</p>
-                    <p class="status">${texts.status_paid}</p>
-                </div>
-            </div>
-        </body>
-    </html>`;
+    // ── Créer le document PDF ──
+    const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
+
+    // Headers HTTP
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=facture-${reservation.bookingNumber}.pdf`);
+
+    // Piper le PDF directement dans la réponse
+    doc.pipe(res);
+
+    // ── Couleurs ──
+    const navy = '#1a1a2e';
+    const accent = '#e94560';
+    const gray = '#666666';
+    const lightBg = '#f5f5f5';
+
+    // ── BARRE HEADER ──
+    doc.rect(0, 0, doc.page.width, 90).fill(navy);
+    doc.fill('#ffffff').fontSize(28).text('En-Bus', 50, 22);
+    doc.fontSize(10)
+        .text(`${texts.invoice_nr}: ${invoiceNr}`, 300, 25, { width: 245, align: 'right' })
+        .text(`${texts.date}: ${dateStr}`, 300, 42, { width: 245, align: 'right' })
+        .text(`${texts.booking_nr}: ${reservation.bookingNumber}`, 300, 59, { width: 245, align: 'right' });
+
+    // ── ÉMETTEUR / DESTINATAIRE ──
+    let y = 115;
+    doc.fill(navy).fontSize(10).text('En-Bus SAS', 50, y);
+    doc.fill(gray).fontSize(9)
+        .text('123 Avenue de la République', 50, y + 16)
+        .text('Brazzaville, Congo', 50, y + 30);
+
+    doc.fill(navy).fontSize(10).text(texts.billed_to, 300, y);
+    doc.fill(gray).fontSize(9)
+        .text(passenger.name || 'Non spécifié', 300, y + 16)
+        .text(passenger.email || passenger.phone || '', 300, y + 30);
+
+    // ── LIGNE SÉPARATRICE ──
+    y = 180;
+    doc.moveTo(50, y).lineTo(545, y).lineWidth(0.5).stroke('#dddddd');
+
+    // ── TABLE ──
+    y = 195;
+    const colX = [50, 280, 340, 420];
+    const colW = [225, 55, 75, 90];
+
+    // Header row
+    doc.rect(50, y, 460, 24).fill(lightBg);
+    doc.fill(navy).fontSize(9).font('Helvetica-Bold');
+    doc.text(texts.description, colX[0] + 8, y + 7);
+    doc.text(texts.qty,        colX[1] + 8, y + 7);
+    doc.text(texts.unit_price, colX[2] + 8, y + 7);
+    doc.text(texts.total,      colX[3] + 8, y + 7, { width: colW[3] - 16, align: 'right' });
+
+    // Data row
+    y += 24;
+    doc.rect(50, y, 460, 34).stroke('#e0e0e0');
+    doc.fill('#333333').font('Helvetica').fontSize(9);
+    doc.text(
+        `${texts.adult_ticket_desc}: ${reservation.route?.from || '?'} → ${reservation.route?.to || '?'}`,
+        colX[0] + 8, y + 12, { width: colW[0] - 16 }
+    );
+    doc.text(String(adultTickets),                                     colX[1] + 8, y + 12);
+    doc.text(`${ticketPrice} FCFA`,                                    colX[2] + 8, y + 12);
+    doc.text(`${adultTickets * ticketPrice} FCFA`,                     colX[3] + 8, y + 12, { width: colW[3] - 16, align: 'right' });
+
+    // ── TOTAUX ──
+    y += 60;
+    doc.fill(gray).font('Helvetica').fontSize(9);
+    doc.text(texts.subtotal,           300, y);
+    doc.text(`${subtotal} FCFA`,       colX[3] + 8, y, { width: colW[3] - 16, align: 'right' });
+
+    doc.text(`${texts.vat} (0%)`,      300, y + 20);
+    doc.text('0 FCFA',                 colX[3] + 8, y + 20, { width: colW[3] - 16, align: 'right' });
+
+    // Ligne accent
+    y += 46;
+    doc.moveTo(300, y).lineTo(510, y).lineWidth(1.5).stroke(accent);
+
+    // Total payé
+    doc.fill(navy).font('Helvetica-Bold').fontSize(11).text(texts.total_paid, 300, y + 10);
+    doc.fill(accent).font('Helvetica-Bold').fontSize(14)
+        .text(reservation.totalPrice || '0 FCFA', colX[3] + 8, y + 8, { width: colW[3] - 16, align: 'right' });
+
+    // ── STATUT PAIEMENT ──
+    y += 65;
+    doc.fill(gray).font('Helvetica').fontSize(9)
+        .text(`${texts.payment_method}: ${reservation.paymentMethod || 'Non spécifié'}`, 50, y, { align: 'center', width: 460 });
+    doc.fill('#22c55e').font('Helvetica-Bold').fontSize(18)
+        .text(texts.status_paid, 50, y + 25, { align: 'center', width: 460 });
+
+    // ── FOOTER ──
+    doc.fill('#bbbbbb').font('Helvetica').fontSize(7)
+        .text('En-Bus SAS — Brazzaville, Congo — enbus.cg', 50, 780, { align: 'center', width: 460 });
+
+    // Finaliser
+    doc.end();
 }
 
-// Route pour générer et télécharger une facture (COMPATIBLE RENDER)
-// Route pour générer et télécharger une facture (COMPATIBLE ES MODULES + RENDER)
+// ── ROUTE ──
 app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
     try {
         const { bookingNumber } = req.params;
         const lang = req.query.lang || 'fr';
-        
+
         const reservation = await reservationsCollection.findOne({ bookingNumber });
         if (!reservation) return res.status(404).send('Réservation non trouvée');
         if (reservation.status !== 'Confirmé') return res.status(403).send('Facture disponible uniquement pour les réservations confirmées');
 
-        // ✅ Générer le HTML avec TON template original
-        const htmlContent = generateInvoiceHTML(reservation, lang);
-
-        // ✅ Import dynamique compatible ES Modules
-        const { createRequire } = await import('module');
-        const require = createRequire(import.meta.url);
-        
-        const chromium = require('@sparticuz/chromium');
-        const puppeteer = require('puppeteer-core');
-
-        // Lancer Chromium compatible serverless
-        const browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-        });
-
-        const page = await browser.newPage();
-        
-        await page.setContent(htmlContent, { 
-            waitUntil: 'networkidle0',
-            timeout: 30000 
-        });
-
-        const pdfBuffer = await page.pdf({ 
-            format: 'A4', 
-            printBackground: true,
-            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
-        });
-
-        await browser.close();
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=facture-${bookingNumber}.pdf`);
-        res.send(pdfBuffer);
+        generateInvoicePDF(reservation, lang, res);
 
     } catch (error) {
         console.error("❌ Erreur génération facture:", error);
-        
-        // Fallback : retourne une erreur claire
-        res.status(500).json({ 
-            error: "Erreur génération PDF", 
-            details: error.message,
-            hint: "Vérifie que @sparticuz/chromium et puppeteer-core sont installés"
-        });
+        res.status(500).json({ error: "Erreur génération PDF", details: error.message });
     }
 });
 
