@@ -3979,7 +3979,8 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
 
     const priceDetails = Utils.calculateTotalPrice(appState);
 
-    const reservationData = {
+
+        const reservationData = {
         bookingNumber: bookingNumber,
         status: 'En attente',
         
@@ -3994,19 +3995,19 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
             arrivalTime: appState.selectedBus?.arrivalTime || appState.selectedSchedule?.arrivalTime || '',
             busNumber: appState.selectedBus?.busNumber || '',
             busId: appState.selectedBus?.busId || '',
-            price: price
+            price: Number(price) || 0  // ✅ Forcer en Number
         },
         
         passengers: passengers,
-        passengerCount: passengers.length,
+        passengerCount: Number(passengers.length) || 1,
         selectedSeats: appState.selectedSeats || [],
         
         // ── Prix ──
-        totalPriceNumeric: priceDetails.total,
-        totalPrice: Utils.formatPrice(totalWithFee) + ' FCFA',
-        basePrice: priceDetails.total,
-        fedapayFee: totalWithFee - priceDetails.total,
-        totalWithFee: totalWithFee,
+        totalPriceNumeric: Number(priceDetails.total) || 0,      // ✅ Nombre
+        totalPrice: Number(totalWithFee) || 0,                   // ✅ Nombre (au lieu de "103 FCFA")
+        basePrice: Number(priceDetails.total) || 0,              // ✅ Nombre
+        fedapayFee: Number(totalWithFee - priceDetails.total) || 0, // ✅ Nombre
+        totalWithFee: Number(totalWithFee) || 0,                 // ✅ Nombre
         
         // ── Paiement ──
         paymentMethod: paymentMethod,
@@ -4068,17 +4069,20 @@ async function initiateFedapayPayment() {
         
         const createData = await createResponse.json();
         
-        if (!createResponse.ok || !createData.success) {
+               if (!createResponse.ok || !createData.success) {
             console.error("❌ Détails erreur backend:", createData);
             
-            // Si la réservation existe déjà (cas où l'utilisateur a rechargé la page), on continue !
-            if (createData.error && createData.error.includes('existe déjà')) {
-                console.log('ℹ️ Réservation déjà existante, on continue vers FedaPay...');
-            } else {
-                throw new Error(createData.error || 'Erreur création réservation');
+            // 🔍 Extraire les erreurs de validation Express-Validator
+            let errorMessage = 'Erreur création réservation';
+            if (createData.errors && Array.isArray(createData.errors)) {
+                const validationMsgs = createData.errors.map(e => `${e.param || e.path}: ${e.msg}`).join(' | ');
+                errorMessage = `Validation échouée: ${validationMsgs}`;
+                console.error('🔴 Erreurs de validation:', validationMsgs);
+            } else if (createData.error) {
+                errorMessage = createData.error;
             }
-        } else {
-            console.log(`✅ Réservation créée: ${bookingNumber} (en attente)`);
+            
+            throw new Error(errorMessage);
         }
     
     // ✅ ÉTAPE 2 : Créer la transaction FedaPay
