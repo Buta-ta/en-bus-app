@@ -3949,17 +3949,23 @@ function updateFedapayFeeDisplay() {
 // ============================================
 // 🎯 CONSTRUIRE LES DONNÉES DE RÉSERVATION
 // ============================================
+
+
+// 🎯 Fonction principale : Initier un paiement FedaPay
+
+
 function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     const lang = getLanguage();
     
-    // 🔹 Récupération défensive des données du trajet
-    const from = appState.selectedRoute?.from || appState.searchFrom || appState.trip?.from || '';
-    const to = appState.selectedRoute?.to || appState.searchTo || appState.trip?.to || '';
-    const price = appState.selectedRoute?.price || appState.trip?.price || 0;
+    // 🔹 Récupération adaptée à la VRAIE structure de appState
+    const from = appState.currentSearch?.from || appState.selectedBus?.from || appState.selectedRoute?.from || '';
+    const to = appState.currentSearch?.to || appState.selectedBus?.to || appState.selectedRoute?.to || '';
+    const date = appState.currentSearch?.date || appState.searchDate || '';
+    const price = appState.selectedBus?.price || appState.selectedRoute?.price || 0;
 
-    // 🚨 SÉCURITÉ : Si le trajet est vide, on arrête tout !
+    // 🚨 SÉCURITÉ : Si le trajet est vide, on arrête tout
     if (!from || !to) {
-        console.error("❌ appState est vide ou incomplet. Impossible de créer la réservation.", appState);
+        console.error("❌ Données du trajet introuvables. Clés manquantes dans appState.", appState);
         throw new Error("Les informations du trajet sont perdues. Veuillez refaire votre recherche.");
     }
 
@@ -3976,39 +3982,52 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     const reservationData = {
         bookingNumber: bookingNumber,
         status: 'En attente',
+        
+        // ── Trajet ──
         route: {
             from: from,
             to: to,
-            fromId: appState.selectedRoute?.fromId || '',
-            toId: appState.selectedRoute?.toId || '',
-            date: appState.searchDate || new Date().toISOString().split('T')[0],
-            departureTime: appState.selectedSchedule?.departureTime || appState.selectedSchedule?.time || '',
-            arrivalTime: appState.selectedSchedule?.arrivalTime || '',
-            busNumber: appState.selectedSchedule?.busNumber || '',
-            busId: appState.selectedSchedule?.busId || '',
+            fromId: appState.currentSearch?.fromId || appState.selectedBus?.fromId || '',
+            toId: appState.currentSearch?.toId || appState.selectedBus?.toId || '',
+            date: date,
+            departureTime: appState.selectedBus?.departureTime || appState.selectedSchedule?.departureTime || '',
+            arrivalTime: appState.selectedBus?.arrivalTime || appState.selectedSchedule?.arrivalTime || '',
+            busNumber: appState.selectedBus?.busNumber || '',
+            busId: appState.selectedBus?.busId || '',
             price: price
         },
+        
         passengers: passengers,
         passengerCount: passengers.length,
         selectedSeats: appState.selectedSeats || [],
+        
+        // ── Prix ──
         totalPriceNumeric: priceDetails.total,
         totalPrice: Utils.formatPrice(totalWithFee) + ' FCFA',
         basePrice: priceDetails.total,
         fedapayFee: totalWithFee - priceDetails.total,
         totalWithFee: totalWithFee,
+        
+        // ── Paiement ──
         paymentMethod: paymentMethod,
         paymentStatus: 'pending',
-        agency: appState.selectedSchedule?.agency || appState.selectedRoute?.agency || '',
-        agencyId: appState.selectedSchedule?.agencyId || appState.selectedRoute?.agencyId || '',
+        
+        // ── Métadonnées ──
+        agency: appState.selectedBus?.agency || appState.selectedSchedule?.agency || '',
+        agencyId: appState.selectedBus?.agencyId || appState.selectedSchedule?.agencyId || '',
         createdAt: new Date().toISOString(),
         lang: lang
     };
 
-    console.log('📋 ReservationData construit:', reservationData);
+    console.log('📋 ReservationData construit avec succès :', {
+        route: `${reservationData.route.from} → ${reservationData.route.to}`,
+        date: reservationData.route.date,
+        price: reservationData.route.price,
+        total: totalWithFee
+    });
+
     return reservationData;
 }
-
-// 🎯 Fonction principale : Initier un paiement FedaPay
 
 // 🎯 Fonction principale : Initier un paiement FedaPay (version corrigée)
 async function initiateFedapayPayment() {
