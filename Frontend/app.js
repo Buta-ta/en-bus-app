@@ -3953,14 +3953,13 @@ function updateFedapayFeeDisplay() {
 
 // 🎯 Fonction principale : Initier un paiement FedaPay
 
-
 function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     const lang = getLanguage();
     
-    // 🔹 Récupération adaptée à la VRAIE structure de appState
+    // 🔹 Récupération des données de base
     const from = appState.currentSearch?.from || appState.selectedBus?.from || appState.selectedRoute?.from || '';
     const to = appState.currentSearch?.to || appState.selectedBus?.to || appState.selectedRoute?.to || '';
-    const date = appState.currentSearch?.date || appState.searchDate || '';
+    const date = appState.currentSearch?.date || appState.searchDate || appState.selectedBus?.date || '';
     const price = appState.selectedBus?.price || appState.selectedRoute?.price || 0;
 
     // 🚨 SÉCURITÉ : Si le trajet est vide, on arrête tout
@@ -3968,6 +3967,9 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
         console.error("❌ Données du trajet introuvables. Clés manquantes dans appState.", appState);
         throw new Error("Les informations du trajet sont perdues. Veuillez refaire votre recherche.");
     }
+
+    // 🔹 Récupérer l'ID du trajet (exigé par le validateur backend)
+    const routeId = appState.currentSearch?.routeId || appState.selectedBus?.routeId || appState.selectedRoute?.id || appState.selectedRoute?._id || '';
 
     const passengers = (appState.passengerInfo || []).map((p, i) => ({
         name: p.name || '',
@@ -3979,23 +3981,24 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
 
     const priceDetails = Utils.calculateTotalPrice(appState);
 
-
-        const reservationData = {
+    const reservationData = {
         bookingNumber: bookingNumber,
         status: 'En attente',
+        date: date, // ✅ 1. Ajouté à la racine (exigé par le backend)
         
         // ── Trajet ──
         route: {
+            id: routeId, // ✅ 2. Ajouté dans l'objet route (exigé par le backend)
             from: from,
             to: to,
             fromId: appState.currentSearch?.fromId || appState.selectedBus?.fromId || '',
             toId: appState.currentSearch?.toId || appState.selectedBus?.toId || '',
-            date: date,
+            date: date, // On le garde aussi ici par sécurité
             departureTime: appState.selectedBus?.departureTime || appState.selectedSchedule?.departureTime || '',
             arrivalTime: appState.selectedBus?.arrivalTime || appState.selectedSchedule?.arrivalTime || '',
             busNumber: appState.selectedBus?.busNumber || '',
             busId: appState.selectedBus?.busId || '',
-            price: Number(price) || 0  // ✅ Forcer en Number
+            price: Number(price) || 0
         },
         
         passengers: passengers,
@@ -4003,11 +4006,11 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
         selectedSeats: appState.selectedSeats || [],
         
         // ── Prix ──
-        totalPriceNumeric: Number(priceDetails.total) || 0,      // ✅ Nombre
-        totalPrice: Number(totalWithFee) || 0,                   // ✅ Nombre (au lieu de "103 FCFA")
-        basePrice: Number(priceDetails.total) || 0,              // ✅ Nombre
-        fedapayFee: Number(totalWithFee - priceDetails.total) || 0, // ✅ Nombre
-        totalWithFee: Number(totalWithFee) || 0,                 // ✅ Nombre
+        totalPriceNumeric: Number(priceDetails.total) || 0,
+        totalPrice: Number(totalWithFee) || 0,
+        basePrice: Number(priceDetails.total) || 0,
+        fedapayFee: Number(totalWithFee - priceDetails.total) || 0,
+        totalWithFee: Number(totalWithFee) || 0,
         
         // ── Paiement ──
         paymentMethod: paymentMethod,
@@ -4021,9 +4024,9 @@ function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
     };
 
     console.log('📋 ReservationData construit avec succès :', {
+        routeId: routeId || '⚠️ MANQUANT',
+        date: date || '⚠️ MANQUANT',
         route: `${reservationData.route.from} → ${reservationData.route.to}`,
-        date: reservationData.route.date,
-        price: reservationData.route.price,
         total: totalWithFee
     });
 
