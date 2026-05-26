@@ -3943,6 +3943,79 @@ function updateFedapayFeeDisplay() {
     }
 }
 
+
+
+
+// ============================================
+// 🎯 CONSTRUIRE LES DONNÉES DE RÉSERVATION
+// ============================================
+
+function buildReservationData(bookingNumber, paymentMethod, totalWithFee) {
+    const lang = getLanguage();
+    const passengers = (appState.passengerInfo || []).map((p, i) => ({
+        name: p.name || '',
+        email: p.email || '',
+        phone: p.phone || '',
+        type: i === 0 ? 'adult' : (p.type || 'adult'),
+        seatNumber: appState.selectedSeats?.[i] || null
+    }));
+
+    const priceDetails = Utils.calculateTotalPrice(appState);
+
+    const reservationData = {
+        bookingNumber: bookingNumber,
+        status: 'En attente',  // Sera confirmé après paiement
+
+        // ── Trajet ──
+        route: {
+            from: appState.selectedRoute?.from || appState.searchFrom || '',
+            to: appState.selectedRoute?.to || appState.searchTo || '',
+            fromId: appState.selectedRoute?.fromId || '',
+            toId: appState.selectedRoute?.toId || '',
+            date: appState.searchDate || new Date().toISOString().split('T')[0],
+            departureTime: appState.selectedSchedule?.departureTime || appState.selectedSchedule?.time || '',
+            arrivalTime: appState.selectedSchedule?.arrivalTime || '',
+            busNumber: appState.selectedSchedule?.busNumber || '',
+            busId: appState.selectedSchedule?.busId || '',
+            price: appState.selectedRoute?.price || 0
+        },
+
+        // ── Passagers ──
+        passengers: passengers,
+        passengerCount: passengers.length,
+
+        // ── Sièges ──
+        selectedSeats: appState.selectedSeats || [],
+
+        // ── Prix ──
+        totalPriceNumeric: priceDetails.total,
+        totalPrice: Utils.formatPrice(totalWithFee) + ' FCFA',
+        basePrice: priceDetails.total,
+        fedapayFee: totalWithFee - priceDetails.total,
+        totalWithFee: totalWithFee,
+
+        // ── Paiement ──
+        paymentMethod: paymentMethod,
+        paymentStatus: 'pending',
+
+        // ── Métadonnées ──
+        agency: appState.selectedSchedule?.agency || appState.selectedRoute?.agency || '',
+        agencyId: appState.selectedSchedule?.agencyId || appState.selectedRoute?.agencyId || '',
+        createdAt: new Date().toISOString(),
+        lang: lang
+    };
+
+    console.log('📋 ReservationData construit:', {
+        booking: bookingNumber,
+        route: `${reservationData.route.from} → ${reservationData.route.to}`,
+        passengers: passengers.length,
+        seats: reservationData.selectedSeats,
+        total: totalWithFee
+    });
+
+    return reservationData;
+}
+
 // 🎯 Fonction principale : Initier un paiement FedaPay
 
 // 🎯 Fonction principale : Initier un paiement FedaPay (version corrigée)
