@@ -2834,6 +2834,7 @@ function generateInvoiceHTML(reservation, lang = 'fr') {
 }
 
 // Route pour générer et télécharger une facture (COMPATIBLE RENDER)
+// Route pour générer et télécharger une facture (COMPATIBLE ES MODULES + RENDER)
 app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
     try {
         const { bookingNumber } = req.params;
@@ -2846,7 +2847,10 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
         // ✅ Générer le HTML avec TON template original
         const htmlContent = generateInvoiceHTML(reservation, lang);
 
-        // ✅ Utiliser @sparticuz/chromium + puppeteer-core pour Render
+        // ✅ Import dynamique compatible ES Modules
+        const { createRequire } = await import('module');
+        const require = createRequire(import.meta.url);
+        
         const chromium = require('@sparticuz/chromium');
         const puppeteer = require('puppeteer-core');
 
@@ -2860,13 +2864,11 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
 
         const page = await browser.newPage();
         
-        // Charger le HTML avec les bonnes options
         await page.setContent(htmlContent, { 
             waitUntil: 'networkidle0',
             timeout: 30000 
         });
 
-        // Générer le PDF
         const pdfBuffer = await page.pdf({ 
             format: 'A4', 
             printBackground: true,
@@ -2875,14 +2877,19 @@ app.get('/api/reservations/:bookingNumber/invoice', async (req, res) => {
 
         await browser.close();
 
-        // Envoyer le PDF
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=facture-${bookingNumber}.pdf`);
         res.send(pdfBuffer);
 
     } catch (error) {
         console.error("❌ Erreur génération facture:", error);
-        res.status(500).send('Erreur serveur lors de la génération de la facture');
+        
+        // Fallback : retourne une erreur claire
+        res.status(500).json({ 
+            error: "Erreur génération PDF", 
+            details: error.message,
+            hint: "Vérifie que @sparticuz/chromium et puppeteer-core sont installés"
+        });
     }
 });
 
