@@ -320,7 +320,10 @@ async function sendEmail(to, subject, htmlContent, headerTitle, lang = 'fr') {
 }
 function sendPendingPaymentEmail(reservation) {
     const client = reservation.passengers?.[0];
-    if (!client?.email) return;
+    if (!client?.email) {
+        console.warn(`⚠️ [sendPendingPaymentEmail] Pas d'email client pour ${reservation.bookingNumber}`);
+        return;
+    }
 
     const lang = reservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
@@ -330,39 +333,68 @@ function sendPendingPaymentEmail(reservation) {
     const subject = translation.email_pending_subject(reservation.bookingNumber);
     const headerTitle = translation.email_pending_title;
 
-    // Date formatée
-    const deadlineUTC = new Date(reservation.paymentDeadline);
-    const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
-    const deadline = format(zonedDeadline, "PPPP p", { locale: locale });
+    // ✅ CORRECTION : Sécurisation du formatage de la deadline
+    let deadline = "Date limite non définie";
+    try {
+        const rawDeadline = reservation.paymentDeadline;
+
+        if (rawDeadline) {
+            const deadlineUTC = new Date(rawDeadline);
+
+            if (!isNaN(deadlineUTC.getTime())) {
+                const zonedDeadline = utcToZonedTime(deadlineUTC, timeZone);
+                deadline = format(zonedDeadline, "PPPP p", { locale: locale });
+            } else {
+                console.warn(`⚠️ [sendPendingPaymentEmail] paymentDeadline invalide: "${rawDeadline}" (réservation ${reservation.bookingNumber})`);
+                // Fallback : deadline = maintenant + 24h
+                const fallbackDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                const zonedFallback = utcToZonedTime(fallbackDeadline, timeZone);
+                deadline = format(zonedFallback, "PPPP p", { locale: locale });
+            }
+        } else {
+            console.warn(`⚠️ [sendPendingPaymentEmail] paymentDeadline manquant pour ${reservation.bookingNumber}`);
+            // Fallback : deadline = maintenant + 24h
+            const fallbackDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            const zonedFallback = utcToZonedTime(fallbackDeadline, timeZone);
+            deadline = format(zonedFallback, "PPPP p", { locale: locale });
+        }
+    } catch (e) {
+        console.error(`❌ [sendPendingPaymentEmail] Erreur formatage date (${reservation.bookingNumber}):`, e.message);
+        deadline = "Dans les 24 heures";
+    }
+
+    // ✅ Sécurisation de l'accès à reservation.route
+    const routeFrom = reservation.route?.from || reservation.route?.departure || "Départ";
+    const routeTo = reservation.route?.to || reservation.route?.arrival || "Arrivée";
 
     let paymentInstructions = '';
     if (reservation.paymentMethod === 'AGENCY') {
-        // Style Code Box
         paymentInstructions = `
             <div class="code-box">
                 <h4 class="code-box-title">${translation.email_pending_agency_code_label}</h4>
-                <p class="code-box-code">${reservation.agencyPaymentCode}</p>
+                <p class="code-box-code">${reservation.agencyPaymentCode || 'N/A'}</p>
             </div>
             <p style="text-align: center; font-size: 14px;">${translation.email_pending_agency_cta}</p>
         `;
     } else {
-        // Style Info Box Mobile Money
+        const totalPrice = reservation.totalPrice || reservation.totalWithFee || 0;
         paymentInstructions = `
             <div class="info-box" style="border-left-color: #ffa726; background-color: #fff8e1;">
-                 <!-- ===================== CORRECTION ICI ===================== -->
                 <h3 style="color: #ffa726; margin-top: 0; font-size: 18px;">${translation.email_mobile_payment_title}</h3>
-                <p style="margin-bottom: 0;">${translation.email_pending_mm_cta(reservation.totalPrice, reservation.bookingNumber)}</p>
+                <p style="margin-bottom: 0;">${translation.email_pending_mm_cta(totalPrice, reservation.bookingNumber)}</p>
             </div>
         `;
     }
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
-        <p>${translation.email_pending_intro(reservation.route.from, reservation.route.to)}</p>
+        <p>${translation.email_pending_intro(routeFrom, routeTo)}</p>
         
         ${paymentInstructions}
         
-        <div style="background-color: #ffebee; border: 1px solid #ef5350; color: #c62828; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center; font-weight: 700;">
+        <div style="background-color: #ffebee; border: 1px solid #ef5350; color: #c62828; 
+                    padding: 15px; border-radius: 8px; margin-top: 20px; 
+                    text-align: center; font-weight: 700;">
             ⚠️ ${translation.email_pending_deadline_warning(deadline)}
         </div>
     `;
@@ -912,7 +944,7 @@ app.get("/api/reservations/:bookingNumber", async (req, res) => {
 
 app.post(
     "/api/reservations",
-    loginLimiter, // Utilise un rate limiter plus strict pour la création
+    loginLimiter,
     [
         body("bookingNumber").notEmpty(),
         body("route").isObject(),
@@ -933,31 +965,62 @@ app.post(
             if (!reservationData.route || !reservationData.route.id) {
                 return res.status(400).json({ error: "Données de route aller invalides." });
             }
-            const trip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.route.id) });
+            const trip = await tripsCollection.findOne({ 
+                _id: new ObjectId(reservationData.route.id) 
+            });
             if (!trip) return res.status(404).json({ error: "Voyage aller introuvable." });
 
             const seatNumbersToOccupy = reservationData.seats.map(s => parseInt(s));
-            const alreadyTaken = trip.seats.filter(s => seatNumbersToOccupy.includes(s.number) && s.status !== "available");
-            if (alreadyTaken.length > 0) return res.status(409).json({ error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+            const alreadyTaken = trip.seats.filter(
+                s => seatNumbersToOccupy.includes(s.number) && s.status !== "available"
+            );
+            if (alreadyTaken.length > 0) {
+                return res.status(409).json({ 
+                    error: `Conflit : Sièges aller ${alreadyTaken.map(s => s.number).join(", ")} indisponibles.` 
+                });
+            }
 
-            await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+            await tripsCollection.updateOne(
+                { _id: trip._id },
+                { $set: { "seats.$[elem].status": "occupied" } },
+                { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+            );
 
             // --- Vérification et réservation du trajet RETOUR (si applicable) ---
             if (reservationData.returnRoute) {
-                if (!reservationData.returnRoute.id) return res.status(400).json({ error: "Données de route retour invalides." });
-                const returnTrip = await tripsCollection.findOne({ _id: new ObjectId(reservationData.returnRoute.id) });
+                if (!reservationData.returnRoute.id) {
+                    return res.status(400).json({ error: "Données de route retour invalides." });
+                }
+                const returnTrip = await tripsCollection.findOne({ 
+                    _id: new ObjectId(reservationData.returnRoute.id) 
+                });
                 if (!returnTrip) {
-                    // Annuler l'occupation des sièges aller en cas d'erreur
-                    await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
+                    await tripsCollection.updateOne(
+                        { _id: trip._id },
+                        { $set: { "seats.$[elem].status": "available" } },
+                        { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+                    );
                     return res.status(404).json({ error: "Voyage retour introuvable." });
                 }
                 const returnSeatNumbers = reservationData.returnSeats.map(s => parseInt(s));
-                const returnAlreadyTaken = returnTrip.seats.filter(s => returnSeatNumbers.includes(s.number) && s.status !== "available");
+                const returnAlreadyTaken = returnTrip.seats.filter(
+                    s => returnSeatNumbers.includes(s.number) && s.status !== "available"
+                );
                 if (returnAlreadyTaken.length > 0) {
-                    await tripsCollection.updateOne({ _id: trip._id }, { $set: { "seats.$[elem].status": "available" } }, { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] });
-                    return res.status(409).json({ error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(", ")} indisponibles.` });
+                    await tripsCollection.updateOne(
+                        { _id: trip._id },
+                        { $set: { "seats.$[elem].status": "available" } },
+                        { arrayFilters: [{ "elem.number": { $in: seatNumbersToOccupy } }] }
+                    );
+                    return res.status(409).json({ 
+                        error: `Conflit : Sièges retour ${returnAlreadyTaken.map(s => s.number).join(", ")} indisponibles.` 
+                    });
                 }
-                await tripsCollection.updateOne({ _id: returnTrip._id }, { $set: { "seats.$[elem].status": "occupied" } }, { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] });
+                await tripsCollection.updateOne(
+                    { _id: returnTrip._id },
+                    { $set: { "seats.$[elem].status": "occupied" } },
+                    { arrayFilters: [{ "elem.number": { $in: returnSeatNumbers } }] }
+                );
             }
 
             // --- Génération du code agence ---
@@ -966,10 +1029,37 @@ app.post(
                 console.log(`📠 Code agence généré: ${reservationData.agencyPaymentCode}`);
             }
 
-            // --- Insertion en base de données et envoi de l'email ---
+            // ✅ CORRECTION PRINCIPALE : Enrichir les données AVANT insertion et email
+            // Définir paymentDeadline s'il est absent
+            if (!reservationData.paymentDeadline) {
+                reservationData.paymentDeadline = new Date(
+                    Date.now() + 24 * 60 * 60 * 1000 // +24h par défaut
+                ).toISOString();
+            }
+
+            // Normaliser route.from / route.to si absents
+            if (!reservationData.route.from && trip.from) {
+                reservationData.route.from = trip.from;
+            }
+            if (!reservationData.route.to && trip.to) {
+                reservationData.route.to = trip.to;
+            }
+
+            // Ajouter timestamps serveur
+            reservationData.createdAt = reservationData.createdAt || new Date().toISOString();
+
+            // --- Insertion en base de données ---
             const result = await reservationsCollection.insertOne(reservationData);
+
+            // ✅ CORRECTION : Envoyer l'email APRÈS insertion, avec try/catch isolé
+            // pour ne PAS bloquer la réponse au client si l'email échoue
             if (reservationData.status === "En attente de paiement") {
-                sendPendingPaymentEmail(reservationData);
+                try {
+                    sendPendingPaymentEmail(reservationData);
+                } catch (emailError) {
+                    // L'email échoue ? On logue mais on ne plante pas la réservation
+                    console.error("⚠️ Email pending échoué (réservation quand même créée):", emailError.message);
+                }
             }
 
             // --- Réponse au client ---
@@ -977,11 +1067,12 @@ app.post(
                 success: true,
                 message: "Réservation créée.",
                 reservationId: result.insertedId,
+                bookingNumber: reservationData.bookingNumber,
                 agencyPaymentCode: reservationData.agencyPaymentCode || null
             });
 
         } catch (error) {
-            console.error("❌ Erreur réservation:", error);
+            console.error("❌ Erreur réservation:", error.message, error.stack);
             res.status(500).json({ error: "Erreur serveur." });
         }
     }
