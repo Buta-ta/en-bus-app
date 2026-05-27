@@ -415,43 +415,40 @@ function sendPaymentConfirmedEmail(reservation) {
     const subject = translation.email_confirmed_subject(reservation.bookingNumber);
     const headerTitle = translation.email_confirmed_title;
 
-    // ========================================================
-    // ✅ DÉBUT DE LA CORRECTION : Sécurisation du formatage de date
-    // ========================================================
+    let formattedDateTime = "Date/Heure non spécifiée";
 
-    let formattedDateTime = "Date/Heure non spécifiée"; // Valeur de secours par défaut
-
-    // On vérifie que les données nécessaires existent avant de tenter de les formater
     if (reservation.date && reservation.route?.departure) {
         try {
-            const timeZone = 'Africa/Brazzaville';
-            const departureDateTimeUTC = new Date(`${reservation.date}T${reservation.route.departure}:00`);
+            // ✅ CORRECTION : Construire la date en heure LOCALE (pas UTC)
+            // new Date(year, month-1, day, hours, minutes) → toujours heure locale
+            const [year, month, day] = reservation.date.split('-').map(Number);
+            const [hours, minutes] = reservation.route.departure.split(':').map(Number);
 
-            // On vérifie que la date créée est valide avant de la formater
-            if (!isNaN(departureDateTimeUTC.getTime())) {
-                const zonedDeparture = utcToZonedTime(departureDateTimeUTC, timeZone);
-                // Votre format original a été conservé
-                formattedDateTime = format(zonedDeparture, "PPPP 'à' p", { locale: locale });
-            } else {
-                // Si la date est invalide, on logue une alerte
-                console.warn(`[WARN] Date de départ invalide pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
-                // On pourrait utiliser une autre date en secours, comme la date de confirmation
-                if (reservation.confirmedAt) {
-                    formattedDateTime = new Date(reservation.confirmedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+            // Vérification que le parsing a donné des nombres valides
+            if ([year, month, day, hours, minutes].every(n => !isNaN(n))) {
+                const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+
+                if (!isNaN(localDate.getTime())) {
+                    // ✅ Pas de utcToZonedTime() → l'heure est déjà locale
+                    formattedDateTime = format(localDate, "PPPP 'à' p", { locale });
+                } else {
+                    console.warn(`[WARN] Date invalide pour ${reservation.bookingNumber}`);
+                    if (reservation.confirmedAt) {
+                        formattedDateTime = new Date(reservation.confirmedAt)
+                            .toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+                    }
                 }
+            } else {
+                console.warn(`[WARN] Parsing date/heure échoué pour ${reservation.bookingNumber}:`, 
+                    reservation.date, reservation.route.departure);
             }
+
         } catch (e) {
-            // Si une erreur se produit pendant le formatage, on logue et on continue
-            console.error(`[ERROR] Erreur lors du formatage de la date pour l'email (réservation ${reservation.bookingNumber}):`, e);
+            console.error(`[ERROR] Formatage date email confirmation (${reservation.bookingNumber}):`, e);
         }
     } else {
-        // Si les données de base sont manquantes, on logue une alerte
-        console.warn(`[WARN] Données de date ou d'heure de départ manquantes pour l'email de confirmation (réservation ${reservation.bookingNumber}).`);
+        console.warn(`[WARN] Date ou heure de départ manquante pour ${reservation.bookingNumber}`);
     }
-
-    // ========================================================
-    // ✅ FIN DE LA CORRECTION
-    // ========================================================
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
@@ -462,20 +459,27 @@ function sendPaymentConfirmedEmail(reservation) {
             <span>${reservation.route.from} ➝ ${reservation.route.to}</span>
             
             <strong>${translation.email_confirmed_details_date}</strong>
-            <span>${formattedDateTime}</span> <!-- On utilise la variable sécurisée -->
+            <span>${formattedDateTime}</span>
             
             <strong>${translation.email_booking_reference}</strong>
-            <span style="font-family: monospace; letter-spacing: 1px;">${reservation.bookingNumber}</span>
+            <span style="font-family: monospace; letter-spacing: 1px;">
+                ${reservation.bookingNumber}
+            </span>
         </div>
         
         <p>${translation.email_confirmed_cta}</p>
         
         <div style="text-align: center; margin-top: 30px;">
-            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
+            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" 
+               target="_blank" 
+               class="button" 
+               style="color: #ffffff; text-decoration: none;">
                 ${translation.email_confirmed_button}
             </a>
         </div>
-        <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_confirmed_outro}</p>
+        <p style="font-size: 14px; color: #777; margin-top: 20px;">
+            ${translation.email_confirmed_outro}
+        </p>
     `;
 
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
@@ -488,24 +492,53 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
     const lang = newReservation.lang || 'fr';
     const translation = translations[lang] || translations.fr;
     const locale = lang === 'en' ? enUS : fr;
-    const timeZone = 'Africa/Brazzaville';
 
     const subject = translation.email_report_subject(newReservation.bookingNumber);
     const headerTitle = translation.email_report_title;
 
-    const oldDate = new Date(oldReservation.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR');
+    // ✅ Ancienne date : parser proprement (évite le décalage UTC aussi)
+    let oldDate = "Date inconnue";
+    if (oldReservation.date) {
+        const [oy, om, od] = oldReservation.date.split('-').map(Number);
+        if (![oy, om, od].some(isNaN)) {
+            oldDate = new Date(oy, om - 1, od).toLocaleDateString(
+                lang === 'en' ? 'en-US' : 'fr-FR',
+                { day: 'numeric', month: 'long', year: 'numeric' }
+            );
+        }
+    }
 
-    const newDepartureDateTimeUTC = new Date(`${newReservation.date}T${newReservation.route.departure}:00`);
-    const newZonedDeparture = utcToZonedTime(newDepartureDateTimeUTC, timeZone);
-    const newFormattedDateTime = format(newZonedDeparture, "PPPP 'à' p", { locale: locale });
+    // ✅ Nouvelle date/heure : même correction que sendPaymentConfirmedEmail
+    let newFormattedDateTime = "Date/Heure non spécifiée";
+    if (newReservation.date && newReservation.route?.departure) {
+        try {
+            const [year, month, day] = newReservation.date.split('-').map(Number);
+            const [hours, minutes] = newReservation.route.departure.split(':').map(Number);
+
+            if ([year, month, day, hours, minutes].every(n => !isNaN(n))) {
+                const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+
+                if (!isNaN(localDate.getTime())) {
+                    // ✅ Pas de utcToZonedTime() → heure déjà locale
+                    newFormattedDateTime = format(localDate, "PPPP 'à' p", { locale });
+                } else {
+                    console.warn(`[WARN] Date invalide pour report ${newReservation.bookingNumber}`);
+                }
+            }
+        } catch (e) {
+            console.error(`[ERROR] Formatage date email report (${newReservation.bookingNumber}):`, e);
+        }
+    }
 
     const htmlContent = `
         <h2>${translation.email_greeting(client.name)}</h2>
         <p>${translation.email_report_intro}</p>
         
-        <!-- Alerte Ancien Billet -->
-        <div style="background-color: #ffebee; border-left: 4px solid #ef5350; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <strong style="color: #c62828; font-size: 12px; text-transform: uppercase;">${translation.email_report_old_trip_label}</strong>
+        <div style="background-color: #ffebee; border-left: 4px solid #ef5350; 
+                    padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong style="color: #c62828; font-size: 12px; text-transform: uppercase;">
+                ${translation.email_report_old_trip_label}
+            </strong>
             <div style="color: #b71c1c;">
                 ${translation.email_report_old_trip_date(oldDate)} • ${oldReservation.bookingNumber}
                 <br><em>${translation.email_report_old_trip_invalid}</em>
@@ -514,7 +547,9 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
 
         <div class="info-box">
             <strong>${translation.email_report_new_trip_label}</strong>
-            <span style="font-size: 20px; color: #73d700;">${newReservation.bookingNumber}</span>
+            <span style="font-size: 20px; color: #73d700;">
+                ${newReservation.bookingNumber}
+            </span>
             
             <strong>${translation.email_confirmed_details_trip}</strong>
             <span>${newReservation.route.from} ➝ ${newReservation.route.to}</span>
@@ -523,19 +558,23 @@ function sendReportConfirmedEmail(oldReservation, newReservation) {
             <span>${newFormattedDateTime}</span>
         </div>
         
-        <div style="text-align: center;">
-            <div style="text-align: center;">
-            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" target="_blank" class="button" style="color: #ffffff; text-decoration: none;">
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="https://incomparable-llama-84897e.netlify.app/?page=reservations" 
+               target="_blank" 
+               class="button" 
+               style="color: #ffffff; text-decoration: none;">
                 ${translation.email_confirmed_button}
             </a>
         </div>
-        </div>
         
-        <p style="font-size: 14px; color: #777; margin-top: 20px;">${translation.email_report_outro}</p>
+        <p style="font-size: 14px; color: #777; margin-top: 20px;">
+            ${translation.email_report_outro}
+        </p>
     `;
 
     sendEmail(client.email, subject, htmlContent, headerTitle, lang);
 }
+
 // --- Middleware & Utilitaires ---
 function authenticateToken(req, res, next) {
     const token = req.headers["authorization"]?.split(" ")[1];
